@@ -544,7 +544,7 @@ export default function Admin() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="marketValue">Market Value (Credits)</Label>
+                          <Label htmlFor="marketValue">Credit Value (Credits)</Label>
                           <Input
                             id="marketValue"
                             {...form.register("marketValue")}

@@ -64,7 +64,7 @@ export function CardDisplay({
               <p className="text-sm text-muted-foreground mb-2">{card.packType} Pack</p>
               <div className="flex items-center space-x-4 text-sm">
                 <span className="text-muted-foreground">
-                  Market Value: <span className="font-semibold text-accent">{card.marketValue} CR</span>
+                  Credit Value: <span className="font-semibold text-accent">{card.marketValue} CR</span>
                 </span>
                 {userCard && (
                   <span className="text-muted-foreground">
@@ -117,7 +117,7 @@ export function CardDisplay({
                 {card.name}
               </div>
               <div className="text-xs text-gray-300">
-                Value: {userCard?.pullValue || card.marketValue} CR
+                Credit Value: {userCard?.pullValue || card.marketValue} CR
               </div>
             </div>
           </div>
