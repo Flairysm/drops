@@ -19,19 +19,19 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
   });
 
   const tierColors = {
-    C: "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800",
-    UC: "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-800",
-    R: "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-800",
-    SR: "text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-800",
-    SSS: "text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-800"
+    common: "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800",
+    uncommon: "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-800",
+    rare: "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-800",
+    superrare: "text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-800",
+    legendary: "text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-800"
   };
 
   const tierNames = {
-    C: "Common",
-    UC: "Uncommon", 
-    R: "Rare",
-    SR: "Super Rare",
-    SSS: "Legendary"
+    common: "Common",
+    uncommon: "Uncommon", 
+    rare: "Rare",
+    superrare: "Super Rare",
+    legendary: "Legendary"
   };
 
   const getTimeAgo = (date: string | Date) => {

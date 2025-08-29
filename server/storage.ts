@@ -497,13 +497,15 @@ export class DatabaseStorage implements IStorage {
         .set({ stock: sql`${cards.stock} - 1` })
         .where(eq(cards.id, hitCard.id));
 
-      // Add to global feed
-      await tx.insert(globalFeed).values({
-        userId,
-        cardId: hitCard.id,
-        tier: hitCard.tier,
-        gameType: 'pack',
-      });
+      // Add to global feed only if rare or above
+      if (['rare', 'superrare', 'legendary'].includes(hitCard.tier)) {
+        await tx.insert(globalFeed).values({
+          userId,
+          cardId: hitCard.id,
+          tier: hitCard.tier,
+          gameType: 'pack',
+        });
+      }
 
       console.log(`Pack opened: Generated ${packCards.length} total cards (${packCards.filter(c => !c.isHit).length} commons + ${packCards.filter(c => c.isHit).length} hit)`);
       
@@ -532,6 +534,7 @@ export class DatabaseStorage implements IStorage {
       .from(globalFeed)
       .leftJoin(users, eq(globalFeed.userId, users.id))
       .leftJoin(cards, eq(globalFeed.cardId, cards.id))
+      .where(sql`${globalFeed.tier} IN ('rare', 'superrare', 'legendary')`)
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
 
