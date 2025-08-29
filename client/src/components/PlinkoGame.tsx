@@ -241,8 +241,8 @@ export function PlinkoGame() {
             
             // More natural bounce with slight randomness for realism
             const bounceVariation = 0.95 + (Math.random() * 0.1); // 5% variation in bounce
-            ball.vx -= 1.662 * dotProduct * nx * bounceVariation;
-            ball.vy -= 1.662 * dotProduct * ny * bounceVariation;
+            ball.vx -= 1.5 * dotProduct * nx * bounceVariation;
+            ball.vy -= 1.5 * dotProduct * ny * bounceVariation;
             
             // Add tiny surface friction variation for realism
             const surfaceFriction = 0.78 + (Math.random() * 0.04); // Random friction 0.78-0.82
