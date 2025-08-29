@@ -33,7 +33,7 @@ interface Ball {
 const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 6;
-const BALL_RADIUS = 8;
+const BALL_RADIUS = 12; // Made bigger
 const LAYERS = 9;
 const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
 
@@ -224,15 +224,14 @@ export function PlinkoGame() {
             // Collision detected - much more random bouncing
             const angle = Math.atan2(dy, dx);
             
-            // More controlled horizontal force
-            const randomForce = (Math.random() - 0.5) * 2;
-            ball.vx += Math.cos(angle) * 0.8 + randomForce;
+            // True 50/50 physics - each pin collision is pure left/right choice
+            const leftOrRight = Math.random() < 0.5 ? -1 : 1;
+            ball.vx = leftOrRight * 2; // Strong left or right force
             
-            // Maintain more downward velocity with less variation
-            ball.vy = Math.abs(ball.vy) * (0.7 + Math.random() * 0.2);
+            // Maintain consistent downward velocity
+            ball.vy = Math.abs(ball.vy) * 0.8;
             
-            // Reduced randomness for more predictable movement
-            ball.vx += (Math.random() - 0.5) * 1.5;
+            // No additional randomness - clean 50/50 split
             
             // Separate ball from pin with more space
             const separationDistance = ball.radius + PIN_RADIUS + 2;
@@ -303,8 +302,9 @@ export function PlinkoGame() {
         if (!animationComplete) {
           setAnimationComplete(true);
           
-          // Use the backend result to determine both visual and message outcome
+          // CRITICAL FIX: Use the backend result to determine both visual and message outcome
           const backendTier = lastResult?.result?.tier || 'common';
+          console.log('Ball landing - backend tier:', backendTier);
           
           const tierToOutcome: { [key: string]: string } = {
             common: "Pokeball",
@@ -315,6 +315,7 @@ export function PlinkoGame() {
           };
           
           const actualOutcome = tierToOutcome[backendTier] || "Pokeball";
+          console.log('Ball landing - actual outcome:', actualOutcome);
           
           // Find the correct slot for this outcome type
           let selectedSlot = 4; // Default to center
