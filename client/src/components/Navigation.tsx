@@ -32,28 +32,28 @@ export function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/">
-            <a className="flex items-center space-x-3" data-testid="link-home">
+            <div className="flex items-center space-x-3 cursor-pointer" data-testid="link-home">
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center glow-effect">
                 <Zap className="text-primary-foreground text-xl" />
               </div>
               <span className="font-gaming font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Flair TCG Arcade
               </span>
-            </a>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
             {navItems.map((item) => (
               <Link key={item.path} href={item.path}>
-                <a 
-                  className={`hover:text-primary transition-colors ${
+                <span 
+                  className={`hover:text-primary transition-colors cursor-pointer ${
                     location === item.path ? "text-primary" : ""
                   }`}
                   data-testid={`link-${item.label.toLowerCase()}`}
                 >
                   {item.label}
-                </a>
+                </span>
               </Link>
             ))}
 
@@ -113,15 +113,15 @@ export function Navigation() {
             <div className="space-y-4">
               {navItems.map((item) => (
                 <Link key={item.path} href={item.path}>
-                  <a 
-                    className={`block hover:text-primary transition-colors ${
+                  <span 
+                    className={`block hover:text-primary transition-colors cursor-pointer ${
                       location === item.path ? "text-primary" : ""
                     }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                     data-testid={`link-mobile-${item.label.toLowerCase()}`}
                   >
                     {item.label}
-                  </a>
+                  </span>
                 </Link>
               ))}
               
