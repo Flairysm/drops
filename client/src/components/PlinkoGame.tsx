@@ -30,7 +30,7 @@ interface Ball {
 const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 6;
-const BALL_RADIUS = 12; // Made bigger
+const BALL_RADIUS = 16; // Made bigger
 const LAYERS = 8;
 const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
 
@@ -208,8 +208,8 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Apply gravity
-        ball.vy += 0.3;
+        // Slower gravity for more suspense
+        ball.vy += 0.15;
         
         // Apply movement
         ball.x += ball.vx;
