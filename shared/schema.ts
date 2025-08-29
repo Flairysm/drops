@@ -84,6 +84,17 @@ export const gameSettings = pgTable("game_settings", {
   updatedBy: varchar("updated_by").references(() => users.id),
 });
 
+// Pull rate configuration for games
+export const pullRates = pgTable("pull_rates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  gameType: varchar("game_type", { length: 50 }).notNull(), // 'plinko', 'wheel', 'general'
+  tier: varchar("tier", { length: 20 }).notNull(), // 'common', 'uncommon', 'rare', 'superrare', 'legendary' or 'pokeball', 'greatball', etc.
+  probability: decimal("probability", { precision: 6, scale: 5 }).notNull(), // e.g., 0.65000 for 65%
+  isActive: boolean("is_active").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: varchar("updated_by").references(() => users.id),
+});
+
 // User card vault
 export const userCards = pgTable("user_cards", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -279,6 +290,11 @@ export const insertGameSettingSchema = createInsertSchema(gameSettings).omit({
   id: true,
 });
 
+export const insertPullRateSchema = createInsertSchema(pullRates).omit({
+  id: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -292,6 +308,7 @@ export type Transaction = typeof transactions.$inferSelect;
 export type GameSession = typeof gameSessions.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type ShippingRequest = typeof shippingRequests.$inferSelect;
+export type PullRate = typeof pullRates.$inferSelect;
 
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type InsertPack = z.infer<typeof insertPackSchema>;

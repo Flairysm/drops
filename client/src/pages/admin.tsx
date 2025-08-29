@@ -327,7 +327,7 @@ export default function Admin() {
 
           {/* Admin Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full max-w-lg mx-auto grid-cols-4 mb-8">
+            <TabsList className="grid w-full max-w-4xl mx-auto grid-cols-5 mb-8">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Overview
@@ -339,6 +339,10 @@ export default function Admin() {
               <TabsTrigger value="inventory" data-testid="tab-inventory">
                 <Package className="w-4 h-4 mr-2" />
                 Inventory
+              </TabsTrigger>
+              <TabsTrigger value="pull-rates" data-testid="tab-pull-rates">
+                <Settings className="w-4 h-4 mr-2" />
+                Pull Rates
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
                 <Settings className="w-4 h-4 mr-2" />
@@ -648,6 +652,244 @@ export default function Admin() {
                         <p className="mt-2 text-muted-foreground">Loading inventory...</p>
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Pull Rates Tab */}
+            <TabsContent value="pull-rates">
+              <div className="space-y-6">
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Plinko Pull Rates</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div>
+                          <Label htmlFor="pokeball-rate">Pokeball</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="pokeball-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.500"
+                              data-testid="input-pokeball-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="greatball-rate">Greatball</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="greatball-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.300"
+                              data-testid="input-greatball-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="ultraball-rate">Ultraball</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="ultraball-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.150"
+                              data-testid="input-ultraball-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="masterball-rate">Masterball</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="masterball-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.050"
+                              data-testid="input-masterball-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-end">
+                          <Button className="w-full" data-testid="button-update-plinko-rates">
+                            <Save className="w-4 h-4 mr-2" />
+                            Update Plinko Rates
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Note: Rates must sum to 100%. Current total: <span className="font-bold">---%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Card Pack Pull Rates</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <div>
+                          <Label htmlFor="common-rate">Common</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="common-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.650"
+                              data-testid="input-common-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="uncommon-rate">Uncommon</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="uncommon-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.250"
+                              data-testid="input-uncommon-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="rare-rate">Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="rare-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.080"
+                              data-testid="input-rare-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="superrare-rate">Super Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="superrare-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.018"
+                              data-testid="input-superrare-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="legendary-rate">Legendary</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="legendary-rate"
+                              type="number"
+                              step="0.001"
+                              min="0"
+                              max="1"
+                              placeholder="0.002"
+                              data-testid="input-legendary-rate"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-end">
+                          <Button className="w-full" data-testid="button-update-pack-rates">
+                            <Save className="w-4 h-4 mr-2" />
+                            Update Pack Rates
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Note: Rates must sum to 100%. Current total: <span className="font-bold">---%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Current Active Rates</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-3">Plinko Bucket Distribution</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Pokeball:</span>
+                            <span className="font-bold">50.0%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Greatball:</span>
+                            <span className="font-bold">30.0%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Ultraball:</span>
+                            <span className="font-bold">15.0%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Masterball:</span>
+                            <span className="font-bold">5.0%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-3">Pack Opening Hit Rates</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Common:</span>
+                            <span className="font-bold">65.0%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Uncommon:</span>
+                            <span className="font-bold">25.0%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Rare:</span>
+                            <span className="font-bold">8.0%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Super Rare:</span>
+                            <span className="font-bold">1.8%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Legendary:</span>
+                            <span className="font-bold">0.2%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>

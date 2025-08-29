@@ -11,6 +11,7 @@ import {
   notifications,
   shippingRequests,
   gameSettings,
+  pullRates,
   type User,
   type UpsertUser,
   type Card,
@@ -36,6 +37,7 @@ import {
   type UserCardWithCard,
   type GlobalFeedWithDetails,
   type GameResult,
+  type PullRate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
@@ -107,6 +109,10 @@ export interface IStorage {
   // Game settings operations
   getGameSetting(gameType: string): Promise<GameSetting | undefined>;
   updateGameSetting(gameType: string, price: string, updatedBy?: string): Promise<GameSetting>;
+  
+  // Pull rate operations
+  getPullRates(gameType: string): Promise<PullRate[]>;
+  setPullRates(gameType: string, rates: { tier: string; probability: string }[], updatedBy?: string): Promise<void>;
 }
 
 interface PackOpenResult {
@@ -705,6 +711,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(gameSettings.gameType, gameType))
       .returning();
     return updated;
+  }
+
+  // Pull rate operations
+  async getPullRates(gameType: string): Promise<PullRate[]> {
+    return await db
+      .select()
+      .from(pullRates)
+      .where(and(eq(pullRates.gameType, gameType), eq(pullRates.isActive, true)))
+      .orderBy(pullRates.tier);
+  }
+
+  async setPullRates(gameType: string, rates: { tier: string; probability: string }[], updatedBy?: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Deactivate existing rates for this game type
+      await tx
+        .update(pullRates)
+        .set({ isActive: false })
+        .where(eq(pullRates.gameType, gameType));
+
+      // Insert new rates
+      if (rates.length > 0) {
+        await tx.insert(pullRates).values(
+          rates.map(rate => ({
+            gameType,
+            tier: rate.tier,
+            probability: rate.probability,
+            isActive: true,
+            updatedBy: updatedBy
+          }))
+        );
+      }
+    });
   }
 }
 
