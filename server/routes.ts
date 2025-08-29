@@ -337,14 +337,10 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   else if (random < 0.8) tier = 'uncommon';    // 20% for testing
   else tier = 'common';                        // 20% for testing
   
-  console.log(`Game RNG: ${random.toFixed(4)} -> ${tier}`);
-
   // Find a card of the determined tier
   const tierCards = cards.filter(card => card.tier === tier && (card.stock || 0) > 0);
-  console.log(`Found ${tierCards.length} cards for tier ${tier}`);
   
   if (tierCards.length === 0) {
-    console.log(`No cards found for tier ${tier}, falling back to common`);
     // Fallback to common cards if no cards of tier available
     const commonCards = cards.filter(card => card.tier === 'common' && (card.stock || 0) > 0);
     if (commonCards.length === 0) {
@@ -359,16 +355,13 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   }
 
   const selectedCard = tierCards[Math.floor(Math.random() * tierCards.length)];
-  console.log(`Selected card: ${selectedCard.id}, tier: ${selectedCard.tier}`);
   
   // Update stock
   await storage.updateCardStock(selectedCard.id, (selectedCard.stock || 0) - 1);
 
-  const result = {
+  return {
     cardId: selectedCard.id,
     tier: selectedCard.tier,
     gameType,
   };
-  console.log('Returning result:', result);
-  return result;
 }

@@ -25,9 +25,6 @@ interface Ball {
   vy: number;
   radius: number;
   color: string;
-  isLanding?: boolean;
-  targetX?: number;
-  targetY?: number;
 }
 
 const BOARD_WIDTH = 600;
@@ -55,27 +52,12 @@ export function PlinkoGame() {
       return response.json() as Promise<GameResult>;
     },
     onSuccess: (result) => {
-      console.log('Frontend received result:', result);
       setLastResult(result);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       
-      // Map tiers to Pokeball types
-      const tierToOutcome: { [key: string]: string } = {
-        common: "Pokeball",
-        uncommon: "Greatball", 
-        rare: "Ultraball",
-        superrare: "Ultraball",
-        legendary: "Masterball"
-      };
-
-      const outcome = tierToOutcome[result.result.tier] || "Pokeball";
-      console.log(`Tier: ${result.result.tier} -> Outcome: ${outcome}`);
-      
-      // Start animation with predetermined outcome and pass the result
-      startPlinkoAnimation(outcome, result);
-
-      // Toast will be shown when ball lands in the animation
+      // Start physics animation and pass the result for toast message
+      startPlinkoAnimation("", result);
     },
     onError: (error: Error) => {
       toast({
@@ -240,28 +222,9 @@ export function PlinkoGame() {
           }
         });
 
-        // Handle landing animation
-        if (ball.isLanding && ball.targetX !== undefined && ball.targetY !== undefined) {
-          // Much smoother animation to target bucket
-          const dx = ball.targetX - ball.x;
-          const dy = ball.targetY - ball.y;
-          
-          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-            ball.x += dx * 0.03; // Much slower movement
-            ball.y += dy * 0.03;
-            ball.vx *= 0.9; // Gradually slow down existing velocity
-            ball.vy *= 0.9;
-          } else {
-            ball.x = ball.targetX;
-            ball.y = ball.targetY;
-            ball.vx = 0;
-            ball.vy = 0;
-          }
-        } else {
-          // Normal movement
-          ball.x += ball.vx;
-          ball.y += ball.vy;
-        }
+        // Normal physics movement
+        ball.x += ball.vx;
+        ball.y += ball.vy;
 
         // More friction to slow down the ball
         ball.vx *= 0.985;
@@ -302,10 +265,11 @@ export function PlinkoGame() {
         if (!animationComplete) {
           setAnimationComplete(true);
           
-          // CRITICAL FIX: Use the CURRENT game result passed to animation
-          const backendTier = gameResult.result.tier;
-          console.log('Ball landing - current game tier:', backendTier);
+          // Let physics determine the outcome naturally
+          const actualOutcome = OUTCOMES[clampedIndex];
           
+          // Use backend result for toast message
+          const backendTier = gameResult.result.tier;
           const tierToOutcome: { [key: string]: string } = {
             common: "Pokeball",
             uncommon: "Greatball", 
@@ -313,55 +277,19 @@ export function PlinkoGame() {
             superrare: "Ultraball",
             legendary: "Masterball"
           };
-          
-          const actualOutcome = tierToOutcome[backendTier] || "Pokeball";
-          console.log('Ball landing - current actual outcome:', actualOutcome);
-          
-          // Find the correct slot for this outcome type
-          let selectedSlot = 4; // Default to center
-          
-          if (actualOutcome === "Masterball") {
-            // Masterball is only in slots 0 and 8, choose randomly
-            selectedSlot = Math.random() < 0.5 ? 0 : 8;
-          } else if (actualOutcome === "Ultraball") {
-            // Ultraball is in slots 1 and 7, choose randomly
-            selectedSlot = Math.random() < 0.5 ? 1 : 7;
-          } else if (actualOutcome === "Greatball") {
-            // Greatball is in slots 2 and 6, choose randomly
-            selectedSlot = Math.random() < 0.5 ? 2 : 6;
-          } else if (actualOutcome === "Pokeball") {
-            // Pokeball is in slots 3, 4, and 5 - choose based on probability weights
-            const pokeBallRandom = Math.random();
-            if (pokeBallRandom < 0.31) { // 21.88 / (21.88 + 27.34 + 21.88) ≈ 0.31
-              selectedSlot = 3;
-            } else if (pokeBallRandom < 0.69) { // 27.34 / (21.88 + 27.34 + 21.88) ≈ 0.38, so 0.31 + 0.38 = 0.69
-              selectedSlot = 4; // Center - most likely
-            } else {
-              selectedSlot = 5;
-            }
-          }
-          
-          // Smoothly animate ball to the selected slot
-          const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-          const targetX = (selectedSlot * bucketWidth) + (bucketWidth / 2);
-          const targetY = BOARD_HEIGHT - 30;
-          
-          // Set target for smooth animation
-          ball.targetX = targetX;
-          ball.targetY = targetY;
-          ball.isLanding = true;
+          const backendOutcome = tierToOutcome[backendTier] || "Pokeball";
           
           setFinalOutcome(actualOutcome);
           
           toast({
             title: "Card Pulled!",
-            description: `You got a ${actualOutcome}!`,
+            description: `You got a ${backendOutcome}!`,
             duration: 5000,
           });
           
           setTimeout(() => {
             setIsPlaying(false);
-          }, 2000); // Even longer delay to show smooth landing
+          }, 1000);
         }
       }
 
