@@ -334,25 +334,25 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   const random = Math.random();
   let tier: string;
   
-  if (random < 0.002) tier = 'SSS';      // 0.2%
-  else if (random < 0.02) tier = 'SR';   // 1.8%
-  else if (random < 0.1) tier = 'R';     // 8.0%
-  else if (random < 0.35) tier = 'UC';   // 25.0%
-  else tier = 'C';                       // 65.0%
+  if (random < 0.002) tier = 'legendary';      // 0.2%
+  else if (random < 0.02) tier = 'superrare';   // 1.8%
+  else if (random < 0.1) tier = 'rare';     // 8.0%
+  else if (random < 0.35) tier = 'uncommon';   // 25.0%
+  else tier = 'common';                       // 65.0%
 
   // Find a card of the determined tier
   const tierCards = cards.filter(card => card.tier === tier && card.stock > 0);
   
   if (tierCards.length === 0) {
     // Fallback to common cards if no cards of tier available
-    const commonCards = cards.filter(card => card.tier === 'C' && card.stock > 0);
+    const commonCards = cards.filter(card => card.tier === 'common' && card.stock > 0);
     if (commonCards.length === 0) {
       throw new Error('No cards in stock');
     }
     const selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
     return {
       cardId: selectedCard.id,
-      tier: 'C',
+      tier: 'common',
       gameType,
     };
   }
