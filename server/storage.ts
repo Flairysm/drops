@@ -189,13 +189,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
-    // Use direct SQL for UUID generation to avoid caching issues
-    const result = await db.execute(sql`
-      INSERT INTO user_cards (id, user_id, card_id, pull_value, pulled_at, is_refunded, is_shipped)
-      VALUES (gen_random_uuid(), ${userCard.userId}, ${userCard.cardId}, ${userCard.pullValue}, NOW(), false, false)
-      RETURNING *
-    `);
-    return result.rows[0] as UserCard;
+    // Go back to Drizzle ORM but without specifying ID to let DB generate it
+    const [newUserCard] = await db.insert(userCards).values({
+      userId: userCard.userId,
+      cardId: userCard.cardId,
+      pullValue: userCard.pullValue,
+      // Let database auto-generate id, pulledAt, isRefunded, isShipped
+    }).returning();
+    return newUserCard;
   }
 
   async refundCards(cardIds: string[], userId: string): Promise<void> {
