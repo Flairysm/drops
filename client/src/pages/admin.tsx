@@ -55,6 +55,14 @@ export default function Admin() {
   const [newStock, setNewStock] = useState<number>(0);
   const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
 
+  // Pull rate form state
+  const [pullRates, setPullRates] = useState({
+    pokeball: { common: 80, uncommon: 18, rare: 2, superrare: 0, legendary: 0 },
+    greatball: { common: 50, uncommon: 35, rare: 14, superrare: 1, legendary: 0 },
+    ultraball: { common: 25, uncommon: 40, rare: 25, superrare: 8, legendary: 2 },
+    masterball: { common: 5, uncommon: 10, rare: 15, superrare: 10, legendary: 60 }
+  });
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -265,6 +273,70 @@ export default function Admin() {
       });
     },
   });
+
+  // Pull rate mutation
+  const updatePullRatesMutation = useMutation({
+    mutationFn: async ({ packType, rates }: { packType: string; rates: Array<{ cardTier: string; probability: string }> }) => {
+      await apiRequest("POST", `/api/admin/pull-rates/${packType}`, { rates });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Pull Rates Updated",
+        description: "Pack pull rates have been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error Updating Pull Rates",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle pull rate input changes
+  const handlePullRateChange = (packType: keyof typeof pullRates, cardTier: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    setPullRates(prev => ({
+      ...prev,
+      [packType]: {
+        ...prev[packType],
+        [cardTier]: numValue
+      }
+    }));
+  };
+
+  // Handle pull rate update submission
+  const handleUpdatePullRates = (packType: keyof typeof pullRates) => {
+    const rates = Object.entries(pullRates[packType]).map(([cardTier, probability]) => ({
+      cardTier,
+      probability: probability.toString()
+    }));
+
+    // Validate that rates sum to 100%
+    const total = Object.values(pullRates[packType]).reduce((sum, rate) => sum + rate, 0);
+    if (total !== 100) {
+      toast({
+        title: "Invalid Rates",
+        description: `Rates must sum to 100% (currently ${total}%)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updatePullRatesMutation.mutate({ packType, rates });
+  };
 
   const handleEditStock = (card: CardType) => {
     setEditingCard(card);
@@ -677,7 +749,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="80"
+                              value={pullRates.pokeball.common}
+                              onChange={(e) => handlePullRateChange('pokeball', 'common', e.target.value)}
                               data-testid="input-pokeball-common"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -692,7 +765,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="18"
+                              value={pullRates.pokeball.uncommon}
+                              onChange={(e) => handlePullRateChange('pokeball', 'uncommon', e.target.value)}
                               data-testid="input-pokeball-uncommon"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -707,7 +781,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="2"
+                              value={pullRates.pokeball.rare}
+                              onChange={(e) => handlePullRateChange('pokeball', 'rare', e.target.value)}
                               data-testid="input-pokeball-rare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -722,7 +797,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="0"
+                              value={pullRates.pokeball.superrare}
+                              onChange={(e) => handlePullRateChange('pokeball', 'superrare', e.target.value)}
                               data-testid="input-pokeball-superrare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -737,16 +813,22 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="0"
+                              value={pullRates.pokeball.legendary}
+                              onChange={(e) => handlePullRateChange('pokeball', 'legendary', e.target.value)}
                               data-testid="input-pokeball-legendary"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div className="flex items-end">
-                          <Button className="w-full" data-testid="button-update-pokeball-rates">
+                          <Button 
+                            className="w-full" 
+                            onClick={() => handleUpdatePullRates('pokeball')}
+                            disabled={updatePullRatesMutation.isPending}
+                            data-testid="button-update-pokeball-rates"
+                          >
                             <Save className="w-4 h-4 mr-2" />
-                            Update Pokeball
+                            {updatePullRatesMutation.isPending ? 'Updating...' : 'Update Pokeball'}
                           </Button>
                         </div>
                       </div>
@@ -771,7 +853,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="50"
+                              value={pullRates.greatball.common}
+                              onChange={(e) => handlePullRateChange('greatball', 'common', e.target.value)}
                               data-testid="input-greatball-common"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -786,7 +869,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="35"
+                              value={pullRates.greatball.uncommon}
+                              onChange={(e) => handlePullRateChange('greatball', 'uncommon', e.target.value)}
                               data-testid="input-greatball-uncommon"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -801,7 +885,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="14"
+                              value={pullRates.greatball.rare}
+                              onChange={(e) => handlePullRateChange('greatball', 'rare', e.target.value)}
                               data-testid="input-greatball-rare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -816,7 +901,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="1"
+                              value={pullRates.greatball.superrare}
+                              onChange={(e) => handlePullRateChange('greatball', 'superrare', e.target.value)}
                               data-testid="input-greatball-superrare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -831,16 +917,22 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="0"
+                              value={pullRates.greatball.legendary}
+                              onChange={(e) => handlePullRateChange('greatball', 'legendary', e.target.value)}
                               data-testid="input-greatball-legendary"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div className="flex items-end">
-                          <Button className="w-full" data-testid="button-update-greatball-rates">
+                          <Button 
+                            className="w-full" 
+                            onClick={() => handleUpdatePullRates('greatball')}
+                            disabled={updatePullRatesMutation.isPending}
+                            data-testid="button-update-greatball-rates"
+                          >
                             <Save className="w-4 h-4 mr-2" />
-                            Update Greatball
+                            {updatePullRatesMutation.isPending ? 'Updating...' : 'Update Greatball'}
                           </Button>
                         </div>
                       </div>
@@ -865,7 +957,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="25"
+                              value={pullRates.ultraball.common}
+                              onChange={(e) => handlePullRateChange('ultraball', 'common', e.target.value)}
                               data-testid="input-ultraball-common"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -880,7 +973,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="40"
+                              value={pullRates.ultraball.uncommon}
+                              onChange={(e) => handlePullRateChange('ultraball', 'uncommon', e.target.value)}
                               data-testid="input-ultraball-uncommon"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -895,7 +989,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="25"
+                              value={pullRates.ultraball.rare}
+                              onChange={(e) => handlePullRateChange('ultraball', 'rare', e.target.value)}
                               data-testid="input-ultraball-rare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -910,7 +1005,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="8"
+                              value={pullRates.ultraball.superrare}
+                              onChange={(e) => handlePullRateChange('ultraball', 'superrare', e.target.value)}
                               data-testid="input-ultraball-superrare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -925,16 +1021,22 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="2"
+                              value={pullRates.ultraball.legendary}
+                              onChange={(e) => handlePullRateChange('ultraball', 'legendary', e.target.value)}
                               data-testid="input-ultraball-legendary"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div className="flex items-end">
-                          <Button className="w-full" data-testid="button-update-ultraball-rates">
+                          <Button 
+                            className="w-full" 
+                            onClick={() => handleUpdatePullRates('ultraball')}
+                            disabled={updatePullRatesMutation.isPending}
+                            data-testid="button-update-ultraball-rates"
+                          >
                             <Save className="w-4 h-4 mr-2" />
-                            Update Ultraball
+                            {updatePullRatesMutation.isPending ? 'Updating...' : 'Update Ultraball'}
                           </Button>
                         </div>
                       </div>
@@ -959,7 +1061,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="5"
+                              value={pullRates.masterball.common}
+                              onChange={(e) => handlePullRateChange('masterball', 'common', e.target.value)}
                               data-testid="input-masterball-common"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -974,7 +1077,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="10"
+                              value={pullRates.masterball.uncommon}
+                              onChange={(e) => handlePullRateChange('masterball', 'uncommon', e.target.value)}
                               data-testid="input-masterball-uncommon"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -989,7 +1093,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="15"
+                              value={pullRates.masterball.rare}
+                              onChange={(e) => handlePullRateChange('masterball', 'rare', e.target.value)}
                               data-testid="input-masterball-rare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -1004,7 +1109,8 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="10"
+                              value={pullRates.masterball.superrare}
+                              onChange={(e) => handlePullRateChange('masterball', 'superrare', e.target.value)}
                               data-testid="input-masterball-superrare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
@@ -1019,16 +1125,22 @@ export default function Admin() {
                               step="1"
                               min="0"
                               max="100"
-                              placeholder="60"
+                              value={pullRates.masterball.legendary}
+                              onChange={(e) => handlePullRateChange('masterball', 'legendary', e.target.value)}
                               data-testid="input-masterball-legendary"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div className="flex items-end">
-                          <Button className="w-full" data-testid="button-update-masterball-rates">
+                          <Button 
+                            className="w-full" 
+                            onClick={() => handleUpdatePullRates('masterball')}
+                            disabled={updatePullRatesMutation.isPending}
+                            data-testid="button-update-masterball-rates"
+                          >
                             <Save className="w-4 h-4 mr-2" />
-                            Update Masterball
+                            {updatePullRatesMutation.isPending ? 'Updating...' : 'Update Masterball'}
                           </Button>
                         </div>
                       </div>
