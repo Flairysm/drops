@@ -189,7 +189,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
-    const [newUserCard] = await db.insert(userCards).values(userCard).returning();
+    const [newUserCard] = await db.insert(userCards).values({
+      ...userCard,
+      // Ensure fresh UUID generation
+      id: undefined, // Let database generate new UUID
+    }).returning();
     return newUserCard;
   }
 
