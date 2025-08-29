@@ -140,11 +140,14 @@ export function PlinkoGame() {
     const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
     const targetX = bucketWidth * targetIndex + bucketWidth / 2;
 
-    // Initialize ball with more randomness
+    // Initialize ball to drop between the first two pins
+    const firstLayerPins = getPins().filter((_, index) => index < 2); // First layer has 2 pins
+    const dropX = (firstLayerPins[0].x + firstLayerPins[1].x) / 2; // Exactly between first two pins
+    
     const ball: Ball = {
-      x: BOARD_WIDTH / 2 + (Math.random() - 0.5) * 60, // Start position variation
+      x: dropX + (Math.random() - 0.5) * 10, // Small variation around center
       y: 20,
-      vx: (Math.random() - 0.5) * 4, // More initial horizontal velocity
+      vx: (Math.random() - 0.5) * 1, // Reduced initial velocity
       vy: 0,
       radius: BALL_RADIUS,
       color: '#00d4ff'
@@ -206,7 +209,7 @@ export function PlinkoGame() {
       });
 
       // Physics for ball
-      if (ball.y < BOARD_HEIGHT - 80) {
+      if (ball.y < BOARD_HEIGHT - 70) {
         // Gravity
         ball.vy += 0.3;
         
@@ -262,9 +265,20 @@ export function PlinkoGame() {
         }
       } else {
         // Ball has reached the bottom - determine final outcome
+        // Make sure ball is fully inside a bucket, not just touching
         const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+        
+        // Clamp ball position to ensure it's within bounds
+        ball.x = Math.max(ball.radius, Math.min(BOARD_WIDTH - ball.radius, ball.x));
+        
+        // Find which bucket the ball center is in
         const bucketIndex = Math.floor(ball.x / bucketWidth);
         const clampedIndex = Math.max(0, Math.min(OUTCOMES.length - 1, bucketIndex));
+        
+        // Move ball to center of the bucket it landed in
+        const bucketCenter = (clampedIndex * bucketWidth) + (bucketWidth / 2);
+        ball.x = bucketCenter;
+        ball.y = BOARD_HEIGHT - 30; // Position ball inside the bucket
         
         if (!animationComplete) {
           setFinalOutcome(OUTCOMES[clampedIndex]);
