@@ -31,8 +31,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     return null;
   }
 
-  const commonCards = packCards.filter(card => !card.isHit);
+  // Show all 9 cards in the initial display, but the hit card will have special styling
   const hitCard = packCards.find(card => card.isHit);
+  const hitCardIndex = packCards.findIndex(card => card.isHit);
 
   const handleRevealHit = () => {
     if (showCommons) {
@@ -122,7 +123,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           </div>
           {showCommons ? (
             <p className="text-gray-300">
-              {commonCards.length} Common Cards + 1 Hit Card
+              9 Cards Total - Find Your Hit Card!
             </p>
           ) : showHitCard ? (
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white animate-pulse">
@@ -132,29 +133,56 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
         </div>
 
         {showCommons ? (
-          /* Common Cards Grid */
+          /* All 9 Cards Grid with Hit Card Peek */
           <div className="mb-6">
-            <h3 className="text-center text-white mb-4">Common Cards</h3>
+            <h3 className="text-center text-white mb-4">Your Pack Contents</h3>
             <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
-              {commonCards.map((card, index) => (
-                <div key={index} className="gaming-card p-3 text-center">
-                  {card.imageUrl ? (
-                    <img
-                      src={card.imageUrl}
-                      alt={card.name}
-                      className="w-12 h-12 mx-auto rounded object-cover mb-2"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded flex items-center justify-center mb-2">
-                      <span className="text-xs text-white font-bold">
-                        {card.name?.charAt(0) || '?'}
-                      </span>
-                    </div>
-                  )}
-                  <p className="text-xs font-medium truncate">{card.name}</p>
-                  <p className="text-xs text-muted-foreground">${card.marketValue}</p>
-                </div>
-              ))}
+              {packCards.map((card, index) => {
+                const isHitCard = card.isHit;
+                const hitGlow = isHitCard ? getHitCardGlow(card.tier || '') : null;
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`gaming-card p-3 text-center transition-all duration-300 ${
+                      isHitCard 
+                        ? `${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400` 
+                        : ''
+                    }`}
+                  >
+                    {isHitCard ? (
+                      /* Hit Card - Show back with peek effect */
+                      <div className="space-y-1">
+                        <div className={`w-12 h-12 mx-auto rounded flex items-center justify-center mb-2 ${hitGlow?.bg || 'bg-gradient-to-br from-yellow-400 to-orange-500'}`}>
+                          <Star className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="text-xs">{hitGlow?.particles}</div>
+                        <p className="text-xs font-bold text-yellow-300">HIT CARD</p>
+                        <p className="text-xs text-yellow-200">{card.tier?.toUpperCase()}</p>
+                      </div>
+                    ) : (
+                      /* Regular Card */
+                      <div>
+                        {card.imageUrl ? (
+                          <img
+                            src={card.imageUrl}
+                            alt={card.name}
+                            className="w-12 h-12 mx-auto rounded object-cover mb-2"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded flex items-center justify-center mb-2">
+                            <span className="text-xs text-white font-bold">
+                              {card.name?.charAt(0) || '?'}
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-xs font-medium truncate">{card.name}</p>
+                        <p className="text-xs text-muted-foreground">${card.marketValue}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : showHitCard ? (
@@ -244,7 +272,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           
           <p className="text-sm text-gray-400 mt-2">
             {showCommons 
-              ? "Click to see your special card!" 
+              ? "The glowing card is your hit card - click to reveal it!" 
               : !isHitRevealed 
               ? "Your hit card is waiting..." 
               : "This card has been added to your vault!"

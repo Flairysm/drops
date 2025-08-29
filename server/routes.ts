@@ -88,10 +88,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (gameType === 'plinko') {
         // For Plinko, award packs instead of direct cards
         const packType = mapTierToPackType(result.tier);
+        console.log(`Plinko result: tier=${result.tier}, mapped pack=${packType}`);
+        
         const packs = await storage.getActivePacks();
         const targetPack = packs.find(p => p.type === packType);
         
         if (!targetPack) {
+          console.log(`Available pack types:`, packs.map(p => p.type));
           throw new Error(`Pack type ${packType} not found`);
         }
 
