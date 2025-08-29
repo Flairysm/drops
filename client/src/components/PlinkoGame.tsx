@@ -31,7 +31,7 @@ const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 6;
 const BALL_RADIUS = 12; // Made bigger
-const LAYERS = 9;
+const LAYERS = 10;
 const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
 
 export function PlinkoGame() {
