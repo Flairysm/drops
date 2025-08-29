@@ -4,6 +4,7 @@ import {
   packs,
   packOdds,
   userCards,
+  userPacks,
   globalFeed,
   transactions,
   gameSessions,
@@ -15,6 +16,7 @@ import {
   type Pack,
   type PackOdds,
   type UserCard,
+  type UserPack,
   type GlobalFeed,
   type Transaction,
   type GameSession,
@@ -23,6 +25,7 @@ import {
   type InsertCard,
   type InsertPack,
   type InsertUserCard,
+  type InsertUserPack,
   type InsertTransaction,
   type InsertGameSession,
   type InsertNotification,
@@ -58,6 +61,11 @@ export interface IStorage {
   getUserCards(userId: string): Promise<UserCardWithCard[]>;
   addUserCard(userCard: InsertUserCard): Promise<UserCard>;
   refundCards(cardIds: string[], userId: string): Promise<void>;
+  
+  // User pack operations
+  getUserPacks(userId: string): Promise<UserPack[]>;
+  addUserPack(userPack: InsertUserPack): Promise<UserPack>;
+  openUserPack(packId: string, userId: string): Promise<UserCard>;
   
   // Global feed operations
   getGlobalFeed(limit?: number): Promise<GlobalFeedWithDetails[]>;
@@ -201,7 +209,7 @@ export class DatabaseStorage implements IStorage {
       const [newUserCard] = await db
         .select()
         .from(userCards)
-        .where(eq(userCards.userId, userCard.userId))
+        .where(eq(userCards.userId, userCard.userId!))
         .orderBy(desc(userCards.pulledAt))
         .limit(1);
       
@@ -250,6 +258,107 @@ export class DatabaseStorage implements IStorage {
         amount: totalRefund.toFixed(2),
         description: `Refunded ${cardsToRefund.length} cards`,
       });
+    });
+  }
+
+  // User pack operations
+  async getUserPacks(userId: string): Promise<UserPack[]> {
+    return await db
+      .select()
+      .from(userPacks)
+      .where(and(eq(userPacks.userId, userId), eq(userPacks.isOpened, false)))
+      .orderBy(desc(userPacks.earnedAt));
+  }
+
+  async addUserPack(userPack: InsertUserPack): Promise<UserPack> {
+    const [newUserPack] = await db.insert(userPacks).values(userPack).returning();
+    return newUserPack;
+  }
+
+  async openUserPack(packId: string, userId: string): Promise<UserCard> {
+    return await db.transaction(async (tx) => {
+      // Get the pack to open
+      const [userPack] = await tx
+        .select()
+        .from(userPacks)
+        .where(and(
+          eq(userPacks.id, packId),
+          eq(userPacks.userId, userId),
+          eq(userPacks.isOpened, false)
+        ));
+
+      if (!userPack) {
+        throw new Error('Pack not found or already opened');
+      }
+
+      // Get pack odds for this pack
+      const odds = await tx
+        .select()
+        .from(packOdds)
+        .where(eq(packOdds.packId, userPack.packId!));
+
+      if (odds.length === 0) {
+        throw new Error('No odds configured for this pack');
+      }
+
+      // Weighted random selection based on odds
+      const random = Math.random();
+      let cumulative = 0;
+      let selectedTier = odds[0].tier;
+
+      for (const odd of odds) {
+        cumulative += parseFloat(odd.probability);
+        if (random <= cumulative) {
+          selectedTier = odd.tier;
+          break;
+        }
+      }
+
+      // Get cards of the selected tier
+      const availableCards = await tx
+        .select()
+        .from(cards)
+        .where(and(
+          eq(cards.tier, selectedTier),
+          eq(cards.isActive, true),
+          sql`${cards.stock} > 0`
+        ));
+
+      if (availableCards.length === 0) {
+        throw new Error(`No available cards in tier ${selectedTier}`);
+      }
+
+      // Select random card from available cards
+      const selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+
+      // Add card to user's vault
+      const [newUserCard] = await tx.insert(userCards).values({
+        userId,
+        cardId: selectedCard.id,
+        pullValue: selectedCard.marketValue,
+      }).returning();
+
+      // Mark pack as opened
+      await tx
+        .update(userPacks)
+        .set({ isOpened: true, openedAt: new Date() })
+        .where(eq(userPacks.id, packId));
+
+      // Update card stock
+      await tx
+        .update(cards)
+        .set({ stock: sql`${cards.stock} - 1` })
+        .where(eq(cards.id, selectedCard.id));
+
+      // Add to global feed
+      await tx.insert(globalFeed).values({
+        userId,
+        cardId: selectedCard.id,
+        tier: selectedCard.tier,
+        gameType: 'pack',
+      });
+
+      return newUserCard;
     });
   }
 

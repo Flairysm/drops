@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Games from "@/pages/games";
+import MyPacks from "@/pages/my-packs";
 import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
@@ -31,6 +32,7 @@ function Router() {
         <>
           <Route path="/" component={Home} />
           <Route path="/games" component={Games} />
+          <Route path="/my-packs" component={MyPacks} />
           <Route path="/vault" component={Vault} />
           <Route path="/admin" component={Admin} />
         </>

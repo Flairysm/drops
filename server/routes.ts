@@ -62,27 +62,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update game session with result
       await storage.updateGameSession(gameSession.id, result, 'completed');
 
-      // Get card details first
-      const card = await storage.getCard(result.cardId);
-      if (!card) {
-        throw new Error('Card not found');
-      }
+      if (gameType === 'plinko') {
+        // For Plinko, award packs instead of direct cards
+        const packType = mapTierToPackType(result.tier);
+        const packs = await storage.getActivePacks();
+        const targetPack = packs.find(p => p.type === packType);
+        
+        if (!targetPack) {
+          throw new Error(`Pack type ${packType} not found`);
+        }
 
-      // Add card to user vault with correct pull value
-      const userCard = await storage.addUserCard({
-        userId,
-        cardId: result.cardId,
-        pullValue: card.marketValue,
-      });
+        // Award pack to user
+        await storage.addUserPack({
+          userId,
+          packId: targetPack.id,
+          tier: result.tier,
+          earnedFrom: gameType,
+          isOpened: false,
+        });
 
-      // Add to global feed if rare enough
-      if (['rare', 'superrare', 'legendary'].includes(result.tier)) {
-        await storage.addGlobalFeedEntry({
+        // No global feed for pack earning - only when opening packs
+      } else {
+        // For other games, keep the old card logic
+        const card = await storage.getCard(result.cardId);
+        if (!card) {
+          throw new Error('Card not found');
+        }
+
+        // Add card to user vault with correct pull value
+        await storage.addUserCard({
           userId,
           cardId: result.cardId,
-          tier: result.tier,
-          gameType,
+          pullValue: card.marketValue,
         });
+
+        // Add to global feed if rare enough
+        if (['rare', 'superrare', 'legendary'].includes(result.tier)) {
+          await storage.addGlobalFeedEntry({
+            userId,
+            cardId: result.cardId,
+            tier: result.tier,
+            gameType,
+          });
+        }
       }
 
       // Create transaction record
@@ -314,8 +336,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pack routes
+  app.get('/api/packs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userPacks = await storage.getUserPacks(userId);
+      res.json(userPacks);
+    } catch (error) {
+      console.error("Error fetching packs:", error);
+      res.status(500).json({ message: "Failed to fetch packs" });
+    }
+  });
+
+  app.post('/api/packs/open/:packId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { packId } = req.params;
+
+      const userCard = await storage.openUserPack(packId, userId);
+      
+      res.json({ 
+        success: true,
+        card: userCard
+      });
+
+    } catch (error: any) {
+      console.error("Error opening pack:", error);
+      res.status(500).json({ message: error.message || "Failed to open pack" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Map tier to pack type for Plinko
+function mapTierToPackType(tier: string): string {
+  switch (tier.toLowerCase()) {
+    case 'common':
+    case 'c':
+      return 'pokeball';
+    case 'uncommon':
+    case 'uc':
+      return 'greatball';
+    case 'rare':
+    case 'r':
+      return 'ultraball';
+    case 'superrare':
+    case 'sr':
+    case 'legendary':
+    case 'sss':
+      return 'masterball';
+    default:
+      return 'pokeball';
+  }
 }
 
 // Simplified game simulation logic

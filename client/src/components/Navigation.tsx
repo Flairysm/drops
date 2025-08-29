@@ -22,6 +22,7 @@ export function Navigation() {
   const navItems = [
     { path: "/", label: "Home" },
     { path: "/games", label: "Games" },
+    { path: "/my-packs", label: "My Packs" },
     { path: "/vault", label: "Vault" },
     { path: "/admin", label: "Admin" },
   ];

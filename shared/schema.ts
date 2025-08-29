@@ -85,6 +85,18 @@ export const userCards = pgTable("user_cards", {
   isShipped: boolean("is_shipped").default(false),
 });
 
+// User packs earned from games (unopened)
+export const userPacks = pgTable("user_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").references(() => users.id),
+  packId: uuid("pack_id").references(() => packs.id),
+  tier: varchar("tier", { length: 10 }).notNull(), // The tier earned from Plinko
+  earnedFrom: varchar("earned_from", { length: 50 }).notNull(), // plinko, wheel, etc.
+  isOpened: boolean("is_opened").default(false),
+  earnedAt: timestamp("earned_at").defaultNow(),
+  openedAt: timestamp("opened_at"),
+});
+
 // Global feed entries
 export const globalFeed = pgTable("global_feed", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -146,6 +158,7 @@ export const shippingRequests = pgTable("shipping_requests", {
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   userCards: many(userCards),
+  userPacks: many(userPacks),
   transactions: many(transactions),
   gameSessions: many(gameSessions),
   notifications: many(notifications),
@@ -160,6 +173,7 @@ export const cardsRelations = relations(cards, ({ many }) => ({
 
 export const packsRelations = relations(packs, ({ many }) => ({
   packOdds: many(packOdds),
+  userPacks: many(userPacks),
 }));
 
 export const userCardsRelations = relations(userCards, ({ one }) => ({
@@ -181,6 +195,17 @@ export const globalFeedRelations = relations(globalFeed, ({ one }) => ({
   card: one(cards, {
     fields: [globalFeed.cardId],
     references: [cards.id],
+  }),
+}));
+
+export const userPacksRelations = relations(userPacks, ({ one }) => ({
+  user: one(users, {
+    fields: [userPacks.userId],
+    references: [users.id],
+  }),
+  pack: one(packs, {
+    fields: [userPacks.packId],
+    references: [packs.id],
   }),
 }));
 
@@ -213,6 +238,12 @@ export const insertUserCardSchema = createInsertSchema(userCards).omit({
   pulledAt: true,
 });
 
+export const insertUserPackSchema = createInsertSchema(userPacks).omit({
+  id: true,
+  earnedAt: true,
+  openedAt: true,
+});
+
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   createdAt: true,
@@ -240,6 +271,7 @@ export type Card = typeof cards.$inferSelect;
 export type Pack = typeof packs.$inferSelect;
 export type PackOdds = typeof packOdds.$inferSelect;
 export type UserCard = typeof userCards.$inferSelect;
+export type UserPack = typeof userPacks.$inferSelect;
 export type GlobalFeed = typeof globalFeed.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type GameSession = typeof gameSessions.$inferSelect;
@@ -249,6 +281,7 @@ export type ShippingRequest = typeof shippingRequests.$inferSelect;
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type InsertPack = z.infer<typeof insertPackSchema>;
 export type InsertUserCard = z.infer<typeof insertUserCardSchema>;
+export type InsertUserPack = z.infer<typeof insertUserPackSchema>;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
