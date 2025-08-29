@@ -48,7 +48,7 @@ export function PlinkoGame() {
   const queryClient = useQueryClient();
 
   const playGameMutation = useMutation({
-    mutationFn: async (data: { gameType: string; betAmount: string }) => {
+    mutationFn: async (data: { gameType: string; betAmount: string; plinkoResult?: string }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
       return response.json() as Promise<GameResult>;
     },
@@ -135,10 +135,8 @@ export function PlinkoGame() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Find target bucket index
-    const targetIndex = OUTCOMES.findIndex(o => o === targetOutcome);
+    // No predetermined target - let physics determine the outcome naturally
     const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-    const targetX = bucketWidth * targetIndex + bucketWidth / 2;
 
     // Initialize ball to drop randomly between pins 1-2 or 2-3
     const firstLayerPins = getPins().filter((_, index) => index < 3); // First 3 pins
@@ -268,12 +266,7 @@ export function PlinkoGame() {
           ball.vx *= -0.5;
         }
 
-        // Very light guidance only at the very bottom to prevent getting stuck
-        if (ball.y > BOARD_HEIGHT - 100) {
-          const influence = Math.min((ball.y - (BOARD_HEIGHT - 100)) / 50, 1) * 0.3;
-          const targetDx = targetX - ball.x;
-          ball.vx += targetDx * 0.003 * influence; // Much weaker guidance
-        }
+        // Natural physics - no guidance needed
       } else {
         // Ball has reached the bottom - determine final outcome
         // Make sure ball is fully inside a bucket, not just touching
