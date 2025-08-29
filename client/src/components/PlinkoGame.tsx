@@ -72,24 +72,31 @@ export function PlinkoGame() {
   const getPins = () => {
     const pins = [];
     
-    for (let layer = 0; layer < LAYERS; layer++) {
-      const pinsInLayer = layer + 3; // Layer 0: 3 pins, Layer 1: 4 pins, etc.
+    // Create grid-style pin layout like in casino Plinko
+    const rows = 8;
+    const cols = 10; // 10 columns to match bucket count
+    const startY = 100;
+    const endY = 380;
+    const startX = 60;
+    const endX = BOARD_WIDTH - 60;
+    
+    const rowSpacing = (endY - startY) / (rows - 1);
+    const colSpacing = (endX - startX) / (cols - 1);
+    
+    for (let row = 0; row < rows; row++) {
+      const y = startY + (row * rowSpacing);
       
-      // Lower vertical position - closer to buckets
-      const y = 120 + (layer * 35);
+      // Offset every other row for classic Plinko zigzag pattern
+      const isOffset = row % 2 === 1;
+      const colsInRow = isOffset ? cols - 1 : cols;
+      const offsetX = isOffset ? colSpacing / 2 : 0;
       
-      // Create proper pyramid spacing - center each layer
-      const spacing = 60; // Fixed spacing between pins in each layer
-      const layerWidth = (pinsInLayer - 1) * spacing; // Total width of this layer
-      const startX = (BOARD_WIDTH - layerWidth) / 2; // Center the layer
-      
-      for (let pin = 0; pin < pinsInLayer; pin++) {
-        // Calculate X position for pyramid shape
-        const x = startX + (pin * spacing);
-        
+      for (let col = 0; col < colsInRow; col++) {
+        const x = startX + offsetX + (col * colSpacing);
         pins.push({ x, y });
       }
     }
+    
     return pins;
   };
 
