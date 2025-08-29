@@ -25,6 +25,9 @@ interface Ball {
   vy: number;
   radius: number;
   color: string;
+  isLanding?: boolean;
+  targetX?: number;
+  targetY?: number;
 }
 
 const BOARD_WIDTH = 600;
@@ -236,9 +239,26 @@ export function PlinkoGame() {
           }
         });
 
-        // Update position
-        ball.x += ball.vx;
-        ball.y += ball.vy;
+        // Handle landing animation
+        if (ball.isLanding && ball.targetX !== undefined && ball.targetY !== undefined) {
+          // Smooth animation to target bucket
+          const dx = ball.targetX - ball.x;
+          const dy = ball.targetY - ball.y;
+          
+          if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+            ball.x += dx * 0.1;
+            ball.y += dy * 0.1;
+          } else {
+            ball.x = ball.targetX;
+            ball.y = ball.targetY;
+            ball.vx = 0;
+            ball.vy = 0;
+          }
+        } else {
+          // Normal movement
+          ball.x += ball.vx;
+          ball.y += ball.vy;
+        }
 
         // More friction to slow down the ball
         ball.vx *= 0.985;
@@ -294,27 +314,28 @@ export function PlinkoGame() {
           
           const actualOutcome = OUTCOMES[selectedSlot];
           
-          // Move ball to the selected slot for visual consistency
+          // Smoothly animate ball to the selected slot
           const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-          const bucketCenter = (selectedSlot * bucketWidth) + (bucketWidth / 2);
-          ball.x = bucketCenter;
-          ball.y = BOARD_HEIGHT - 30;
+          const targetX = (selectedSlot * bucketWidth) + (bucketWidth / 2);
+          const targetY = BOARD_HEIGHT - 30;
+          
+          // Set target for smooth animation
+          ball.targetX = targetX;
+          ball.targetY = targetY;
+          ball.isLanding = true;
           
           setFinalOutcome(actualOutcome);
           setAnimationComplete(true);
           
-          // Find the backend tier that matches this visual outcome
-          const backendTier = lastResult?.result?.tier || 'common';
-          
           toast({
             title: "Card Pulled!",
-            description: `You got a ${actualOutcome} (${backendTier}) card!`,
+            description: `You got a ${actualOutcome}!`,
             duration: 5000,
           });
           
           setTimeout(() => {
             setIsPlaying(false);
-          }, 1000);
+          }, 1500); // Longer delay to show landing animation
         }
       }
 
