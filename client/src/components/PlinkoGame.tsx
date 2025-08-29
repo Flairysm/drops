@@ -138,9 +138,10 @@ export function PlinkoGame() {
     const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
     const targetX = bucketWidth * targetIndex + bucketWidth / 2;
 
-    // Initialize ball to drop between the first two pins
-    const firstLayerPins = getPins().filter((_, index) => index < 2); // First layer has 2 pins
-    const dropX = (firstLayerPins[0].x + firstLayerPins[1].x) / 2; // Exactly between first two pins
+    // Initialize ball to drop randomly between pins 1-2 or 2-3
+    const firstLayerPins = getPins().filter((_, index) => index < 3); // First 3 pins
+    const dropChoice = Math.random() < 0.5 ? 0 : 1; // Choose between first two gaps
+    const dropX = (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
     
     const ball: Ball = {
       x: dropX + (Math.random() - 0.5) * 8, // Slight initial variation
