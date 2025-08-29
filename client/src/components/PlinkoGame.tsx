@@ -143,9 +143,9 @@ export function PlinkoGame() {
     const dropX = (firstLayerPins[0].x + firstLayerPins[1].x) / 2; // Exactly between first two pins
     
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 10, // Small variation around center
+      x: dropX + (Math.random() - 0.5) * 8, // Slight initial variation
       y: 20,
-      vx: (Math.random() - 0.5) * 1, // Reduced initial velocity
+      vx: (Math.random() - 0.5) * 0.5, // Minimal initial horizontal velocity
       vy: 0,
       radius: BALL_RADIUS,
       color: '#00d4ff'
@@ -208,15 +208,16 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Slower gravity for more suspense
-        ball.vy += 0.15;
+        // Realistic gravity acceleration
+        ball.vy += 0.18;
+        
+        // Apply subtle air resistance for realism
+        ball.vx *= 0.998; // Very slight horizontal air resistance
+        ball.vy *= 0.9995; // Minimal vertical air resistance
         
         // Apply movement
         ball.x += ball.vx;
         ball.y += ball.vy;
-        
-        // Apply friction
-        ball.vx *= 0.96;
         
         // Natural collision detection - let physics handle the bouncing
         pins.forEach(pin => {
@@ -235,14 +236,22 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Natural bounce reflection at 75% intensity
+            // Enhanced realistic collision physics
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx -= 1.662 * dotProduct * nx; // Precise bounce intensity
-            ball.vy -= 1.662 * dotProduct * ny; // Precise bounce intensity
             
-            // Add slight damping to prevent excessive bouncing
-            ball.vx *= 0.8;
-            ball.vy *= 0.8;
+            // More natural bounce with slight randomness for realism
+            const bounceVariation = 0.95 + (Math.random() * 0.1); // 5% variation in bounce
+            ball.vx -= 1.662 * dotProduct * nx * bounceVariation;
+            ball.vy -= 1.662 * dotProduct * ny * bounceVariation;
+            
+            // Add tiny surface friction variation for realism
+            const surfaceFriction = 0.78 + (Math.random() * 0.04); // Random friction 0.78-0.82
+            ball.vx *= surfaceFriction;
+            ball.vy *= 0.82;
+            
+            // Add micro spin effect from collision
+            const spinInfluence = (Math.random() - 0.5) * 0.1;
+            ball.vx += spinInfluence;
           }
         });
 
