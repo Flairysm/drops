@@ -111,8 +111,9 @@ export interface IStorage {
   updateGameSetting(gameType: string, price: string, updatedBy?: string): Promise<GameSetting>;
   
   // Pull rate operations
-  getPullRates(gameType: string): Promise<PullRate[]>;
-  setPullRates(gameType: string, rates: { tier: string; probability: string }[], updatedBy?: string): Promise<void>;
+  getPackPullRates(packType: string): Promise<PullRate[]>;
+  setPackPullRates(packType: string, rates: { cardTier: string; probability: number }[], updatedBy?: string): Promise<void>;
+  getAllPullRates(): Promise<PullRate[]>;
 }
 
 interface PackOpenResult {
@@ -323,38 +324,31 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Pack not found or already opened');
       }
 
-      // Get pack odds for this pack
-      const odds = await tx
+      // Get pack pull rates for this pack type
+      const rates = await tx
         .select()
-        .from(packOdds)
-        .where(eq(packOdds.packId, userPack.packId!));
+        .from(pullRates)
+        .where(and(eq(pullRates.packType, userPack.packType), eq(pullRates.isActive, true)))
+        .orderBy(pullRates.cardTier);
 
-      if (odds.length === 0) {
-        throw new Error('No odds configured for this pack');
+      if (rates.length === 0) {
+        throw new Error('No pull rates configured for this pack type');
       }
 
-      // Weighted random selection based on odds
-      const random = Math.random();
+      // Weighted random selection based on percentages
+      const random = Math.random() * 100; // 0-100
       let cumulative = 0;
-      let selectedTier = odds[0].tier;
+      let selectedTier = rates[0].cardTier;
 
-      for (const odd of odds) {
-        cumulative += parseFloat(odd.probability);
+      for (const rate of rates) {
+        cumulative += rate.probability;
         if (random <= cumulative) {
-          selectedTier = odd.tier;
+          selectedTier = rate.cardTier;
           break;
         }
       }
 
-      // Convert short tier code to full tier name
-      const tierMapping: { [key: string]: string } = {
-        'C': 'common',
-        'UC': 'uncommon', 
-        'R': 'rare',
-        'SR': 'superrare',
-        'SSS': 'legendary'
-      };
-      const fullTierName = tierMapping[selectedTier] || selectedTier;
+      const fullTierName = selectedTier;
 
       // Get cards of the selected tier
       const availableCards = await tx
@@ -714,28 +708,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Pull rate operations
-  async getPullRates(gameType: string): Promise<PullRate[]> {
+  async getPackPullRates(packType: string): Promise<PullRate[]> {
     return await db
       .select()
       .from(pullRates)
-      .where(and(eq(pullRates.gameType, gameType), eq(pullRates.isActive, true)))
-      .orderBy(pullRates.tier);
+      .where(and(eq(pullRates.packType, packType), eq(pullRates.isActive, true)))
+      .orderBy(pullRates.cardTier);
   }
 
-  async setPullRates(gameType: string, rates: { tier: string; probability: string }[], updatedBy?: string): Promise<void> {
+  async getAllPullRates(): Promise<PullRate[]> {
+    return await db
+      .select()
+      .from(pullRates)
+      .where(eq(pullRates.isActive, true))
+      .orderBy(pullRates.packType, pullRates.cardTier);
+  }
+
+  async setPackPullRates(packType: string, rates: { cardTier: string; probability: number }[], updatedBy?: string): Promise<void> {
     await db.transaction(async (tx) => {
-      // Deactivate existing rates for this game type
+      // Deactivate existing rates for this pack type
       await tx
         .update(pullRates)
         .set({ isActive: false })
-        .where(eq(pullRates.gameType, gameType));
+        .where(eq(pullRates.packType, packType));
 
       // Insert new rates
       if (rates.length > 0) {
         await tx.insert(pullRates).values(
           rates.map(rate => ({
-            gameType,
-            tier: rate.tier,
+            packType,
+            cardTier: rate.cardTier,
             probability: rate.probability,
             isActive: true,
             updatedBy: updatedBy

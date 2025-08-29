@@ -354,10 +354,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pull rate management routes
-  app.get('/api/admin/pull-rates/:gameType', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/pull-rates', isAuthenticated, async (req: any, res) => {
     try {
-      const { gameType } = req.params;
-      const pullRates = await storage.getPullRates(gameType);
+      const pullRates = await storage.getAllPullRates();
       res.json(pullRates);
     } catch (error) {
       console.error("Error fetching pull rates:", error);
@@ -365,9 +364,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/pull-rates/:gameType', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/pull-rates/:packType', isAuthenticated, async (req: any, res) => {
     try {
-      const { gameType } = req.params;
+      const { packType } = req.params;
+      const pullRates = await storage.getPackPullRates(packType);
+      res.json(pullRates);
+    } catch (error) {
+      console.error("Error fetching pull rates:", error);
+      res.status(500).json({ message: "Failed to fetch pull rates" });
+    }
+  });
+
+  app.post('/api/admin/pull-rates/:packType', isAuthenticated, async (req: any, res) => {
+    try {
+      const { packType } = req.params;
       const { rates } = req.body;
       const userId = req.user.claims.sub;
 
@@ -378,21 +388,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate each rate
       for (const rate of rates) {
-        const probability = parseFloat(rate.probability);
-        if (isNaN(probability) || probability < 0 || probability > 1) {
-          return res.status(400).json({ message: `Invalid probability for tier ${rate.tier}` });
+        const probability = parseInt(rate.probability);
+        if (isNaN(probability) || probability < 0 || probability > 100) {
+          return res.status(400).json({ message: `Invalid probability for tier ${rate.cardTier}` });
         }
       }
 
-      // Check that probabilities sum to 1 (100%)
-      const totalProbability = rates.reduce((sum, rate) => sum + parseFloat(rate.probability), 0);
-      if (Math.abs(totalProbability - 1) > 0.001) {
+      // Check that probabilities sum to 100%
+      const totalProbability = rates.reduce((sum, rate) => sum + parseInt(rate.probability), 0);
+      if (totalProbability !== 100) {
         return res.status(400).json({ 
-          message: `Probabilities must sum to 100% (currently ${(totalProbability * 100).toFixed(1)}%)` 
+          message: `Probabilities must sum to 100% (currently ${totalProbability}%)` 
         });
       }
 
-      await storage.setPullRates(gameType, rates, userId);
+      await storage.setPackPullRates(packType, rates, userId);
       res.json({ success: true });
     } catch (error) {
       console.error("Error updating pull rates:", error);

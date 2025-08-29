@@ -84,12 +84,12 @@ export const gameSettings = pgTable("game_settings", {
   updatedBy: varchar("updated_by").references(() => users.id),
 });
 
-// Pull rate configuration for games
+// Pull rate configuration for pack tiers
 export const pullRates = pgTable("pull_rates", {
   id: uuid("id").primaryKey().defaultRandom(),
-  gameType: varchar("game_type", { length: 50 }).notNull(), // 'plinko', 'wheel', 'general'
-  tier: varchar("tier", { length: 20 }).notNull(), // 'common', 'uncommon', 'rare', 'superrare', 'legendary' or 'pokeball', 'greatball', etc.
-  probability: decimal("probability", { precision: 6, scale: 5 }).notNull(), // e.g., 0.65000 for 65%
+  packType: varchar("pack_type", { length: 50 }).notNull(), // 'pokeball', 'greatball', 'ultraball', 'masterball'
+  cardTier: varchar("card_tier", { length: 20 }).notNull(), // 'common', 'uncommon', 'rare', 'superrare', 'legendary'
+  probability: integer("probability").notNull(), // percentage 0-100 (e.g., 60 for 60%)
   isActive: boolean("is_active").default(true),
   updatedAt: timestamp("updated_at").defaultNow(),
   updatedBy: varchar("updated_by").references(() => users.id),

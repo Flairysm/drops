@@ -660,232 +660,486 @@ export default function Admin() {
             {/* Pull Rates Tab */}
             <TabsContent value="pull-rates">
               <div className="space-y-6">
+                {/* Pokeball Pack Rates */}
                 <Card className="gaming-card">
                   <CardHeader>
-                    <CardTitle className="font-gaming">Plinko Pull Rates</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div>
-                          <Label htmlFor="pokeball-rate">Pokeball</Label>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              id="pokeball-rate"
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              max="1"
-                              placeholder="0.500"
-                              data-testid="input-pokeball-rate"
-                            />
-                            <span className="text-sm text-muted-foreground">%</span>
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="greatball-rate">Greatball</Label>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              id="greatball-rate"
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              max="1"
-                              placeholder="0.300"
-                              data-testid="input-greatball-rate"
-                            />
-                            <span className="text-sm text-muted-foreground">%</span>
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="ultraball-rate">Ultraball</Label>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              id="ultraball-rate"
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              max="1"
-                              placeholder="0.150"
-                              data-testid="input-ultraball-rate"
-                            />
-                            <span className="text-sm text-muted-foreground">%</span>
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="masterball-rate">Masterball</Label>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              id="masterball-rate"
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              max="1"
-                              placeholder="0.050"
-                              data-testid="input-masterball-rate"
-                            />
-                            <span className="text-sm text-muted-foreground">%</span>
-                          </div>
-                        </div>
-                        <div className="flex items-end">
-                          <Button className="w-full" data-testid="button-update-plinko-rates">
-                            <Save className="w-4 h-4 mr-2" />
-                            Update Plinko Rates
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Note: Rates must sum to 100%. Current total: <span className="font-bold">---%</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="gaming-card">
-                  <CardHeader>
-                    <CardTitle className="font-gaming">Card Pack Pull Rates</CardTitle>
+                    <CardTitle className="font-gaming">Pokeball Pack Pull Rates</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                         <div>
-                          <Label htmlFor="common-rate">Common</Label>
+                          <Label htmlFor="pokeball-common">Common</Label>
                           <div className="flex items-center space-x-2">
                             <Input
-                              id="common-rate"
+                              id="pokeball-common"
                               type="number"
-                              step="0.001"
+                              step="1"
                               min="0"
-                              max="1"
-                              placeholder="0.650"
-                              data-testid="input-common-rate"
+                              max="100"
+                              placeholder="80"
+                              data-testid="input-pokeball-common"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor="uncommon-rate">Uncommon</Label>
+                          <Label htmlFor="pokeball-uncommon">Uncommon</Label>
                           <div className="flex items-center space-x-2">
                             <Input
-                              id="uncommon-rate"
+                              id="pokeball-uncommon"
                               type="number"
-                              step="0.001"
+                              step="1"
                               min="0"
-                              max="1"
-                              placeholder="0.250"
-                              data-testid="input-uncommon-rate"
+                              max="100"
+                              placeholder="18"
+                              data-testid="input-pokeball-uncommon"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor="rare-rate">Rare</Label>
+                          <Label htmlFor="pokeball-rare">Rare</Label>
                           <div className="flex items-center space-x-2">
                             <Input
-                              id="rare-rate"
+                              id="pokeball-rare"
                               type="number"
-                              step="0.001"
+                              step="1"
                               min="0"
-                              max="1"
-                              placeholder="0.080"
-                              data-testid="input-rare-rate"
+                              max="100"
+                              placeholder="2"
+                              data-testid="input-pokeball-rare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor="superrare-rate">Super Rare</Label>
+                          <Label htmlFor="pokeball-superrare">Super Rare</Label>
                           <div className="flex items-center space-x-2">
                             <Input
-                              id="superrare-rate"
+                              id="pokeball-superrare"
                               type="number"
-                              step="0.001"
+                              step="1"
                               min="0"
-                              max="1"
-                              placeholder="0.018"
-                              data-testid="input-superrare-rate"
+                              max="100"
+                              placeholder="0"
+                              data-testid="input-pokeball-superrare"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor="legendary-rate">Legendary</Label>
+                          <Label htmlFor="pokeball-legendary">Legendary</Label>
                           <div className="flex items-center space-x-2">
                             <Input
-                              id="legendary-rate"
+                              id="pokeball-legendary"
                               type="number"
-                              step="0.001"
+                              step="1"
                               min="0"
-                              max="1"
-                              placeholder="0.002"
-                              data-testid="input-legendary-rate"
+                              max="100"
+                              placeholder="0"
+                              data-testid="input-pokeball-legendary"
                             />
                             <span className="text-sm text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div className="flex items-end">
-                          <Button className="w-full" data-testid="button-update-pack-rates">
+                          <Button className="w-full" data-testid="button-update-pokeball-rates">
                             <Save className="w-4 h-4 mr-2" />
-                            Update Pack Rates
+                            Update Pokeball
                           </Button>
                         </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Note: Rates must sum to 100%. Current total: <span className="font-bold">---%</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* Greatball Pack Rates */}
                 <Card className="gaming-card">
                   <CardHeader>
-                    <CardTitle className="font-gaming">Current Active Rates</CardTitle>
+                    <CardTitle className="font-gaming">Greatball Pack Pull Rates</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <div>
+                          <Label htmlFor="greatball-common">Common</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="greatball-common"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="50"
+                              data-testid="input-greatball-common"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="greatball-uncommon">Uncommon</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="greatball-uncommon"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="35"
+                              data-testid="input-greatball-uncommon"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="greatball-rare">Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="greatball-rare"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="14"
+                              data-testid="input-greatball-rare"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="greatball-superrare">Super Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="greatball-superrare"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="1"
+                              data-testid="input-greatball-superrare"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="greatball-legendary">Legendary</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="greatball-legendary"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="0"
+                              data-testid="input-greatball-legendary"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-end">
+                          <Button className="w-full" data-testid="button-update-greatball-rates">
+                            <Save className="w-4 h-4 mr-2" />
+                            Update Greatball
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Ultraball Pack Rates */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Ultraball Pack Pull Rates</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <div>
+                          <Label htmlFor="ultraball-common">Common</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="ultraball-common"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="25"
+                              data-testid="input-ultraball-common"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="ultraball-uncommon">Uncommon</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="ultraball-uncommon"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="40"
+                              data-testid="input-ultraball-uncommon"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="ultraball-rare">Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="ultraball-rare"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="25"
+                              data-testid="input-ultraball-rare"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="ultraball-superrare">Super Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="ultraball-superrare"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="8"
+                              data-testid="input-ultraball-superrare"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="ultraball-legendary">Legendary</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="ultraball-legendary"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="2"
+                              data-testid="input-ultraball-legendary"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-end">
+                          <Button className="w-full" data-testid="button-update-ultraball-rates">
+                            <Save className="w-4 h-4 mr-2" />
+                            Update Ultraball
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Masterball Pack Rates */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Masterball Pack Pull Rates</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <div>
+                          <Label htmlFor="masterball-common">Common</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="masterball-common"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="5"
+                              data-testid="input-masterball-common"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="masterball-uncommon">Uncommon</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="masterball-uncommon"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="10"
+                              data-testid="input-masterball-uncommon"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="masterball-rare">Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="masterball-rare"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="15"
+                              data-testid="input-masterball-rare"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="masterball-superrare">Super Rare</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="masterball-superrare"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="10"
+                              data-testid="input-masterball-superrare"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="masterball-legendary">Legendary</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="masterball-legendary"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              placeholder="60"
+                              data-testid="input-masterball-legendary"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-end">
+                          <Button className="w-full" data-testid="button-update-masterball-rates">
+                            <Save className="w-4 h-4 mr-2" />
+                            Update Masterball
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Current Rates Display */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Current Pack Pull Rates</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       <div>
-                        <h4 className="font-semibold mb-3">Plinko Bucket Distribution</h4>
+                        <h4 className="font-semibold mb-3 text-gray-600">Pokeball Pack</h4>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span>Pokeball:</span>
-                            <span className="font-bold">50.0%</span>
+                            <span>Common:</span>
+                            <span className="font-bold">80%</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Greatball:</span>
-                            <span className="font-bold">30.0%</span>
+                            <span>Uncommon:</span>
+                            <span className="font-bold">18%</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Ultraball:</span>
-                            <span className="font-bold">15.0%</span>
+                            <span>Rare:</span>
+                            <span className="font-bold">2%</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Masterball:</span>
-                            <span className="font-bold">5.0%</span>
+                            <span>Super Rare:</span>
+                            <span className="font-bold">0%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Legendary:</span>
+                            <span className="font-bold">0%</span>
                           </div>
                         </div>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-3">Pack Opening Hit Rates</h4>
+                        <h4 className="font-semibold mb-3 text-green-600">Greatball Pack</h4>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span>Common:</span>
-                            <span className="font-bold">65.0%</span>
+                            <span className="font-bold">50%</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Uncommon:</span>
-                            <span className="font-bold">25.0%</span>
+                            <span className="font-bold">35%</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Rare:</span>
-                            <span className="font-bold">8.0%</span>
+                            <span className="font-bold">14%</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Super Rare:</span>
-                            <span className="font-bold">1.8%</span>
+                            <span className="font-bold">1%</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Legendary:</span>
-                            <span className="font-bold">0.2%</span>
+                            <span className="font-bold">0%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-3 text-blue-600">Ultraball Pack</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Common:</span>
+                            <span className="font-bold">25%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Uncommon:</span>
+                            <span className="font-bold">40%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Rare:</span>
+                            <span className="font-bold">25%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Super Rare:</span>
+                            <span className="font-bold">8%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Legendary:</span>
+                            <span className="font-bold">2%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-3 text-purple-600">Masterball Pack</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Common:</span>
+                            <span className="font-bold">5%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Uncommon:</span>
+                            <span className="font-bold">10%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Rare:</span>
+                            <span className="font-bold">15%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Super Rare:</span>
+                            <span className="font-bold">10%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Legendary:</span>
+                            <span className="font-bold text-legendary">60%</span>
                           </div>
                         </div>
                       </div>
