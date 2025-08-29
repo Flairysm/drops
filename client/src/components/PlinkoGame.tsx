@@ -56,8 +56,8 @@ export function PlinkoGame() {
     },
     onSuccess: (result) => {
       setLastResult(result);
-      queryClient.invalidateQueries(["/api/auth/user"]);
-      queryClient.invalidateQueries(["/api/vault"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       
       // Map tiers to Pokeball types
       const tierToOutcome: { [key: string]: string } = {
@@ -303,6 +303,8 @@ export function PlinkoGame() {
           
           // Use the backend result to determine both visual and message outcome
           const backendTier = lastResult?.result?.tier || 'common';
+          console.log('Backend tier:', backendTier); // Debug log
+          
           const tierToOutcome: { [key: string]: string } = {
             common: "Pokeball",
             uncommon: "Greatball", 
@@ -311,7 +313,8 @@ export function PlinkoGame() {
             legendary: "Masterball"
           };
           
-          const actualOutcome = tierToOutcome[backendTier];
+          const actualOutcome = tierToOutcome[backendTier] || "Pokeball";
+          console.log('Actual outcome:', actualOutcome); // Debug log
           
           // Find the correct slot for this outcome type
           let selectedSlot = 4; // Default to center
@@ -349,9 +352,10 @@ export function PlinkoGame() {
           
           setFinalOutcome(actualOutcome);
           
+          console.log('Toast message for:', actualOutcome); // Debug log
           toast({
             title: "Card Pulled!",
-            description: `You got a ${actualOutcome}!`,
+            description: `You got a ${actualOutcome}! (${backendTier})`,
             duration: 5000,
           });
           
