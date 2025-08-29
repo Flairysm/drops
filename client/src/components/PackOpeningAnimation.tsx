@@ -67,6 +67,50 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     return <Sparkles className="h-4 w-4" />;
   };
 
+  const getHitCardGlow = (tier: string) => {
+    switch (tier?.toLowerCase()) {
+      case 'legendary':
+      case 'sss':
+        return {
+          bg: 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600',
+          glow: 'shadow-2xl shadow-yellow-500/70 ring-4 ring-yellow-400',
+          animate: 'animate-pulse',
+          particles: '⭐✨⭐'
+        };
+      case 'superrare':
+      case 'sr':
+        return {
+          bg: 'bg-gradient-to-br from-red-400 via-red-500 to-red-600', 
+          glow: 'shadow-2xl shadow-red-500/70 ring-4 ring-red-400',
+          animate: 'animate-pulse',
+          particles: '💎🔥💎'
+        };
+      case 'rare':
+      case 'r':
+        return {
+          bg: 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600',
+          glow: 'shadow-xl shadow-purple-500/60 ring-2 ring-purple-400',
+          animate: 'animate-pulse',
+          particles: '💜⚡💜'
+        };
+      case 'uncommon':
+      case 'uc':
+        return {
+          bg: 'bg-gradient-to-br from-green-400 via-green-500 to-green-600',
+          glow: 'shadow-lg shadow-green-500/50 ring-2 ring-green-400',
+          animate: '',
+          particles: '💚🍀💚'
+        };
+      default:
+        return {
+          bg: 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600',
+          glow: 'shadow-md shadow-gray-500/30',
+          animate: '',
+          particles: '⚪⭕⚪'
+        };
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
       <div className="max-w-md w-full">
@@ -119,19 +163,25 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             <Card 
               className={`gaming-card mx-auto w-full max-w-sm transition-all duration-500 cursor-pointer hover:scale-105 ${
                 isHitRevealed 
-                  ? 'ring-4 ring-yellow-500 shadow-2xl shadow-yellow-500/50 animate-pulse scale-105' 
+                  ? `${getHitCardGlow(hitCard?.tier || '').glow} scale-105` 
                   : 'scale-100'
               }`}
               onClick={handleRevealHit}
             >
               <CardContent className="p-6 text-center space-y-4">
                 {!isHitRevealed ? (
-                  // Hit Card Back
+                  // Hit Card Back with tier-based glow
                   <div className="space-y-4">
-                    <div className="w-32 h-32 mx-auto bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center animate-pulse">
-                      <Star className="h-16 w-16 text-white" />
+                    <div className={`w-32 h-32 mx-auto rounded-xl flex flex-col items-center justify-center ${getHitCardGlow(hitCard?.tier || '').bg} ${getHitCardGlow(hitCard?.tier || '').glow} ${getHitCardGlow(hitCard?.tier || '').animate}`}>
+                      <Star className="h-12 w-12 text-white mb-2" />
+                      <div className="text-2xl">{getHitCardGlow(hitCard?.tier || '').particles}</div>
                     </div>
-                    <h3 className="text-xl font-bold">Your Hit Card!</h3>
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-bold">Your Hit Card!</h3>
+                      <div className="text-sm px-3 py-1 rounded-full bg-black bg-opacity-30 inline-block">
+                        {hitCard?.tier?.toUpperCase() || 'UNKNOWN'} TIER
+                      </div>
+                    </div>
                     <p className="text-sm text-muted-foreground">Tap to reveal your special card</p>
                   </div>
                 ) : (
