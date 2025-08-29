@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { GlobalFeed } from "@/components/GlobalFeed";
 import { CreditPurchase } from "@/components/CreditPurchase";
+import { RecentPullsCarousel } from "@/components/RecentPullsCarousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -133,6 +134,11 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Recent Pulls Carousel - TOP PRIORITY */}
+          <section className="mb-8">
+            <RecentPullsCarousel limit={10} />
+          </section>
 
           {/* Popular Games - FIRST PRIORITY */}
           <section className="mb-12">
