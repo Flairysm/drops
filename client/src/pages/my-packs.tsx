@@ -152,14 +152,14 @@ export default function MyPacks() {
                       <div className="text-2xl">{packDisplay.icon}</div>
                     </div>
                     <Badge variant="outline" className="w-fit">
-                      {pack.tier.toUpperCase()} Tier
+                      {(pack.tier || 'Unknown').toUpperCase()} Tier
                     </Badge>
                   </CardHeader>
                   
                   <CardContent className="space-y-4">
                     <div className="text-sm text-muted-foreground">
-                      <p>Earned from: <span className="capitalize font-medium">{pack.earnedFrom}</span></p>
-                      <p>Earned: {new Date(pack.earnedAt).toLocaleDateString()}</p>
+                      <p>Earned from: <span className="capitalize font-medium">{pack.earnedFrom || 'Unknown'}</span></p>
+                      <p>Earned: {pack.earnedAt ? new Date(pack.earnedAt).toLocaleDateString() : 'Unknown'}</p>
                     </div>
                     
                     <Button 
