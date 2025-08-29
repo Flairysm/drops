@@ -336,6 +336,8 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   else if (random < 0.1) tier = 'rare';     // 8.0%
   else if (random < 0.35) tier = 'uncommon';   // 25.0%
   else tier = 'common';                       // 65.0%
+  
+  console.log(`Game RNG: ${random.toFixed(4)} -> ${tier}`);
 
   // Find a card of the determined tier
   const tierCards = cards.filter(card => card.tier === tier && (card.stock || 0) > 0);
