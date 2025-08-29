@@ -241,13 +241,15 @@ export function PlinkoGame() {
 
         // Handle landing animation
         if (ball.isLanding && ball.targetX !== undefined && ball.targetY !== undefined) {
-          // Smooth animation to target bucket
+          // Much smoother animation to target bucket
           const dx = ball.targetX - ball.x;
           const dy = ball.targetY - ball.y;
           
-          if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-            ball.x += dx * 0.1;
-            ball.y += dy * 0.1;
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+            ball.x += dx * 0.03; // Much slower movement
+            ball.y += dy * 0.03;
+            ball.vx *= 0.9; // Gradually slow down existing velocity
+            ball.vy *= 0.9;
           } else {
             ball.x = ball.targetX;
             ball.y = ball.targetY;
@@ -297,22 +299,23 @@ export function PlinkoGame() {
         ball.y = BOARD_HEIGHT - 30; // Position ball inside the bucket
         
         if (!animationComplete) {
-          // Use probability-based outcome instead of pure physics
-          const probabilities = [1, 8, 28, 56, 70, 56, 28, 8, 1]; // Out of 256 total
-          const random = Math.floor(Math.random() * 256);
+          setAnimationComplete(true);
           
-          let cumulative = 0;
-          let selectedSlot = 4; // Default to center
+          // Use the backend result to determine both visual and message outcome
+          const backendTier = lastResult?.result?.tier || 'common';
+          const tierToOutcome: { [key: string]: string } = {
+            common: "Pokeball",
+            uncommon: "Greatball", 
+            rare: "Ultraball",
+            superrare: "Ultraball",
+            legendary: "Masterball"
+          };
           
-          for (let i = 0; i < probabilities.length; i++) {
-            cumulative += probabilities[i];
-            if (random < cumulative) {
-              selectedSlot = i;
-              break;
-            }
-          }
+          const actualOutcome = tierToOutcome[backendTier];
           
-          const actualOutcome = OUTCOMES[selectedSlot];
+          // Find which slot corresponds to this outcome
+          let selectedSlot = OUTCOMES.findIndex(outcome => outcome === actualOutcome);
+          if (selectedSlot === -1) selectedSlot = 4; // Default to center if not found
           
           // Smoothly animate ball to the selected slot
           const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
@@ -325,7 +328,6 @@ export function PlinkoGame() {
           ball.isLanding = true;
           
           setFinalOutcome(actualOutcome);
-          setAnimationComplete(true);
           
           toast({
             title: "Card Pulled!",
@@ -335,7 +337,7 @@ export function PlinkoGame() {
           
           setTimeout(() => {
             setIsPlaying(false);
-          }, 1500); // Longer delay to show landing animation
+          }, 2000); // Even longer delay to show smooth landing
         }
       }
 
