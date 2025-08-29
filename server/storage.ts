@@ -352,10 +352,10 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`No available cards in tier ${fullTierName}`);
       }
 
-      // Generate 9 common cards + 1 hit card
+      // Generate 8 common cards + 1 hit card = 9 total cards
       const packCards = [];
       
-      // Get 9 random common cards
+      // Get 8 random common cards
       const commonCards = await tx
         .select()
         .from(cards)
@@ -369,7 +369,7 @@ export class DatabaseStorage implements IStorage {
         throw new Error('No common cards available');
       }
       
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 8; i++) {
         const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
         packCards.push({
           id: randomCommon.id,
@@ -391,7 +391,7 @@ export class DatabaseStorage implements IStorage {
         imageUrl: hitCard.imageUrl || undefined,
         marketValue: hitCard.marketValue,
         isHit: true,
-        position: 9
+        position: 8
       });
       
       // Add only the hit card to user's vault (commons are just for animation)
@@ -424,7 +424,7 @@ export class DatabaseStorage implements IStorage {
       return {
         userCard: newUserCard,
         packCards: packCards,
-        hitCardPosition: 9
+        hitCardPosition: 8
       };
     });
   }
