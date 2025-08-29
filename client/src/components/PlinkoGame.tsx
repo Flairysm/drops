@@ -72,8 +72,8 @@ export function PlinkoGame() {
       const outcome = tierToOutcome[result.result.tier] || "Pokeball";
       console.log(`Tier: ${result.result.tier} -> Outcome: ${outcome}`);
       
-      // Start animation with predetermined outcome
-      startPlinkoAnimation(outcome);
+      // Start animation with predetermined outcome and pass the result
+      startPlinkoAnimation(outcome, result);
 
       // Toast will be shown when ball lands in the animation
     },
@@ -129,7 +129,7 @@ export function PlinkoGame() {
     return positions;
   };
 
-  const startPlinkoAnimation = (targetOutcome: string) => {
+  const startPlinkoAnimation = (targetOutcome: string, gameResult: GameResult) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -302,9 +302,9 @@ export function PlinkoGame() {
         if (!animationComplete) {
           setAnimationComplete(true);
           
-          // CRITICAL FIX: Use the backend result to determine both visual and message outcome
-          const backendTier = lastResult?.result?.tier || 'common';
-          console.log('Ball landing - backend tier:', backendTier);
+          // CRITICAL FIX: Use the CURRENT game result passed to animation
+          const backendTier = gameResult.result.tier;
+          console.log('Ball landing - current game tier:', backendTier);
           
           const tierToOutcome: { [key: string]: string } = {
             common: "Pokeball",
@@ -315,7 +315,7 @@ export function PlinkoGame() {
           };
           
           const actualOutcome = tierToOutcome[backendTier] || "Pokeball";
-          console.log('Ball landing - actual outcome:', actualOutcome);
+          console.log('Ball landing - current actual outcome:', actualOutcome);
           
           // Find the correct slot for this outcome type
           let selectedSlot = 4; // Default to center
