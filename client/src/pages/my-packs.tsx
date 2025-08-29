@@ -261,7 +261,7 @@ export default function MyPacks() {
           packCards={packOpenData.packCards}
           hitCardPosition={packOpenData.hitCardPosition}
           onComplete={handleAnimationComplete}
-          packType={getPackTypeDisplay(packOpenData.packCards[packOpenData.hitCardPosition]?.tier || '').name}
+          packType={packOpenData.packCards?.[packOpenData.hitCardPosition]?.tier ? getPackTypeDisplay(packOpenData.packCards[packOpenData.hitCardPosition].tier).name : 'Unknown Pack'}
         />
       )}
     </>
