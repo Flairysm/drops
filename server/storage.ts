@@ -328,7 +328,7 @@ export class DatabaseStorage implements IStorage {
       const rates = await tx
         .select()
         .from(pullRates)
-        .where(and(eq(pullRates.packType, userPack.packType), eq(pullRates.isActive, true)))
+        .where(and(eq(pullRates.packType, userPack.tier), eq(pullRates.isActive, true)))
         .orderBy(pullRates.cardTier);
 
       if (rates.length === 0) {
@@ -423,7 +423,7 @@ export class DatabaseStorage implements IStorage {
       const userCardInserts = [];
       
       // Insert common cards with quantities
-      for (const { card, count } of cardQuantities.values()) {
+      for (const { card, count } of Array.from(cardQuantities.values())) {
         // Check if user already has this card
         const [existingCard] = await tx
           .select()
@@ -508,6 +508,10 @@ export class DatabaseStorage implements IStorage {
       }
 
       console.log(`Pack opened: Generated ${packCards.length} total cards (${packCards.filter(c => !c.isHit).length} commons + ${packCards.filter(c => c.isHit).length} hit)`);
+      
+      if (!newUserCard) {
+        throw new Error('Failed to create or retrieve user card');
+      }
       
       return {
         userCard: newUserCard,

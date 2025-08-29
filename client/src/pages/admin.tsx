@@ -78,58 +78,19 @@ export default function Admin() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: stats } = useQuery({
+  const { data: stats = {} } = useQuery({
     queryKey: ["/api/admin/stats"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
   });
 
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     enabled: isAuthenticated && activeTab === "users",
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
   });
 
   const { data: cards } = useQuery<CardType[]>({
     queryKey: ["/api/cards"],
     enabled: isAuthenticated && activeTab === "inventory",
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
   });
 
   const form = useForm<CardFormData>({
@@ -152,7 +113,7 @@ export default function Admin() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["/api/cards"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
       form.reset();
       toast({
         title: "Card Created",
@@ -184,7 +145,7 @@ export default function Admin() {
       await apiRequest("POST", `/api/admin/users/${userId}/ban`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["/api/admin/users"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "User Banned",
         description: "User has been banned from the platform",
@@ -215,7 +176,7 @@ export default function Admin() {
       await apiRequest("PATCH", `/api/admin/cards/${cardId}/stock`, { stock });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["/api/cards"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
       setEditingCard(null);
       toast({
         title: "Stock Updated",
@@ -247,7 +208,7 @@ export default function Admin() {
       await apiRequest("DELETE", `/api/admin/cards/${cardId}`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["/api/cards"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
       setDeleteCardId(null);
       toast({
         title: "Card Deleted",
@@ -340,7 +301,7 @@ export default function Admin() {
 
   const handleEditStock = (card: CardType) => {
     setEditingCard(card);
-    setNewStock(card.stock);
+    setNewStock(card.stock || 0);
   };
 
   const handleUpdateStock = () => {
@@ -431,7 +392,7 @@ export default function Admin() {
                       <Users className="w-6 h-6 text-primary" />
                     </div>
                     <div className="text-2xl font-bold text-primary" data-testid="stat-total-users">
-                      {stats?.totalUsers || 0}
+                      {(stats as any)?.totalUsers || 0}
                     </div>
                     <div className="text-sm text-muted-foreground">Total Users</div>
                   </CardContent>
@@ -443,7 +404,7 @@ export default function Admin() {
                       <TrendingUp className="w-6 h-6 text-legendary" />
                     </div>
                     <div className="text-2xl font-bold text-legendary" data-testid="stat-total-revenue">
-                      RM {stats?.totalRevenue || "0.00"}
+                      RM {(stats as any)?.totalRevenue || "0.00"}
                     </div>
                     <div className="text-sm text-muted-foreground">Total Revenue</div>
                   </CardContent>
@@ -455,7 +416,7 @@ export default function Admin() {
                       <Package className="w-6 h-6 text-accent" />
                     </div>
                     <div className="text-2xl font-bold text-accent" data-testid="stat-total-cards">
-                      {stats?.totalCards || 0}
+                      {(stats as any)?.totalCards || 0}
                     </div>
                     <div className="text-sm text-muted-foreground">Total Cards</div>
                   </CardContent>
@@ -531,7 +492,7 @@ export default function Admin() {
                             <Button
                               variant="destructive"
                               size="sm"
-                              disabled={user.isBanned}
+                              disabled={user.isBanned || false}
                               onClick={() => banUserMutation.mutate(user.id)}
                               data-testid={`button-ban-${user.id}`}
                             >
@@ -689,10 +650,10 @@ export default function Admin() {
                             <div className="flex items-center space-x-4">
                               <div className="text-right">
                                 <div className="font-semibold" data-testid={`text-card-stock-${card.id}`}>
-                                  {card.stock} in stock
+                                  {card.stock || 0} in stock
                                 </div>
-                                <Badge variant={card.stock > 0 ? "default" : "destructive"}>
-                                  {card.stock > 0 ? "Available" : "Out of Stock"}
+                                <Badge variant={(card.stock || 0) > 0 ? "default" : "destructive"}>
+                                  {(card.stock || 0) > 0 ? "Available" : "Out of Stock"}
                                 </Badge>
                               </div>
                               
