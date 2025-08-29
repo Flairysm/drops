@@ -314,15 +314,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/packs', async (req, res) => {
-    try {
-      const packs = await storage.getActivePacks();
-      res.json(packs);
-    } catch (error) {
-      console.error("Error fetching packs:", error);
-      res.status(500).json({ message: "Failed to fetch packs" });
-    }
-  });
 
   app.get('/api/packs/:id/odds', async (req, res) => {
     try {
