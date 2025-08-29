@@ -396,15 +396,15 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
     throw new Error('No cards available');
   }
 
-  // Temporary: Higher chances for testing
+  // Realistic Plinko odds (matching real TCG pack odds)
   const random = Math.random();
   let tier: string;
   
-  if (random < 0.2) tier = 'legendary';        // 20% for testing
-  else if (random < 0.4) tier = 'superrare';   // 20% for testing
-  else if (random < 0.6) tier = 'rare';        // 20% for testing
-  else if (random < 0.8) tier = 'uncommon';    // 20% for testing
-  else tier = 'common';                        // 20% for testing
+  if (random < 0.005) tier = 'legendary';       // 0.5% - Masterball (very rare)
+  else if (random < 0.05) tier = 'superrare';  // 4.5% - Ultraball (rare)
+  else if (random < 0.15) tier = 'rare';       // 10% - Ultraball  
+  else if (random < 0.35) tier = 'uncommon';   // 20% - Greatball
+  else tier = 'common';                        // 65% - Pokeball (most common)
   
   // Find a card of the determined tier
   const tierCards = cards.filter(card => card.tier === tier && (card.stock || 0) > 0);
