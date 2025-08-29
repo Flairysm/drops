@@ -78,11 +78,10 @@ export function PlinkoGame() {
       // Lower vertical position - closer to buckets
       const y = 120 + (layer * 35);
       
-      // Align pins with bucket edges for better guidance
-      const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-      const totalWidth = BOARD_WIDTH - bucketWidth; // Align with outer bucket edges
-      const startX = bucketWidth / 2; // Start at first bucket edge
-      const spacing = totalWidth / (pinsInLayer - 1); // Space pins across bucket edges
+      // Create proper pyramid spacing - center each layer
+      const spacing = 60; // Fixed spacing between pins in each layer
+      const layerWidth = (pinsInLayer - 1) * spacing; // Total width of this layer
+      const startX = (BOARD_WIDTH - layerWidth) / 2; // Center the layer
       
       for (let pin = 0; pin < pinsInLayer; pin++) {
         // Calculate X position for pyramid shape
