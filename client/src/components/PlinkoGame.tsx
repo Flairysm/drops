@@ -208,43 +208,45 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Smooth gravity for controlled movement
-        ball.vy += 0.25;
+        // Apply gravity
+        ball.vy += 0.3;
         
-        // Apply movement first
+        // Apply movement
         ball.x += ball.vx;
         ball.y += ball.vy;
         
-        // Smooth friction
-        ball.vx *= 0.98;
+        // Apply friction
+        ball.vx *= 0.96;
         
-        // Check collision with pins - only once per frame to prevent vibration
-        let collisionDetected = false;
-        
+        // Collision detection with smoother handling
         pins.forEach(pin => {
-          if (collisionDetected) return; // Only one collision per frame
-          
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
+          const minDistance = ball.radius + PIN_RADIUS;
           
-          if (distance < ball.radius + PIN_RADIUS + 1) {
-            collisionDetected = true;
+          if (distance < minDistance) {
+            // Calculate overlap
+            const overlap = minDistance - distance;
             
-            // Calculate collision angle
-            const angle = Math.atan2(dy, dx);
-            
-            // Push ball away from pin smoothly
-            const separationDistance = ball.radius + PIN_RADIUS + 3;
-            ball.x = pin.x + Math.cos(angle) * separationDistance;
-            ball.y = pin.y + Math.sin(angle) * separationDistance;
-            
-            // Clean 50/50 bounce - no vibration
-            const leftOrRight = Math.random() < 0.5 ? -1 : 1;
-            ball.vx = leftOrRight * 1.8; // Moderate bounce force
-            
-            // Keep consistent downward movement
-            ball.vy = Math.max(ball.vy * 0.7, 1); // Minimum downward speed
+            // Only proceed if there's significant overlap (prevents micro-collisions)
+            if (overlap > 1) {
+              // Normalize collision vector
+              const nx = dx / distance;
+              const ny = dy / distance;
+              
+              // Move ball out of pin smoothly - no sudden jumps
+              ball.x = pin.x + nx * minDistance;
+              ball.y = pin.y + ny * minDistance;
+              
+              // Only change velocity if ball is moving toward the pin
+              const dotProduct = ball.vx * nx + ball.vy * ny;
+              if (dotProduct < 0) {
+                // Simple 50/50 left/right bounce
+                ball.vx = (Math.random() < 0.5 ? -1 : 1) * 1.5;
+                ball.vy = Math.abs(ball.vy) * 0.8;
+              }
+            }
           }
         });
 
