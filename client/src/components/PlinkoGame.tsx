@@ -235,14 +235,18 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Natural bounce reflection
+            // Simple deflection without bouncing
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx -= 2 * dotProduct * nx;
-            ball.vy -= 2 * dotProduct * ny;
+            if (dotProduct < 0) {
+              // Just deflect sideways, don't bounce
+              ball.vx += (Math.random() < 0.5 ? -1 : 1) * 1.2;
+            }
             
-            // Add slight damping to prevent excessive bouncing
-            ball.vx *= 0.8;
-            ball.vy *= 0.8;
+            // Keep ball moving downward
+            ball.vy = Math.max(ball.vy, 1);
+            
+            // Light damping
+            ball.vx *= 0.9;
           }
         });
 
