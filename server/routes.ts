@@ -24,9 +24,10 @@ function mapTierToPackType(tier: string): string {
       return 'ultraball';
     case 'superrare':
     case 'sr':
+      return 'ultraball'; // Super Rare should be Ultraball, not Masterball
     case 'legendary':
     case 'sss':
-      return 'masterball';
+      return 'masterball'; // Only Legendary gets Masterball
     default:
       return 'pokeball';
   }

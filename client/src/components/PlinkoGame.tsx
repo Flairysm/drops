@@ -56,6 +56,7 @@ export function PlinkoGame() {
       setLastResult(result);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
       
       // Start physics animation and pass the result for toast message
       startPlinkoAnimation("", result);
