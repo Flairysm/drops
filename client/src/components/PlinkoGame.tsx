@@ -313,9 +313,29 @@ export function PlinkoGame() {
           
           const actualOutcome = tierToOutcome[backendTier];
           
-          // Find which slot corresponds to this outcome
-          let selectedSlot = OUTCOMES.findIndex(outcome => outcome === actualOutcome);
-          if (selectedSlot === -1) selectedSlot = 4; // Default to center if not found
+          // Find the correct slot for this outcome type
+          let selectedSlot = 4; // Default to center
+          
+          if (actualOutcome === "Masterball") {
+            // Masterball is only in slots 0 and 8, choose randomly
+            selectedSlot = Math.random() < 0.5 ? 0 : 8;
+          } else if (actualOutcome === "Ultraball") {
+            // Ultraball is in slots 1 and 7, choose randomly
+            selectedSlot = Math.random() < 0.5 ? 1 : 7;
+          } else if (actualOutcome === "Greatball") {
+            // Greatball is in slots 2 and 6, choose randomly
+            selectedSlot = Math.random() < 0.5 ? 2 : 6;
+          } else if (actualOutcome === "Pokeball") {
+            // Pokeball is in slots 3, 4, and 5 - choose based on probability weights
+            const pokeBallRandom = Math.random();
+            if (pokeBallRandom < 0.31) { // 21.88 / (21.88 + 27.34 + 21.88) ≈ 0.31
+              selectedSlot = 3;
+            } else if (pokeBallRandom < 0.69) { // 27.34 / (21.88 + 27.34 + 21.88) ≈ 0.38, so 0.31 + 0.38 = 0.69
+              selectedSlot = 4; // Center - most likely
+            } else {
+              selectedSlot = 5;
+            }
+          }
           
           // Smoothly animate ball to the selected slot
           const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
