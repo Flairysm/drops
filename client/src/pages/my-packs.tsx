@@ -37,7 +37,8 @@ export default function MyPacks() {
 
   const openPackMutation = useMutation({
     mutationFn: async (packId: string) => {
-      return await apiRequest(`/api/packs/open/${packId}`, "POST");
+      const response = await apiRequest("POST", `/api/packs/open/${packId}`);
+      return await response.json();
     },
     onSuccess: (result) => {
       toast({
