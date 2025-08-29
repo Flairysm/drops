@@ -298,12 +298,6 @@ export function PlinkoGame() {
           
           setFinalOutcome(actualOutcome);
           
-          toast({
-            title: "Card Pulled!",
-            description: `You got a ${backendOutcome}!`,
-            duration: 5000,
-          });
-          
           setTimeout(() => {
             setIsPlaying(false);
           }, 1000);
