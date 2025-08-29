@@ -181,23 +181,23 @@ export function PlinkoGame() {
         const bucketX = index * bucketWidth;
         
         // Bucket background
-        ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(255, 215, 0, 0.2)' :
-                        pos.outcome === 'Ultraball' ? 'rgba(139, 92, 246, 0.2)' :
+        ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(139, 92, 246, 0.2)' :
+                        pos.outcome === 'Ultraball' ? 'rgba(255, 215, 0, 0.2)' :
                         pos.outcome === 'Greatball' ? 'rgba(59, 130, 246, 0.2)' :
                         'rgba(148, 163, 184, 0.2)';
         ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
         
         // Bucket border
-        ctx.strokeStyle = pos.outcome === 'Masterball' ? '#ffd700' :
-                         pos.outcome === 'Ultraball' ? '#8b5cf6' :
+        ctx.strokeStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
+                         pos.outcome === 'Ultraball' ? '#ffd700' :
                          pos.outcome === 'Greatball' ? '#3b82f6' :
                          '#94a3b8';
         ctx.lineWidth = 2;
         ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
 
         // Bucket label - properly centered
-        ctx.fillStyle = pos.outcome === 'Masterball' ? '#ffd700' :
-                       pos.outcome === 'Ultraball' ? '#8b5cf6' :
+        ctx.fillStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
+                       pos.outcome === 'Ultraball' ? '#ffd700' :
                        pos.outcome === 'Greatball' ? '#3b82f6' :
                        '#64748b';
         ctx.font = 'bold 11px Inter';
@@ -358,21 +358,21 @@ export function PlinkoGame() {
       const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
       const bucketX = index * bucketWidth;
       
-      ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(255, 215, 0, 0.2)' :
-                      pos.outcome === 'Ultraball' ? 'rgba(139, 92, 246, 0.2)' :
+      ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(139, 92, 246, 0.2)' :
+                      pos.outcome === 'Ultraball' ? 'rgba(255, 215, 0, 0.2)' :
                       pos.outcome === 'Greatball' ? 'rgba(59, 130, 246, 0.2)' :
                       'rgba(148, 163, 184, 0.2)';
       ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
       
-      ctx.strokeStyle = pos.outcome === 'Masterball' ? '#ffd700' :
-                       pos.outcome === 'Ultraball' ? '#8b5cf6' :
+      ctx.strokeStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
+                       pos.outcome === 'Ultraball' ? '#ffd700' :
                        pos.outcome === 'Greatball' ? '#3b82f6' :
                        '#94a3b8';
       ctx.lineWidth = 2;
       ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
 
-      ctx.fillStyle = pos.outcome === 'Masterball' ? '#ffd700' :
-                     pos.outcome === 'Ultraball' ? '#8b5cf6' :
+      ctx.fillStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
+                     pos.outcome === 'Ultraball' ? '#ffd700' :
                      pos.outcome === 'Greatball' ? '#3b82f6' :
                      '#64748b';
       ctx.font = 'bold 11px Inter';
@@ -415,14 +415,14 @@ export function PlinkoGame() {
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
                   <div className="text-center space-y-4">
                     <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${
-                      finalOutcome === 'Masterball' ? 'bg-yellow-500/30 border-2 border-yellow-500' :
-                      finalOutcome === 'Ultraball' ? 'bg-purple-500/30 border-2 border-purple-500' :
+                      finalOutcome === 'Masterball' ? 'bg-purple-500/30 border-2 border-purple-500' :
+                      finalOutcome === 'Ultraball' ? 'bg-yellow-500/30 border-2 border-yellow-500' :
                       finalOutcome === 'Greatball' ? 'bg-blue-500/30 border-2 border-blue-500' :
                       'bg-gray-500/30 border-2 border-gray-500'
                     }`}>
                       <span className={`text-2xl font-bold ${
-                        finalOutcome === 'Masterball' ? 'text-yellow-400' :
-                        finalOutcome === 'Ultraball' ? 'text-purple-400' :
+                        finalOutcome === 'Masterball' ? 'text-purple-400' :
+                        finalOutcome === 'Ultraball' ? 'text-yellow-400' :
                         finalOutcome === 'Greatball' ? 'text-blue-400' :
                         'text-gray-400'
                       }`}>
@@ -527,20 +527,20 @@ export function PlinkoGame() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-full mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 bg-yellow-500/20 rounded-full mx-auto flex items-center justify-center">
                 <span className="text-xl">⭐</span>
               </div>
               <div>
-                <p className="font-semibold text-purple-400">Ultraball</p>
+                <p className="font-semibold text-yellow-400">Ultraball</p>
                 <p className="text-xs text-muted-foreground">Rare</p>
               </div>
             </div>
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-full mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 bg-purple-500/20 rounded-full mx-auto flex items-center justify-center">
                 <span className="text-xl">🏆</span>
               </div>
               <div>
-                <p className="font-semibold text-yellow-400">Masterball</p>
+                <p className="font-semibold text-purple-400">Masterball</p>
                 <p className="text-xs text-muted-foreground">Legendary</p>
               </div>
             </div>
