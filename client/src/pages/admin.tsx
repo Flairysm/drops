@@ -38,7 +38,6 @@ import type { User, Card as CardType, Pack } from "@shared/schema";
 const cardSchema = z.object({
   name: z.string().min(1, "Card name is required"),
   tier: z.enum(["C", "UC", "R", "SR", "SSS"]),
-  packType: z.string().min(1, "Pack type is required"),
   imageUrl: z.string().url("Valid image URL required").optional(),
   marketValue: z.string().min(1, "Market value is required"),
   stock: z.number().min(0, "Stock must be non-negative"),
@@ -91,7 +90,6 @@ export default function Admin() {
     defaultValues: {
       name: "",
       tier: "C",
-      packType: "BNW",
       imageUrl: "",
       marketValue: "",
       stock: 0,
@@ -466,35 +464,23 @@ export default function Admin() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="tier">Tier</Label>
-                          <Select 
-                            value={form.watch("tier")} 
-                            onValueChange={(value) => form.setValue("tier", value as any)}
-                          >
-                            <SelectTrigger data-testid="select-card-tier">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="C">Common (C)</SelectItem>
-                              <SelectItem value="UC">Uncommon (UC)</SelectItem>
-                              <SelectItem value="R">Rare (R)</SelectItem>
-                              <SelectItem value="SR">Super Rare (SR)</SelectItem>
-                              <SelectItem value="SSS">Legendary (SSS)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="packType">Pack Type</Label>
-                          <Input
-                            id="packType"
-                            {...form.register("packType")}
-                            placeholder="e.g. BNW"
-                            data-testid="input-pack-type"
-                          />
-                        </div>
+                      <div>
+                        <Label htmlFor="tier">Tier</Label>
+                        <Select 
+                          value={form.watch("tier")} 
+                          onValueChange={(value) => form.setValue("tier", value as any)}
+                        >
+                          <SelectTrigger data-testid="select-card-tier">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="C">Common (C)</SelectItem>
+                            <SelectItem value="UC">Uncommon (UC)</SelectItem>
+                            <SelectItem value="R">Rare (R)</SelectItem>
+                            <SelectItem value="SR">Super Rare (SR)</SelectItem>
+                            <SelectItem value="SSS">Legendary (SSS)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div>

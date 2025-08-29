@@ -47,7 +47,7 @@ export const cards = pgTable("cards", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   tier: varchar("tier", { length: 10 }).notNull(), // C, UC, R, SR, SSS
-  packType: varchar("pack_type", { length: 50 }).notNull(), // BNW, XY, etc.
+  packType: varchar("pack_type", { length: 50 }).default("BNW").notNull(), // BNW, XY, etc.
   imageUrl: varchar("image_url"),
   marketValue: decimal("market_value", { precision: 10, scale: 2 }).notNull(),
   stock: integer("stock").default(0),
@@ -248,6 +248,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertCardSchema = createInsertSchema(cards).omit({
   id: true,
   createdAt: true,
+}).partial({
+  packType: true,  // Make packType optional since it has a default value
 });
 
 export const insertPackSchema = createInsertSchema(packs).omit({
