@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Play, Package } from "lucide-react";
+import { Play, Package, DollarSign } from "lucide-react";
 
 interface GameResult {
   success: boolean;
@@ -35,7 +33,7 @@ const LAYERS = 8;
 const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
 
 export function PlinkoGame() {
-  const [betAmount, setBetAmount] = useState("1.0");
+  const [fixedPrice, setFixedPrice] = useState("5.00");
   const [isPlaying, setIsPlaying] = useState(false);
   const [lastResult, setLastResult] = useState<GameResult | null>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
@@ -46,6 +44,17 @@ export function PlinkoGame() {
   const ballRef = useRef<Ball | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch fixed price for Plinko
+  const { data: gameSettings } = useQuery({
+    queryKey: ['/api/games/plinko/settings'],
+  });
+
+  useEffect(() => {
+    if (gameSettings?.price) {
+      setFixedPrice(gameSettings.price);
+    }
+  }, [gameSettings]);
 
   const playGameMutation = useMutation({
     mutationFn: async (data: { gameType: string; betAmount: string; plinkoResult?: string }) => {
@@ -297,7 +306,7 @@ export function PlinkoGame() {
           // Call backend with physics result
           playGameMutation.mutate({
             gameType: "plinko",
-            betAmount: betAmount,
+            betAmount: fixedPrice,
             plinkoResult: actualOutcome // Send the visual result
           });
           
@@ -330,20 +339,10 @@ export function PlinkoGame() {
   };
 
   const handlePlay = () => {
-    const bet = parseFloat(betAmount);
-    if (isNaN(bet) || bet <= 0) {
+    if (!fixedPrice || parseFloat(fixedPrice) <= 0) {
       toast({
-        title: "Invalid Bet",
-        description: "Please enter a valid bet amount",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (bet < 1.0) {
-      toast({
-        title: "Minimum Bet",
-        description: "Minimum bet for Plinko is 1.0 credits",
+        title: "Pricing Error",
+        description: "Game pricing not available. Please try again later.",
         variant: "destructive",
       });
       return;
@@ -357,8 +356,8 @@ export function PlinkoGame() {
     // Clear the canvas and redraw static board immediately
     drawStaticBoard();
     
-    // Start physics simulation immediately
-    startPlinkoAnimation(betAmount);
+    // Start physics simulation immediately - pass fixed price
+    startPlinkoAnimation(fixedPrice);
   };
 
   const drawStaticBoard = () => {
@@ -518,36 +517,20 @@ export function PlinkoGame() {
       <Card className="gaming-card">
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="bet-amount">Bet Amount (Credits)</Label>
-              <div className="flex space-x-2 mt-2">
-                <Input
-                  id="bet-amount"
-                  type="number"
-                  min="1.0"
-                  step="0.1"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
-                  placeholder="1.0"
-                  disabled={isPlaying}
-                  data-testid="input-bet-amount"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => setBetAmount("1.0")}
-                  disabled={isPlaying}
-                  data-testid="button-bet-min"
-                >
-                  Min
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setBetAmount("10.0")}
-                  disabled={isPlaying}
-                  data-testid="button-bet-max"
-                >
-                  Max
-                </Button>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium text-muted-foreground">Fixed Price</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-fixed-price">
+                    {fixedPrice} Credits
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Set by administrator
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -565,7 +548,7 @@ export function PlinkoGame() {
               ) : (
                 <>
                   <Play className="w-5 h-5 mr-2" />
-                  Drop Ball ({betAmount} Credits)
+                  Drop Ball ({fixedPrice} Credits)
                 </>
               )}
             </Button>

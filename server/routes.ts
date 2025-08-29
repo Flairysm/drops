@@ -28,6 +28,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Game settings routes
+  app.get('/api/games/:gameType/settings', async (req, res) => {
+    try {
+      const { gameType } = req.params;
+      const settings = await storage.getGameSetting(gameType);
+      if (!settings) {
+        return res.status(404).json({ message: "Game settings not found" });
+      }
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching game settings:", error);
+      res.status(500).json({ message: "Failed to fetch game settings" });
+    }
+  });
+
   // Game routes
   app.post('/api/games/play', isAuthenticated, async (req: any, res) => {
     try {
@@ -39,13 +54,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid game type" });
       }
 
-      const bet = parseFloat(betAmount);
-      if (isNaN(bet) || bet <= 0) {
-        return res.status(400).json({ message: "Invalid bet amount" });
+      // For Plinko, use fixed price from database, ignore user input
+      let actualBetAmount: string;
+      if (gameType === 'plinko') {
+        const gameSettings = await storage.getGameSetting('plinko');
+        if (!gameSettings) {
+          return res.status(500).json({ message: "Plinko pricing not configured" });
+        }
+        actualBetAmount = gameSettings.price;
+        console.log(`Plinko fixed price: ${actualBetAmount} (user input ignored: ${betAmount})`);
+      } else {
+        // For other games, validate user input
+        const bet = parseFloat(betAmount);
+        if (isNaN(bet) || bet <= 0) {
+          return res.status(400).json({ message: "Invalid bet amount" });
+        }
+        actualBetAmount = betAmount;
       }
 
-      // Check user credits
-      const canDeduct = await storage.deductUserCredits(userId, betAmount);
+      // Check user credits using actual bet amount
+      const canDeduct = await storage.deductUserCredits(userId, actualBetAmount);
       if (!canDeduct) {
         return res.status(400).json({ message: "Insufficient credits" });
       }
@@ -54,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const gameSession = await storage.createGameSession({
         userId,
         gameType,
-        gameData: { betAmount, timestamp: Date.now() },
+        gameData: { betAmount: actualBetAmount, timestamp: Date.now() },
         status: 'in_progress',
       });
 
@@ -70,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Plinko result from frontend: ${plinkoResult} → pack type=${result.tier}`);
       } else {
         // Use backend simulation for other games
-        result = await simulateGame(gameType, bet);
+        result = await simulateGame(gameType, parseFloat(actualBetAmount));
       }
       
       // Update game session with result
@@ -128,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.addTransaction({
         userId,
         type: 'game_play',
-        amount: `-${betAmount}`,
+        amount: `-${actualBetAmount}`,
         description: `Played ${gameType} game`,
       });
 

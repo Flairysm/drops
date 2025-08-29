@@ -74,6 +74,16 @@ export const packOdds = pgTable("pack_odds", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Game settings for configurable prices and options
+export const gameSettings = pgTable("game_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  gameType: varchar("game_type", { length: 50 }).notNull().unique(), // 'plinko', 'wheel', 'pack'
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  isActive: boolean("is_active").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: varchar("updated_by").references(() => users.id),
+});
+
 // User card vault
 export const userCards = pgTable("user_cards", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -264,6 +274,10 @@ export const insertShippingRequestSchema = createInsertSchema(shippingRequests).
   createdAt: true,
 });
 
+export const insertGameSettingSchema = createInsertSchema(gameSettings).omit({
+  id: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -286,6 +300,10 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type InsertShippingRequest = z.infer<typeof insertShippingRequestSchema>;
+
+// Game settings types
+export type GameSetting = typeof gameSettings.$inferSelect;
+export type InsertGameSetting = typeof gameSettings.$inferInsert;
 
 // Extended types for API responses
 export type UserCardWithCard = UserCard & { card: Card };

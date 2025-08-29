@@ -10,6 +10,7 @@ import {
   gameSessions,
   notifications,
   shippingRequests,
+  gameSettings,
   type User,
   type UpsertUser,
   type Card,
@@ -22,6 +23,7 @@ import {
   type GameSession,
   type Notification,
   type ShippingRequest,
+  type GameSetting,
   type InsertCard,
   type InsertPack,
   type InsertUserCard,
@@ -30,6 +32,7 @@ import {
   type InsertGameSession,
   type InsertNotification,
   type InsertShippingRequest,
+  type InsertGameSetting,
   type UserCardWithCard,
   type GlobalFeedWithDetails,
   type GameResult,
@@ -99,6 +102,10 @@ export interface IStorage {
   banUser(userId: string): Promise<void>;
   suspendUser(userId: string): Promise<void>;
   getSystemStats(): Promise<{ totalUsers: number; totalRevenue: string; totalCards: number }>;
+  
+  // Game settings operations
+  getGameSetting(gameType: string): Promise<GameSetting | undefined>;
+  updateGameSetting(gameType: string, price: string, updatedBy?: string): Promise<GameSetting>;
 }
 
 interface PackOpenResult {
@@ -599,6 +606,25 @@ export class DatabaseStorage implements IStorage {
       totalRevenue: revenueSum.sum || "0",
       totalCards: cardCount.count,
     };
+  }
+
+  // Game settings operations
+  async getGameSetting(gameType: string): Promise<GameSetting | undefined> {
+    const [setting] = await db.select().from(gameSettings).where(eq(gameSettings.gameType, gameType));
+    return setting;
+  }
+
+  async updateGameSetting(gameType: string, price: string, updatedBy?: string): Promise<GameSetting> {
+    const [updated] = await db
+      .update(gameSettings)
+      .set({ 
+        price: price,
+        updatedAt: new Date(),
+        updatedBy: updatedBy
+      })
+      .where(eq(gameSettings.gameType, gameType))
+      .returning();
+    return updated;
   }
 }
 
