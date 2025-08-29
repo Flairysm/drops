@@ -50,6 +50,7 @@ export interface IStorage {
   getCard(id: string): Promise<Card | undefined>;
   createCard(card: InsertCard): Promise<Card>;
   updateCardStock(id: string, stock: number): Promise<void>;
+  deleteCard(id: string): Promise<void>;
   
   // Pack operations
   getPacks(): Promise<Pack[]>;
@@ -167,6 +168,10 @@ export class DatabaseStorage implements IStorage {
 
   async updateCardStock(id: string, stock: number): Promise<void> {
     await db.update(cards).set({ stock }).where(eq(cards.id, id));
+  }
+
+  async deleteCard(id: string): Promise<void> {
+    await db.update(cards).set({ isActive: false }).where(eq(cards.id, id));
   }
 
   // Pack operations

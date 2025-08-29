@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -28,7 +29,9 @@ import {
   Edit,
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  Trash2,
+  Save
 } from "lucide-react";
 import type { User, Card as CardType, Pack } from "@shared/schema";
 
@@ -48,6 +51,9 @@ export default function Admin() {
   const { isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+  const [editingCard, setEditingCard] = useState<CardType | null>(null);
+  const [newStock, setNewStock] = useState<number>(0);
+  const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -195,6 +201,89 @@ export default function Admin() {
       });
     },
   });
+
+  const updateStockMutation = useMutation({
+    mutationFn: async ({ cardId, stock }: { cardId: string; stock: number }) => {
+      await apiRequest("PATCH", `/api/admin/cards/${cardId}/stock`, { stock });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["/api/cards"]);
+      setEditingCard(null);
+      toast({
+        title: "Stock Updated",
+        description: "Card stock has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error Updating Stock",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCardMutation = useMutation({
+    mutationFn: async (cardId: string) => {
+      await apiRequest("DELETE", `/api/admin/cards/${cardId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["/api/cards"]);
+      setDeleteCardId(null);
+      toast({
+        title: "Card Deleted",
+        description: "Card has been removed from the system",
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error Deleting Card",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditStock = (card: CardType) => {
+    setEditingCard(card);
+    setNewStock(card.stock);
+  };
+
+  const handleUpdateStock = () => {
+    if (!editingCard) return;
+    updateStockMutation.mutate({ cardId: editingCard.id, stock: newStock });
+  };
+
+  const handleDeleteCard = (cardId: string) => {
+    setDeleteCardId(cardId);
+  };
+
+  const confirmDeleteCard = () => {
+    if (!deleteCardId) return;
+    deleteCardMutation.mutate(deleteCardId);
+  };
 
   if (isLoading) {
     return (
@@ -521,13 +610,34 @@ export default function Admin() {
                               </div>
                             </div>
                             
-                            <div className="text-right">
-                              <div className="font-semibold" data-testid={`text-card-stock-${card.id}`}>
-                                {card.stock} in stock
+                            <div className="flex items-center space-x-4">
+                              <div className="text-right">
+                                <div className="font-semibold" data-testid={`text-card-stock-${card.id}`}>
+                                  {card.stock} in stock
+                                </div>
+                                <Badge variant={card.stock > 0 ? "default" : "destructive"}>
+                                  {card.stock > 0 ? "Available" : "Out of Stock"}
+                                </Badge>
                               </div>
-                              <Badge variant={card.stock > 0 ? "default" : "destructive"}>
-                                {card.stock > 0 ? "Available" : "Out of Stock"}
-                              </Badge>
+                              
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditStock(card)}
+                                  data-testid={`button-edit-stock-${card.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteCard(card.id)}
+                                  data-testid={`button-delete-card-${card.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -620,6 +730,83 @@ export default function Admin() {
           </Tabs>
         </div>
       </main>
+
+      {/* Edit Stock Dialog */}
+      <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Stock</DialogTitle>
+            <DialogDescription>
+              Update the stock quantity for {editingCard?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-stock">New Stock Quantity</Label>
+              <Input
+                id="new-stock"
+                type="number"
+                value={newStock}
+                onChange={(e) => setNewStock(parseInt(e.target.value) || 0)}
+                min="0"
+                data-testid="input-new-stock"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingCard(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateStock} 
+              disabled={updateStockMutation.isPending}
+              data-testid="button-confirm-update-stock"
+            >
+              {updateStockMutation.isPending ? (
+                "Updating..."
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Update Stock
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Card Confirmation Dialog */}
+      <Dialog open={!!deleteCardId} onOpenChange={(open) => !open && setDeleteCardId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Card</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this card? This action cannot be undone.
+              The card will be marked as inactive and removed from the system.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteCardId(null)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteCard}
+              disabled={deleteCardMutation.isPending}
+              data-testid="button-confirm-delete-card"
+            >
+              {deleteCardMutation.isPending ? (
+                "Deleting..."
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Card
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

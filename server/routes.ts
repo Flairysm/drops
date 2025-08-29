@@ -325,6 +325,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/admin/cards/:id/stock', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { stock } = req.body;
+      
+      if (typeof stock !== 'number' || stock < 0) {
+        return res.status(400).json({ message: "Invalid stock amount" });
+      }
+      
+      await storage.updateCardStock(id, stock);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating card stock:", error);
+      res.status(500).json({ message: "Failed to update card stock" });
+    }
+  });
+
+  app.delete('/api/admin/cards/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteCard(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      res.status(500).json({ message: "Failed to delete card" });
+    }
+  });
+
   // Cards and packs routes
   app.get('/api/cards', async (req, res) => {
     try {
