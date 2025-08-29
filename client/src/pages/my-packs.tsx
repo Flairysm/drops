@@ -65,7 +65,7 @@ export default function MyPacks() {
   };
 
   const getPackTypeDisplay = (tier: string) => {
-    switch (tier.toLowerCase()) {
+    switch ((tier || '').toLowerCase()) {
       case 'c':
       case 'common':
         return { name: "Pokeball Pack", color: "bg-red-500", icon: "🟡" };
