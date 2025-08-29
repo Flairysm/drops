@@ -140,11 +140,11 @@ export function PlinkoGame() {
     const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
     const targetX = bucketWidth * targetIndex + bucketWidth / 2;
 
-    // Initialize ball
+    // Initialize ball with more randomness
     const ball: Ball = {
-      x: BOARD_WIDTH / 2,
+      x: BOARD_WIDTH / 2 + (Math.random() - 0.5) * 60, // Start position variation
       y: 20,
-      vx: (Math.random() - 0.5) * 2, // Small random horizontal velocity
+      vx: (Math.random() - 0.5) * 4, // More initial horizontal velocity
       vy: 0,
       radius: BALL_RADIUS,
       color: '#00d4ff'
@@ -217,18 +217,23 @@ export function PlinkoGame() {
           const distance = Math.sqrt(dx * dx + dy * dy);
           
           if (distance < ball.radius + PIN_RADIUS) {
-            // Collision detected - bounce ball
+            // Collision detected - much more random bouncing
             const angle = Math.atan2(dy, dx);
-            const force = 0.5;
-            ball.vx += Math.cos(angle) * force;
-            ball.vy = Math.abs(ball.vy) * 0.7; // Reduce downward velocity
             
-            // Add some randomness to make it interesting
-            ball.vx += (Math.random() - 0.5) * 2;
+            // Stronger random horizontal force
+            const randomForce = (Math.random() - 0.5) * 4;
+            ball.vx += Math.cos(angle) * 1.2 + randomForce;
             
-            // Separate ball from pin
-            ball.x = pin.x + Math.cos(angle) * (ball.radius + PIN_RADIUS + 1);
-            ball.y = pin.y + Math.sin(angle) * (ball.radius + PIN_RADIUS + 1);
+            // Maintain more downward velocity but add variation
+            ball.vy = Math.abs(ball.vy) * (0.6 + Math.random() * 0.3);
+            
+            // Add significant randomness to direction
+            ball.vx += (Math.random() - 0.5) * 3;
+            
+            // Separate ball from pin with more space
+            const separationDistance = ball.radius + PIN_RADIUS + 2;
+            ball.x = pin.x + Math.cos(angle) * separationDistance;
+            ball.y = pin.y + Math.sin(angle) * separationDistance;
           }
         });
 
@@ -236,8 +241,8 @@ export function PlinkoGame() {
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Friction
-        ball.vx *= 0.98;
+        // Less friction to maintain momentum
+        ball.vx *= 0.995;
 
         // Keep ball in bounds
         if (ball.x < ball.radius) {
@@ -249,11 +254,11 @@ export function PlinkoGame() {
           ball.vx *= -0.5;
         }
 
-        // Guide ball toward target bucket as it gets near the bottom
-        if (ball.y > BOARD_HEIGHT - 150) {
-          const influence = Math.min((ball.y - (BOARD_HEIGHT - 150)) / 90, 1);
+        // Very light guidance only at the very bottom to prevent getting stuck
+        if (ball.y > BOARD_HEIGHT - 100) {
+          const influence = Math.min((ball.y - (BOARD_HEIGHT - 100)) / 50, 1) * 0.3;
           const targetDx = targetX - ball.x;
-          ball.vx += targetDx * 0.01 * influence;
+          ball.vx += targetDx * 0.003 * influence; // Much weaker guidance
         }
       } else {
         // Ball has reached the bottom - determine final outcome
