@@ -208,41 +208,45 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Slower gravity for more controlled movement
-        ball.vy += 0.2;
+        // Smooth gravity for controlled movement
+        ball.vy += 0.25;
         
-        // Check collision with pins
+        // Apply movement first
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+        
+        // Smooth friction
+        ball.vx *= 0.98;
+        
+        // Check collision with pins - only once per frame to prevent vibration
+        let collisionDetected = false;
+        
         pins.forEach(pin => {
+          if (collisionDetected) return; // Only one collision per frame
+          
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          if (distance < ball.radius + PIN_RADIUS) {
-            // Collision detected - much more random bouncing
+          if (distance < ball.radius + PIN_RADIUS + 1) {
+            collisionDetected = true;
+            
+            // Calculate collision angle
             const angle = Math.atan2(dy, dx);
             
-            // True 50/50 physics - each pin collision is pure left/right choice
-            const leftOrRight = Math.random() < 0.5 ? -1 : 1;
-            ball.vx = leftOrRight * 2; // Strong left or right force
-            
-            // Maintain consistent downward velocity
-            ball.vy = Math.abs(ball.vy) * 0.8;
-            
-            // No additional randomness - clean 50/50 split
-            
-            // Separate ball from pin with more space
-            const separationDistance = ball.radius + PIN_RADIUS + 2;
+            // Push ball away from pin smoothly
+            const separationDistance = ball.radius + PIN_RADIUS + 3;
             ball.x = pin.x + Math.cos(angle) * separationDistance;
             ball.y = pin.y + Math.sin(angle) * separationDistance;
+            
+            // Clean 50/50 bounce - no vibration
+            const leftOrRight = Math.random() < 0.5 ? -1 : 1;
+            ball.vx = leftOrRight * 1.8; // Moderate bounce force
+            
+            // Keep consistent downward movement
+            ball.vy = Math.max(ball.vy * 0.7, 1); // Minimum downward speed
           }
         });
-
-        // Normal physics movement
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-
-        // More friction to slow down the ball
-        ball.vx *= 0.985;
 
         // Keep ball in bounds
         if (ball.x < ball.radius) {
