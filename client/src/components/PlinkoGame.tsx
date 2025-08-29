@@ -58,8 +58,8 @@ export function PlinkoGame() {
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
       
-      // Start physics animation and pass the result for toast message
-      startPlinkoAnimation("", result);
+      // This mutation is no longer needed for Plinko - physics handles everything
+      console.log("Plinko mutation result (not used):", result);
     },
     onError: (error: Error) => {
       toast({
@@ -128,7 +128,7 @@ export function PlinkoGame() {
     return positions;
   };
 
-  const startPlinkoAnimation = (targetOutcome: string, gameResult: GameResult) => {
+  const startPlinkoAnimation = (betAmount: string) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -294,21 +294,19 @@ export function PlinkoGame() {
         if (!animationComplete) {
           setAnimationComplete(true);
           
-          // Let physics determine the outcome naturally
+          // Trust the physics simulation - use the visual outcome
           const actualOutcome = OUTCOMES[clampedIndex];
-          
-          // Use backend result for toast message
-          const backendTier = gameResult.result.tier;
-          const tierToOutcome: { [key: string]: string } = {
-            common: "Pokeball",
-            uncommon: "Greatball", 
-            rare: "Ultraball",
-            superrare: "Ultraball",
-            legendary: "Masterball"
-          };
-          const backendOutcome = tierToOutcome[backendTier] || "Pokeball";
-          
           setFinalOutcome(actualOutcome);
+          
+          // Send the actual physics result to backend for pack assignment
+          console.log(`Frontend physics result: ${actualOutcome} (bucket ${clampedIndex})`);
+          
+          // Call backend with physics result
+          playGameMutation.mutate({
+            gameType: "plinko",
+            betAmount: betAmount,
+            plinkoResult: actualOutcome // Send the visual result
+          });
           
           setTimeout(() => {
             setShowPackAssigned(true);
@@ -366,10 +364,8 @@ export function PlinkoGame() {
     // Clear the canvas and redraw static board immediately
     drawStaticBoard();
     
-    playGameMutation.mutate({
-      gameType: "plinko",
-      betAmount: betAmount,
-    });
+    // Start physics simulation immediately
+    startPlinkoAnimation(betAmount);
   };
 
   const drawStaticBoard = () => {

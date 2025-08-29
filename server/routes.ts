@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/games/play', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { gameType, betAmount } = req.body;
+      const { gameType, betAmount, plinkoResult } = req.body;
 
       // Validate input
       if (!['plinko', 'wheel', 'pack'].includes(gameType)) {
@@ -58,17 +58,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'in_progress',
       });
 
-      // Simulate game logic (simplified RNG)
-      const result = await simulateGame(gameType, bet);
+      let result: GameResult;
+      
+      if (gameType === 'plinko' && plinkoResult) {
+        // Use frontend physics result for Plinko
+        result = {
+          cardId: '',
+          tier: plinkoResult.toLowerCase(), // Convert "Masterball" to "masterball"
+          gameType,
+        };
+        console.log(`Plinko result from frontend: ${plinkoResult} → pack type=${result.tier}`);
+      } else {
+        // Use backend simulation for other games
+        result = await simulateGame(gameType, bet);
+      }
       
       // Update game session with result
       await storage.updateGameSession(gameSession.id, result, 'completed');
 
       if (gameType === 'plinko') {
-        // For Plinko, award packs based on visual outcome instead of tier
-        // The frontend will send the actual bucket result (masterball, ultraball, etc.)
-        const packType = result.tier; // Now this will be the actual pack type from Plinko
-        console.log(`Plinko result: pack type=${packType}`);
+        // For Plinko, award packs based on visual outcome
+        const packType = result.tier;
+        console.log(`Plinko pack assignment: ${packType}`);
         
         const packs = await storage.getActivePacks();
         const targetPack = packs.find(p => p.type === packType);
