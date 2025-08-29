@@ -235,14 +235,16 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Natural bounce reflection
+            // Gentle deflection instead of bouncy reflection
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx -= 2 * dotProduct * nx;
-            ball.vy -= 2 * dotProduct * ny;
+            if (dotProduct < 0) { // Only deflect if moving toward the pin
+              ball.vx -= dotProduct * nx * 0.8; // Much gentler deflection
+              ball.vy -= dotProduct * ny * 0.3; // Maintain downward momentum
+            }
             
-            // Add slight damping to prevent excessive bouncing
-            ball.vx *= 0.8;
-            ball.vy *= 0.8;
+            // Strong damping for smooth, non-bouncy movement
+            ball.vx *= 0.7;
+            ball.vy *= 0.9;
           }
         });
 
