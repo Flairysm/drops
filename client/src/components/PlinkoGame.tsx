@@ -31,6 +31,7 @@ interface Pin {
   x: number;
   y: number;
   id: string;
+  radius?: number;
 }
 
 const BOARD_WIDTH = 600;
@@ -50,6 +51,7 @@ export function PlinkoGame() {
   const [customPins, setCustomPins] = useState<Pin[]>([]);
   const [draggedPin, setDraggedPin] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const ballRef = useRef<Ball | null>(null);
@@ -116,7 +118,8 @@ export function PlinkoGame() {
         pins.push({ 
           x, 
           y, 
-          id: `pin-${layer}-${pin}`
+          id: `pin-${layer}-${pin}`,
+          radius: PIN_RADIUS
         });
       }
     }
@@ -228,8 +231,9 @@ export function PlinkoGame() {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
+          const pinRadius = pin.radius || PIN_RADIUS;
           
-          if (distance < ball.radius + PIN_RADIUS) {
+          if (distance < ball.radius + pinRadius) {
             // Collision detected - bounce ball
             const angle = Math.atan2(dy, dx);
             const force = 0.5;
@@ -240,8 +244,8 @@ export function PlinkoGame() {
             ball.vx += (Math.random() - 0.5) * 2;
             
             // Separate ball from pin
-            ball.x = pin.x + Math.cos(angle) * (ball.radius + PIN_RADIUS + 1);
-            ball.y = pin.y + Math.sin(angle) * (ball.radius + PIN_RADIUS + 1);
+            ball.x = pin.x + Math.cos(angle) * (ball.radius + pinRadius + 1);
+            ball.y = pin.y + Math.sin(angle) * (ball.radius + pinRadius + 1);
           }
         });
 
@@ -320,15 +324,19 @@ export function PlinkoGame() {
       const dx = mouseX - pin.x;
       const dy = mouseY - pin.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      return distance <= PIN_RADIUS + 10; // Slightly larger hit area
+      const pinRadius = pin.radius || PIN_RADIUS;
+      return distance <= pinRadius + 10; // Slightly larger hit area
     });
     
     if (clickedPin) {
+      setSelectedPin(clickedPin.id);
       setDraggedPin(clickedPin.id);
       setDragOffset({
         x: mouseX - clickedPin.x,
         y: mouseY - clickedPin.y
       });
+    } else {
+      setSelectedPin(null);
     }
   };
 
@@ -361,6 +369,71 @@ export function PlinkoGame() {
     }
   };
 
+  const handleCanvasContextMenu = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!editMode) return;
+    event.preventDefault();
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+    
+    const pins = getPins();
+    const clickedPin = pins.find(pin => {
+      const dx = mouseX - pin.x;
+      const dy = mouseY - pin.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const pinRadius = pin.radius || PIN_RADIUS;
+      return distance <= pinRadius + 10;
+    });
+    
+    if (clickedPin) {
+      deletePin(clickedPin.id);
+    }
+  };
+
+  const handleCanvasWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
+    if (!editMode || !selectedPin) return;
+    event.preventDefault();
+    
+    const pins = getPins();
+    const targetPin = pins.find(pin => pin.id === selectedPin);
+    if (!targetPin) return;
+    
+    const delta = event.deltaY > 0 ? -1 : 1;
+    const newRadius = Math.max(2, Math.min(12, (targetPin.radius || PIN_RADIUS) + delta));
+    
+    const updatedPins = pins.map(pin => 
+      pin.id === selectedPin ? { ...pin, radius: newRadius } : pin
+    );
+    
+    setCustomPins(updatedPins);
+    redrawCanvas();
+  };
+
+  const deletePin = (pinId: string) => {
+    const updatedPins = customPins.filter(pin => pin.id !== pinId);
+    setCustomPins(updatedPins);
+    setSelectedPin(null);
+    redrawCanvas();
+    toast({
+      title: "Pin Deleted",
+      description: "Pin has been removed from the board",
+    });
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (!editMode) return;
+    
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      if (selectedPin) {
+        deletePin(selectedPin);
+      }
+    }
+  };
+
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -385,12 +458,16 @@ export function PlinkoGame() {
 
     // Draw pins
     pins.forEach(pin => {
+      const pinRadius = pin.radius || PIN_RADIUS;
       ctx.beginPath();
-      ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
+      ctx.arc(pin.x, pin.y, pinRadius, 0, Math.PI * 2);
       
       if (editMode && pin.id === draggedPin) {
         ctx.fillStyle = '#3b82f6'; // Blue when dragging
         ctx.strokeStyle = '#1d4ed8';
+      } else if (editMode && pin.id === selectedPin) {
+        ctx.fillStyle = '#f59e0b'; // Orange when selected
+        ctx.strokeStyle = '#d97706';
       } else if (editMode) {
         ctx.fillStyle = '#10b981'; // Green in edit mode
         ctx.strokeStyle = '#059669';
@@ -402,6 +479,15 @@ export function PlinkoGame() {
       ctx.fill();
       ctx.lineWidth = 2;
       ctx.stroke();
+      
+      // Draw selection indicator
+      if (editMode && pin.id === selectedPin && pin.id !== draggedPin) {
+        ctx.beginPath();
+        ctx.arc(pin.x, pin.y, pinRadius + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
     });
 
     // Draw outcome buckets
@@ -426,9 +512,9 @@ export function PlinkoGame() {
                      pos.outcome === 'Ultraball' ? '#8b5cf6' :
                      pos.outcome === 'Greatball' ? '#3b82f6' :
                      '#64748b';
-      ctx.font = 'bold 12px Inter';
+      ctx.font = 'bold 11px Inter';
       ctx.textAlign = 'center';
-      ctx.fillText(pos.outcome, pos.x, BOARD_HEIGHT - 20);
+      ctx.fillText(pos.outcome, bucketX + bucketWidth/2, BOARD_HEIGHT - 25);
     });
   };
 
@@ -493,7 +579,16 @@ export function PlinkoGame() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [editMode, customPins, draggedPin]);
+  }, [editMode, customPins, draggedPin, selectedPin]);
+
+  useEffect(() => {
+    if (editMode) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [editMode, selectedPin]);
 
   return (
     <div className="space-y-6">
@@ -529,10 +624,15 @@ export function PlinkoGame() {
             </div>
             <p className="text-muted-foreground">
               {editMode 
-                ? "Drag any pin to customize your board layout!"
+                ? "Click to select • Drag to move • Right-click or Delete key to remove • Scroll wheel to resize"
                 : "Drop your ball through 9 layers of pins!"
               }
             </p>
+            {editMode && selectedPin && (
+              <div className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                Pin selected! Scroll to resize or press Delete to remove
+              </div>
+            )}
           </div>
           
           <div className="flex justify-center">
@@ -548,6 +648,9 @@ export function PlinkoGame() {
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
                 onMouseLeave={handleCanvasMouseUp}
+                onContextMenu={handleCanvasContextMenu}
+                onWheel={handleCanvasWheel}
+                tabIndex={0}
               />
               
               {/* Result Overlay */}
