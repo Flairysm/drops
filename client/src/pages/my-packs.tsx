@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -103,41 +104,43 @@ export default function MyPacks() {
   const noPacks = !userPacks || (userPacks as any[]).length === 0;
 
   return (
-    <div className="min-h-screen pt-20 pb-8 px-4">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <Gift className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-gaming font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              My Packs
-            </h1>
-          </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Open your earned packs to discover amazing cards! Each pack contains one card based on the pack's tier odds.
-          </p>
-        </div>
-
-        {noPacks ? (
-          /* No Packs State */
-          <div className="text-center py-16">
-            <div className="gaming-card max-w-md mx-auto p-8 rounded-xl">
-              <Package2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">No Packs Yet</h3>
-              <p className="text-muted-foreground mb-6">
-                Play Plinko to earn packs! Different landing zones give different tier packs.
-              </p>
-              <Button asChild className="gaming-gradient">
-                <a href="/games" data-testid="button-play-plinko">
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Play Plinko
-                </a>
-              </Button>
+    <>
+      <Navigation />
+      <div className="min-h-screen pt-20 pb-8 px-4">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-3">
+              <Gift className="h-8 w-8 text-primary" />
+              <h1 className="text-4xl font-gaming font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                My Packs
+              </h1>
             </div>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Open your earned packs to discover amazing cards! Each pack contains one card based on the pack's tier odds.
+            </p>
           </div>
-        ) : (
-          /* Packs Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+          {noPacks ? (
+            /* No Packs State */
+            <div className="text-center py-16">
+              <div className="gaming-card max-w-md mx-auto p-8 rounded-xl">
+                <Package2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-xl font-semibold mb-2">No Packs Yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Play Plinko to earn packs! Different landing zones give different tier packs.
+                </p>
+                <Button asChild className="gaming-gradient">
+                  <a href="/games" data-testid="button-play-plinko">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Play Plinko
+                  </a>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Packs Grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {(userPacks as any[]).map((pack: any) => {
               const packDisplay = getPackTypeDisplay(pack.tier);
               const isOpening = openingPack === pack.id;
@@ -184,11 +187,11 @@ export default function MyPacks() {
                 </Card>
               );
             })}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Info Section */}
-        <div className="gaming-card p-6 rounded-xl">
+          {/* Info Section */}
+          <div className="gaming-card p-6 rounded-xl">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             Pack Information
@@ -229,8 +232,9 @@ export default function MyPacks() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
