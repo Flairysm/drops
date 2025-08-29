@@ -88,13 +88,21 @@ export function PlinkoGame() {
 
   const getPins = () => {
     const pins = [];
+    const startY = 80;
+    const endY = BOARD_HEIGHT - 120;
+    const layerHeight = (endY - startY) / (LAYERS - 1);
+    
     for (let layer = 0; layer < LAYERS; layer++) {
       const pinsInLayer = layer + 2; // Start with 2 pins, increment each layer
-      const spacing = BOARD_WIDTH / (pinsInLayer + 1);
-      const y = 80 + (layer * (BOARD_HEIGHT - 160) / (LAYERS - 1));
+      const y = startY + (layer * layerHeight);
+      
+      // Calculate even spacing - center the pins with equal gaps
+      const totalPinSpace = BOARD_WIDTH * 0.8; // Use 80% of board width
+      const startX = (BOARD_WIDTH - totalPinSpace) / 2;
+      const pinSpacing = totalPinSpace / (pinsInLayer - 1);
       
       for (let pin = 0; pin < pinsInLayer; pin++) {
-        const x = spacing * (pin + 1);
+        const x = startX + (pin * pinSpacing);
         pins.push({ x, y });
       }
     }
