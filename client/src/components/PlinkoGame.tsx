@@ -336,6 +336,9 @@ export function PlinkoGame() {
     setFinalOutcome(null);
     setLastResult(null);
     
+    // Clear the canvas and redraw static board immediately
+    drawStaticBoard();
+    
     playGameMutation.mutate({
       gameType: "plinko",
       betAmount: betAmount,
