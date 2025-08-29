@@ -77,7 +77,7 @@ export function PlinkoGame() {
     const rows = 8;
     const startY = 100;
     const rowSpacing = 40; // Vertical spacing between rows
-    const edgePadding = 30; // Distance from board edges for last row
+    const edgePadding = 15; // Distance from board edges for last row
     
     for (let row = 0; row < rows; row++) {
       const pinsInRow = row + 3; // Row 0: 3 pins, Row 1: 4 pins, etc.
