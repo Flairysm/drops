@@ -88,34 +88,11 @@ export default function MyPacks() {
     queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
   };
 
-  const getPackTypeDisplay = (tier: string) => {
-    // Map tier to pack type using same logic as backend
-    const mapTierToPackType = (tier: string): string => {
-      switch (tier.toLowerCase()) {
-        case 'common':
-        case 'c':
-          return 'pokeball';
-        case 'uncommon':
-        case 'uc':
-          return 'greatball';
-        case 'rare':
-        case 'r':
-          return 'ultraball';
-        case 'superrare':
-        case 'sr':
-          return 'ultraball'; // Super Rare should be Ultraball, not Masterball
-        case 'legendary':
-        case 'sss':
-          return 'masterball'; // Only Legendary gets Masterball
-        default:
-          return 'pokeball';
-      }
-    };
-
-    const packType = mapTierToPackType(tier || '');
-    console.log(`Pack display: tier="${tier}" → packType="${packType}"`);
+  const getPackTypeDisplay = (packType: string) => {
+    // Now tier field directly stores the pack type (pokeball, greatball, ultraball, masterball)
+    console.log(`Pack display: packType="${packType}"`);
     
-    switch (packType) {
+    switch ((packType || '').toLowerCase()) {
       case 'pokeball':
         return { name: "Pokeball Pack", color: "bg-gray-500", icon: "⚪" };
       case 'greatball':

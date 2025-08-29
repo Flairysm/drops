@@ -11,27 +11,6 @@ import {
 } from "@shared/schema";
 
 // Map tier to pack type for Plinko
-function mapTierToPackType(tier: string): string {
-  switch (tier.toLowerCase()) {
-    case 'common':
-    case 'c':
-      return 'pokeball';
-    case 'uncommon':
-    case 'uc':
-      return 'greatball';
-    case 'rare':
-    case 'r':
-      return 'ultraball';
-    case 'superrare':
-    case 'sr':
-      return 'ultraball'; // Super Rare should be Ultraball, not Masterball
-    case 'legendary':
-    case 'sss':
-      return 'masterball'; // Only Legendary gets Masterball
-    default:
-      return 'pokeball';
-  }
-}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -86,9 +65,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateGameSession(gameSession.id, result, 'completed');
 
       if (gameType === 'plinko') {
-        // For Plinko, award packs instead of direct cards
-        const packType = mapTierToPackType(result.tier);
-        console.log(`Plinko result: tier=${result.tier}, mapped pack=${packType}`);
+        // For Plinko, award packs based on visual outcome instead of tier
+        // The frontend will send the actual bucket result (masterball, ultraball, etc.)
+        const packType = result.tier; // Now this will be the actual pack type from Plinko
+        console.log(`Plinko result: pack type=${packType}`);
         
         const packs = await storage.getActivePacks();
         const targetPack = packs.find(p => p.type === packType);
@@ -98,11 +78,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error(`Pack type ${packType} not found`);
         }
 
-        // Award pack to user
+        // Award pack to user - store the pack type as tier for display
         await storage.addUserPack({
           userId,
           packId: targetPack.id,
-          tier: result.tier,
+          tier: packType, // Store pack type directly
           earnedFrom: gameType,
           isOpened: false,
         });
@@ -389,28 +369,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 // Simplified game simulation logic
 async function simulateGame(gameType: string, betAmount: number): Promise<GameResult> {
-  // Get available cards (for now, use BNW pack)
+  if (gameType === 'plinko') {
+    // For Plinko, simulate the bucket the ball would land in
+    // This matches the visual Plinko layout: [Masterball, Ultraball, Greatball, Pokeball, Pokeball, Pokeball, Greatball, Ultraball, Masterball]
+    const plinkoOutcomes = ["masterball", "ultraball", "greatball", "pokeball", "pokeball", "pokeball", "greatball", "ultraball", "masterball"];
+    
+    // Realistic physics-based distribution (center buckets more likely)
+    const weights = [0.5, 4.5, 10, 20, 30, 20, 10, 4.5, 0.5]; // Matches bell curve distribution
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    
+    let random = Math.random() * totalWeight;
+    let selectedIndex = 0;
+    
+    for (let i = 0; i < weights.length; i++) {
+      random -= weights[i];
+      if (random <= 0) {
+        selectedIndex = i;
+        break;
+      }
+    }
+    
+    const packType = plinkoOutcomes[selectedIndex];
+    
+    return {
+      cardId: '', // Not needed for Plinko
+      tier: packType, // This is now the pack type directly
+      gameType,
+    };
+  }
+
+  // For other games, use the old card-based logic
   const cards = await storage.getCards('BNW');
   
   if (cards.length === 0) {
     throw new Error('No cards available');
   }
 
-  // Realistic Plinko odds (matching real TCG pack odds)
+  // Simple tier selection for non-Plinko games
   const random = Math.random();
   let tier: string;
   
-  if (random < 0.005) tier = 'legendary';       // 0.5% - Masterball (very rare)
-  else if (random < 0.05) tier = 'superrare';  // 4.5% - Ultraball (rare)
-  else if (random < 0.15) tier = 'rare';       // 10% - Ultraball  
-  else if (random < 0.35) tier = 'uncommon';   // 20% - Greatball
-  else tier = 'common';                        // 65% - Pokeball (most common)
+  if (random < 0.005) tier = 'legendary';
+  else if (random < 0.05) tier = 'superrare';
+  else if (random < 0.15) tier = 'rare';
+  else if (random < 0.35) tier = 'uncommon';
+  else tier = 'common';
   
-  // Find a card of the determined tier
   const tierCards = cards.filter(card => card.tier === tier && (card.stock || 0) > 0);
   
   if (tierCards.length === 0) {
-    // Fallback to common cards if no cards of tier available
     const commonCards = cards.filter(card => card.tier === 'common' && (card.stock || 0) > 0);
     if (commonCards.length === 0) {
       throw new Error('No cards in stock');
@@ -424,8 +431,6 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   }
 
   const selectedCard = tierCards[Math.floor(Math.random() * tierCards.length)];
-  
-  // Update stock
   await storage.updateCardStock(selectedCard.id, (selectedCard.stock || 0) - 1);
 
   return {
