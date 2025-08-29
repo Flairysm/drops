@@ -338,11 +338,11 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   else tier = 'common';                       // 65.0%
 
   // Find a card of the determined tier
-  const tierCards = cards.filter(card => card.tier === tier && card.stock > 0);
+  const tierCards = cards.filter(card => card.tier === tier && (card.stock || 0) > 0);
   
   if (tierCards.length === 0) {
     // Fallback to common cards if no cards of tier available
-    const commonCards = cards.filter(card => card.tier === 'common' && card.stock > 0);
+    const commonCards = cards.filter(card => card.tier === 'common' && (card.stock || 0) > 0);
     if (commonCards.length === 0) {
       throw new Error('No cards in stock');
     }
@@ -357,7 +357,7 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   const selectedCard = tierCards[Math.floor(Math.random() * tierCards.length)];
   
   // Update stock
-  await storage.updateCardStock(selectedCard.id, selectedCard.stock - 1);
+  await storage.updateCardStock(selectedCard.id, (selectedCard.stock || 0) - 1);
 
   return {
     cardId: selectedCard.id,

@@ -61,7 +61,7 @@ export function Navigation() {
             <div className="gaming-card px-4 py-2 rounded-lg" data-testid="display-credits">
               <span className="text-sm text-muted-foreground">Credits:</span>
               <span className="font-bold text-accent ml-2">
-                {userData?.credits || "0.00"}
+                {(userData as any)?.credits || "0.00"}
               </span>
             </div>
 
@@ -78,12 +78,12 @@ export function Navigation() {
             {/* User Menu */}
             <div className="flex items-center space-x-2 gaming-card px-3 py-2 rounded-lg">
               <img
-                src={user?.profileImageUrl || "https://via.placeholder.com/32"}
+                src={(user as any)?.profileImageUrl || "https://via.placeholder.com/32"}
                 alt="User avatar"
                 className="w-8 h-8 rounded-full border-2 border-primary"
                 data-testid="img-avatar"
               />
-              <span data-testid="text-username">{user?.username || userData?.username || "Player"}</span>
+              <span data-testid="text-username">{(user as any)?.username || (userData as any)?.username || "Player"}</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -128,7 +128,7 @@ export function Navigation() {
               <div className="gaming-card px-4 py-2 rounded-lg">
                 <span className="text-sm text-muted-foreground">Credits:</span>
                 <span className="font-bold text-accent ml-2">
-                  {userData?.credits || "0.00"}
+                  {(userData as any)?.credits || "0.00"}
                 </span>
               </div>
 
