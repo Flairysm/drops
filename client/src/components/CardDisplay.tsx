@@ -38,7 +38,7 @@ export function CardDisplay({
       >
         <CardContent className="p-4">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+            <div className="w-16 h-20 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
               {card.imageUrl ? (
                 <img
                   src={card.imageUrl}
@@ -90,7 +90,7 @@ export function CardDisplay({
       <div className={`tier-glow-${tierColor} rounded-lg overflow-hidden gaming-card ${
         isSelected ? `tier-glow-${tierColor}` : ""
       }`}>
-        <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-accent/20 relative">
+        <div className="aspect-[5/7] bg-gradient-to-br from-primary/20 to-accent/20 relative">
           {card.imageUrl ? (
             <img
               src={card.imageUrl}

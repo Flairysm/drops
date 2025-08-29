@@ -149,7 +149,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     {isHitCard ? (
                       /* Hit Card - Show back with peek effect */
                       <div className="space-y-1">
-                        <div className={`w-12 h-12 mx-auto rounded flex items-center justify-center mb-2 ${hitGlow?.bg || 'bg-gradient-to-br from-yellow-400 to-orange-500'}`}>
+                        <div className={`w-12 h-16 mx-auto rounded flex items-center justify-center mb-2 ${hitGlow?.bg || 'bg-gradient-to-br from-yellow-400 to-orange-500'}`}>
                           <Star className="h-6 w-6 text-white" />
                         </div>
                         <div className="text-xs">{hitGlow?.particles}</div>
@@ -163,10 +163,10 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                           <img
                             src={card.imageUrl}
                             alt={card.name}
-                            className="w-12 h-12 mx-auto rounded object-cover mb-2"
+                            className="w-12 h-16 mx-auto rounded object-cover mb-2"
                           />
                         ) : (
-                          <div className="w-12 h-12 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded flex items-center justify-center mb-2">
+                          <div className="w-12 h-16 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded flex items-center justify-center mb-2">
                             <span className="text-xs text-white font-bold">
                               {card.name?.charAt(0) || '?'}
                             </span>
@@ -196,7 +196,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 {!isHitRevealed ? (
                   // Hit Card Back with tier-based glow
                   <div className="space-y-4">
-                    <div className={`w-32 h-32 mx-auto rounded-xl flex flex-col items-center justify-center ${getHitCardGlow(hitCard?.tier || '').bg} ${getHitCardGlow(hitCard?.tier || '').glow} ${getHitCardGlow(hitCard?.tier || '').animate}`}>
+                    <div className={`w-32 h-44 mx-auto rounded-xl flex flex-col items-center justify-center ${getHitCardGlow(hitCard?.tier || '').bg} ${getHitCardGlow(hitCard?.tier || '').glow} ${getHitCardGlow(hitCard?.tier || '').animate}`}>
                       <Star className="h-12 w-12 text-white mb-2" />
                       <div className="text-2xl">{getHitCardGlow(hitCard?.tier || '').particles}</div>
                     </div>
@@ -215,10 +215,10 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                       <img
                         src={hitCard.imageUrl}
                         alt={hitCard.name}
-                        className="w-32 h-32 mx-auto rounded-xl object-cover"
+                        className="w-32 h-44 mx-auto rounded-xl object-cover"
                       />
                     ) : (
-                      <div className="w-32 h-32 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl flex items-center justify-center">
+                      <div className="w-32 h-44 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl flex items-center justify-center">
                         <span className="text-3xl text-white font-bold">
                           {hitCard?.name?.charAt(0) || '?'}
                         </span>
