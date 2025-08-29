@@ -26,6 +26,11 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const [isRevealed, setIsRevealed] = useState(false);
   const [showingHitCard, setShowingHitCard] = useState(false);
 
+  // Guard against undefined packCards
+  if (!packCards || packCards.length === 0) {
+    return null;
+  }
+
   const currentCard = packCards[currentCardIndex];
   const isLastCard = currentCardIndex === packCards.length - 1;
   const isHitCard = currentCard?.isHit;
