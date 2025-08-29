@@ -235,22 +235,14 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Add natural randomness to prevent center bias
-            const randomFactor = (Math.random() - 0.5) * 0.3;
-            
-            // Gentle deflection with random variation
+            // Natural bounce reflection
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            if (dotProduct < 0) {
-              ball.vx -= dotProduct * nx * 0.6 + randomFactor;
-              ball.vy -= dotProduct * ny * 0.2;
-            }
+            ball.vx -= 2 * dotProduct * nx;
+            ball.vy -= 2 * dotProduct * ny;
             
-            // Add slight random horizontal push for natural variation
-            ball.vx += (Math.random() - 0.5) * 0.8;
-            
-            // Moderate damping
-            ball.vx *= 0.85;
-            ball.vy *= 0.92;
+            // Add slight damping to prevent excessive bouncing
+            ball.vx *= 0.8;
+            ball.vy *= 0.8;
           }
         });
 
