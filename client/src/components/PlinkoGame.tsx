@@ -95,18 +95,17 @@ export function PlinkoGame() {
       // Vertical position - evenly spaced from top to bottom
       const y = 80 + (layer * 40);
       
-      // For proper triangular spacing, offset every other layer by half a pin width
-      const isOddLayer = layer % 2 === 1;
-      const baseSpacing = BOARD_WIDTH / (pinsInLayer + 1);
+      // Create proper pyramid spacing - center each layer
+      const totalWidth = 400; // Fixed width for the pyramid
+      const startX = (BOARD_WIDTH - totalWidth) / 2; // Center the pyramid
+      const spacing = totalWidth / (LAYERS + 1); // Even spacing between pins
       
       for (let pin = 0; pin < pinsInLayer; pin++) {
-        // Calculate X position with proper triangular offset
-        let x = baseSpacing * (pin + 1);
-        
-        // Offset odd layers by half spacing for triangular pattern
-        if (isOddLayer) {
-          x += baseSpacing / 2;
-        }
+        // Calculate X position for pyramid shape
+        // Each layer should be centered with equal spacing between pins
+        const layerWidth = spacing * (pinsInLayer - 1);
+        const layerStartX = startX + (totalWidth - layerWidth) / 2;
+        const x = layerStartX + (pin * spacing);
         
         pins.push({ x, y });
       }
