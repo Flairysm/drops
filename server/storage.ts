@@ -189,14 +189,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
-    // Go back to Drizzle ORM but without specifying ID to let DB generate it
-    const [newUserCard] = await db.insert(userCards).values({
-      userId: userCard.userId,
-      cardId: userCard.cardId,
-      pullValue: userCard.pullValue,
-      // Let database auto-generate id, pulledAt, isRefunded, isShipped
-    }).returning();
-    return newUserCard;
+    try {
+      const newUserCard = await db.insert(userCards).values({
+        ...userCard,
+        isRefunded: userCard.isRefunded ?? false,
+        isShipped: userCard.isShipped ?? false,
+      }).returning();
+      if (newUserCard.length === 0) {
+        throw new Error('Failed to insert user card');
+      }
+      return newUserCard[0];
+    } catch (error) {
+      console.error('Error adding user card:', error);
+      throw error;
+    }
   }
 
   async refundCards(cardIds: string[], userId: string): Promise<void> {
