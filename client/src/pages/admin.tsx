@@ -605,7 +605,7 @@ export default function Admin() {
                                   {card.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  {card.packType} • RM {card.marketValue}
+                                  {card.packType} • {card.marketValue} Credits
                                 </div>
                               </div>
                             </div>
