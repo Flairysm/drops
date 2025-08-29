@@ -235,10 +235,10 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Natural bounce reflection
+            // Natural bounce reflection at 75% intensity
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx -= 2 * dotProduct * nx;
-            ball.vy -= 2 * dotProduct * ny;
+            ball.vx -= 1.5 * dotProduct * nx; // 75% of full bounce
+            ball.vy -= 1.5 * dotProduct * ny; // 75% of full bounce
             
             // Add slight damping to prevent excessive bouncing
             ball.vx *= 0.8;
