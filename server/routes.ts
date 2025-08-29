@@ -327,15 +327,15 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
     throw new Error('No cards available');
   }
 
-  // Simple RNG based on tier probabilities
+  // Temporary: Higher chances for testing
   const random = Math.random();
   let tier: string;
   
-  if (random < 0.002) tier = 'legendary';      // 0.2%
-  else if (random < 0.02) tier = 'superrare';   // 1.8%
-  else if (random < 0.1) tier = 'rare';     // 8.0%
-  else if (random < 0.35) tier = 'uncommon';   // 25.0%
-  else tier = 'common';                       // 65.0%
+  if (random < 0.2) tier = 'legendary';        // 20% for testing
+  else if (random < 0.4) tier = 'superrare';   // 20% for testing
+  else if (random < 0.6) tier = 'rare';        // 20% for testing
+  else if (random < 0.8) tier = 'uncommon';    // 20% for testing
+  else tier = 'common';                        // 20% for testing
   
   console.log(`Game RNG: ${random.toFixed(4)} -> ${tier}`);
 
