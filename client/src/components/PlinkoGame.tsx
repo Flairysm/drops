@@ -55,6 +55,7 @@ export function PlinkoGame() {
       return response.json() as Promise<GameResult>;
     },
     onSuccess: (result) => {
+      console.log('Frontend received result:', result);
       setLastResult(result);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
@@ -69,6 +70,7 @@ export function PlinkoGame() {
       };
 
       const outcome = tierToOutcome[result.result.tier] || "Pokeball";
+      console.log(`Tier: ${result.result.tier} -> Outcome: ${outcome}`);
       
       // Start animation with predetermined outcome
       startPlinkoAnimation(outcome);
