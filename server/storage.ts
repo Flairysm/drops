@@ -310,19 +310,21 @@ export class DatabaseStorage implements IStorage {
 
   async openUserPack(packId: string, userId: string): Promise<PackOpenResult> {
     return await db.transaction(async (tx) => {
-      // Get the pack to open
-      const [userPack] = await tx
-        .select()
-        .from(userPacks)
-        .where(and(
-          eq(userPacks.id, packId),
-          eq(userPacks.userId, userId),
-          eq(userPacks.isOpened, false)
-        ));
+      try {
+        // Get the pack to open with row locking
+        const [userPack] = await tx
+          .select()
+          .from(userPacks)
+          .where(and(
+            eq(userPacks.id, packId),
+            eq(userPacks.userId, userId),
+            eq(userPacks.isOpened, false)
+          ))
+          .for('update');
 
-      if (!userPack) {
-        throw new Error('Pack not found or already opened');
-      }
+        if (!userPack) {
+          throw new Error('Pack not found or already opened');
+        }
 
       // Get pack pull rates for this pack type
       const rates = await tx
@@ -424,20 +426,26 @@ export class DatabaseStorage implements IStorage {
       
       // Insert common cards with quantities
       for (const { card, count } of Array.from(cardQuantities.values())) {
-        // Check if user already has this card
+        // Check if user already has this card with row-level locking
         const [existingCard] = await tx
           .select()
           .from(userCards)
           .where(and(
             eq(userCards.userId, userId),
-            eq(userCards.cardId, card.id)
-          ));
+            eq(userCards.cardId, card.id),
+            eq(userCards.isRefunded, false),
+            eq(userCards.isShipped, false)
+          ))
+          .for('update');
         
         if (existingCard) {
           // Update quantity if card already exists
           await tx
             .update(userCards)
-            .set({ quantity: sql`${userCards.quantity} + ${count}` })
+            .set({ 
+              quantity: sql`${userCards.quantity} + ${count}`,
+              pulledAt: sql`NOW()` // Update pulled time to latest
+            })
             .where(eq(userCards.id, existingCard.id));
         } else {
           // Insert new card with quantity
@@ -446,27 +454,36 @@ export class DatabaseStorage implements IStorage {
             cardId: card.id,
             pullValue: card.marketValue,
             quantity: count,
+            isRefunded: false,
+            isShipped: false,
           });
         }
       }
       
-      // Add hit card
+      // Add hit card with row-level locking
       const [existingHitCard] = await tx
         .select()
         .from(userCards)
         .where(and(
           eq(userCards.userId, userId),
-          eq(userCards.cardId, hitCard.id)
-        ));
+          eq(userCards.cardId, hitCard.id),
+          eq(userCards.isRefunded, false),
+          eq(userCards.isShipped, false)
+        ))
+        .for('update');
       
       let newUserCard;
       if (existingHitCard) {
         // Update quantity if hit card already exists
-        await tx
+        const updatedCards = await tx
           .update(userCards)
-          .set({ quantity: sql`${userCards.quantity} + 1` })
-          .where(eq(userCards.id, existingHitCard.id));
-        newUserCard = existingHitCard;
+          .set({ 
+            quantity: sql`${userCards.quantity} + 1`,
+            pulledAt: sql`NOW()` // Update pulled time to latest
+          })
+          .where(eq(userCards.id, existingHitCard.id))
+          .returning();
+        newUserCard = updatedCards[0];
       } else {
         // Insert new hit card
         userCardInserts.push({
@@ -474,14 +491,21 @@ export class DatabaseStorage implements IStorage {
           cardId: hitCard.id,
           pullValue: hitCard.marketValue,
           quantity: 1,
+          isRefunded: false,
+          isShipped: false,
         });
       }
       
       // Insert all new cards at once
       if (userCardInserts.length > 0) {
-        const insertedCards = await tx.insert(userCards).values(userCardInserts).returning();
-        if (!newUserCard) {
-          newUserCard = insertedCards.find(c => c.cardId === hitCard.id) || insertedCards[0];
+        try {
+          const insertedCards = await tx.insert(userCards).values(userCardInserts).returning();
+          if (!newUserCard) {
+            newUserCard = insertedCards.find(c => c.cardId === hitCard.id) || insertedCards[0];
+          }
+        } catch (error) {
+          console.error('Failed to insert user cards:', error);
+          throw new Error('Failed to add cards to vault - please try again');
         }
       }
 
@@ -518,6 +542,11 @@ export class DatabaseStorage implements IStorage {
         packCards: packCards,
         hitCardPosition: 8
       };
+      } catch (error) {
+        console.error('Pack opening transaction failed:', error);
+        // Re-throw the error to rollback the transaction
+        throw error;
+      }
     });
   }
 
