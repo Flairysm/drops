@@ -77,19 +77,34 @@ export function PlinkoGame() {
     const rows = 8;
     const startY = 100;
     const rowSpacing = 40; // Vertical spacing between rows
-    const pinSpacing = 60; // Horizontal spacing between pins
+    const edgePadding = 30; // Distance from board edges for last row
     
     for (let row = 0; row < rows; row++) {
       const pinsInRow = row + 3; // Row 0: 3 pins, Row 1: 4 pins, etc.
       const y = startY + (row * rowSpacing);
       
-      // Center each row on the board
-      const rowWidth = (pinsInRow - 1) * pinSpacing;
-      const startX = (BOARD_WIDTH - rowWidth) / 2;
-      
-      for (let pin = 0; pin < pinsInRow; pin++) {
-        const x = startX + (pin * pinSpacing);
-        pins.push({ x, y });
+      // For the last row (10 pins), make it span nearly edge to edge
+      if (row === rows - 1) {
+        const availableWidth = BOARD_WIDTH - (edgePadding * 2);
+        const pinSpacing = availableWidth / (pinsInRow - 1);
+        const startX = edgePadding;
+        
+        for (let pin = 0; pin < pinsInRow; pin++) {
+          const x = startX + (pin * pinSpacing);
+          pins.push({ x, y });
+        }
+      } else {
+        // For other rows, maintain proportional spacing based on last row
+        const lastRowWidth = BOARD_WIDTH - (edgePadding * 2);
+        const maxPinSpacing = lastRowWidth / 9; // 9 spaces between 10 pins
+        const pinSpacing = maxPinSpacing;
+        const rowWidth = (pinsInRow - 1) * pinSpacing;
+        const startX = (BOARD_WIDTH - rowWidth) / 2;
+        
+        for (let pin = 0; pin < pinsInRow; pin++) {
+          const x = startX + (pin * pinSpacing);
+          pins.push({ x, y });
+        }
       }
     }
     
