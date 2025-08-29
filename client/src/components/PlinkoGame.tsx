@@ -30,7 +30,7 @@ interface Ball {
 const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 6;
-const BALL_RADIUS = 16; // Made bigger
+const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
 
