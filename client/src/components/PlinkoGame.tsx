@@ -518,19 +518,11 @@ export function PlinkoGame() {
         <CardContent className="p-6">
           <div className="space-y-4">
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-medium text-muted-foreground">Fixed Price</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-fixed-price">
-                    {fixedPrice} Credits
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Set by administrator
-                  </div>
-                </div>
+              <div className="flex items-center justify-center space-x-2">
+                <DollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <span className="text-xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-game-cost">
+                  Cost: {fixedPrice} credit per play
+                </span>
               </div>
             </div>
 
