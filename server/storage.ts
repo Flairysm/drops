@@ -190,15 +190,26 @@ export class DatabaseStorage implements IStorage {
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
     try {
-      const newUserCard = await db.insert(userCards).values({
+      // Insert without returning and then fetch by unique combination
+      await db.insert(userCards).values({
         ...userCard,
         isRefunded: userCard.isRefunded ?? false,
         isShipped: userCard.isShipped ?? false,
-      }).returning();
-      if (newUserCard.length === 0) {
-        throw new Error('Failed to insert user card');
+      });
+      
+      // Fetch the most recent card for this user  
+      const [newUserCard] = await db
+        .select()
+        .from(userCards)
+        .where(eq(userCards.userId, userCard.userId))
+        .orderBy(desc(userCards.pulledAt))
+        .limit(1);
+      
+      if (!newUserCard) {
+        throw new Error('Failed to fetch inserted user card');
       }
-      return newUserCard[0];
+      
+      return newUserCard;
     } catch (error) {
       console.error('Error adding user card:', error);
       throw error;
