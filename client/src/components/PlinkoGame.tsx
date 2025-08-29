@@ -235,16 +235,22 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Gentle deflection instead of bouncy reflection
+            // Add natural randomness to prevent center bias
+            const randomFactor = (Math.random() - 0.5) * 0.3;
+            
+            // Gentle deflection with random variation
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            if (dotProduct < 0) { // Only deflect if moving toward the pin
-              ball.vx -= dotProduct * nx * 0.8; // Much gentler deflection
-              ball.vy -= dotProduct * ny * 0.3; // Maintain downward momentum
+            if (dotProduct < 0) {
+              ball.vx -= dotProduct * nx * 0.6 + randomFactor;
+              ball.vy -= dotProduct * ny * 0.2;
             }
             
-            // Strong damping for smooth, non-bouncy movement
-            ball.vx *= 0.7;
-            ball.vy *= 0.9;
+            // Add slight random horizontal push for natural variation
+            ball.vx += (Math.random() - 0.5) * 0.8;
+            
+            // Moderate damping
+            ball.vx *= 0.85;
+            ball.vy *= 0.92;
           }
         });
 
