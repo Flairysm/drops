@@ -10,6 +10,28 @@ import {
   type GameResult 
 } from "@shared/schema";
 
+// Map tier to pack type for Plinko
+function mapTierToPackType(tier: string): string {
+  switch (tier.toLowerCase()) {
+    case 'common':
+    case 'c':
+      return 'pokeball';
+    case 'uncommon':
+    case 'uc':
+      return 'greatball';
+    case 'rare':
+    case 'r':
+      return 'ultraball';
+    case 'superrare':
+    case 'sr':
+    case 'legendary':
+    case 'sss':
+      return 'masterball';
+    default:
+      return 'pokeball';
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -368,28 +390,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
-}
-
-// Map tier to pack type for Plinko
-function mapTierToPackType(tier: string): string {
-  switch (tier.toLowerCase()) {
-    case 'common':
-    case 'c':
-      return 'pokeball';
-    case 'uncommon':
-    case 'uc':
-      return 'greatball';
-    case 'rare':
-    case 'r':
-      return 'ultraball';
-    case 'superrare':
-    case 'sr':
-    case 'legendary':
-    case 'sss':
-      return 'masterball';
-    default:
-      return 'pokeball';
-  }
 }
 
 // Simplified game simulation logic
