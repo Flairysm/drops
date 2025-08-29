@@ -235,14 +235,14 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Natural physics reflection with slight bounce
+            // Natural bounce reflection
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            ball.vx -= dotProduct * nx * 0.6; // Slightly more reflection
-            ball.vy -= dotProduct * ny * 0.15; // A bit more vertical bounce
+            ball.vx -= 2 * dotProduct * nx;
+            ball.vy -= 2 * dotProduct * ny;
             
-            // Moderate damping
+            // Add slight damping to prevent excessive bouncing
             ball.vx *= 0.8;
-            ball.vy *= 0.92;
+            ball.vy *= 0.8;
           }
         });
 
