@@ -62,30 +62,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update game session with result
       await storage.updateGameSession(gameSession.id, result, 'completed');
 
-      // Add card to user vault
+      // Get card details first
+      const card = await storage.getCard(result.cardId);
+      if (!card) {
+        throw new Error('Card not found');
+      }
+
+      // Add card to user vault with correct pull value
       const userCard = await storage.addUserCard({
         userId,
         cardId: result.cardId,
-        pullValue: "0", // Will be updated with actual card value
+        pullValue: card.marketValue,
       });
 
-      // Get card details and update pull value
-      const card = await storage.getCard(result.cardId);
-      if (card) {
-        await storage.addUserCard({
-          ...userCard,
-          pullValue: card.marketValue,
+      // Add to global feed if rare enough
+      if (['rare', 'superrare', 'legendary'].includes(result.tier)) {
+        await storage.addGlobalFeedEntry({
+          userId,
+          cardId: result.cardId,
+          tier: result.tier,
+          gameType,
         });
-
-        // Add to global feed if rare enough
-        if (['R', 'SR', 'SSS'].includes(result.tier)) {
-          await storage.addGlobalFeedEntry({
-            userId,
-            cardId: result.cardId,
-            tier: result.tier,
-            gameType,
-          });
-        }
       }
 
       // Create transaction record
