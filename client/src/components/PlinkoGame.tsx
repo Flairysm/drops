@@ -70,11 +70,7 @@ export function PlinkoGame() {
       // Start animation with predetermined outcome
       startPlinkoAnimation(outcome);
 
-      toast({
-        title: "Card Pulled!",
-        description: `You got a ${outcome} (${result.result.tier}) card!`,
-        duration: 5000,
-      });
+      // Toast will be shown when ball lands in the animation
     },
     onError: (error: Error) => {
       toast({
@@ -210,8 +206,8 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Gravity
-        ball.vy += 0.3;
+        // Slower gravity for more controlled movement
+        ball.vy += 0.2;
         
         // Check collision with pins
         pins.forEach(pin => {
@@ -223,15 +219,15 @@ export function PlinkoGame() {
             // Collision detected - much more random bouncing
             const angle = Math.atan2(dy, dx);
             
-            // Stronger random horizontal force
-            const randomForce = (Math.random() - 0.5) * 4;
-            ball.vx += Math.cos(angle) * 1.2 + randomForce;
+            // More controlled horizontal force
+            const randomForce = (Math.random() - 0.5) * 2;
+            ball.vx += Math.cos(angle) * 0.8 + randomForce;
             
-            // Maintain more downward velocity but add variation
-            ball.vy = Math.abs(ball.vy) * (0.6 + Math.random() * 0.3);
+            // Maintain more downward velocity with less variation
+            ball.vy = Math.abs(ball.vy) * (0.7 + Math.random() * 0.2);
             
-            // Add significant randomness to direction
-            ball.vx += (Math.random() - 0.5) * 3;
+            // Reduced randomness for more predictable movement
+            ball.vx += (Math.random() - 0.5) * 1.5;
             
             // Separate ball from pin with more space
             const separationDistance = ball.radius + PIN_RADIUS + 2;
@@ -244,8 +240,8 @@ export function PlinkoGame() {
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Less friction to maintain momentum
-        ball.vx *= 0.995;
+        // More friction to slow down the ball
+        ball.vx *= 0.985;
 
         // Keep ball in bounds
         if (ball.x < ball.radius) {
@@ -281,8 +277,28 @@ export function PlinkoGame() {
         ball.y = BOARD_HEIGHT - 30; // Position ball inside the bucket
         
         if (!animationComplete) {
-          setFinalOutcome(OUTCOMES[clampedIndex]);
+          const actualOutcome = OUTCOMES[clampedIndex];
+          setFinalOutcome(actualOutcome);
           setAnimationComplete(true);
+          
+          // Update the toast to match what's actually shown
+          const tierToOutcome: { [key: string]: string } = {
+            common: "Pokeball",
+            uncommon: "Greatball", 
+            rare: "Ultraball",
+            superrare: "Ultraball",
+            legendary: "Masterball"
+          };
+          
+          // Find the backend tier that matches this visual outcome
+          const backendTier = lastResult?.result?.tier || 'common';
+          
+          toast({
+            title: "Card Pulled!",
+            description: `You got a ${actualOutcome} (${backendTier}) card!`,
+            duration: 5000,
+          });
+          
           setTimeout(() => {
             setIsPlaying(false);
           }, 1000);
