@@ -189,12 +189,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
-    const [newUserCard] = await db.insert(userCards).values({
-      ...userCard,
-      // Ensure fresh UUID generation
-      id: undefined, // Let database generate new UUID
-    }).returning();
-    return newUserCard;
+    // Use direct SQL for UUID generation to avoid caching issues
+    const [newUserCard] = await db.execute(sql`
+      INSERT INTO user_cards (id, user_id, card_id, pull_value, pulled_at, is_refunded, is_shipped)
+      VALUES (gen_random_uuid(), ${userCard.userId}, ${userCard.cardId}, ${userCard.pullValue}, NOW(), false, false)
+      RETURNING *
+    `);
+    return newUserCard as UserCard;
   }
 
   async refundCards(cardIds: string[], userId: string): Promise<void> {
