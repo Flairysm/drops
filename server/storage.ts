@@ -314,18 +314,28 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // Convert short tier code to full tier name
+      const tierMapping: { [key: string]: string } = {
+        'C': 'common',
+        'UC': 'uncommon', 
+        'R': 'rare',
+        'SR': 'superrare',
+        'SSS': 'legendary'
+      };
+      const fullTierName = tierMapping[selectedTier] || selectedTier;
+
       // Get cards of the selected tier
       const availableCards = await tx
         .select()
         .from(cards)
         .where(and(
-          eq(cards.tier, selectedTier),
+          eq(cards.tier, fullTierName),
           eq(cards.isActive, true),
           sql`${cards.stock} > 0`
         ));
 
       if (availableCards.length === 0) {
-        throw new Error(`No available cards in tier ${selectedTier}`);
+        throw new Error(`No available cards in tier ${fullTierName}`);
       }
 
       // Select random card from available cards
