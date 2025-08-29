@@ -31,7 +31,7 @@ const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 6;
 const BALL_RADIUS = 12; // Made bigger
-const LAYERS = 10;
+const LAYERS = 8;
 const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
 
 export function PlinkoGame() {
@@ -73,7 +73,7 @@ export function PlinkoGame() {
     const pins = [];
     
     for (let layer = 0; layer < LAYERS; layer++) {
-      const pinsInLayer = layer + 2; // Layer 0: 2 pins, Layer 1: 3 pins, etc.
+      const pinsInLayer = layer + 3; // Layer 0: 3 pins, Layer 1: 4 pins, etc.
       
       // Vertical position - evenly spaced from top to bottom
       const y = 80 + (layer * 40);
