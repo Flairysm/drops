@@ -85,10 +85,7 @@ export function PlinkoGame() {
       
       for (let pin = 0; pin < pinsInLayer; pin++) {
         // Calculate X position for pyramid shape
-        // Each layer should be centered with equal spacing between pins
-        const layerWidth = spacing * (pinsInLayer - 1);
-        const layerStartX = startX + (totalWidth - layerWidth) / 2;
-        const x = layerStartX + (pin * spacing);
+        const x = startX + (pin * spacing);
         
         pins.push({ x, y });
       }
