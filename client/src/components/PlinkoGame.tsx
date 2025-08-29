@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Play, Edit, RotateCcw, Save } from "lucide-react";
+import { Play } from "lucide-react";
 
 interface GameResult {
   success: boolean;
@@ -27,13 +27,6 @@ interface Ball {
   color: string;
 }
 
-interface Pin {
-  x: number;
-  y: number;
-  id: string;
-  radius?: number;
-}
-
 const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 4;
@@ -47,11 +40,6 @@ export function PlinkoGame() {
   const [lastResult, setLastResult] = useState<GameResult | null>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [finalOutcome, setFinalOutcome] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [customPins, setCustomPins] = useState<Pin[]>([]);
-  const [draggedPin, setDraggedPin] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const ballRef = useRef<Ball | null>(null);
@@ -98,46 +86,42 @@ export function PlinkoGame() {
     },
   });
 
-  const getDefaultPins = (): Pin[] => {
-    const pins: Pin[] = [];
-    const startY = 80;
-    const endY = BOARD_HEIGHT - 120;
-    const layerHeight = (endY - startY) / (LAYERS - 1);
+  const getPins = () => {
+    const pins = [];
     
     for (let layer = 0; layer < LAYERS; layer++) {
-      const pinsInLayer = layer + 2; // Start with 2 pins, increment each layer
-      const y = startY + (layer * layerHeight);
+      const pinsInLayer = layer + 2; // Layer 0: 2 pins, Layer 1: 3 pins, etc.
       
-      // Calculate even spacing - center the pins with equal gaps
-      const totalPinSpace = BOARD_WIDTH * 0.8; // Use 80% of board width
-      const startX = (BOARD_WIDTH - totalPinSpace) / 2;
-      const pinSpacing = totalPinSpace / (pinsInLayer - 1);
+      // Vertical position - evenly spaced from top to bottom
+      const y = 80 + (layer * 40);
+      
+      // For proper triangular spacing, offset every other layer by half a pin width
+      const isOddLayer = layer % 2 === 1;
+      const baseSpacing = BOARD_WIDTH / (pinsInLayer + 1);
       
       for (let pin = 0; pin < pinsInLayer; pin++) {
-        const x = startX + (pin * pinSpacing);
-        pins.push({ 
-          x, 
-          y, 
-          id: `pin-${layer}-${pin}`,
-          radius: PIN_RADIUS
-        });
+        // Calculate X position with proper triangular offset
+        let x = baseSpacing * (pin + 1);
+        
+        // Offset odd layers by half spacing for triangular pattern
+        if (isOddLayer) {
+          x += baseSpacing / 2;
+        }
+        
+        pins.push({ x, y });
       }
     }
     return pins;
   };
 
-  const getPins = () => {
-    return customPins.length > 0 ? customPins : getDefaultPins();
-  };
-
   const getOutcomePositions = () => {
     const positions = [];
-    const spacing = BOARD_WIDTH / (OUTCOMES.length + 1);
+    const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
     const y = BOARD_HEIGHT - 40;
     
     for (let i = 0; i < OUTCOMES.length; i++) {
       positions.push({
-        x: spacing * (i + 1),
+        x: bucketWidth * i + bucketWidth / 2,
         y,
         outcome: OUTCOMES[i]
       });
@@ -154,7 +138,8 @@ export function PlinkoGame() {
 
     // Find target bucket index
     const targetIndex = OUTCOMES.findIndex(o => o === targetOutcome);
-    const targetX = (BOARD_WIDTH / (OUTCOMES.length + 1)) * (targetIndex + 1);
+    const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+    const targetX = bucketWidth * targetIndex + bucketWidth / 2;
 
     // Initialize ball
     const ball: Ball = {
@@ -211,14 +196,14 @@ export function PlinkoGame() {
         ctx.lineWidth = 2;
         ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
 
-        // Bucket label
+        // Bucket label - properly centered
         ctx.fillStyle = pos.outcome === 'Masterball' ? '#ffd700' :
                        pos.outcome === 'Ultraball' ? '#8b5cf6' :
                        pos.outcome === 'Greatball' ? '#3b82f6' :
                        '#64748b';
-        ctx.font = 'bold 12px Inter';
+        ctx.font = 'bold 11px Inter';
         ctx.textAlign = 'center';
-        ctx.fillText(pos.outcome, pos.x, BOARD_HEIGHT - 20);
+        ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
       });
 
       // Physics for ball
@@ -231,9 +216,8 @@ export function PlinkoGame() {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const pinRadius = pin.radius || PIN_RADIUS;
           
-          if (distance < ball.radius + pinRadius) {
+          if (distance < ball.radius + PIN_RADIUS) {
             // Collision detected - bounce ball
             const angle = Math.atan2(dy, dx);
             const force = 0.5;
@@ -244,8 +228,8 @@ export function PlinkoGame() {
             ball.vx += (Math.random() - 0.5) * 2;
             
             // Separate ball from pin
-            ball.x = pin.x + Math.cos(angle) * (ball.radius + pinRadius + 1);
-            ball.y = pin.y + Math.sin(angle) * (ball.radius + pinRadius + 1);
+            ball.x = pin.x + Math.cos(angle) * (ball.radius + PIN_RADIUS + 1);
+            ball.y = pin.y + Math.sin(angle) * (ball.radius + PIN_RADIUS + 1);
           }
         });
 
@@ -309,224 +293,6 @@ export function PlinkoGame() {
     animate();
   };
 
-  const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!editMode) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    
-    const pins = getPins();
-    const clickedPin = pins.find(pin => {
-      const dx = mouseX - pin.x;
-      const dy = mouseY - pin.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const pinRadius = pin.radius || PIN_RADIUS;
-      return distance <= pinRadius + 10; // Slightly larger hit area
-    });
-    
-    if (clickedPin) {
-      setSelectedPin(clickedPin.id);
-      setDraggedPin(clickedPin.id);
-      setDragOffset({
-        x: mouseX - clickedPin.x,
-        y: mouseY - clickedPin.y
-      });
-    } else {
-      setSelectedPin(null);
-    }
-  };
-
-  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!editMode || !draggedPin) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    
-    const newX = Math.max(PIN_RADIUS, Math.min(BOARD_WIDTH - PIN_RADIUS, mouseX - dragOffset.x));
-    const newY = Math.max(PIN_RADIUS, Math.min(BOARD_HEIGHT - 80, mouseY - dragOffset.y));
-    
-    const currentPins = getPins();
-    const updatedPins = currentPins.map(pin => 
-      pin.id === draggedPin ? { ...pin, x: newX, y: newY } : pin
-    );
-    
-    setCustomPins(updatedPins);
-    redrawCanvas();
-  };
-
-  const handleCanvasMouseUp = () => {
-    if (editMode && draggedPin) {
-      setDraggedPin(null);
-      setDragOffset({ x: 0, y: 0 });
-    }
-  };
-
-  const handleCanvasContextMenu = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!editMode) return;
-    event.preventDefault();
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-    
-    const pins = getPins();
-    const clickedPin = pins.find(pin => {
-      const dx = mouseX - pin.x;
-      const dy = mouseY - pin.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const pinRadius = pin.radius || PIN_RADIUS;
-      return distance <= pinRadius + 10;
-    });
-    
-    if (clickedPin) {
-      deletePin(clickedPin.id);
-    }
-  };
-
-  const handleCanvasWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
-    if (!editMode || !selectedPin) return;
-    event.preventDefault();
-    
-    const pins = getPins();
-    const targetPin = pins.find(pin => pin.id === selectedPin);
-    if (!targetPin) return;
-    
-    const delta = event.deltaY > 0 ? -1 : 1;
-    const newRadius = Math.max(2, Math.min(12, (targetPin.radius || PIN_RADIUS) + delta));
-    
-    const updatedPins = pins.map(pin => 
-      pin.id === selectedPin ? { ...pin, radius: newRadius } : pin
-    );
-    
-    setCustomPins(updatedPins);
-    redrawCanvas();
-  };
-
-  const deletePin = (pinId: string) => {
-    const updatedPins = customPins.filter(pin => pin.id !== pinId);
-    setCustomPins(updatedPins);
-    setSelectedPin(null);
-    redrawCanvas();
-    toast({
-      title: "Pin Deleted",
-      description: "Pin has been removed from the board",
-    });
-  };
-
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (!editMode) return;
-    
-    if (event.key === 'Delete' || event.key === 'Backspace') {
-      if (selectedPin) {
-        deletePin(selectedPin);
-      }
-    }
-  };
-
-  const redrawCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Clear and redraw static elements
-    drawStaticElements(ctx);
-  };
-
-  const drawStaticElements = (ctx: CanvasRenderingContext2D) => {
-    // Draw background
-    const gradient = ctx.createLinearGradient(0, 0, 0, BOARD_HEIGHT);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.1)');
-    gradient.addColorStop(1, 'rgba(147, 51, 234, 0.1)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-
-    const pins = getPins();
-    const outcomePositions = getOutcomePositions();
-
-    // Draw pins
-    pins.forEach(pin => {
-      const pinRadius = pin.radius || PIN_RADIUS;
-      ctx.beginPath();
-      ctx.arc(pin.x, pin.y, pinRadius, 0, Math.PI * 2);
-      
-      if (editMode && pin.id === draggedPin) {
-        ctx.fillStyle = '#3b82f6'; // Blue when dragging
-        ctx.strokeStyle = '#1d4ed8';
-      } else if (editMode && pin.id === selectedPin) {
-        ctx.fillStyle = '#f59e0b'; // Orange when selected
-        ctx.strokeStyle = '#d97706';
-      } else if (editMode) {
-        ctx.fillStyle = '#10b981'; // Green in edit mode
-        ctx.strokeStyle = '#059669';
-      } else {
-        ctx.fillStyle = '#64748b';
-        ctx.strokeStyle = '#94a3b8';
-      }
-      
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      
-      // Draw selection indicator
-      if (editMode && pin.id === selectedPin && pin.id !== draggedPin) {
-        ctx.beginPath();
-        ctx.arc(pin.x, pin.y, pinRadius + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-    });
-
-    // Draw outcome buckets
-    outcomePositions.forEach((pos, index) => {
-      const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-      const bucketX = index * bucketWidth;
-      
-      ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(255, 215, 0, 0.2)' :
-                      pos.outcome === 'Ultraball' ? 'rgba(139, 92, 246, 0.2)' :
-                      pos.outcome === 'Greatball' ? 'rgba(59, 130, 246, 0.2)' :
-                      'rgba(148, 163, 184, 0.2)';
-      ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
-      
-      ctx.strokeStyle = pos.outcome === 'Masterball' ? '#ffd700' :
-                       pos.outcome === 'Ultraball' ? '#8b5cf6' :
-                       pos.outcome === 'Greatball' ? '#3b82f6' :
-                       '#94a3b8';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
-
-      ctx.fillStyle = pos.outcome === 'Masterball' ? '#ffd700' :
-                     pos.outcome === 'Ultraball' ? '#8b5cf6' :
-                     pos.outcome === 'Greatball' ? '#3b82f6' :
-                     '#64748b';
-      ctx.font = 'bold 11px Inter';
-      ctx.textAlign = 'center';
-      ctx.fillText(pos.outcome, bucketX + bucketWidth/2, BOARD_HEIGHT - 25);
-    });
-  };
-
-  const resetPins = () => {
-    setCustomPins([]);
-    redrawCanvas();
-    toast({
-      title: "Pins Reset",
-      description: "All pins have been reset to default positions",
-    });
-  };
-
   const handlePlay = () => {
     const bet = parseFloat(betAmount);
     if (isNaN(bet) || bet <= 0) {
@@ -558,37 +324,73 @@ export function PlinkoGame() {
     });
   };
 
-  useEffect(() => {
-    // Initialize with default pins if no custom pins exist
-    if (customPins.length === 0) {
-      setCustomPins(getDefaultPins());
-    }
-  }, []);
+  const drawStaticBoard = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+    
+    // Draw background
+    const gradient = ctx.createLinearGradient(0, 0, 0, BOARD_HEIGHT);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.1)');
+    gradient.addColorStop(1, 'rgba(147, 51, 234, 0.1)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+
+    const pins = getPins();
+    const outcomePositions = getOutcomePositions();
+
+    // Draw pins
+    pins.forEach(pin => {
+      ctx.beginPath();
+      ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = '#64748b';
+      ctx.fill();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Draw outcome buckets
+    outcomePositions.forEach((pos, index) => {
+      const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+      const bucketX = index * bucketWidth;
+      
+      ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(255, 215, 0, 0.2)' :
+                      pos.outcome === 'Ultraball' ? 'rgba(139, 92, 246, 0.2)' :
+                      pos.outcome === 'Greatball' ? 'rgba(59, 130, 246, 0.2)' :
+                      'rgba(148, 163, 184, 0.2)';
+      ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+      
+      ctx.strokeStyle = pos.outcome === 'Masterball' ? '#ffd700' :
+                       pos.outcome === 'Ultraball' ? '#8b5cf6' :
+                       pos.outcome === 'Greatball' ? '#3b82f6' :
+                       '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+
+      ctx.fillStyle = pos.outcome === 'Masterball' ? '#ffd700' :
+                     pos.outcome === 'Ultraball' ? '#8b5cf6' :
+                     pos.outcome === 'Greatball' ? '#3b82f6' :
+                     '#64748b';
+      ctx.font = 'bold 11px Inter';
+      ctx.textAlign = 'center';
+      ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
+    });
+  };
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        drawStaticElements(ctx);
-      }
-    }
+    drawStaticBoard();
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [editMode, customPins, draggedPin, selectedPin]);
-
-  useEffect(() => {
-    if (editMode) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-      };
-    }
-  }, [editMode, selectedPin]);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -596,43 +398,8 @@ export function PlinkoGame() {
       <Card className="gaming-card">
         <CardContent className="p-6">
           <div className="text-center mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-gaming font-bold text-xl">Plinko Board</h3>
-              <div className="flex space-x-2">
-                <Button
-                  variant={editMode ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setEditMode(!editMode)}
-                  disabled={isPlaying}
-                  data-testid="button-edit-mode"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  {editMode ? "Exit Edit" : "Edit Pins"}
-                </Button>
-                {editMode && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={resetPins}
-                    data-testid="button-reset-pins"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Reset
-                  </Button>
-                )}
-              </div>
-            </div>
-            <p className="text-muted-foreground">
-              {editMode 
-                ? "Click to select • Drag to move • Right-click or Delete key to remove • Scroll wheel to resize"
-                : "Drop your ball through 9 layers of pins!"
-              }
-            </p>
-            {editMode && selectedPin && (
-              <div className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-                Pin selected! Scroll to resize or press Delete to remove
-              </div>
-            )}
+            <h3 className="font-gaming font-bold text-xl mb-2">Plinko Board</h3>
+            <p className="text-muted-foreground">Drop your ball through 9 layers of pins!</p>
           </div>
           
           <div className="flex justify-center">
@@ -641,16 +408,7 @@ export function PlinkoGame() {
                 ref={canvasRef}
                 width={BOARD_WIDTH}
                 height={BOARD_HEIGHT}
-                className={`border border-border rounded-lg bg-background/50 ${
-                  editMode ? 'cursor-grab' : 'cursor-default'
-                }`}
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleCanvasMouseMove}
-                onMouseUp={handleCanvasMouseUp}
-                onMouseLeave={handleCanvasMouseUp}
-                onContextMenu={handleCanvasContextMenu}
-                onWheel={handleCanvasWheel}
-                tabIndex={0}
+                className="border border-border rounded-lg bg-background/50"
               />
               
               {/* Result Overlay */}
@@ -726,7 +484,7 @@ export function PlinkoGame() {
 
             <Button
               onClick={handlePlay}
-              disabled={isPlaying || playGameMutation.isPending || editMode}
+              disabled={isPlaying || playGameMutation.isPending}
               className="w-full bg-gradient-to-r from-primary to-accent hover:glow-effect transition-all text-lg py-6"
               data-testid="button-play-plinko"
             >
@@ -734,11 +492,6 @@ export function PlinkoGame() {
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   Ball Dropping...
-                </>
-              ) : editMode ? (
-                <>
-                  <Edit className="w-5 h-5 mr-2" />
-                  Exit Edit Mode to Play
                 </>
               ) : (
                 <>
