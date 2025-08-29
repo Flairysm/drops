@@ -72,27 +72,23 @@ export function PlinkoGame() {
   const getPins = () => {
     const pins = [];
     
-    // Create grid-style pin layout like in casino Plinko
+    // Exact Stake.us Plinko pyramid layout
+    // Row 1: 3 pins, Row 2: 4 pins, ..., Row 8: 10 pins
     const rows = 8;
-    const cols = 10; // 10 columns to match bucket count
     const startY = 100;
-    const endY = 380;
-    const startX = 60;
-    const endX = BOARD_WIDTH - 60;
-    
-    const rowSpacing = (endY - startY) / (rows - 1);
-    const colSpacing = (endX - startX) / (cols - 1);
+    const rowSpacing = 40; // Vertical spacing between rows
+    const pinSpacing = 50; // Horizontal spacing between pins
     
     for (let row = 0; row < rows; row++) {
+      const pinsInRow = row + 3; // Row 0: 3 pins, Row 1: 4 pins, etc.
       const y = startY + (row * rowSpacing);
       
-      // Offset every other row for classic Plinko zigzag pattern
-      const isOffset = row % 2 === 1;
-      const colsInRow = isOffset ? cols - 1 : cols;
-      const offsetX = isOffset ? colSpacing / 2 : 0;
+      // Center each row on the board
+      const rowWidth = (pinsInRow - 1) * pinSpacing;
+      const startX = (BOARD_WIDTH - rowWidth) / 2;
       
-      for (let col = 0; col < colsInRow; col++) {
-        const x = startX + offsetX + (col * colSpacing);
+      for (let pin = 0; pin < pinsInRow; pin++) {
+        const x = startX + (pin * pinSpacing);
         pins.push({ x, y });
       }
     }
