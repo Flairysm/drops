@@ -303,7 +303,6 @@ export function PlinkoGame() {
           
           // Use the backend result to determine both visual and message outcome
           const backendTier = lastResult?.result?.tier || 'common';
-          console.log('Backend tier:', backendTier); // Debug log
           
           const tierToOutcome: { [key: string]: string } = {
             common: "Pokeball",
@@ -314,7 +313,6 @@ export function PlinkoGame() {
           };
           
           const actualOutcome = tierToOutcome[backendTier] || "Pokeball";
-          console.log('Actual outcome:', actualOutcome); // Debug log
           
           // Find the correct slot for this outcome type
           let selectedSlot = 4; // Default to center
@@ -352,10 +350,9 @@ export function PlinkoGame() {
           
           setFinalOutcome(actualOutcome);
           
-          console.log('Toast message for:', actualOutcome); // Debug log
           toast({
             title: "Card Pulled!",
-            description: `You got a ${actualOutcome}! (${backendTier})`,
+            description: `You got a ${actualOutcome}!`,
             duration: 5000,
           });
           
