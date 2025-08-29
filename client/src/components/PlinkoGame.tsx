@@ -218,40 +218,31 @@ export function PlinkoGame() {
         // Apply friction
         ball.vx *= 0.96;
         
-        // Collision detection with true 50/50 odds
-        let hasCollided = false;
-        
+        // Natural collision detection - let physics handle the bouncing
         pins.forEach(pin => {
-          if (hasCollided) return; // Only one collision per frame
-          
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           const minDistance = ball.radius + PIN_RADIUS;
           
-          if (distance < minDistance) {
-            hasCollided = true;
+          if (distance < minDistance && distance > 0) {
+            // Calculate collision normal
+            const nx = dx / distance;
+            const ny = dy / distance;
             
-            // Calculate overlap
-            const overlap = minDistance - distance;
+            // Separate ball from pin
+            const separation = minDistance - distance;
+            ball.x += nx * separation;
+            ball.y += ny * separation;
             
-            if (overlap > 0.5) {
-              // Move ball away from pin center
-              const angle = Math.atan2(dy, dx);
-              ball.x = pin.x + Math.cos(angle) * minDistance;
-              ball.y = pin.y + Math.sin(angle) * minDistance;
-              
-              // TRUE 50/50 bounce - completely ignore current position/velocity
-              // This ensures equal distribution regardless of approach angle
-              if (Math.random() < 0.5) {
-                ball.vx = -2.0; // Go left
-              } else {
-                ball.vx = 2.0;  // Go right
-              }
-              
-              // Maintain downward momentum
-              ball.vy = Math.max(Math.abs(ball.vy) * 0.7, 1.5);
-            }
+            // Natural bounce reflection
+            const dotProduct = ball.vx * nx + ball.vy * ny;
+            ball.vx -= 2 * dotProduct * nx;
+            ball.vy -= 2 * dotProduct * ny;
+            
+            // Add slight damping to prevent excessive bouncing
+            ball.vx *= 0.8;
+            ball.vy *= 0.8;
           }
         });
 
