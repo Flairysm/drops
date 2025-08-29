@@ -31,8 +31,6 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     return null;
   }
   
-  console.log(`PackOpeningAnimation: Received ${packCards.length} cards (${packCards.filter(c => !c.isHit).length} commons + ${packCards.filter(c => c.isHit).length} hit)`);
-
   // Show all 9 cards in the initial display, but the hit card will have special styling
   const hitCard = packCards.find(card => card.isHit);
   const hitCardIndex = packCards.findIndex(card => card.isHit);

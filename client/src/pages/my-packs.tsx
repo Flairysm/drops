@@ -113,6 +113,7 @@ export default function MyPacks() {
     };
 
     const packType = mapTierToPackType(tier || '');
+    console.log(`Pack display: tier="${tier}" → packType="${packType}"`);
     
     switch (packType) {
       case 'pokeball':
