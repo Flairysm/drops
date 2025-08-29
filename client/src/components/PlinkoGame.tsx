@@ -96,7 +96,7 @@ export function PlinkoGame() {
       const y = 80 + (layer * 40);
       
       // Create proper pyramid spacing - center each layer
-      const totalWidth = 520; // Much wider pyramid for full board coverage
+      const totalWidth = 560; // Even wider pyramid for better coverage
       const startX = (BOARD_WIDTH - totalWidth) / 2; // Center the pyramid
       const spacing = totalWidth / (LAYERS + 1); // Even spacing between pins
       
