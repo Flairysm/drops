@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Navigation } from "@/components/Navigation";
+import { PackOpeningAnimation } from "@/components/PackOpeningAnimation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,19 +17,33 @@ interface UserPack {
   earnedAt: string;
 }
 
+interface PackCard {
+  id: string;
+  name: string;
+  tier: string;
+  imageUrl?: string;
+  marketValue: string;
+  isHit: boolean;
+  position: number;
+}
+
 interface OpenPackResult {
   success: boolean;
-  card: {
+  userCard: {
     id: string;
     cardId: string;
     pullValue: string;
   };
+  packCards: PackCard[];
+  hitCardPosition: number;
 }
 
 export default function MyPacks() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [openingPack, setOpeningPack] = useState<string | null>(null);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [packOpenData, setPackOpenData] = useState<OpenPackResult | null>(null);
 
   // Fetch user's packs
   const { data: userPacks, isLoading } = useQuery({
@@ -41,14 +56,8 @@ export default function MyPacks() {
       return await response.json();
     },
     onSuccess: (result) => {
-      toast({
-        title: "Pack Opened!",
-        description: "Your card has been added to your vault!",
-        variant: "default",
-      });
-      // Invalidate packs and vault queries
-      queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      setPackOpenData(result);
+      setShowAnimation(true);
       setOpeningPack(null);
     },
     onError: (error: any) => {
@@ -64,6 +73,19 @@ export default function MyPacks() {
   const handleOpenPack = (packId: string) => {
     setOpeningPack(packId);
     openPackMutation.mutate(packId);
+  };
+
+  const handleAnimationComplete = () => {
+    setShowAnimation(false);
+    setPackOpenData(null);
+    toast({
+      title: "Pack Opened!",
+      description: "Your card has been added to your vault!",
+      variant: "default",
+    });
+    // Invalidate packs and vault queries
+    queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
   };
 
   const getPackTypeDisplay = (tier: string) => {
@@ -232,6 +254,16 @@ export default function MyPacks() {
           </div>
         </div>
       </div>
+      
+      {/* Pack Opening Animation */}
+      {showAnimation && packOpenData && (
+        <PackOpeningAnimation
+          packCards={packOpenData.packCards}
+          hitCardPosition={packOpenData.hitCardPosition}
+          onComplete={handleAnimationComplete}
+          packType={getPackTypeDisplay(packOpenData.packCards[packOpenData.hitCardPosition]?.tier || '').name}
+        />
+      )}
     </>
   );
 }

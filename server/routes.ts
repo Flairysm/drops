@@ -366,11 +366,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { packId } = req.params;
 
-      const userCard = await storage.openUserPack(packId, userId);
+      const packResult = await storage.openUserPack(packId, userId);
       
       res.json({ 
         success: true,
-        card: userCard
+        ...packResult
       });
 
     } catch (error: any) {

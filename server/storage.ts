@@ -65,7 +65,7 @@ export interface IStorage {
   // User pack operations
   getUserPacks(userId: string): Promise<UserPack[]>;
   addUserPack(userPack: InsertUserPack): Promise<UserPack>;
-  openUserPack(packId: string, userId: string): Promise<UserCard>;
+  openUserPack(packId: string, userId: string): Promise<PackOpenResult>;
   
   // Global feed operations
   getGlobalFeed(limit?: number): Promise<GlobalFeedWithDetails[]>;
@@ -99,6 +99,20 @@ export interface IStorage {
   banUser(userId: string): Promise<void>;
   suspendUser(userId: string): Promise<void>;
   getSystemStats(): Promise<{ totalUsers: number; totalRevenue: string; totalCards: number }>;
+}
+
+interface PackOpenResult {
+  userCard: UserCard;
+  packCards: Array<{
+    id: string;
+    name: string;
+    tier: string;
+    imageUrl?: string;
+    marketValue: string;
+    isHit: boolean;
+    position: number;
+  }>;
+  hitCardPosition: number;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -275,7 +289,7 @@ export class DatabaseStorage implements IStorage {
     return newUserPack;
   }
 
-  async openUserPack(packId: string, userId: string): Promise<UserCard> {
+  async openUserPack(packId: string, userId: string): Promise<PackOpenResult> {
     return await db.transaction(async (tx) => {
       // Get the pack to open
       const [userPack] = await tx
@@ -338,14 +352,53 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`No available cards in tier ${fullTierName}`);
       }
 
-      // Select random card from available cards
-      const selectedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-
-      // Add card to user's vault
+      // Generate 9 common cards + 1 hit card
+      const packCards = [];
+      
+      // Get 9 random common cards
+      const commonCards = await tx
+        .select()
+        .from(cards)
+        .where(and(
+          eq(cards.tier, 'common'),
+          eq(cards.isActive, true),
+          sql`${cards.stock} > 0`
+        ));
+      
+      if (commonCards.length === 0) {
+        throw new Error('No common cards available');
+      }
+      
+      for (let i = 0; i < 9; i++) {
+        const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
+        packCards.push({
+          id: randomCommon.id,
+          name: randomCommon.name,
+          tier: randomCommon.tier,
+          imageUrl: randomCommon.imageUrl || undefined,
+          marketValue: randomCommon.marketValue,
+          isHit: false,
+          position: i
+        });
+      }
+      
+      // Select the hit card from available cards of selected tier
+      const hitCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+      packCards.push({
+        id: hitCard.id,
+        name: hitCard.name,
+        tier: hitCard.tier,
+        imageUrl: hitCard.imageUrl || undefined,
+        marketValue: hitCard.marketValue,
+        isHit: true,
+        position: 9
+      });
+      
+      // Add only the hit card to user's vault (commons are just for animation)
       const [newUserCard] = await tx.insert(userCards).values({
         userId,
-        cardId: selectedCard.id,
-        pullValue: selectedCard.marketValue,
+        cardId: hitCard.id,
+        pullValue: hitCard.marketValue,
       }).returning();
 
       // Mark pack as opened
@@ -354,21 +407,25 @@ export class DatabaseStorage implements IStorage {
         .set({ isOpened: true, openedAt: new Date() })
         .where(eq(userPacks.id, packId));
 
-      // Update card stock
+      // Update card stock for hit card only
       await tx
         .update(cards)
         .set({ stock: sql`${cards.stock} - 1` })
-        .where(eq(cards.id, selectedCard.id));
+        .where(eq(cards.id, hitCard.id));
 
       // Add to global feed
       await tx.insert(globalFeed).values({
         userId,
-        cardId: selectedCard.id,
-        tier: selectedCard.tier,
+        cardId: hitCard.id,
+        tier: hitCard.tier,
         gameType: 'pack',
       });
 
-      return newUserCard;
+      return {
+        userCard: newUserCard,
+        packCards: packCards,
+        hitCardPosition: 9
+      };
     });
   }
 
