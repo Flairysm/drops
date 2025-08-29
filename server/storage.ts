@@ -421,6 +421,8 @@ export class DatabaseStorage implements IStorage {
         gameType: 'pack',
       });
 
+      console.log(`Pack opened: Generated ${packCards.length} total cards (${packCards.filter(c => !c.isHit).length} commons + ${packCards.filter(c => c.isHit).length} hit)`);
+      
       return {
         userCard: newUserCard,
         packCards: packCards,

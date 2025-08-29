@@ -30,6 +30,8 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   if (!packCards || packCards.length === 0) {
     return null;
   }
+  
+  console.log(`PackOpeningAnimation: Received ${packCards.length} cards (${packCards.filter(c => !c.isHit).length} commons + ${packCards.filter(c => c.isHit).length} hit)`);
 
   // Show all 9 cards in the initial display, but the hit card will have special styling
   const hitCard = packCards.find(card => card.isHit);
@@ -39,11 +41,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     if (showCommons) {
       setShowCommons(false);
       setShowHitCard(true);
-      return;
-    }
-    
-    if (!isHitRevealed) {
-      setIsHitRevealed(true);
+      setIsHitRevealed(true); // Immediately reveal the hit card
       return;
     }
 
