@@ -89,20 +89,39 @@ export default function MyPacks() {
   };
 
   const getPackTypeDisplay = (tier: string) => {
-    switch ((tier || '').toLowerCase()) {
-      case 'c':
-      case 'common':
-        return { name: "Pokeball Pack", color: "bg-red-500", icon: "🟡" };
-      case 'uc':
-      case 'uncommon':
+    // Map tier to pack type using same logic as backend
+    const mapTierToPackType = (tier: string): string => {
+      switch (tier.toLowerCase()) {
+        case 'common':
+        case 'c':
+          return 'pokeball';
+        case 'uncommon':
+        case 'uc':
+          return 'greatball';
+        case 'rare':
+        case 'r':
+          return 'ultraball';
+        case 'superrare':
+        case 'sr':
+          return 'ultraball'; // Super Rare should be Ultraball, not Masterball
+        case 'legendary':
+        case 'sss':
+          return 'masterball'; // Only Legendary gets Masterball
+        default:
+          return 'pokeball';
+      }
+    };
+
+    const packType = mapTierToPackType(tier || '');
+    
+    switch (packType) {
+      case 'pokeball':
+        return { name: "Pokeball Pack", color: "bg-gray-500", icon: "⚪" };
+      case 'greatball':
         return { name: "Greatball Pack", color: "bg-blue-500", icon: "🔵" };
-      case 'r':
-      case 'rare':
+      case 'ultraball':
         return { name: "Ultraball Pack", color: "bg-yellow-500", icon: "🟡" };
-      case 'sr':
-      case 'superrare':
-      case 'sss':
-      case 'legendary':
+      case 'masterball':
         return { name: "Masterball Pack", color: "bg-purple-500", icon: "🟣" };
       default:
         return { name: "Mystery Pack", color: "bg-gray-500", icon: "❓" };
