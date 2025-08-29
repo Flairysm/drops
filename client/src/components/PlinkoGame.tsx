@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Play } from "lucide-react";
+import { Play, Package } from "lucide-react";
 
 interface GameResult {
   success: boolean;
@@ -40,6 +40,7 @@ export function PlinkoGame() {
   const [lastResult, setLastResult] = useState<GameResult | null>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [finalOutcome, setFinalOutcome] = useState<string | null>(null);
+  const [showPackAssigned, setShowPackAssigned] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const ballRef = useRef<Ball | null>(null);
@@ -309,7 +310,7 @@ export function PlinkoGame() {
           setFinalOutcome(actualOutcome);
           
           setTimeout(() => {
-            setIsPlaying(false);
+            setShowPackAssigned(true);
           }, 1000);
         }
       }
@@ -458,7 +459,7 @@ export function PlinkoGame() {
               />
               
               {/* Result Overlay */}
-              {animationComplete && finalOutcome && (
+              {animationComplete && finalOutcome && !showPackAssigned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
                   <div className="text-center space-y-4">
                     <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${
@@ -483,6 +484,38 @@ export function PlinkoGame() {
                       <h4 className="font-bold text-xl">{finalOutcome}!</h4>
                       <p className="text-sm opacity-80">Ball landed in the {finalOutcome} bucket</p>
                     </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Pack Assignment Overlay */}
+              {showPackAssigned && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
+                  <div className="text-center space-y-6 p-6 bg-background/90 rounded-lg border border-border max-w-sm">
+                    <div className="space-y-3">
+                      <div className="w-16 h-16 rounded-full mx-auto bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+                        <Package className="h-8 w-8 text-white" />
+                      </div>
+                      <h4 className="font-bold text-xl text-white">Pack Assigned!</h4>
+                      <p className="text-green-400 font-medium">
+                        Pack assigned to "My Packs"
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Your {finalOutcome} pack is ready to open!
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setShowPackAssigned(false);
+                        setIsPlaying(false);
+                        setFinalOutcome(null);
+                        setAnimationComplete(false);
+                      }}
+                      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                      data-testid="button-pack-assigned-ok"
+                    >
+                      OK
+                    </Button>
                   </div>
                 </div>
               )}
