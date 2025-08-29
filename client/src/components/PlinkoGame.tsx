@@ -277,18 +277,31 @@ export function PlinkoGame() {
         ball.y = BOARD_HEIGHT - 30; // Position ball inside the bucket
         
         if (!animationComplete) {
-          const actualOutcome = OUTCOMES[clampedIndex];
+          // Use probability-based outcome instead of pure physics
+          const probabilities = [1, 8, 28, 56, 70, 56, 28, 8, 1]; // Out of 256 total
+          const random = Math.floor(Math.random() * 256);
+          
+          let cumulative = 0;
+          let selectedSlot = 4; // Default to center
+          
+          for (let i = 0; i < probabilities.length; i++) {
+            cumulative += probabilities[i];
+            if (random < cumulative) {
+              selectedSlot = i;
+              break;
+            }
+          }
+          
+          const actualOutcome = OUTCOMES[selectedSlot];
+          
+          // Move ball to the selected slot for visual consistency
+          const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+          const bucketCenter = (selectedSlot * bucketWidth) + (bucketWidth / 2);
+          ball.x = bucketCenter;
+          ball.y = BOARD_HEIGHT - 30;
+          
           setFinalOutcome(actualOutcome);
           setAnimationComplete(true);
-          
-          // Update the toast to match what's actually shown
-          const tierToOutcome: { [key: string]: string } = {
-            common: "Pokeball",
-            uncommon: "Greatball", 
-            rare: "Ultraball",
-            superrare: "Ultraball",
-            legendary: "Masterball"
-          };
           
           // Find the backend tier that matches this visual outcome
           const backendTier = lastResult?.result?.tier || 'common';
