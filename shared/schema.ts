@@ -90,6 +90,7 @@ export const userCards = pgTable("user_cards", {
   userId: varchar("user_id").references(() => users.id),
   cardId: uuid("card_id").references(() => cards.id),
   pullValue: decimal("pull_value", { precision: 10, scale: 2 }).notNull(), // Locked market value at pull time
+  quantity: integer("quantity").default(1).notNull(), // Number of copies of this card
   pulledAt: timestamp("pulled_at").defaultNow(),
   isRefunded: boolean("is_refunded").default(false),
   isShipped: boolean("is_shipped").default(false),

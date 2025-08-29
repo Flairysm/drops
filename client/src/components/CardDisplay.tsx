@@ -67,9 +67,16 @@ export function CardDisplay({
                   Credit Value: <span className="font-semibold text-accent">{card.marketValue} CR</span>
                 </span>
                 {userCard && (
-                  <span className="text-muted-foreground">
-                    Pull Value: <span className="font-semibold text-legendary">{userCard.pullValue} CR</span>
-                  </span>
+                  <>
+                    <span className="text-muted-foreground">
+                      Pull Value: <span className="font-semibold text-legendary">{userCard.pullValue} CR</span>
+                    </span>
+                    {userCard.quantity && userCard.quantity > 1 && (
+                      <span className="text-muted-foreground">
+                        Quantity: <span className="font-semibold text-primary">{userCard.quantity}x</span>
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -118,6 +125,11 @@ export function CardDisplay({
               </div>
               <div className="text-xs text-gray-300">
                 Credit Value: {userCard?.pullValue || card.marketValue} CR
+                {userCard?.quantity && userCard.quantity > 1 && (
+                  <span className="ml-2 text-primary font-bold">
+                    {userCard.quantity}x
+                  </span>
+                )}
               </div>
             </div>
           </div>

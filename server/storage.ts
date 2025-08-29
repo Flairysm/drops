@@ -406,12 +406,84 @@ export class DatabaseStorage implements IStorage {
         position: 8
       });
       
-      // Add only the hit card to user's vault (commons are just for animation)
-      const [newUserCard] = await tx.insert(userCards).values({
-        userId,
-        cardId: hitCard.id,
-        pullValue: hitCard.marketValue,
-      }).returning();
+      // Group common cards by cardId and count quantities
+      const cardQuantities = new Map<string, { card: any, count: number }>();
+      
+      // Count common cards by type
+      packCards.filter(c => !c.isHit).forEach(card => {
+        const key = card.id;
+        if (cardQuantities.has(key)) {
+          cardQuantities.get(key)!.count++;
+        } else {
+          cardQuantities.set(key, { card, count: 1 });
+        }
+      });
+      
+      // Add all cards to user vault
+      const userCardInserts = [];
+      
+      // Insert common cards with quantities
+      for (const { card, count } of cardQuantities.values()) {
+        // Check if user already has this card
+        const [existingCard] = await tx
+          .select()
+          .from(userCards)
+          .where(and(
+            eq(userCards.userId, userId),
+            eq(userCards.cardId, card.id)
+          ));
+        
+        if (existingCard) {
+          // Update quantity if card already exists
+          await tx
+            .update(userCards)
+            .set({ quantity: sql`${userCards.quantity} + ${count}` })
+            .where(eq(userCards.id, existingCard.id));
+        } else {
+          // Insert new card with quantity
+          userCardInserts.push({
+            userId,
+            cardId: card.id,
+            pullValue: card.marketValue,
+            quantity: count,
+          });
+        }
+      }
+      
+      // Add hit card
+      const [existingHitCard] = await tx
+        .select()
+        .from(userCards)
+        .where(and(
+          eq(userCards.userId, userId),
+          eq(userCards.cardId, hitCard.id)
+        ));
+      
+      let newUserCard;
+      if (existingHitCard) {
+        // Update quantity if hit card already exists
+        await tx
+          .update(userCards)
+          .set({ quantity: sql`${userCards.quantity} + 1` })
+          .where(eq(userCards.id, existingHitCard.id));
+        newUserCard = existingHitCard;
+      } else {
+        // Insert new hit card
+        userCardInserts.push({
+          userId,
+          cardId: hitCard.id,
+          pullValue: hitCard.marketValue,
+          quantity: 1,
+        });
+      }
+      
+      // Insert all new cards at once
+      if (userCardInserts.length > 0) {
+        const insertedCards = await tx.insert(userCards).values(userCardInserts).returning();
+        if (!newUserCard) {
+          newUserCard = insertedCards.find(c => c.cardId === hitCard.id) || insertedCards[0];
+        }
+      }
 
       // Mark pack as opened
       await tx
