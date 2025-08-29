@@ -1,0 +1,216 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Base colors */
+  --background: hsl(240, 3%, 6%);
+  --foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 4%, 9%);
+  --card-foreground: hsl(0, 0%, 95%);
+  --popover: hsl(240, 4%, 9%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --primary: hsl(194, 100%, 50%);
+  --primary-foreground: hsl(240, 6%, 10%);
+  --secondary: hsl(240, 4%, 15%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 5%, 25%);
+  --muted-foreground: hsl(240, 4%, 65%);
+  --accent: hsl(262, 83%, 70%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 6%, 20%);
+  --input: hsl(240, 4%, 15%);
+  --ring: hsl(194, 100%, 50%);
+  
+  /* Chart colors */
+  --chart-1: hsl(194, 100%, 50%);
+  --chart-2: hsl(159, 100%, 36%);
+  --chart-3: hsl(42, 93%, 56%);
+  --chart-4: hsl(147, 79%, 42%);
+  --chart-5: hsl(341, 75%, 51%);
+  
+  /* Sidebar colors */
+  --sidebar: hsl(240, 4%, 9%);
+  --sidebar-foreground: hsl(0, 0%, 95%);
+  --sidebar-primary: hsl(194, 100%, 50%);
+  --sidebar-primary-foreground: hsl(0, 0%, 98%);
+  --sidebar-accent: hsl(262, 83%, 70%);
+  --sidebar-accent-foreground: hsl(0, 0%, 98%);
+  --sidebar-border: hsl(240, 6%, 20%);
+  --sidebar-ring: hsl(194, 100%, 50%);
+  
+  /* Gaming tier colors */
+  --tier-common: hsl(220, 13%, 69%);
+  --tier-uncommon: hsl(142, 76%, 56%);
+  --tier-rare: hsl(217, 91%, 60%);
+  --tier-superrare: hsl(262, 83%, 70%);
+  --tier-legendary: hsl(45, 100%, 50%);
+  
+  /* Fonts */
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-gaming: "Orbitron", monospace;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  
+  /* Border radius */
+  --radius: 0.75rem;
+  
+  /* Shadows */
+  --shadow-2xs: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00), 0px 1px 2px -1px hsl(194, 100%, 50%, 0.00);
+  --shadow: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00), 0px 1px 2px -1px hsl(194, 100%, 50%, 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00), 0px 2px 4px -1px hsl(194, 100%, 50%, 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00), 0px 4px 6px -1px hsl(194, 100%, 50%, 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00), 0px 8px 10px -1px hsl(194, 100%, 50%, 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(194, 100%, 50%, 0.00);
+  
+  /* Spacing */
+  --spacing: 0.25rem;
+}
+
+.light {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(240, 10%, 4%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(240, 10%, 4%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(240, 10%, 4%);
+  --primary: hsl(194, 100%, 40%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(240, 5%, 96%);
+  --secondary-foreground: hsl(240, 6%, 10%);
+  --muted: hsl(240, 5%, 96%);
+  --muted-foreground: hsl(240, 4%, 46%);
+  --accent: hsl(262, 83%, 58%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 6%, 90%);
+  --input: hsl(240, 6%, 90%);
+  --ring: hsl(194, 100%, 40%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    background: radial-gradient(ellipse at center, hsl(240, 6%, 10%) 0%, hsl(240, 3%, 6%) 100%);
+    min-height: 100vh;
+  }
+
+  .light body {
+    background: linear-gradient(135deg, hsl(240, 100%, 99%) 0%, hsl(194, 100%, 97%) 100%);
+  }
+}
+
+@layer components {
+  .gaming-card {
+    @apply bg-gradient-to-br backdrop-blur-md border border-white/10;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--accent) / 0.1) 100%);
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .tier-glow-common {
+    box-shadow: 0 0 15px rgba(148, 163, 184, 0.5);
+  }
+
+  .tier-glow-uncommon {
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+  }
+
+  .tier-glow-rare {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  }
+
+  .tier-glow-superrare {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+  }
+
+  .tier-glow-legendary {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  }
+
+  .nav-blur {
+    @apply backdrop-blur-xl;
+    background-color: hsl(var(--background) / 0.8);
+  }
+
+  .pulse-glow {
+    animation: glow-pulse 2s ease-in-out infinite alternate;
+  }
+
+  .tier-common {
+    @apply text-[hsl(var(--tier-common))];
+  }
+
+  .tier-uncommon {
+    @apply text-[hsl(var(--tier-uncommon))];
+  }
+
+  .tier-rare {
+    @apply text-[hsl(var(--tier-rare))];
+  }
+
+  .tier-superrare {
+    @apply text-[hsl(var(--tier-superrare))];
+  }
+
+  .tier-legendary {
+    @apply text-[hsl(var(--tier-legendary))];
+  }
+}
+
+@layer utilities {
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite alternate;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-card-flip {
+    animation: card-flip 0.6s ease-in-out;
+  }
+
+  @keyframes glow-pulse {
+    0% {
+      box-shadow: 0 0 5px currentColor;
+    }
+    100% {
+      box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes card-flip {
+    0% {
+      transform: rotateY(0);
+    }
+    50% {
+      transform: rotateY(90deg);
+    }
+    100% {
+      transform: rotateY(0);
+    }
+  }
+}
