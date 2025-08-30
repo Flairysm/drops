@@ -822,6 +822,7 @@ export class DatabaseStorage implements IStorage {
             .where(eq(userCards.id, existingCard.id));
           
           // Reduce stock for existing card quantity update
+          console.log(`Reducing stock for existing card ${card.id} by ${count}`);
           await tx
             .update(cards)
             .set({ stock: sql`${cards.stock} - ${count}` })
@@ -865,6 +866,7 @@ export class DatabaseStorage implements IStorage {
         newUserCard = updatedCards[0];
         
         // Reduce stock for existing hit card quantity update
+        console.log(`Reducing stock for existing hit card ${hitCard.id} by 1`);
         await tx
           .update(cards)
           .set({ stock: sql`${cards.stock} - 1` })
@@ -891,6 +893,7 @@ export class DatabaseStorage implements IStorage {
           
           // Reduce stock for all newly inserted cards
           for (const userCardInsert of userCardInserts) {
+            console.log(`Reducing stock for card ${userCardInsert.cardId} by ${userCardInsert.quantity}`);
             await tx
               .update(cards)
               .set({ stock: sql`${cards.stock} - ${userCardInsert.quantity}` })
