@@ -28,11 +28,8 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
   // Guard against undefined packCards
   if (!packCards || packCards.length === 0) {
-    console.log('PackOpeningAnimation: No pack cards provided');
     return null;
   }
-  
-  console.log('PackOpeningAnimation: packCards length:', packCards.length, 'hitCardPosition:', hitCardPosition);
   
   // Show all 9 cards in the initial display, but the hit card will have special styling
   const hitCard = packCards.find(card => card.isHit);
