@@ -652,9 +652,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await storage.openVirtualPack(id, userId);
       
+      // Ensure market values are properly formatted
+      const formattedResult = {
+        ...result,
+        cards: result.cards.map(userCard => ({
+          id: userCard.card.id,
+          name: userCard.card.name,
+          tier: userCard.card.tier,
+          marketValue: userCard.card.marketValue ? userCard.card.marketValue.toString() : "0.00",
+          packType: userCard.card.packType || 'virtual'
+        }))
+      };
+      
       res.json({ 
         success: true,
-        ...result
+        ...formattedResult
       });
     } catch (error) {
       console.error("Error opening virtual pack:", error);

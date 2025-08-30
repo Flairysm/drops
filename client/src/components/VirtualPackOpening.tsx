@@ -150,7 +150,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           <p className="text-muted-foreground">Your new cards have been added to your vault</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {result.cards.map((card, index) => (
             <div 
               key={`${card.id}-${index}`}
@@ -199,7 +199,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           {result.cards.map((card, index) => {
             const isHitCard = index === result.cards.length - 1;
             const isRevealed = isHitCard ? hitCardRevealed : index < revealedCards;
