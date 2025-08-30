@@ -38,22 +38,25 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const hitCardIndex = packCards.findIndex(card => card.isHit);
   const nonHitCards = packCards.filter(card => !card.isHit);
 
-  // Start sequential card reveal animation
+  // Start sequential card reveal animation - just like Black Bolt virtual packs
   useEffect(() => {
     if (showCommons) {
-      // Reveal non-hit cards first (8 cards), then show hint for hit card
-      nonHitCards.forEach((_, index) => {
+      // Reset revealed cards
+      setRevealedCards(0);
+      
+      // Reveal ALL 9 cards one by one (8 commons + 1 hit card back)
+      packCards.forEach((_, index) => {
         setTimeout(() => {
           setRevealedCards(index + 1);
-        }, 500 + (index * 200)); // Start after 500ms, then 200ms intervals for smoother timing
+        }, 500 + (index * 150)); // Start after 500ms, then 150ms intervals
       });
       
-      // After all non-hit cards are revealed, enable hit card reveal
+      // After all cards are revealed, enable hit card interaction
       setTimeout(() => {
-        // Auto-transition hint - ready for hit card reveal
-      }, 500 + (nonHitCards.length * 200) + 300);
+        // All cards revealed, hit card is ready to tap
+      }, 500 + (packCards.length * 150) + 500);
     }
-  }, [showCommons, nonHitCards.length]);
+  }, [showCommons, packCards.length]);
 
   const handleRevealHit = () => {
     if (showCommons) {
@@ -151,7 +154,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           </div>
           {showCommons ? (
             <p className="text-gray-300">
-              Revealing cards... {revealedCards}/{nonHitCards.length} commons revealed
+              Revealing cards... {revealedCards}/{packCards.length} cards revealed
             </p>
           ) : showHitCard ? (
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white animate-pulse">
@@ -167,20 +170,27 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
               {packCards.map((card, index) => {
                 const isHitCard = card.isHit;
-                const nonHitIndex = isHitCard ? -1 : nonHitCards.findIndex(c => c.id === card.id);
-                const isRevealed = isHitCard ? false : nonHitIndex < revealedCards;
-                const canRevealHit = isHitCard && revealedCards >= nonHitCards.length;
+                const isCardRevealed = index < revealedCards;
+                const canRevealHit = isHitCard && revealedCards >= packCards.length;
                 const hitGlow = isHitCard ? getHitCardGlow(card.tier || '') : null;
+                
+                // Don't render card until it's time to be revealed
+                if (!isCardRevealed) {
+                  return (
+                    <div 
+                      key={index} 
+                      className="gaming-card p-3 text-center opacity-0"
+                    />
+                  );
+                }
                 
                 return (
                   <div 
                     key={index} 
-                    className={`gaming-card p-3 text-center transition-all duration-700 ease-out transform ${
-                      isRevealed
-                        ? 'opacity-100 transform scale-100 animate-in slide-in-from-bottom-2'
-                        : canRevealHit
-                        ? `opacity-100 transform scale-105 ${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400 cursor-pointer hover:scale-110 animate-pulse`
-                        : 'opacity-20 transform scale-90 blur-sm'
+                    className={`gaming-card p-3 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2 ${
+                      canRevealHit
+                        ? `${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400 cursor-pointer hover:scale-105 animate-pulse`
+                        : ''
                     }`}
                     onClick={canRevealHit ? handleRevealHit : undefined}
                   >
@@ -304,7 +314,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             data-testid="button-reveal-card"
           >
             {showCommons 
-              ? revealedCards >= nonHitCards.length ? "Click Hit Card!" : "Revealing Cards..."
+              ? revealedCards >= packCards.length ? "Click Hit Card!" : "Revealing Cards..."
               : !isHitRevealed 
               ? "Tap to Reveal" 
               : "Complete Opening"
@@ -313,8 +323,8 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           
           <p className="text-sm text-gray-400 mt-2">
             {showCommons 
-              ? revealedCards >= nonHitCards.length 
-                ? "All commons revealed! Click the glowing hit card to reveal it!" 
+              ? revealedCards >= packCards.length 
+                ? "All cards revealed! Click the glowing hit card to reveal it!" 
                 : "Watch as your cards pop up one by one..."
               : !isHitRevealed 
               ? "Your hit card is waiting..." 
