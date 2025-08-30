@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Package, Sparkles, Star } from "lucide-react";
+import { Package, Sparkles, Star, Coins } from "lucide-react";
 import type { Card as CardType } from "@shared/schema";
 
 interface VirtualPackOpeningProps {
@@ -192,6 +192,21 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
             Back to Store
           </Button>
         </div>
+
+        {/* Available Credits Bar */}
+        <Card className="gaming-card bg-gradient-to-r from-accent/10 to-primary/10 border-accent/20 max-w-xs mx-auto">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-center gap-3">
+              <Coins className="w-5 h-5 text-accent" />
+              <div className="text-center">
+                <div className="text-sm text-muted-foreground">Available Credits</div>
+                <div className="text-xl font-bold text-accent" data-testid="text-available-credits">
+                  {parseFloat((user as any)?.credits || '0').toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
