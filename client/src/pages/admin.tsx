@@ -230,13 +230,17 @@ export default function Admin() {
   const deleteVirtualPackMutation = useMutation({
     mutationFn: (packId: string) => apiRequest("DELETE", `/api/admin/virtual-packs/${packId}`),
     onSuccess: () => {
+      console.log("Pack deleted successfully, invalidating cache...");
       queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+      // Force a refetch to see if it helps
+      queryClient.refetchQueries({ queryKey: ["/api/admin/virtual-packs"] });
       toast({
         title: "Success",
         description: "Pack deleted successfully",
       });
     },
     onError: (error) => {
+      console.error("Delete pack error:", error);
       toast({
         title: "Error",
         description: error.message,

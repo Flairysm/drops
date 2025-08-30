@@ -462,6 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/virtual-packs', isAuthenticated, async (req: any, res) => {
     try {
       const virtualPacks = await storage.getVirtualPacks();
+      console.log(`Fetching virtual packs: found ${virtualPacks.length} active packs`);
       res.json(virtualPacks);
     } catch (error) {
       console.error("Error fetching virtual packs:", error);
@@ -495,7 +496,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/virtual-packs/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
+      console.log(`Deleting virtual pack: ${id}`);
       await storage.deleteVirtualPack(id);
+      console.log(`Virtual pack ${id} marked as inactive`);
       res.json({ success: true });
     } catch (error) {
       console.error("Error deleting virtual pack:", error);
