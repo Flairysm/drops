@@ -226,13 +226,23 @@ export default function Play() {
                         )}
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="flex justify-center space-x-2">
-                          <Badge variant="secondary" data-testid={`badge-themed-pack-price-${pack.id}`}>
-                            {pack.price} Credits
-                          </Badge>
-                          <Badge className="bg-accent text-primary-foreground" data-testid={`badge-themed-pack-card-count-${pack.id}`}>
-                            {pack.cardCount} Cards
-                          </Badge>
+                        <div className="text-center space-y-2">
+                          <div className="bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg p-3 border border-primary/30">
+                            <div className="text-2xl font-bold text-primary">
+                              {pack.price} Credits
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {pack.cardCount} Cards per pack
+                            </div>
+                          </div>
+                          <div className="flex justify-center space-x-2">
+                            <Badge className="bg-accent text-primary-foreground">
+                              7 Commons + 1 Hit
+                            </Badge>
+                            <Badge variant="secondary">
+                              Realistic Odds
+                            </Badge>
+                          </div>
                         </div>
                         
                         <Button
