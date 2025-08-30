@@ -19,26 +19,18 @@ export default function Landing() {
 
   const games = [
     {
-      name: "Plinko Drop",
-      description: "Drop your credit down the board and watch it bounce to determine your card tier!",
-      cost: "1.0 Credits",
+      name: "Arcade Mode",
+      description: "Play Plinko and Wheel games to earn packs! Win different tier packs based on your results.",
+      cost: "1.0+ Credits",
       maxPayout: "SSS Tier",
       color: "from-primary to-accent",
       icon: <Play className="w-4 h-4" />,
     },
     {
-      name: "Wheel Spin",
-      description: "Spin the wheel of fortune and let luck decide your card destiny!",
-      cost: "2.5 Credits",
-      maxPayout: "2x Multiplier",
-      color: "from-uncommon to-rare",
-      icon: <RotateCcw className="w-4 h-4" />,
-    },
-    {
-      name: "Virtual Pack",
-      description: "Open authentic Black & White packs with 9 bulk cards + 1 special guaranteed!",
-      cost: "4.99 Credits",
-      maxPayout: "10 Total",
+      name: "Rip Packs Mode",
+      description: "Open earned packs to discover amazing cards! Each pack contains 8 commons plus 1 hit card.",
+      cost: "Free",
+      maxPayout: "SSS Tier",
       color: "from-superrare to-legendary",
       icon: <Gift className="w-4 h-4" />,
     },
