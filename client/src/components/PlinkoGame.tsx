@@ -249,10 +249,10 @@ export function PlinkoGame() {
             // Enhanced energetic collision physics
             const dotProduct = ball.vx * nx + ball.vy * ny;
             
-            // Controlled bounce to keep ball in pyramid
-            const bounceVariation = 0.8 + (Math.random() * 0.1); // Reduced bounce energy
-            ball.vx -= 1.0 * dotProduct * nx * bounceVariation;
-            ball.vy -= 1.0 * dotProduct * ny * bounceVariation;
+            // Enhanced bounce with variation
+            const bounceVariation = 1.0 + (Math.random() * 0.1); // Up to 10% extra energy
+            ball.vx -= 1.5 * dotProduct * nx * bounceVariation;
+            ball.vy -= 1.5 * dotProduct * ny * bounceVariation;
             
             // Reduced surface friction for more dynamic movement
             const surfaceFriction = 0.85 + (Math.random() * 0.04); // Higher friction range 0.85-0.89
