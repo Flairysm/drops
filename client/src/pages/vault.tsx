@@ -39,19 +39,6 @@ export default function Vault() {
   const { data: vaultCards, isLoading: vaultLoading } = useQuery<UserCardWithCard[]>({
     queryKey: ["/api/vault"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
   });
 
   const refundMutation = useMutation({
@@ -59,8 +46,8 @@ export default function Vault() {
       await apiRequest("POST", "/api/vault/refund", { cardIds });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["/api/vault"]);
-      queryClient.invalidateQueries(["/api/auth/user"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setSelectedCards([]);
       toast({
         title: "Cards Refunded",
@@ -96,7 +83,7 @@ export default function Vault() {
   }
 
   const handleSelectAll = () => {
-    if (selectedCards.length === filteredCards.length) {
+    if (selectedCards.length === filteredCards.length && filteredCards.length > 0) {
       setSelectedCards([]);
     } else {
       setSelectedCards(filteredCards.map(card => card.id));
@@ -115,7 +102,9 @@ export default function Vault() {
     if (!vaultCards) return 0;
     return selectedCards.reduce((total, cardId) => {
       const card = vaultCards.find(c => c.id === cardId);
-      return total + (card ? parseFloat(card.pullValue) * 0.8 : 0);
+      if (!card) return total;
+      // Calculate refund value accounting for card quantity
+      return total + (parseFloat(card.pullValue) * card.quantity * 0.8);
     }, 0);
   };
 
