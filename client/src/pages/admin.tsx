@@ -70,16 +70,20 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
       
       setLoading(true);
       try {
-        const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
-        const virtualLibraryResponse = await apiRequest("GET", "/api/admin/virtual-library");
+        const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`) as any[];
+        const virtualLibraryCards = await apiRequest("GET", "/api/admin/virtual-library") as any[];
         
-        // Handle both direct array and data property responses
-        const virtualLibraryCards = Array.isArray(virtualLibraryResponse) 
-          ? virtualLibraryResponse 
-          : virtualLibraryResponse?.data || [];
+        console.log("Pack cards:", packCards);
+        console.log("Virtual library cards:", virtualLibraryCards);
+        
+        if (!Array.isArray(packCards) || !Array.isArray(virtualLibraryCards)) {
+          console.error("Invalid data structure - expected arrays");
+          setGalleryCards([]);
+          return;
+        }
         
         const cardDetails = packCards.map((pc: any) => {
-          const card = virtualLibraryCards?.find((c: any) => c.id === pc.virtualLibraryCardId);
+          const card = virtualLibraryCards.find((c: any) => c.id === pc.virtualLibraryCardId);
           return card ? { ...card, weight: pc.weight } : null;
         }).filter(Boolean);
         
@@ -105,7 +109,7 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
   }
 
   // Group cards by tier
-  const cardsByTier = galleryCards.reduce((acc, card) => {
+  const cardsByTier = galleryCards.reduce((acc, card: any) => {
     const tier = card.tier || 'D';
     if (!acc[tier]) acc[tier] = [];
     acc[tier].push(card);
@@ -134,7 +138,7 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-              {tierCards.map(card => (
+              {tierCards.map((card: any) => (
                 <div key={card.id} className="relative group">
                   <div className="aspect-[3/4] rounded-lg overflow-hidden bg-muted/30 border-2 border-muted hover:border-primary/50 transition-colors">
                     {card.imageUrl ? (
