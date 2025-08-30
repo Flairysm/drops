@@ -160,29 +160,6 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* Odds Transparency */}
-            <Card className="gaming-card mt-12">
-              <CardContent className="p-6">
-                <div className="text-center mb-6">
-                  <h3 className="font-gaming font-bold text-2xl mb-2">Transparent Odds</h3>
-                  <p className="text-muted-foreground">All probabilities are publicly available and regularly audited</p>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {tierData.map((tier) => (
-                    <div 
-                      key={tier.tier}
-                      className={`text-center p-4 rounded-lg bg-gradient-to-b from-${tier.color}/20 to-transparent border border-${tier.color}/50`}
-                    >
-                      <div className={`tier-glow-${tier.color} w-12 h-12 rounded-full bg-${tier.color}/20 mx-auto mb-2 flex items-center justify-center`}>
-                        <span className={`font-bold tier-${tier.color}`}>{tier.tier}</span>
-                      </div>
-                      <div className={`text-sm font-semibold tier-${tier.color}`}>{tier.name}</div>
-                      <div className="text-xs text-muted-foreground">{tier.odds}</div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </section>
 

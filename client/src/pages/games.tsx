@@ -189,65 +189,7 @@ export default function Play() {
           </div>
 
 
-          {/* Odds Transparency */}
-          <section className="py-8">
-            <Card className="gaming-card">
-              <CardHeader>
-                <CardTitle className="font-gaming text-center text-2xl">Transparent Odds</CardTitle>
-                <p className="text-center text-muted-foreground">
-                  All probabilities are publicly available and regularly audited
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {tierData.map((tier) => (
-                    <div 
-                      key={tier.tier}
-                      className={`text-center p-4 rounded-lg bg-gradient-to-b from-${tier.color}/20 to-transparent border border-${tier.color}/50`}
-                      data-testid={`odds-${tier.color}`}
-                    >
-                      <div className={`tier-glow-${tier.color} w-12 h-12 rounded-full bg-${tier.color}/20 mx-auto mb-2 flex items-center justify-center`}>
-                        <span className={`font-bold tier-${tier.color}`}>{tier.tier}</span>
-                      </div>
-                      <div className={`text-sm font-semibold tier-${tier.color}`}>{tier.name}</div>
-                      <div className="text-xs text-muted-foreground">{tier.odds}</div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </section>
 
-          {/* Game Rules */}
-          <section className="py-8">
-            <Card className="gaming-card">
-              <CardHeader>
-                <CardTitle className="font-gaming text-center text-2xl">Game Rules</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <h3 className="font-semibold text-lg mb-2 text-primary">Fair Play</h3>
-                    <p className="text-sm text-muted-foreground">
-                      All games use verified random number generation. No manipulation or rigged outcomes.
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-semibold text-lg mb-2 text-accent">Crash Recovery</h3>
-                    <p className="text-sm text-muted-foreground">
-                      If a game is interrupted, your result is safely stored and will be delivered automatically.
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-semibold text-lg mb-2 text-legendary">Instant Delivery</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Cards are added to your vault immediately. Check your collection anytime in the Vault section.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
         </div>
       </main>
     </div>
