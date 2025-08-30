@@ -182,14 +182,7 @@ export default function Vault() {
                 </CardContent>
               </Card>
 
-              <Card className="gaming-card">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-superrare" data-testid="text-legendary-count">
-                    {tierCounts.SSS || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Legendary Cards</div>
-                </CardContent>
-              </Card>
+              
             </div>
 
             {/* Controls */}
