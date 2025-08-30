@@ -2,17 +2,12 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
-import { PlinkoGame } from "@/components/PlinkoGame";
-import { WheelGame } from "@/components/WheelGame";
-import { PackOpening } from "@/components/PackOpening";
-import { VirtualPackStore } from "@/components/VirtualPackStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
-export default function Games() {
+export default function Play() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -31,41 +26,6 @@ export default function Games() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: packs } = useQuery({
-    queryKey: ["/api/packs"],
-    enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
-  });
-
-  const { data: virtualPacks } = useQuery({
-    queryKey: ["/api/virtual-packs"],
-    enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
-  });
 
   if (isLoading) {
     return (
@@ -91,83 +51,143 @@ export default function Games() {
           {/* Header */}
           <section className="py-8 text-center">
             <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
-              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">ARCADE</span>
+              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">PLAY</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
-              Choose your game and test your luck! Each game offers unique mechanics to discover amazing cards.
+              Discover our catalog of games and themed packs. Choose your adventure and test your luck!
             </p>
           </section>
 
-          {/* Games Tabs */}
-          <Tabs defaultValue="plinko" className="w-full">
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 mb-8">
-              <TabsTrigger value="plinko" data-testid="tab-plinko">Plinko</TabsTrigger>
-              <TabsTrigger value="wheel" data-testid="tab-wheel">Wheel</TabsTrigger>
-              <TabsTrigger value="pack" data-testid="tab-pack">Mystery Packs</TabsTrigger>
-              <TabsTrigger value="virtual-packs" data-testid="tab-virtual-packs">Themed Packs</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="plinko">
-              <Card className="gaming-card max-w-4xl mx-auto">
-                <CardHeader className="text-center">
-                  <CardTitle className="font-gaming text-2xl">Plinko Drop</CardTitle>
-                  <div className="flex justify-center space-x-4 mt-4">
+          {/* Game Categories */}
+          <div className="space-y-8">
+            {/* Minigames Section */}
+            <section>
+              <h2 className="font-gaming text-3xl text-center mb-6">
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Minigames</span>
+              </h2>
+              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-plinko">
+                  <CardHeader className="text-center">
+                    <CardTitle className="font-gaming text-xl">Plinko Drop</CardTitle>
                     <Badge className="bg-legendary text-primary-foreground">Max: SSS Tier</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <PlinkoGame />
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground mb-4">Drop balls and watch them bounce to win amazing cards!</p>
+                    <button 
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
+                      onClick={() => window.location.href = '/play/plinko'}
+                      data-testid="button-play-plinko"
+                    >
+                      Play Plinko
+                    </button>
+                  </CardContent>
+                </Card>
+                
+                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-wheel">
+                  <CardHeader className="text-center">
+                    <CardTitle className="font-gaming text-xl">Wheel Spin</CardTitle>
+                    <div className="flex justify-center space-x-2">
+                      <Badge variant="secondary">2.5 Credits</Badge>
+                      <Badge className="bg-superrare text-primary-foreground">2x Multiplier</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground mb-4">Spin the wheel of fortune for bonus rewards!</p>
+                    <button 
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
+                      onClick={() => window.location.href = '/play/wheel'}
+                      data-testid="button-play-wheel"
+                    >
+                      Play Wheel
+                    </button>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+            
+            {/* Special Packs Section */}
+            <section>
+              <h2 className="font-gaming text-3xl text-center mb-6">
+                <span className="bg-gradient-to-r from-accent to-legendary bg-clip-text text-transparent">Special Packs</span>
+              </h2>
+              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer opacity-50" data-testid="card-slabs">
+                  <CardHeader className="text-center">
+                    <CardTitle className="font-gaming text-xl">Slabs Collection</CardTitle>
+                    <Badge variant="outline">Coming Soon</Badge>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground mb-4">Premium graded cards in protective cases.</p>
+                    <button className="bg-muted text-muted-foreground px-4 py-2 rounded-md w-full" disabled data-testid="button-slabs-disabled">
+                      Coming Soon
+                    </button>
+                  </CardContent>
+                </Card>
+                
+                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer opacity-50" data-testid="card-vintages">
+                  <CardHeader className="text-center">
+                    <CardTitle className="font-gaming text-xl">Vintage Collection</CardTitle>
+                    <Badge variant="outline">Coming Soon</Badge>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground mb-4">Rare vintage cards from classic sets.</p>
+                    <button className="bg-muted text-muted-foreground px-4 py-2 rounded-md w-full" disabled data-testid="button-vintages-disabled">
+                      Coming Soon
+                    </button>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+            
+            {/* Classic Packs Section */}
+            <section>
+              <h2 className="font-gaming text-3xl text-center mb-6">
+                <span className="bg-gradient-to-r from-legendary to-primary bg-clip-text text-transparent">Classic Packs</span>
+              </h2>
+              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-mystery-packs">
+                  <CardHeader className="text-center">
+                    <CardTitle className="font-gaming text-xl">Mystery Packs</CardTitle>
+                    <div className="flex justify-center space-x-2">
+                      <Badge variant="secondary">4.99 Credits</Badge>
+                      <Badge className="bg-accent text-primary-foreground">10 Cards</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground mb-4">Random packs with surprise card collections!</p>
+                    <button 
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
+                      onClick={() => window.location.href = '/play/mystery-packs'}
+                      data-testid="button-play-mystery"
+                    >
+                      Open Mystery Pack
+                    </button>
+                  </CardContent>
+                </Card>
+                
+                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-themed-packs">
+                  <CardHeader className="text-center">
+                    <CardTitle className="font-gaming text-xl">Themed Packs</CardTitle>
+                    <div className="flex justify-center space-x-2">
+                      <Badge className="bg-legendary text-primary-foreground">Curated</Badge>
+                      <Badge variant="secondary">Variable Price</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground mb-4">Curated collections like Black Bolt and more!</p>
+                    <button 
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
+                      onClick={() => window.location.href = '/play/themed-packs'}
+                      data-testid="button-play-themed"
+                    >
+                      Browse Themed Packs
+                    </button>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+          </div>
 
-            <TabsContent value="wheel">
-              <Card className="gaming-card max-w-4xl mx-auto">
-                <CardHeader className="text-center">
-                  <CardTitle className="font-gaming text-2xl">Wheel Spin</CardTitle>
-                  <div className="flex justify-center space-x-4 mt-4">
-                    <Badge variant="secondary">Cost: 2.5 Credits</Badge>
-                    <Badge className="bg-superrare text-primary-foreground">Bonus: 2x Multiplier</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <WheelGame />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="pack">
-              <Card className="gaming-card max-w-4xl mx-auto">
-                <CardHeader className="text-center">
-                  <CardTitle className="font-gaming text-2xl">Mystery Pack Opening</CardTitle>
-                  <div className="flex justify-center space-x-4 mt-4">
-                    <Badge variant="secondary">Cost: 4.99 Credits</Badge>
-                    <Badge className="bg-accent text-primary-foreground">10 Cards Total</Badge>
-                    <Badge className="bg-primary text-primary-foreground">Random Tiers</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <PackOpening packs={packs || []} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="virtual-packs">
-              <Card className="gaming-card max-w-6xl mx-auto">
-                <CardHeader className="text-center">
-                  <CardTitle className="font-gaming text-2xl">Themed Pack Store</CardTitle>
-                  <div className="flex justify-center space-x-4 mt-4">
-                    <Badge className="bg-legendary text-primary-foreground">Curated Collections</Badge>
-                    <Badge variant="secondary">Variable Pricing</Badge>
-                    <Badge className="bg-accent text-primary-foreground">Custom Card Pools</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <VirtualPackStore virtualPacks={virtualPacks || []} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
 
           {/* Odds Transparency */}
           <section className="py-8">

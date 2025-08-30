@@ -7,10 +7,14 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
-import Games from "@/pages/games";
+import Play from "@/pages/games";
+import Plinko from "@/pages/plinko";
+import Wheel from "@/pages/wheel";
+import MysteryPacks from "@/pages/mystery-packs";
+import ThemedPacks from "@/pages/themed-packs";
 import MyPacks from "@/pages/my-packs";
 import Vault from "@/pages/vault";
-import Admin from "@/pages/admin";
+import Admin from "@/pages/admin-simple";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,7 +35,11 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Home} />
-          <Route path="/games" component={Games} />
+          <Route path="/play" component={Play} />
+          <Route path="/play/plinko" component={Plinko} />
+          <Route path="/play/wheel" component={Wheel} />
+          <Route path="/play/mystery-packs" component={MysteryPacks} />
+          <Route path="/play/themed-packs" component={ThemedPacks} />
           <Route path="/my-packs" component={MyPacks} />
           <Route path="/vault" component={Vault} />
           <Route path="/admin" component={Admin} />
