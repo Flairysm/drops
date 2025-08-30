@@ -253,9 +253,9 @@ export default function Admin() {
 
   // Mutations
   const createVirtualLibraryCardMutation = useMutation({
-    mutationFn: (data: VirtualLibraryFormData) => apiRequest("POST", "/api/admin/virtual-library", data),
+    mutationFn: (data: VirtualLibraryFormData) => apiRequest("POST", "/api/admin/cards", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cards"] });
       virtualLibraryForm.reset();
       toast({
         title: "Success",
@@ -272,9 +272,9 @@ export default function Admin() {
   });
 
   const deleteVirtualLibraryCardMutation = useMutation({
-    mutationFn: (cardId: string) => apiRequest("DELETE", `/api/admin/virtual-library/${cardId}`),
+    mutationFn: (cardId: string) => apiRequest("DELETE", `/api/admin/cards/${cardId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cards"] });
       setDeleteVirtualLibraryCardId(null);
       toast({
         title: "Success",
@@ -456,10 +456,10 @@ export default function Admin() {
     if (!editingCard) return;
     
     try {
-      const response = await apiRequest("PATCH", `/api/admin/virtual-library/${editingCard.id}`, data);
+      const response = await apiRequest("PATCH", `/api/admin/cards/${editingCard.id}`, data);
       await response.json();
       
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cards"] });
       setEditingCard(null);
       virtualLibraryForm.reset();
       

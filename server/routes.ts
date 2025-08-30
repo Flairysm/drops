@@ -338,6 +338,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/admin/cards/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const cardData = insertCardSchema.partial().parse(req.body);
+      const card = await storage.updateCard(id, cardData);
+      res.json(card);
+    } catch (error) {
+      console.error("Error updating card:", error);
+      res.status(500).json({ message: "Failed to update card" });
+    }
+  });
+
   app.patch('/api/admin/cards/:id/stock', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;

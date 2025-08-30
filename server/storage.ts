@@ -64,6 +64,7 @@ export interface IStorage {
   getCards(packType?: string): Promise<Card[]>;
   getCard(id: string): Promise<Card | undefined>;
   createCard(card: InsertCard): Promise<Card>;
+  updateCard(id: string, card: Partial<InsertCard>): Promise<Card>;
   updateCardStock(id: string, stock: number): Promise<void>;
   deleteCard(id: string): Promise<void>;
   
@@ -207,6 +208,14 @@ export class DatabaseStorage implements IStorage {
   async createCard(card: InsertCard): Promise<Card> {
     const [newCard] = await db.insert(cards).values(card).returning();
     return newCard;
+  }
+
+  async updateCard(id: string, cardData: Partial<InsertCard>): Promise<Card> {
+    const [updatedCard] = await db.update(cards)
+      .set({ ...cardData, updatedAt: new Date() })
+      .where(eq(cards.id, id))
+      .returning();
+    return updatedCard;
   }
 
   async updateCardStock(id: string, stock: number): Promise<void> {
