@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { CreditCard, Package } from "lucide-react";
+import { CreditCard, Package, Circle, RotateCcw } from "lucide-react";
 import { VirtualPackOpening } from "@/components/VirtualPackOpening";
 import { apiRequest } from "@/lib/queryClient";
 import type { VirtualPack, User } from "@shared/schema";
@@ -116,6 +116,11 @@ export default function Play() {
               <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-plinko">
                   <CardHeader className="text-center">
+                    <div className="w-full h-32 mb-4 rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20 relative flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                        <Circle className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
                     <CardTitle className="font-gaming text-xl">Plinko Drop</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
                       Drop balls and watch them bounce through pegs
@@ -151,6 +156,11 @@ export default function Play() {
                 
                 <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-wheel">
                   <CardHeader className="text-center">
+                    <div className="w-full h-32 mb-4 rounded-lg bg-gradient-to-br from-yellow-600/20 to-red-600/20 relative flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-yellow-500 to-red-500 flex items-center justify-center">
+                        <RotateCcw className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
                     <CardTitle className="font-gaming text-xl">Wheel Spin</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
                       Spin the wheel of fortune for bonus rewards
