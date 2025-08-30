@@ -131,7 +131,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           </div>
           {showCommons ? (
             <p className="text-gray-300">
-              8 Common Cards - Your Hit Card Awaits!
+              9 Cards Total - Find Your Hit Card!
             </p>
           ) : showHitCard ? (
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white animate-pulse">
@@ -145,9 +145,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           <div className="mb-6">
             <h3 className="text-center text-white mb-4">Your Pack Contents</h3>
             <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
-              {packCards.filter(card => !card.isHit).map((card, index) => {
-                const isHitCard = false; // These are only the common D-tier cards
-                const hitGlow = null;
+              {packCards.map((card, index) => {
+                const isHitCard = card.isHit;
+                const hitGlow = isHitCard ? getHitCardGlow(card.tier || '') : null;
                 
                 return (
                   <div 
