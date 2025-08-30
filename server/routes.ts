@@ -659,6 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: userCard.card.id,
           name: userCard.card.name,
           tier: userCard.card.tier,
+          imageUrl: userCard.card.imageUrl,
           marketValue: userCard.card.marketValue ? userCard.card.marketValue.toString() : "0.00",
           packType: userCard.card.packType || 'virtual'
         }))
