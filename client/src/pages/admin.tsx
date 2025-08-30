@@ -59,6 +59,109 @@ const tierColors = {
   SSS: "red"
 };
 
+// Card Gallery Component for displaying cards by tier
+const CardGalleryContent = ({ packId }: { packId: string }) => {
+  const [galleryCards, setGalleryCards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadGalleryCards = async () => {
+      if (!packId) return;
+      
+      setLoading(true);
+      try {
+        const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
+        const { data: virtualLibraryCards } = await apiRequest("GET", "/api/admin/virtual-library");
+        
+        const cardDetails = packCards.map((pc: any) => {
+          const card = virtualLibraryCards?.find((c: any) => c.id === pc.virtualLibraryCardId);
+          return card ? { ...card, weight: pc.weight } : null;
+        }).filter(Boolean);
+        
+        setGalleryCards(cardDetails);
+      } catch (error) {
+        console.error("Failed to load gallery cards:", error);
+        setGalleryCards([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGalleryCards();
+  }, [packId]);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-32">Loading cards...</div>;
+  }
+
+  if (galleryCards.length === 0) {
+    return <div className="text-center text-muted-foreground py-8">No cards in this pack</div>;
+  }
+
+  // Group cards by tier
+  const cardsByTier = galleryCards.reduce((acc, card) => {
+    const tier = card.tier || 'D';
+    if (!acc[tier]) acc[tier] = [];
+    acc[tier].push(card);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const tierOrder = ['SSS', 'SS', 'S', 'A', 'B', 'C', 'D'];
+  
+  return (
+    <div className="space-y-6">
+      {tierOrder.map(tier => {
+        const tierCards = cardsByTier[tier];
+        if (!tierCards || tierCards.length === 0) return null;
+        
+        return (
+          <div key={tier} className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <div className={`w-6 h-6 rounded-full bg-${tierColors[tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                <span className={`text-sm font-bold tier-${tierColors[tier as keyof typeof tierColors]}`}>
+                  {tier}
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold">
+                {tier} Tier ({tierCards.length} card{tierCards.length !== 1 ? 's' : ''})
+              </h3>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+              {tierCards.map(card => (
+                <div key={card.id} className="relative group">
+                  <div className="aspect-[3/4] rounded-lg overflow-hidden bg-muted/30 border-2 border-muted hover:border-primary/50 transition-colors">
+                    {card.imageUrl ? (
+                      <img 
+                        src={card.imageUrl} 
+                        alt={card.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.setAttribute('style', 'display: flex');
+                        }}
+                      />
+                    ) : null}
+                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center" style={{ display: card.imageUrl ? 'none' : 'flex' }}>
+                      <Package className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  </div>
+                  
+                  {/* Card Info Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="text-xs font-medium truncate">{card.name}</div>
+                    <div className="text-xs text-gray-300">{card.marketValue}c</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function Admin() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
@@ -70,6 +173,8 @@ export default function Admin() {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [expandedPacks, setExpandedPacks] = useState<Set<string>>(new Set());
   const [packCardPools, setPackCardPools] = useState<Record<string, any[]>>({});
+  const [showCardGallery, setShowCardGallery] = useState(false);
+  const [galleryPack, setGalleryPack] = useState<any>(null);
 
   const virtualLibraryForm = useForm<VirtualLibraryFormData>({
     resolver: zodResolver(virtualLibrarySchema),
@@ -287,6 +392,16 @@ export default function Admin() {
       });
       
       console.log("Card pool save response:", response);
+      
+      // Clear the cached card pool for this pack to force reload
+      setPackCardPools(prev => {
+        const updated = { ...prev };
+        delete updated[editingPack.id];
+        return updated;
+      });
+      
+      // Force expansion to show updated cards
+      setExpandedPacks(prev => new Set([...prev, editingPack.id]));
       
       queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
       setShowPackCardSelector(false);
@@ -749,14 +864,14 @@ export default function Admin() {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      onClick={() => togglePackExpansion(pack.id)}
+                                      onClick={() => {
+                                        setGalleryPack(pack);
+                                        setShowCardGallery(true);
+                                      }}
                                       data-testid={`button-view-cards-${pack.id}`}
-                                      title="View card pool"
+                                      title="View card gallery"
                                     >
-                                      {expandedPacks.has(pack.id) ? 
-                                        <ChevronUp className="w-3 h-3" /> : 
-                                        <Eye className="w-3 h-3" />
-                                      }
+                                      <Eye className="w-3 h-3" />
                                     </Button>
                                     <Button
                                       size="sm"
@@ -839,6 +954,17 @@ export default function Admin() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Card Gallery Dialog */}
+          <Dialog open={showCardGallery} onOpenChange={setShowCardGallery}>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Card Gallery - {galleryPack?.name}</DialogTitle>
+              </DialogHeader>
+              
+              <CardGalleryContent packId={galleryPack?.id} />
+            </DialogContent>
+          </Dialog>
 
           {/* Card Pool Selection Dialog */}
           <Dialog open={showPackCardSelector} onOpenChange={setShowPackCardSelector}>
