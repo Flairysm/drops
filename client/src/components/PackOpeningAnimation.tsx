@@ -174,13 +174,18 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 const canRevealHit = isHitCard && revealedCards >= packCards.length;
                 const hitGlow = isHitCard ? getHitCardGlow(card.tier || '') : null;
                 
-                // Don't render card until it's time to be revealed
+                // Show empty slot until card is revealed
                 if (!isCardRevealed) {
                   return (
                     <div 
                       key={index} 
-                      className="gaming-card p-3 text-center opacity-0"
-                    />
+                      className="gaming-card p-3 text-center border-dashed border-2 border-gray-500 opacity-50"
+                    >
+                      <div className="w-12 h-16 mx-auto bg-gray-700/30 rounded flex items-center justify-center mb-2">
+                        <span className="text-xs text-gray-500">?</span>
+                      </div>
+                      <p className="text-xs text-gray-500">???</p>
+                    </div>
                   );
                 }
                 
