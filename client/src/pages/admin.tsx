@@ -140,10 +140,10 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
               </h3>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
               {tierCards.map((card: any) => (
                 <div key={card.id} className="relative group">
-                  <div className="aspect-[3/4] rounded-lg overflow-hidden bg-muted/30 border-2 border-muted hover:border-primary/50 transition-colors">
+                  <div className="aspect-[3/4] rounded-md overflow-hidden bg-muted/30 border border-muted hover:border-primary/50 transition-colors w-20 h-28">
                     {card.imageUrl ? (
                       <img 
                         src={card.imageUrl} 
@@ -156,14 +156,14 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
                       />
                     ) : null}
                     <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center" style={{ display: card.imageUrl ? 'none' : 'flex' }}>
-                      <Package className="w-8 h-8 text-muted-foreground" />
+                      <Package className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
                   
                   {/* Card Info Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="text-xs font-medium truncate">{card.name}</div>
-                    <div className="text-xs text-gray-300">{card.marketValue}c</div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/90 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="text-[10px] font-medium truncate">{card.name}</div>
+                    <div className="text-[9px] text-gray-300">{card.marketValue}c</div>
                   </div>
                 </div>
               ))}
