@@ -214,9 +214,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               data-testid={`card-result-${index}`}
             >
               <div className="p-2 text-center h-full flex flex-col justify-between">
-                <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-xs font-semibold mb-1 line-clamp-2">{card.name}</div>
-                </div>
                 {(card.tier) !== "D" && (
                   <div className="absolute top-1 right-1">
                     <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
@@ -318,10 +315,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                         </div>
                       )}
                       
-                      {/* Card info at bottom */}
-                      <div className="mt-1 text-center">
-                        <div className="text-xs font-semibold truncate">{card.name}</div>
-                      </div>
                     </div>
                   </>
                 ) : (
