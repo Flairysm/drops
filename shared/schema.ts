@@ -82,6 +82,7 @@ export const virtualLibrary = pgTable("virtual_library", {
   imageUrl: varchar("image_url"),
   marketValue: decimal("market_value", { precision: 10, scale: 2 }).notNull(),
   description: text("description"),
+  stock: integer("stock").default(0),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
