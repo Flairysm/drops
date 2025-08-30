@@ -74,8 +74,8 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       setTimeout(() => {
         setAnimationPhase("opened");
         
-        const hitCard = result.cards.find(card => (card.tier) !== "D");
-        const tier = hitCard ? (hitCard.card?.tier || hitCard.tier) : "D";
+        const hitCard = result.cards.find(card => card.tier !== "D");
+        const tier = hitCard ? hitCard.tier : "D";
         const tierName = tier ? tierNames[tier as keyof typeof tierNames] : "Common";
         
         toast({
