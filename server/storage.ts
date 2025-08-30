@@ -371,24 +371,33 @@ export class DatabaseStorage implements IStorage {
         throw new Error('No pull rates configured for this virtual pack');
       }
 
-      // Get available cards in this pack's pool from main cards table, grouped by tier
-      const allVirtualCards = await tx
-        .select()
-        .from(cards)
-        .where(and(eq(cards.packType, 'virtual'), eq(cards.isActive, true)));
+      // Get pack-specific cards assigned through manage content
+      const packCards = await tx
+        .select({
+          card: cards,
+          weight: virtualPackCards.weight,
+        })
+        .from(virtualPackCards)
+        .innerJoin(cards, eq(virtualPackCards.virtualLibraryCardId, cards.id))
+        .where(and(
+          eq(virtualPackCards.virtualPackId, virtualPackId),
+          eq(virtualPackCards.isActive, true),
+          eq(cards.isActive, true)
+        ));
 
-      if (allVirtualCards.length === 0) {
-        throw new Error('No cards available in this virtual pack');
+      if (packCards.length === 0) {
+        throw new Error('No cards assigned to this virtual pack. Please use Manage Content to assign cards.');
       }
 
-      // Group cards by tier
-      const cardsByTier = allVirtualCards.reduce((acc, card) => {
+      // Group pack-specific cards by tier
+      const cardsByTier = packCards.reduce((acc, packCard) => {
+        const card = packCard.card;
         if (card.tier) {
           if (!acc[card.tier]) acc[card.tier] = [];
           acc[card.tier].push(card);
         }
         return acc;
-      }, {} as Record<string, typeof allVirtualCards>);
+      }, {} as Record<string, any[]>);
 
       // Deduct credits
       const creditCost = parseFloat(virtualPack.price);
