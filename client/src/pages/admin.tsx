@@ -471,6 +471,28 @@ export default function Admin() {
     }
   };
 
+  const handleStockUpdate = async (cardId: string, newStock: number) => {
+    try {
+      const response = await apiRequest("PATCH", `/api/admin/virtual-library/${cardId}`, {
+        stock: newStock,
+      });
+      await response.json();
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      
+      toast({
+        title: "Success",
+        description: `Stock updated to ${newStock}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update stock",
+        variant: "destructive",
+      });
+    }
+  };
+
   const toggleCardSelection = (cardId: string) => {
     setSelectedCards(prev => 
       prev.includes(cardId) 
@@ -774,9 +796,24 @@ export default function Admin() {
                                       {card.tier}
                                     </span>
                                   </div>
-                                  <div>
+                                  <div className="flex-1">
                                     <div className="font-medium">{card.name}</div>
                                     <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
+                                    <div className="text-xs text-blue-600 dark:text-blue-400">
+                                      Stock: {card.stock || 0} available
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 mr-2">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      value={card.stock || 0}
+                                      onChange={(e) => handleStockUpdate(card.id, parseInt(e.target.value) || 0)}
+                                      className="w-20 h-8 text-sm"
+                                      placeholder="0"
+                                      data-testid={`input-stock-${card.id}`}
+                                    />
+                                    <span className="text-xs text-muted-foreground">stock</span>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
