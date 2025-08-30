@@ -151,9 +151,12 @@ export default function Play() {
               <h2 className="font-gaming text-3xl text-center mb-6">
                 <span className="bg-gradient-to-r from-legendary to-primary bg-clip-text text-transparent">Themed Packs</span>
               </h2>
-              <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Explore curated collections featuring specific themes and characters!
-              </p>
+              <div className="text-center mb-8">
+                <h3 className="font-gaming text-xl mb-2">CLASSIC PACKS</h3>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Explore curated collections featuring specific themes and characters!
+                </p>
+              </div>
               
               {virtualPacks && virtualPacks.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
