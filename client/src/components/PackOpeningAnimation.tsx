@@ -204,7 +204,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                         <p className="text-xs font-bold text-yellow-300">{canRevealHit ? 'TAP!' : 'HIT'}</p>
                         <p className="text-xs text-yellow-200">{card.tier?.toUpperCase()}</p>
                       </div>
-                    ) : isRevealed ? (
+                    ) : isCardRevealed ? (
                       /* Regular Card - Revealed */
                       <div>
                         {card.imageUrl ? (
