@@ -429,9 +429,9 @@ export class DatabaseStorage implements IStorage {
 
             // Decrease card stock when added to vault
             await tx
-              .update(cards)
-              .set({ stock: sql`${cards.stock} - 1` })
-              .where(eq(cards.id, randomCard.id));
+              .update(virtualLibrary)
+              .set({ stock: sql`${virtualLibrary.stock} - 1` })
+              .where(eq(virtualLibrary.id, randomCard.id));
 
             pulledCards.push({
               ...newUserCard,
@@ -457,9 +457,9 @@ export class DatabaseStorage implements IStorage {
 
           // Decrease card stock when added to vault
           await tx
-            .update(cards)
-            .set({ stock: sql`${cards.stock} - 1` })
-            .where(eq(cards.id, randomCard.id));
+            .update(virtualLibrary)
+            .set({ stock: sql`${virtualLibrary.stock} - 1` })
+            .where(eq(virtualLibrary.id, randomCard.id));
 
           pulledCards.push({
             ...newUserCard,
