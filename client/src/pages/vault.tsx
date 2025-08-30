@@ -114,12 +114,14 @@ export default function Vault() {
   };
 
   const filteredCards = vaultCards?.filter(card => 
-    filterTier === "all" || card.card.tier === getTierMapping(filterTier)
+    card.card && (filterTier === "all" || card.card.tier === getTierMapping(filterTier))
   ) || [];
 
   const tierCounts = vaultCards?.reduce((acc, card) => {
     // Database now uses direct tier codes (D, C, B, A, S, SS, SSS)
-    acc[card.card.tier] = (acc[card.card.tier] || 0) + 1;
+    if (card.card && card.card.tier) {
+      acc[card.card.tier] = (acc[card.card.tier] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>) || {};
 
