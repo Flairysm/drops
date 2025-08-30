@@ -608,10 +608,13 @@ export class DatabaseStorage implements IStorage {
         
         // Restore card stock when refunded
         if (card.cardId) {
+          console.log(`Refund: Restoring ${card.quantity} stock to card ${card.cardId}`);
           await tx
             .update(cards)
             .set({ stock: sql`${cards.stock} + ${card.quantity}` })
             .where(eq(cards.id, card.cardId));
+        } else {
+          console.log('Refund: No cardId found for user card', card.id);
         }
       }
 
