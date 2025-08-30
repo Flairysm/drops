@@ -97,13 +97,30 @@ export default function Play() {
       <main className="pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <section className="py-8 text-center">
-            <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">ARCADE</span>
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
-              Discover our catalog of games and themed packs. Choose your adventure and test your luck!
-            </p>
+          <section className="py-8 text-center space-y-6">
+            <div>
+              <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">ARCADE</span>
+              </h1>
+              <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
+                Discover our catalog of games and themed packs. Choose your adventure and test your luck!
+              </p>
+            </div>
+            
+            {/* Credits Display */}
+            {user && (
+              <div className="max-w-sm mx-auto">
+                <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-4 border border-primary/20">
+                  <div className="text-sm text-muted-foreground mb-1">Your Credits</div>
+                  <div className="text-3xl font-bold text-primary">
+                    {parseFloat(user.credits || '0').toFixed(2)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Available for games and packs
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Game Categories */}
