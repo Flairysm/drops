@@ -188,6 +188,7 @@ export default function Admin() {
   const [packCardPools, setPackCardPools] = useState<Record<string, any[]>>({});
   const [showCardGallery, setShowCardGallery] = useState(false);
   const [galleryPack, setGalleryPack] = useState<any>(null);
+  const [inventorySearch, setInventorySearch] = useState("");
 
   // Set up form data when editing a card
   useEffect(() => {
@@ -784,11 +785,27 @@ export default function Admin() {
                       {/* Current Inventory */}
                       <Card className="gaming-card">
                         <CardHeader>
-                          <CardTitle>Current Inventory ({virtualLibraryCards?.length || 0} cards)</CardTitle>
+                          <div className="flex items-center justify-between">
+                            <CardTitle>Current Inventory ({virtualLibraryCards?.length || 0} cards)</CardTitle>
+                          </div>
+                          <div className="mt-3">
+                            <Input
+                              type="text"
+                              placeholder="Search cards by name or tier..."
+                              value={inventorySearch}
+                              onChange={(e) => setInventorySearch(e.target.value)}
+                              className="max-w-md"
+                              data-testid="input-inventory-search"
+                            />
+                          </div>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-2 max-h-80 overflow-y-auto">
-                            {virtualLibraryCards?.map((card: any) => (
+                            {virtualLibraryCards?.filter((card: any) => {
+                              const searchTerm = inventorySearch.toLowerCase();
+                              return card.name.toLowerCase().includes(searchTerm) || 
+                                     card.tier.toLowerCase().includes(searchTerm);
+                            }).map((card: any) => (
                               <div key={card.id} className="flex items-center justify-between p-3 rounded border">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
