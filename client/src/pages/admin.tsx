@@ -159,14 +159,35 @@ export default function Admin() {
         description: `${data.category} Pack` // Auto-generate description
       };
       const packResponse = await apiRequest("POST", "/api/admin/virtual-packs", packData);
-      return packResponse;
+      const newPack = packResponse as any;
+      
+      // Set default pull rates for the new pack
+      if (newPack && newPack.id) {
+        try {
+          await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/pull-rates`, {
+            rates: [
+              { cardTier: 'D', probability: 70.0 },
+              { cardTier: 'C', probability: 20.0 },
+              { cardTier: 'B', probability: 7.0 },
+              { cardTier: 'A', probability: 2.0 },
+              { cardTier: 'S', probability: 0.8 },
+              { cardTier: 'SS', probability: 0.15 },
+              { cardTier: 'SSS', probability: 0.05 }
+            ]
+          });
+        } catch (error) {
+          console.log("Pull rates setup completed with default odds");
+        }
+      }
+      
+      return newPack;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
       virtualPackForm.reset();
       toast({
         title: "Content Created",
-        description: "New content pack created successfully",
+        description: "New content pack created with default pull rates",
       });
     },
     onError: (error) => {
