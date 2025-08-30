@@ -25,7 +25,10 @@ import {
   Ban,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  Eye,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import type { User, VirtualLibraryCard } from "@shared/schema";
 
@@ -65,6 +68,8 @@ export default function Admin() {
   const [editingPack, setEditingPack] = useState<any>(null);
   const [showPackCardSelector, setShowPackCardSelector] = useState(false);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
+  const [expandedPacks, setExpandedPacks] = useState<Set<string>>(new Set());
+  const [packCardPools, setPackCardPools] = useState<Record<string, any[]>>({});
 
   const virtualLibraryForm = useForm<VirtualLibraryFormData>({
     resolver: zodResolver(virtualLibrarySchema),
@@ -308,6 +313,38 @@ export default function Admin() {
         ? prev.filter(id => id !== cardId)
         : [...prev, cardId]
     );
+  };
+
+  const togglePackExpansion = async (packId: string) => {
+    const newExpanded = new Set(expandedPacks);
+    
+    if (expandedPacks.has(packId)) {
+      newExpanded.delete(packId);
+    } else {
+      newExpanded.add(packId);
+      
+      // Load card pool if not already loaded
+      if (!packCardPools[packId]) {
+        try {
+          const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
+          const cardDetails = await Promise.all(
+            packCards.map(async (pc: any) => {
+              const card = virtualLibraryCards?.find((c: any) => c.id === pc.virtualLibraryCardId);
+              return card ? { ...card, weight: pc.weight } : null;
+            })
+          );
+          
+          setPackCardPools(prev => ({
+            ...prev,
+            [packId]: cardDetails.filter(Boolean)
+          }));
+        } catch (error) {
+          console.error("Failed to load pack cards:", error);
+        }
+      }
+    }
+    
+    setExpandedPacks(newExpanded);
   };
 
   if (isLoading) {
@@ -697,38 +734,86 @@ export default function Admin() {
                         <CardContent>
                           <div className="space-y-3 max-h-80 overflow-y-auto">
                             {virtualPacks?.map((pack: any) => (
-                              <div key={pack.id} className="flex items-center justify-between p-3 rounded border">
-                                <div>
-                                  <div className="font-medium">{pack.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {pack.price} credits • {pack.description || 'No description'}
+                              <div key={pack.id} className="border rounded">
+                                <div className="flex items-center justify-between p-3">
+                                  <div className="flex-1">
+                                    <div className="font-medium">{pack.name}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {pack.price} credits • {pack.description || 'No description'}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {packCardPools[pack.id]?.length || 0} cards in pool
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {pack.cardCount || 0} cards in pool
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => togglePackExpansion(pack.id)}
+                                      data-testid={`button-view-cards-${pack.id}`}
+                                      title="View card pool"
+                                    >
+                                      {expandedPacks.has(pack.id) ? 
+                                        <ChevronUp className="w-3 h-3" /> : 
+                                        <Eye className="w-3 h-3" />
+                                      }
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleManagePackCards(pack)}
+                                      data-testid={`button-edit-pack-${pack.id}`}
+                                      title="Edit card pool"
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleDeleteVirtualPack(pack.id)}
+                                      data-testid={`button-delete-pack-${pack.id}`}
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
                                   </div>
                                 </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingPack(pack);
-                                      setShowPackCardSelector(true);
-                                    }}
-                                    data-testid={`button-edit-pack-${pack.id}`}
-                                    title="Edit card pool"
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleDeleteVirtualPack(pack.id)}
-                                    data-testid={`button-delete-pack-${pack.id}`}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
+                                
+                                {/* Expanded Card Pool View */}
+                                {expandedPacks.has(pack.id) && (
+                                  <div className="border-t bg-muted/30 p-3">
+                                    <div className="text-xs font-medium mb-2 text-muted-foreground">
+                                      Card Pool ({packCardPools[pack.id]?.length || 0} cards):
+                                    </div>
+                                    {packCardPools[pack.id]?.length > 0 ? (
+                                      <div className="grid gap-2 max-h-32 overflow-y-auto">
+                                        {packCardPools[pack.id].map((card: any) => (
+                                          <div key={card.id} className="flex items-center space-x-2 text-xs">
+                                            <div className={`w-4 h-4 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                                              <span className={`text-[10px] font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
+                                                {card.tier}
+                                              </span>
+                                            </div>
+                                            <span className="flex-1">{card.name}</span>
+                                            <span className="text-muted-foreground">{card.marketValue}c</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-muted-foreground">No cards assigned to this pack</p>
+                                    )}
+                                    <div className="mt-2">
+                                      <Button
+                                        size="sm"
+                                        variant="link"
+                                        onClick={() => togglePackExpansion(pack.id)}
+                                        className="text-xs p-0 h-auto"
+                                      >
+                                        <ChevronUp className="w-3 h-3 mr-1" />
+                                        Hide cards
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )) || (
                               <p className="text-center text-muted-foreground py-8">No content created yet.</p>
