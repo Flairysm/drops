@@ -14,7 +14,7 @@ import MysteryPacks from "@/pages/mystery-packs";
 import ThemedPacks from "@/pages/themed-packs";
 import MyPacks from "@/pages/my-packs";
 import Vault from "@/pages/vault";
-import Admin from "@/pages/admin-simple";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {

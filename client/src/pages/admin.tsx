@@ -68,6 +68,7 @@ export default function Admin() {
   const { isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedPackType, setSelectedPackType] = useState<string>("");
   const [editingCard, setEditingCard] = useState<CardType | null>(null);
   const [newStock, setNewStock] = useState<number>(0);
   const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
@@ -659,7 +660,7 @@ export default function Admin() {
 
           {/* Admin Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full max-w-5xl mx-auto grid-cols-5 mb-8">
+            <TabsList className="grid w-full max-w-7xl mx-auto grid-cols-7 mb-8">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Overview
@@ -679,6 +680,10 @@ export default function Admin() {
               <TabsTrigger value="virtual-library" data-testid="tab-virtual-library">
                 <Package className="w-4 h-4 mr-2" />
                 Virtual Library
+              </TabsTrigger>
+              <TabsTrigger value="quick-setup" data-testid="tab-quick-setup">
+                <Plus className="w-4 h-4 mr-2" />
+                Quick Setup
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
                 <Settings className="w-4 h-4 mr-2" />
@@ -1375,6 +1380,260 @@ export default function Admin() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* Quick Setup Tab */}
+            <TabsContent value="quick-setup">
+              <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                {/* Add New Card */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Plus className="w-5 h-5" />
+                      Add New Card
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={virtualLibraryForm.handleSubmit(onVirtualLibrarySubmit)} className="space-y-4">
+                      <div>
+                        <Label htmlFor="quick-card-name">Card Name</Label>
+                        <Input
+                          id="quick-card-name"
+                          {...virtualLibraryForm.register("name")}
+                          placeholder="Enter card name"
+                          data-testid="input-quick-card-name"
+                        />
+                        {virtualLibraryForm.formState.errors.name && (
+                          <p className="text-sm text-destructive mt-1">{virtualLibraryForm.formState.errors.name.message}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="quick-card-tier">Tier</Label>
+                        <Select onValueChange={(value) => virtualLibraryForm.setValue("tier", value as any)}>
+                          <SelectTrigger data-testid="select-quick-card-tier">
+                            <SelectValue placeholder="Select tier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="D">D Tier (Common)</SelectItem>
+                            <SelectItem value="C">C Tier (Uncommon)</SelectItem>
+                            <SelectItem value="B">B Tier (Rare)</SelectItem>
+                            <SelectItem value="A">A Tier (Epic)</SelectItem>
+                            <SelectItem value="S">S Tier (Legendary)</SelectItem>
+                            <SelectItem value="SS">SS Tier (Mythic)</SelectItem>
+                            <SelectItem value="SSS">SSS Tier (Ultimate)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {virtualLibraryForm.formState.errors.tier && (
+                          <p className="text-sm text-destructive mt-1">{virtualLibraryForm.formState.errors.tier.message}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="quick-card-image">Image URL (Optional)</Label>
+                        <Input
+                          id="quick-card-image"
+                          {...virtualLibraryForm.register("imageUrl")}
+                          placeholder="https://example.com/image.jpg"
+                          data-testid="input-quick-card-image"
+                        />
+                        {virtualLibraryForm.formState.errors.imageUrl && (
+                          <p className="text-sm text-destructive mt-1">{virtualLibraryForm.formState.errors.imageUrl.message}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="quick-card-value">Market Value</Label>
+                        <Input
+                          id="quick-card-value"
+                          {...virtualLibraryForm.register("marketValue")}
+                          placeholder="1.00"
+                          data-testid="input-quick-card-value"
+                        />
+                        {virtualLibraryForm.formState.errors.marketValue && (
+                          <p className="text-sm text-destructive mt-1">{virtualLibraryForm.formState.errors.marketValue.message}</p>
+                        )}
+                      </div>
+
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={createVirtualLibraryCardMutation.isPending}
+                        data-testid="button-quick-create-card"
+                      >
+                        {createVirtualLibraryCardMutation.isPending ? "Creating..." : "Add Card"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Create Themed Pack */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="w-5 h-5" />
+                      Create Themed Pack
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={virtualPackForm.handleSubmit((data) => {
+                      // Quick setup with default odds
+                      const quickCreateMutation = async () => {
+                        // Create the pack
+                        const packResponse = await apiRequest("POST", "/api/admin/virtual-packs", data);
+                        const newPack = packResponse as any;
+
+                        // Set default pull rates using original pokeball odds
+                        await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/pull-rates`, {
+                          rates: [
+                            { cardTier: 'D', probability: 70.0 },
+                            { cardTier: 'C', probability: 20.0 },
+                            { cardTier: 'B', probability: 7.0 },
+                            { cardTier: 'A', probability: 2.0 },
+                            { cardTier: 'S', probability: 0.8 },
+                            { cardTier: 'SS', probability: 0.15 },
+                            { cardTier: 'SSS', probability: 0.05 }
+                          ]
+                        });
+
+                        // Add selected cards to pack if any pack type is selected
+                        if (selectedPackType) {
+                          const cardsToAdd = virtualLibraryCards?.filter((card: VirtualLibraryCard) => 
+                            card.tier === selectedPackType || 
+                            (selectedPackType === "all" && true)
+                          );
+                          
+                          if (cardsToAdd && cardsToAdd.length > 0) {
+                            await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/cards`, {
+                              cardIds: cardsToAdd.map((card: VirtualLibraryCard) => card.id),
+                              weights: cardsToAdd.map(() => 1),
+                            });
+                          }
+                        }
+
+                        return newPack;
+                      };
+
+                      quickCreateMutation().then(() => {
+                        queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+                        virtualPackForm.reset();
+                        setSelectedPackType("");
+                        toast({
+                          title: "Pack Created",
+                          description: "New themed pack has been created with default pokeball odds",
+                        });
+                      }).catch((error) => {
+                        toast({
+                          title: "Error Creating Pack",
+                          description: error.message,
+                          variant: "destructive",
+                        });
+                      });
+                    })} className="space-y-4">
+                      <div>
+                        <Label htmlFor="quick-pack-name">Pack Name</Label>
+                        <Input
+                          id="quick-pack-name"
+                          {...virtualPackForm.register("name")}
+                          placeholder="e.g., Black Bolt Collection"
+                          data-testid="input-quick-pack-name"
+                        />
+                        {virtualPackForm.formState.errors.name && (
+                          <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.name.message}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="quick-pack-description">Description (Optional)</Label>
+                        <Input
+                          id="quick-pack-description"
+                          {...virtualPackForm.register("description")}
+                          placeholder="Pack description"
+                          data-testid="input-quick-pack-description"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="quick-pack-price">Price</Label>
+                        <Input
+                          id="quick-pack-price"
+                          {...virtualPackForm.register("price")}
+                          placeholder="8.00"
+                          data-testid="input-quick-pack-price"
+                        />
+                        {virtualPackForm.formState.errors.price && (
+                          <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.price.message}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="quick-card-pool">Card Pool</Label>
+                        <Select onValueChange={setSelectedPackType}>
+                          <SelectTrigger data-testid="select-quick-card-pool">
+                            <SelectValue placeholder="Select which cards to include" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Cards</SelectItem>
+                            <SelectItem value="D">D Tier Cards Only</SelectItem>
+                            <SelectItem value="C">C Tier Cards Only</SelectItem>
+                            <SelectItem value="B">B Tier Cards Only</SelectItem>
+                            <SelectItem value="A">A Tier Cards Only</SelectItem>
+                            <SelectItem value="S">S Tier Cards Only</SelectItem>
+                            <SelectItem value="SS">SS Tier Cards Only</SelectItem>
+                            <SelectItem value="SSS">SSS Tier Cards Only</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Settings className="w-4 h-4" />
+                          <span className="font-semibold">Default Pokeball Odds Applied:</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 text-xs">
+                          <span>D: 70%</span><span>C: 20%</span>
+                          <span>B: 7%</span><span>A: 2%</span>
+                          <span>S: 0.8%</span><span>SS: 0.15%</span>
+                          <span className="col-span-2">SSS: 0.05%</span>
+                        </div>
+                      </div>
+
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        data-testid="button-quick-create-pack"
+                      >
+                        Create Pack with Default Odds
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Existing Packs */}
+              <section className="mt-12">
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle>Existing Themed Packs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {virtualPacks?.map((pack) => (
+                        <div key={pack.id} className="border rounded-lg p-4 space-y-2">
+                          <h3 className="font-semibold">{pack.name}</h3>
+                          <p className="text-sm text-muted-foreground">{pack.description}</p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Price: {pack.price} credits</span>
+                            <span className="text-sm">Cards: {pack.cardCount}</span>
+                          </div>
+                        </div>
+                      )) || (
+                        <p className="text-muted-foreground">No themed packs created yet.</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
             </TabsContent>
 
             {/* Settings Tab */}
