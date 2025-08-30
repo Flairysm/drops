@@ -51,6 +51,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   const [result, setResult] = useState<VirtualPackResult | null>(null);
   const [animationPhase, setAnimationPhase] = useState<"closed" | "opening" | "opened">("closed");
   const [revealedCards, setRevealedCards] = useState<number>(0);
+  const [hitCardRevealed, setHitCardRevealed] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,38 +64,26 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       setResult(result);
       setAnimationPhase("opening");
       
-      // Reveal first 8 cards quickly, then pause before revealing the hit card
+      // Reveal first 7 cards quickly, then pause for hit card (don't auto-reveal)
       result.cards.forEach((_, index) => {
-        if (index < 8) {
+        if (index < 7) {
           // Reveal commons quickly
           setTimeout(() => {
             setRevealedCards(index + 1);
           }, 500 + (index * 100));
-        } else {
-          // Pause before revealing the hit card (last card)
-          setTimeout(() => {
-            setRevealedCards(index + 1);
-          }, 500 + (8 * 100) + 1500); // Extra 1.5 second pause before hit card
         }
+        // Hit card (index 7) will be revealed by user tap, not auto-revealed
       });
 
-      // After all cards are revealed, show completion
+      // Wait for commons to be revealed, then show "tap to reveal" for hit card
       setTimeout(() => {
-        setAnimationPhase("opened");
-        
-        const hitCard = result.cards[result.cards.length - 1]; // Last card is the hit card
-        const tier = hitCard ? hitCard.tier : "D";
-        const tierName = tier ? tierNames[tier as keyof typeof tierNames] : "Common";
-        
+        // Don't auto-transition to "opened" - wait for user to reveal hit card
         toast({
-          title: "Pack Opened!",
-          description: `${packName} opened! You got ${result.cards.length} cards including a ${tierName} hit card!`,
-          duration: 5000,
+          title: "Commons Revealed!",
+          description: `Tap the hit card to reveal your special card!`,
+          duration: 4000,
         });
-
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
-      }, 500 + (8 * 100) + 1500 + 1000); // Wait for all cards + hit card reveal + extra time
+      }, 500 + (7 * 100) + 500); // Wait for 7 commons + small delay
     },
     onError: (error: Error) => {
       toast({
@@ -120,7 +109,37 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     setAnimationPhase("closed");
     setResult(null);
     setRevealedCards(0);
+    setHitCardRevealed(false);
     setIsOpening(false);
+  };
+
+  const handleRevealHitCard = () => {
+    setHitCardRevealed(true);
+    if (result) {
+      const hitCard = result.cards[result.cards.length - 1];
+      const tier = hitCard ? hitCard.tier : "D";
+      const tierName = tier ? tierNames[tier as keyof typeof tierNames] : "Common";
+      
+      toast({
+        title: "Hit Card Revealed!",
+        description: `You got a ${tierName}!`,
+        duration: 3000,
+      });
+
+      // Transition to opened state after hit card is revealed
+      setTimeout(() => {
+        setAnimationPhase("opened");
+        
+        toast({
+          title: "Pack Opened!",
+          description: `${packName} opened! You got ${result.cards.length} cards including a ${tierName} hit card!`,
+          duration: 5000,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      }, 1500);
+    }
   };
 
   if (animationPhase === "opened" && result) {
@@ -183,7 +202,8 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {result.cards.map((card, index) => {
             const isHitCard = index === result.cards.length - 1;
-            const isRevealed = index < revealedCards;
+            const isRevealed = isHitCard ? hitCardRevealed : index < revealedCards;
+            const canReveal = isHitCard && revealedCards >= 7 && !hitCardRevealed;
             
             return (
             <div 
@@ -193,12 +213,15 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                   ? `opacity-100 transform scale-100 border-2 border-${tierColors[(card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.tier) as keyof typeof tierColors]}/20 to-transparent ${
                       isHitCard ? 'animate-pulse shadow-lg ring-2 ring-yellow-400' : ''
                     }` 
+                  : canReveal
+                  ? "opacity-100 transform scale-100 border-2 border-yellow-400 bg-gradient-to-b from-yellow-400/20 to-transparent cursor-pointer hover:scale-105 animate-pulse"
                   : "opacity-30 transform scale-95 border-2 border-gray-300 bg-gray-100"
               } overflow-hidden rounded-lg`}
               data-testid={`card-reveal-${index}`}
+              onClick={canReveal ? handleRevealHitCard : undefined}
             >
               <div className="p-4 text-center">
-                {index < revealedCards ? (
+                {isRevealed ? (
                   <>
                     <div className={`w-8 h-8 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto mb-2 flex items-center justify-center`}>
                       <span className={`text-sm font-bold tier-${tierColors[(card.tier) as keyof typeof tierColors]}`}>
@@ -219,7 +242,9 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                   <div className="h-20 flex items-center justify-center">
                     <div className="text-center">
                       <Package className="w-8 h-8 text-gray-400 mx-auto mb-1" />
-                      <div className="text-xs text-gray-400">{isHitCard ? "HIT!" : "???"}</div>
+                      <div className="text-xs text-gray-400">
+                        {canReveal ? "TAP TO REVEAL!" : isHitCard ? "HIT!" : "???"}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -257,7 +282,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
 
       <div className="text-center space-y-2">
         <div className="flex justify-center space-x-2 mb-4">
-          <Badge className="bg-accent text-primary-foreground">8 Random Commons</Badge>
+          <Badge className="bg-accent text-primary-foreground">7 Random Commons</Badge>
           <Badge className="bg-legendary text-primary-foreground">1 Special Card</Badge>
         </div>
         

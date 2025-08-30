@@ -403,10 +403,10 @@ export class DatabaseStorage implements IStorage {
       // Generate cards using tier-based probabilities
       const pulledCards: UserCardWithCard[] = [];
       
-      // First, add 8 guaranteed D-tier "Random Commons" cards
+      // First, add 7 guaranteed D-tier "Random Commons" cards
       const dTierCards = cardsByTier['D'] || [];
       if (dTierCards.length > 0) {
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 7; i++) {
           const randomCard = dTierCards[Math.floor(Math.random() * dTierCards.length)];
           if (randomCard) {
             // Create or find corresponding card in main cards table
