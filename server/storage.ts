@@ -568,44 +568,67 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
-    try {
-      // Insert without returning and then fetch by unique combination
-      await db.insert(userCards).values({
-        ...userCard,
-        isRefunded: userCard.isRefunded ?? false,
-        isShipped: userCard.isShipped ?? false,
-      });
-      
-      // Fetch the most recent card for this user  
-      const [newUserCard] = await db
-        .select()
-        .from(userCards)
-        .where(eq(userCards.userId, userCard.userId!))
-        .orderBy(desc(userCards.pulledAt))
-        .limit(1);
-      
-      if (!newUserCard) {
-        throw new Error('Failed to fetch inserted user card');
+    return await db.transaction(async (tx) => {
+      try {
+        // Insert user card into vault
+        await tx.insert(userCards).values({
+          ...userCard,
+          isRefunded: userCard.isRefunded ?? false,
+          isShipped: userCard.isShipped ?? false,
+        });
+        
+        // Decrease card stock when added to vault
+        if (userCard.cardId) {
+          await tx
+            .update(cards)
+            .set({ stock: sql`${cards.stock} - ${userCard.quantity || 1}` })
+            .where(eq(cards.id, userCard.cardId));
+        }
+        
+        // Fetch the most recent card for this user  
+        const [newUserCard] = await tx
+          .select()
+          .from(userCards)
+          .where(eq(userCards.userId, userCard.userId!))
+          .orderBy(desc(userCards.pulledAt))
+          .limit(1);
+        
+        if (!newUserCard) {
+          throw new Error('Failed to fetch inserted user card');
+        }
+        
+        return newUserCard;
+      } catch (error) {
+        console.error('Error adding user card:', error);
+        throw error;
       }
-      
-      return newUserCard;
-    } catch (error) {
-      console.error('Error adding user card:', error);
-      throw error;
-    }
+    });
   }
 
   async refundCards(cardIds: string[], userId: string): Promise<void> {
     await db.transaction(async (tx) => {
-      // Get cards to refund
+      // Get cards to refund with card details
       const cardsToRefund = await tx
-        .select()
+        .select({
+          id: userCards.id,
+          cardId: userCards.cardId,
+          pullValue: userCards.pullValue,
+          quantity: userCards.quantity,
+        })
         .from(userCards)
         .where(and(inArray(userCards.id, cardIds), eq(userCards.userId, userId)));
 
       let totalRefund = 0;
       for (const card of cardsToRefund) {
         totalRefund += parseFloat(card.pullValue) * 0.8; // 80% refund
+        
+        // Restore card stock when refunded
+        if (card.cardId) {
+          await tx
+            .update(cards)
+            .set({ stock: sql`${cards.stock} + ${card.quantity}` })
+            .where(eq(cards.id, card.cardId));
+        }
       }
 
       // Mark cards as refunded
