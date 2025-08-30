@@ -58,7 +58,7 @@ export default function Play() {
           {/* Header */}
           <section className="py-8 text-center">
             <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
-              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">ARCADE</span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">ARCADE</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
               Discover our catalog of games and themed packs. Choose your adventure and test your luck!
@@ -115,7 +115,7 @@ export default function Play() {
             {/* Special Packs Section */}
             <section>
               <h2 className="font-gaming text-3xl text-center mb-6">
-                <span className="bg-gradient-to-r from-accent to-legendary bg-clip-text text-transparent">Special Packs</span>
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Special Packs</span>
               </h2>
               <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer opacity-50" data-testid="card-slabs">
@@ -153,7 +153,7 @@ export default function Play() {
               </h2>
               <div className="text-center mb-8">
                 <h3 className="font-gaming text-xl mb-2">
-                  <span className="bg-gradient-to-r from-accent to-legendary bg-clip-text text-transparent text-[26px]">CLASSIC PACKS</span>
+                  <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">CLASSIC PACKS</span>
                 </h3>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
                   Explore curated collections featuring specific themes and characters!
