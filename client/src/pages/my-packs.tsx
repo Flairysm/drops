@@ -9,6 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Package2, Sparkles, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Import pack images
+import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png';
+import ultraballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png';
+import greatballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png';
+import pokeballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png';
+
 interface UserPack {
   id: string;
   packId: string;
@@ -153,43 +159,33 @@ export default function MyPacks() {
 
   const packTiers = ['pokeball', 'greatball', 'ultraball', 'masterball'];
 
-  // Pixel art Pokemon ball component
-  const PixelPokeBall = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
-    const display = getPackTypeDisplay(packType);
-    const isSmall = size === 'small';
-    const ballSize = isSmall ? 'w-16 h-16' : 'w-24 h-24';
+  // Pokemon pack images component
+  const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
+    const getPackImage = (type: string) => {
+      switch (type.toLowerCase()) {
+        case 'masterball':
+          return masterballPack;
+        case 'ultraball':
+          return ultraballPack;
+        case 'greatball':
+          return greatballPack;
+        case 'pokeball':
+          return pokeballPack;
+        default:
+          return pokeballPack;
+      }
+    };
+    
+    const imageSize = size === 'small' ? 'w-16 h-20' : 'w-32 h-40';
     
     return (
-      <div className={`${ballSize} mx-auto relative`}>
-        <div className={`w-full h-full rounded-full bg-gradient-to-b ${display.color} ${display.borderColor} border-4 shadow-lg relative overflow-hidden`}>
-          {/* Top half highlight */}
-          <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/30 rounded-full blur-sm" />
-          
-          {/* Center band */}
-          <div className="absolute top-1/2 left-0 right-0 h-2 bg-black transform -translate-y-1/2" />
-          
-          {/* Center button */}
-          <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-white border-2 border-black rounded-full transform -translate-x-1/2 -translate-y-1/2">
-            <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-gray-300 rounded-full transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          
-          {/* Pixel effect overlay */}
-          <div className="absolute inset-0 opacity-20" style={{
-            background: `repeating-linear-gradient(
-              0deg,
-              transparent,
-              transparent 1px,
-              rgba(0,0,0,0.1) 1px,
-              rgba(0,0,0,0.1) 2px
-            ), repeating-linear-gradient(
-              90deg,
-              transparent,
-              transparent 1px,
-              rgba(0,0,0,0.1) 1px,
-              rgba(0,0,0,0.1) 2px
-            )`
-          }} />
-        </div>
+      <div className={`${imageSize} mx-auto`}>
+        <img 
+          src={getPackImage(packType)} 
+          alt={`${packType} pack`}
+          className="w-full h-full object-contain pixel-crisp"
+          style={{ imageRendering: 'pixelated' }}
+        />
       </div>
     );
   };
@@ -245,7 +241,7 @@ export default function MyPacks() {
             /* No Packs State */
             <div className="text-center py-16">
               <div className="gaming-card max-w-md mx-auto p-8 rounded-xl">
-                <PixelPokeBall packType="pokeball" size="large" />
+                <PackImage packType="pokeball" size="large" />
                 <h3 className="text-xl font-semibold mb-2 mt-6">No Packs Yet</h3>
                 <p className="text-muted-foreground mb-6">
                   Play Plinko to earn packs! Different landing zones give different tier packs.
@@ -259,67 +255,71 @@ export default function MyPacks() {
               </div>
             </div>
           ) : (
-            /* Pack Tiers Grid */
+            /* 4 Pack Types Inline */
             <div className="space-y-8">
-              {packTiers.map((tier) => {
-                const packs = groupedPacks[tier] || [];
-                if (packs.length === 0) return null;
-                
-                const packDisplay = getPackTypeDisplay(tier);
-                
-                return (
-                  <div key={tier} className={`gaming-card p-6 rounded-xl ${packDisplay.bgColor} ${packDisplay.borderColor} border-2`}>
-                    <div className="flex items-center gap-4 mb-6">
-                      <PixelPokeBall packType={tier} size="small" />
-                      <div className="flex-1">
-                        <h2 className={`text-2xl font-gaming font-bold ${packDisplay.textColor}`}>
-                          {packDisplay.name}s
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          {packDisplay.tier} • {packs.length} pack{packs.length !== 1 ? 's' : ''} available
-                        </p>
+              <div className="flex justify-center items-start gap-8 flex-wrap">
+                {packTiers.map((tier) => {
+                  const packs = groupedPacks[tier] || [];
+                  const packDisplay = getPackTypeDisplay(tier);
+                  
+                  return (
+                    <div key={tier} className="text-center">
+                      <div className="mb-4">
+                        <PackImage packType={tier} size="large" />
                       </div>
-                      <Badge className={`${packDisplay.textColor} text-lg px-3 py-1`} variant="outline">
-                        {packs.length}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                      {packs.map((pack: any) => {
-                        const isOpening = openingPack === pack.id;
-                        
-                        return (
-                          <Card key={pack.id} className="gaming-card hover:scale-105 transition-all duration-300 bg-white/80 backdrop-blur-sm">
-                            <CardContent className="p-4 text-center">
-                              <PixelPokeBall packType={tier} size="small" />
+                      
+                      {packs.length > 0 && (
+                        <div className="space-y-3">
+                          <Badge className={`${packDisplay.textColor} text-sm px-3 py-1`} variant="outline">
+                            {packs.length} available
+                          </Badge>
+                          
+                          <div className="space-y-2">
+                            {packs.slice(0, 3).map((pack: any) => {
+                              const isOpening = openingPack === pack.id;
                               
-                              <Button 
-                                onClick={() => handleOpenPack(pack.id)}
-                                disabled={isOpening}
-                                className={`w-full mt-4 bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
-                                data-testid={`button-open-pack-${pack.id}`}
-                                size="sm"
-                              >
-                                {isOpening ? (
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Opening...
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <Package2 className="h-3 w-3" />
-                                    Open
-                                  </div>
-                                )}
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
+                              return (
+                                <Button 
+                                  key={pack.id}
+                                  onClick={() => handleOpenPack(pack.id)}
+                                  disabled={isOpening}
+                                  className={`w-full bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
+                                  data-testid={`button-open-pack-${pack.id}`}
+                                  size="sm"
+                                >
+                                  {isOpening ? (
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                      Opening...
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <Package2 className="h-3 w-3" />
+                                      Open Pack
+                                    </div>
+                                  )}
+                                </Button>
+                              );
+                            })}
+                            
+                            {packs.length > 3 && (
+                              <p className="text-xs text-muted-foreground">
+                                +{packs.length - 3} more packs
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {packs.length === 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm text-muted-foreground">No packs available</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -339,7 +339,7 @@ export default function MyPacks() {
                   return (
                     <div key={tier} className={`p-3 rounded-lg ${packDisplay.bgColor} ${packDisplay.borderColor} border`}>
                       <div className="flex items-center gap-2 mb-2">
-                        <PixelPokeBall packType={tier} size="small" />
+                        <PackImage packType={tier} size="small" />
                         <div className="ml-2">
                           <p className={`font-semibold text-sm ${packDisplay.textColor}`}>
                             {packDisplay.name}
