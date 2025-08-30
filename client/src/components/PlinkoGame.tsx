@@ -86,7 +86,7 @@ export function PlinkoGame() {
     // Exact Stake.us Plinko pyramid layout
     // Row 1: 3 pins, Row 2: 4 pins, ..., Row 8: 10 pins
     const rows = 8;
-    const startY = 100;
+    const startY = 140;
     const rowSpacing = 40; // Vertical spacing between rows
     const edgePadding = 10; // Distance from board edges for last row
     
