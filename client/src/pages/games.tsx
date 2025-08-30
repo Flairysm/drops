@@ -232,7 +232,7 @@ export default function Play() {
                               {pack.price} Credits
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {pack.cardCount} Cards per pack
+                              8 Cards per pack
                             </div>
                           </div>
                           <div className="flex justify-center space-x-2">
