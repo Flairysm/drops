@@ -276,7 +276,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVirtualPacks(): Promise<VirtualPack[]> {
-    return await db.select().from(virtualPacks);
+    return await db.select().from(virtualPacks).where(eq(virtualPacks.isActive, true));
   }
 
   async getActiveVirtualPacks(): Promise<VirtualPack[]> {
