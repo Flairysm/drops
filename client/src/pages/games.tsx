@@ -117,37 +117,76 @@ export default function Play() {
                 <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-plinko">
                   <CardHeader className="text-center">
                     <CardTitle className="font-gaming text-xl">Plinko Drop</CardTitle>
-                    <Badge className="bg-legendary text-primary-foreground">Max: SSS Tier</Badge>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Drop balls and watch them bounce through pegs
+                    </p>
                   </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-muted-foreground mb-4">Drop balls and watch them bounce to win amazing cards!</p>
-                    <button 
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
+                  <CardContent className="space-y-4">
+                    <div className="text-center space-y-2">
+                      <div className="bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg p-3 border border-primary/30">
+                        <div className="text-2xl font-bold text-primary">
+                          20 Credits
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Per play
+                        </div>
+                      </div>
+                      <div className="flex justify-center space-x-2">
+                        <Badge className="bg-legendary text-primary-foreground">
+                          Win Mystery Packs
+                        </Badge>
+                        <Badge variant="secondary">
+                          Max: Master Ball
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <Button
                       onClick={() => window.location.href = '/play/plinko'}
+                      className="w-full bg-gradient-to-r from-primary to-accent"
                       data-testid="button-play-plinko"
                     >
+                      <Package className="w-4 h-4 mr-2" />
                       Play Plinko
-                    </button>
+                    </Button>
                   </CardContent>
                 </Card>
                 
                 <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-wheel">
                   <CardHeader className="text-center">
                     <CardTitle className="font-gaming text-xl">Wheel Spin</CardTitle>
-                    <div className="flex justify-center space-x-2">
-                      <Badge variant="secondary">2.5 Credits</Badge>
-                      <Badge className="bg-superrare text-primary-foreground">2x Multiplier</Badge>
-                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Spin the wheel of fortune for bonus rewards
+                    </p>
                   </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-muted-foreground mb-4">Spin the wheel of fortune for bonus rewards!</p>
-                    <button 
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
+                  <CardContent className="space-y-4">
+                    <div className="text-center space-y-2">
+                      <div className="bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg p-3 border border-primary/30">
+                        <div className="text-2xl font-bold text-primary">
+                          2.5 Credits
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Per spin
+                        </div>
+                      </div>
+                      <div className="flex justify-center space-x-2">
+                        <Badge className="bg-legendary text-primary-foreground">
+                          Win Mystery Packs
+                        </Badge>
+                        <Badge className="bg-superrare text-primary-foreground">
+                          2x Multiplier
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <Button
                       onClick={() => window.location.href = '/play/wheel'}
+                      className="w-full bg-gradient-to-r from-primary to-accent"
                       data-testid="button-play-wheel"
                     >
+                      <Package className="w-4 h-4 mr-2" />
                       Play Wheel
-                    </button>
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
