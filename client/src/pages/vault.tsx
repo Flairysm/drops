@@ -103,8 +103,8 @@ export default function Vault() {
     return selectedCards.reduce((total, cardId) => {
       const card = vaultCards.find(c => c.id === cardId);
       if (!card) return total;
-      // Calculate refund value accounting for card quantity
-      return total + (parseFloat(card.pullValue) * card.quantity * 0.8);
+      // Calculate refund value accounting for card quantity (100% value)
+      return total + (parseFloat(card.pullValue) * card.quantity);
     }, 0);
   };
 
