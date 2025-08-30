@@ -224,14 +224,10 @@ export default function MyPacks() {
               Open your earned packs to discover amazing cards! Higher tier packs have better odds for rare cards.
             </p>
             {!noPacks && (
-              <div className="flex justify-center gap-6 mt-4">
+              <div className="flex justify-center mt-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-primary">{(userPacks as any[] || []).length}</p>
                   <p className="text-sm text-muted-foreground">Total Packs</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-accent">{packTiers.length}</p>
-                  <p className="text-sm text-muted-foreground">Pack Types</p>
                 </div>
               </div>
             )}
