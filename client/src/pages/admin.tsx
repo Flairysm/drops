@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -36,9 +38,9 @@ const virtualLibrarySchema = z.object({
 
 const virtualPackSchema = z.object({
   name: z.string().min(1, "Pack name is required"),
-  description: z.string().optional(),
   price: z.string().min(1, "Price is required"),
-  cardCount: z.number().min(1, "Card count must be at least 1").max(20, "Card count cannot exceed 20"),
+  imageUrl: z.string().optional(),
+  category: z.enum(["Special", "Classic"]),
 });
 
 type VirtualLibraryFormData = z.infer<typeof virtualLibrarySchema>;
@@ -58,8 +60,11 @@ export default function Admin() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedPackType, setSelectedPackType] = useState<string>("");
-  const [deleteVirtualLibraryCardId, setDeleteVirtualLibraryCardId] = useState<string | null>(null);
+  const [inventorySection, setInventorySection] = useState<"inventory" | "content">("inventory");
+  const [editingCard, setEditingCard] = useState<any>(null);
+  const [editingPack, setEditingPack] = useState<any>(null);
+  const [showPackCardSelector, setShowPackCardSelector] = useState(false);
+  const [selectedCards, setSelectedCards] = useState<string[]>([]);
 
   const virtualLibraryForm = useForm<VirtualLibraryFormData>({
     resolver: zodResolver(virtualLibrarySchema),
@@ -75,9 +80,9 @@ export default function Admin() {
     resolver: zodResolver(virtualPackSchema),
     defaultValues: {
       name: "",
-      description: "",
       price: "",
-      cardCount: 10,
+      imageUrl: "",
+      category: "Classic",
     },
   });
 
@@ -147,56 +152,21 @@ export default function Admin() {
 
   const createVirtualPackMutation = useMutation({
     mutationFn: async (data: VirtualPackFormData) => {
-      // Create the pack first
-      const packResponse = await apiRequest("POST", "/api/admin/virtual-packs", data);
-      const newPack = packResponse as any;
-      
-      if (newPack && newPack.id) {
-        // Set default pokeball odds
-        try {
-          await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/pull-rates`, {
-            rates: [
-              { cardTier: 'D', probability: 70.0 },
-              { cardTier: 'C', probability: 20.0 },
-              { cardTier: 'B', probability: 7.0 },
-              { cardTier: 'A', probability: 2.0 },
-              { cardTier: 'S', probability: 0.8 },
-              { cardTier: 'SS', probability: 0.15 },
-              { cardTier: 'SSS', probability: 0.05 }
-            ]
-          });
-        } catch (error) {
-          console.log("Pull rates setup skipped:", error);
-        }
-
-        // Add cards if pool selected
-        if (selectedPackType && virtualLibraryCards) {
-          try {
-            const cardsToAdd = virtualLibraryCards.filter((card: any) => 
-              selectedPackType === "all" || card.tier === selectedPackType
-            );
-            
-            if (cardsToAdd.length > 0) {
-              await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/cards`, {
-                cardIds: cardsToAdd.map((card: any) => card.id),
-                weights: cardsToAdd.map(() => 1),
-              });
-            }
-          } catch (error) {
-            console.log("Card pool setup skipped:", error);
-          }
-        }
-      }
-      
-      return newPack;
+      // Create the pack with category info
+      const packData = {
+        ...data,
+        cardCount: 10, // Default card count
+        description: `${data.category} Pack` // Auto-generate description
+      };
+      const packResponse = await apiRequest("POST", "/api/admin/virtual-packs", packData);
+      return packResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
       virtualPackForm.reset();
-      setSelectedPackType("");
       toast({
-        title: "Pack Created",
-        description: "Themed pack created successfully",
+        title: "Content Created",
+        description: "New content pack created successfully",
       });
     },
     onError: (error) => {
@@ -261,10 +231,45 @@ export default function Admin() {
   };
 
   const handleManagePackCards = (pack: any) => {
-    toast({
-      title: "Feature Coming Soon",
-      description: "Advanced pack card management will be available soon",
-    });
+    setEditingPack(pack);
+    setShowPackCardSelector(true);
+    // Load current cards in pack
+    setSelectedCards([]);
+  };
+
+  const handleSavePackCards = async () => {
+    if (!editingPack) return;
+    
+    try {
+      await apiRequest("POST", `/api/admin/virtual-packs/${editingPack.id}/cards`, {
+        cardIds: selectedCards,
+        weights: selectedCards.map(() => 1),
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+      setShowPackCardSelector(false);
+      setEditingPack(null);
+      setSelectedCards([]);
+      
+      toast({
+        title: "Success",
+        description: "Card pool updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleCardSelection = (cardId: string) => {
+    setSelectedCards(prev => 
+      prev.includes(cardId) 
+        ? prev.filter(id => id !== cardId)
+        : [...prev, cardId]
+    );
   };
 
   if (isLoading) {
@@ -413,238 +418,289 @@ export default function Admin() {
               </Card>
             </TabsContent>
 
-            {/* Unified Inventory Management */}
+            {/* Inventory Management - Two Sections */}
             <TabsContent value="inventory">
-              <div className="space-y-8">
-                {/* Quick Actions Row */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Add New Card */}
-                  <Card className="gaming-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Plus className="w-5 h-5" />
-                        Add New Card
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={virtualLibraryForm.handleSubmit(onVirtualLibrarySubmit)} className="space-y-4">
-                        <div>
-                          <Label htmlFor="unified-card-name">Card Name</Label>
-                          <Input
-                            id="unified-card-name"
-                            {...virtualLibraryForm.register("name")}
-                            placeholder="Enter card name"
-                            data-testid="input-unified-card-name"
-                          />
-                          {virtualLibraryForm.formState.errors.name && (
-                            <p className="text-sm text-destructive mt-1">{virtualLibraryForm.formState.errors.name.message}</p>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="unified-card-tier">Tier</Label>
-                            <Select onValueChange={(value) => virtualLibraryForm.setValue("tier", value as any)}>
-                              <SelectTrigger data-testid="select-unified-card-tier">
-                                <SelectValue placeholder="Select tier" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="D">D Tier</SelectItem>
-                                <SelectItem value="C">C Tier</SelectItem>
-                                <SelectItem value="B">B Tier</SelectItem>
-                                <SelectItem value="A">A Tier</SelectItem>
-                                <SelectItem value="S">S Tier</SelectItem>
-                                <SelectItem value="SS">SS Tier</SelectItem>
-                                <SelectItem value="SSS">SSS Tier</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label htmlFor="unified-card-value">Market Value</Label>
-                            <Input
-                              id="unified-card-value"
-                              {...virtualLibraryForm.register("marketValue")}
-                              placeholder="1.00"
-                              data-testid="input-unified-card-value"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="unified-card-image">Image URL (Optional)</Label>
-                          <Input
-                            id="unified-card-image"
-                            {...virtualLibraryForm.register("imageUrl")}
-                            placeholder="https://example.com/image.jpg"
-                            data-testid="input-unified-card-image"
-                          />
-                        </div>
-
-                        <Button 
-                          type="submit" 
-                          className="w-full"
-                          disabled={createVirtualLibraryCardMutation.isPending}
-                          data-testid="button-unified-create-card"
-                        >
-                          {createVirtualLibraryCardMutation.isPending ? "Creating..." : "Add Card"}
-                        </Button>
-                      </form>
-                    </CardContent>
-                  </Card>
-
-                  {/* Create Themed Pack */}
-                  <Card className="gaming-card">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Package className="w-5 h-5" />
-                        Create Themed Pack
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={virtualPackForm.handleSubmit((data) => {
-                        createVirtualPackMutation.mutate(data);
-                      })} className="space-y-4">
-                        <div>
-                          <Label htmlFor="unified-pack-name">Pack Name</Label>
-                          <Input
-                            id="unified-pack-name"
-                            {...virtualPackForm.register("name")}
-                            placeholder="e.g., Black Bolt Collection"
-                            data-testid="input-unified-pack-name"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="unified-pack-price">Price</Label>
-                            <Input
-                              id="unified-pack-price"
-                              {...virtualPackForm.register("price")}
-                              placeholder="8.00"
-                              data-testid="input-unified-pack-price"
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="unified-card-pool">Card Pool</Label>
-                            <Select onValueChange={setSelectedPackType}>
-                              <SelectTrigger data-testid="select-unified-card-pool">
-                                <SelectValue placeholder="Select cards" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Cards</SelectItem>
-                                <SelectItem value="D">D Tier Only</SelectItem>
-                                <SelectItem value="C">C Tier Only</SelectItem>
-                                <SelectItem value="B">B Tier Only</SelectItem>
-                                <SelectItem value="A">A Tier Only</SelectItem>
-                                <SelectItem value="S">S Tier Only</SelectItem>
-                                <SelectItem value="SS">SS Tier Only</SelectItem>
-                                <SelectItem value="SSS">SSS Tier Only</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                          <strong>Default Pokeball Odds:</strong> D:70%, C:20%, B:7%, A:2%, S:0.8%, SS:0.15%, SSS:0.05%
-                        </div>
-
-                        <Button 
-                          type="submit" 
-                          className="w-full" 
-                          disabled={createVirtualPackMutation.isPending}
-                          data-testid="button-unified-create-pack"
-                        >
-                          {createVirtualPackMutation.isPending ? "Creating..." : "Create Pack"}
-                        </Button>
-                      </form>
-                    </CardContent>
-                  </Card>
+              <div className="space-y-6">
+                {/* Section Selector */}
+                <div className="flex gap-4 mb-6">
+                  <Button
+                    variant={inventorySection === "inventory" ? "default" : "outline"}
+                    onClick={() => setInventorySection("inventory")}
+                    data-testid="tab-manage-inventory"
+                  >
+                    <Package className="w-4 h-4 mr-2" />
+                    Manage Inventory
+                  </Button>
+                  <Button
+                    variant={inventorySection === "content" ? "default" : "outline"}
+                    onClick={() => setInventorySection("content")}
+                    data-testid="tab-manage-content"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Manage Content
+                  </Button>
                 </div>
 
-                {/* Management Sections */}
-                <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Card Library */}
-                  <Card className="gaming-card">
-                    <CardHeader>
-                      <CardTitle>Card Library ({virtualLibraryCards?.length || 0} cards)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 max-h-80 overflow-y-auto">
-                        {virtualLibraryCards?.map((card: any) => (
-                          <div key={card.id} className="flex items-center justify-between p-3 rounded border">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
-                                <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
-                                  {card.tier}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium">{card.name}</div>
-                                <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
-                              </div>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteVirtualLibraryCard(card.id)}
-                              data-testid={`button-delete-card-${card.id}`}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )) || (
-                          <p className="text-center text-muted-foreground py-8">No cards created yet.</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Themed Packs */}
-                  <Card className="gaming-card">
-                    <CardHeader>
-                      <CardTitle>Themed Packs ({virtualPacks?.length || 0} packs)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3 max-h-80 overflow-y-auto">
-                        {virtualPacks?.map((pack: any) => (
-                          <div key={pack.id} className="flex items-center justify-between p-3 rounded border">
+                {/* Manage Inventory Section */}
+                {inventorySection === "inventory" && (
+                  <div className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Add New Card */}
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Plus className="w-5 h-5" />
+                            Add New Card to Inventory
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <form onSubmit={virtualLibraryForm.handleSubmit(onVirtualLibrarySubmit)} className="space-y-4">
                             <div>
-                              <div className="font-medium">{pack.name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {pack.price} credits • {pack.cardCount} cards
-                              </div>
-                              {pack.description && (
-                                <div className="text-xs text-muted-foreground">{pack.description}</div>
+                              <Label htmlFor="card-name">Card Name</Label>
+                              <Input
+                                id="card-name"
+                                {...virtualLibraryForm.register("name")}
+                                placeholder="Enter card name"
+                                data-testid="input-card-name"
+                              />
+                              {virtualLibraryForm.formState.errors.name && (
+                                <p className="text-sm text-destructive mt-1">{virtualLibraryForm.formState.errors.name.message}</p>
                               )}
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleManagePackCards(pack)}
-                                data-testid={`button-manage-cards-${pack.id}`}
-                              >
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDeleteVirtualPack(pack.id)}
-                                data-testid={`button-delete-pack-${pack.id}`}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="card-tier">Tier</Label>
+                                <Select onValueChange={(value) => virtualLibraryForm.setValue("tier", value as any)}>
+                                  <SelectTrigger data-testid="select-card-tier">
+                                    <SelectValue placeholder="Select tier" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="D">D Tier</SelectItem>
+                                    <SelectItem value="C">C Tier</SelectItem>
+                                    <SelectItem value="B">B Tier</SelectItem>
+                                    <SelectItem value="A">A Tier</SelectItem>
+                                    <SelectItem value="S">S Tier</SelectItem>
+                                    <SelectItem value="SS">SS Tier</SelectItem>
+                                    <SelectItem value="SSS">SSS Tier</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div>
+                                <Label htmlFor="card-value">Market Value</Label>
+                                <Input
+                                  id="card-value"
+                                  {...virtualLibraryForm.register("marketValue")}
+                                  placeholder="1.00"
+                                  data-testid="input-card-value"
+                                />
+                              </div>
                             </div>
+
+                            <div>
+                              <Label htmlFor="card-image">Image URL (Optional)</Label>
+                              <Input
+                                id="card-image"
+                                {...virtualLibraryForm.register("imageUrl")}
+                                placeholder="https://example.com/image.jpg"
+                                data-testid="input-card-image"
+                              />
+                            </div>
+
+                            <Button 
+                              type="submit" 
+                              className="w-full"
+                              disabled={createVirtualLibraryCardMutation.isPending}
+                              data-testid="button-add-card"
+                            >
+                              {createVirtualLibraryCardMutation.isPending ? "Adding..." : "Add to Inventory"}
+                            </Button>
+                          </form>
+                        </CardContent>
+                      </Card>
+
+                      {/* Current Inventory */}
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle>Current Inventory ({virtualLibraryCards?.length || 0} cards)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            {virtualLibraryCards?.map((card: any) => (
+                              <div key={card.id} className="flex items-center justify-between p-3 rounded border">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                                    <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
+                                      {card.tier}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">{card.name}</div>
+                                    <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCard(card)}
+                                    data-testid={`button-edit-card-${card.id}`}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteVirtualLibraryCard(card.id)}
+                                    data-testid={`button-delete-card-${card.id}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )) || (
+                              <p className="text-center text-muted-foreground py-8">No cards in inventory yet.</p>
+                            )}
                           </div>
-                        )) || (
-                          <p className="text-center text-muted-foreground py-8">No themed packs created yet.</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+
+                {/* Manage Content Section */}
+                {inventorySection === "content" && (
+                  <div className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Create New Content */}
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Plus className="w-5 h-5" />
+                            Create New Content
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <form onSubmit={virtualPackForm.handleSubmit((data) => {
+                            createVirtualPackMutation.mutate(data);
+                          })} className="space-y-4">
+                            <div>
+                              <Label htmlFor="content-name">Content Name</Label>
+                              <Input
+                                id="content-name"
+                                {...virtualPackForm.register("name")}
+                                placeholder="e.g., Black Bolt Collection"
+                                data-testid="input-content-name"
+                              />
+                              {virtualPackForm.formState.errors.name && (
+                                <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.name.message}</p>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="content-price">Price</Label>
+                                <Input
+                                  id="content-price"
+                                  {...virtualPackForm.register("price")}
+                                  placeholder="8.00"
+                                  data-testid="input-content-price"
+                                />
+                                {virtualPackForm.formState.errors.price && (
+                                  <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.price.message}</p>
+                                )}
+                              </div>
+
+                              <div>
+                                <Label htmlFor="content-category">Category</Label>
+                                <Select onValueChange={(value) => virtualPackForm.setValue("category", value as any)}>
+                                  <SelectTrigger data-testid="select-content-category">
+                                    <SelectValue placeholder="Select category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Special">Special Packs</SelectItem>
+                                    <SelectItem value="Classic">Classic Packs</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {virtualPackForm.formState.errors.category && (
+                                  <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.category.message}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <Label htmlFor="content-image">Image URL (Optional)</Label>
+                              <Input
+                                id="content-image"
+                                {...virtualPackForm.register("imageUrl")}
+                                placeholder="https://example.com/pack-image.jpg"
+                                data-testid="input-content-image"
+                              />
+                            </div>
+
+                            <Button 
+                              type="submit" 
+                              className="w-full" 
+                              disabled={createVirtualPackMutation.isPending}
+                              data-testid="button-create-content"
+                            >
+                              {createVirtualPackMutation.isPending ? "Creating..." : "Create Content"}
+                            </Button>
+                          </form>
+                        </CardContent>
+                      </Card>
+
+                      {/* Content List */}
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle>Content Library ({virtualPacks?.length || 0} packs)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3 max-h-80 overflow-y-auto">
+                            {virtualPacks?.map((pack: any) => (
+                              <div key={pack.id} className="flex items-center justify-between p-3 rounded border">
+                                <div>
+                                  <div className="font-medium">{pack.name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {pack.price} credits • {pack.description || 'No description'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {pack.cardCount || 0} cards in pool
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingPack(pack);
+                                      setShowPackCardSelector(true);
+                                    }}
+                                    data-testid={`button-edit-pack-${pack.id}`}
+                                    title="Edit card pool"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteVirtualPack(pack.id)}
+                                    data-testid={`button-delete-pack-${pack.id}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )) || (
+                              <p className="text-center text-muted-foreground py-8">No content created yet.</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -660,6 +716,64 @@ export default function Admin() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Card Pool Selection Dialog */}
+          <Dialog open={showPackCardSelector} onOpenChange={setShowPackCardSelector}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Card Pool for {editingPack?.name}</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Select which cards from inventory should be included in this pack:
+                </p>
+                
+                <div className="grid gap-3">
+                  {virtualLibraryCards?.map((card: any) => (
+                    <div key={card.id} className="flex items-center space-x-3 p-3 border rounded">
+                      <Checkbox
+                        checked={selectedCards.includes(card.id)}
+                        onCheckedChange={() => toggleCardSelection(card.id)}
+                        data-testid={`checkbox-card-${card.id}`}
+                      />
+                      <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                        <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
+                          {card.tier}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium">{card.name}</div>
+                        <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
+                      </div>
+                    </div>
+                  )) || (
+                    <p className="text-center text-muted-foreground py-8">No cards available in inventory.</p>
+                  )}
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowPackCardSelector(false);
+                    setEditingPack(null);
+                    setSelectedCards([]);
+                  }}
+                  data-testid="button-cancel-card-selection"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSavePackCards}
+                  data-testid="button-save-card-pool"
+                >
+                  Save Card Pool ({selectedCards.length} selected)
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
