@@ -75,8 +75,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       return await response.json() as VirtualPackResult;
     },
     onSuccess: (result) => {
-      console.log('Virtual pack result:', result);
-      console.log('Cards with images:', result.cards.map(c => ({ name: c.name, imageUrl: c.imageUrl || 'NO IMAGE' })));
       setResult(result);
       setAnimationPhase("opening");
       
@@ -311,8 +309,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                           src={card.imageUrl}
                           alt={card.name}
                           className="w-full flex-1 object-cover rounded-md"
-                          onError={(e) => console.log('Image failed to load:', card.imageUrl)}
-                          onLoad={() => console.log('Image loaded successfully:', card.imageUrl)}
                         />
                       ) : (
                         <div className={`w-full flex-1 rounded-md bg-gradient-to-br from-${tierColors[(card.tier) as keyof typeof tierColors]}-400 to-${tierColors[(card.tier) as keyof typeof tierColors]}-600 flex items-center justify-center`}>

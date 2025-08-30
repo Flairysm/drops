@@ -79,9 +79,14 @@ export default function MyPacks() {
     },
   });
 
-  const handleOpenPack = (packId: string) => {
-    setOpeningPack(packId);
-    openPackMutation.mutate(packId);
+  const handleOpenPack = (packType: string) => {
+    // Find the first available pack of this type
+    const availablePacks = groupedPacks[packType] || [];
+    if (availablePacks.length > 0) {
+      const packToOpen = availablePacks[0];
+      setOpeningPack(packToOpen.id);
+      openPackMutation.mutate(packToOpen.id);
+    }
   };
 
   const handleAnimationComplete = () => {
@@ -273,38 +278,25 @@ export default function MyPacks() {
                         </Badge>
                         
                         <div className="space-y-2">
-                          {packs.slice(0, 3).map((pack: any) => {
-                            const isOpening = openingPack === pack.id;
-                            
-                            return (
-                              <Button 
-                                key={pack.id}
-                                onClick={() => handleOpenPack(pack.id)}
-                                disabled={isOpening}
-                                className={`w-full bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
-                                data-testid={`button-open-pack-${pack.id}`}
-                                size="sm"
-                              >
-                                {isOpening ? (
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Opening...
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <Package2 className="h-3 w-3" />
-                                    Open Pack
-                                  </div>
-                                )}
-                              </Button>
-                            );
-                          })}
-                          
-                          {packs.length > 3 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{packs.length - 3} more packs
-                            </p>
-                          )}
+                          <Button 
+                            onClick={() => handleOpenPack(tier)}
+                            disabled={openingPack !== null}
+                            className={`w-full bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
+                            data-testid={`button-open-pack-${tier}`}
+                            size="sm"
+                          >
+                            {openingPack ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Opening...
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Package2 className="h-3 w-3" />
+                                Open Pack
+                              </div>
+                            )}
+                          </Button>
                         </div>
                       </div>
                     )}
