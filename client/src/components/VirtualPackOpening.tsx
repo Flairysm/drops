@@ -74,7 +74,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       setTimeout(() => {
         setAnimationPhase("opened");
         
-        const hitCard = result.cards.find(card => (card.card?.tier || card.tier) !== "D");
+        const hitCard = result.cards.find(card => (card.tier) !== "D");
         const tier = hitCard ? (hitCard.card?.tier || hitCard.tier) : "D";
         const tierName = tier ? tierNames[tier as keyof typeof tierNames] : "Common";
         
@@ -127,20 +127,20 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           {result.cards.map((card, index) => (
             <div 
               key={`${card.id}-${index}`}
-              className={`relative overflow-hidden rounded-lg border-2 border-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}/20 to-transparent`}
+              className={`relative overflow-hidden rounded-lg border-2 border-${tierColors[(card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.tier) as keyof typeof tierColors]}/20 to-transparent`}
               data-testid={`card-result-${index}`}
             >
               <div className="p-4 text-center">
-                <div className={`w-8 h-8 rounded-full bg-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}/30 mx-auto mb-2 flex items-center justify-center`}>
-                  <span className={`text-sm font-bold tier-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}`}>
-                    {card.card?.tier || card.tier}
+                <div className={`w-8 h-8 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto mb-2 flex items-center justify-center`}>
+                  <span className={`text-sm font-bold tier-${tierColors[(card.tier) as keyof typeof tierColors]}`}>
+                    {card.tier}
                   </span>
                 </div>
-                <div className="text-sm font-semibold mb-1">{card.card?.name || card.name}</div>
+                <div className="text-sm font-semibold mb-1">{card.name}</div>
                 <div className="text-xs text-muted-foreground">
-                  {parseFloat(card.card?.marketValue || card.marketValue || '0').toFixed(2)} credits
+                  {parseFloat(card.marketValue || '0').toFixed(2)} credits
                 </div>
-                {(card.card?.tier || card.tier) !== "D" && (
+                {(card.tier) !== "D" && (
                   <div className="absolute top-1 right-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                   </div>
@@ -178,7 +178,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               key={`${card.id}-${index}`}
               className={`relative transition-all duration-300 ${
                 index < revealedCards 
-                  ? `opacity-100 transform scale-100 border-2 border-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}/20 to-transparent` 
+                  ? `opacity-100 transform scale-100 border-2 border-${tierColors[(card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.tier) as keyof typeof tierColors]}/20 to-transparent` 
                   : "opacity-30 transform scale-95 border-2 border-gray-300 bg-gray-100"
               } overflow-hidden rounded-lg`}
               data-testid={`card-reveal-${index}`}
@@ -186,16 +186,16 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               <div className="p-4 text-center">
                 {index < revealedCards ? (
                   <>
-                    <div className={`w-8 h-8 rounded-full bg-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}/30 mx-auto mb-2 flex items-center justify-center`}>
-                      <span className={`text-sm font-bold tier-${tierColors[(card.card?.tier || card.tier) as keyof typeof tierColors]}`}>
-                        {card.card?.tier || card.tier}
+                    <div className={`w-8 h-8 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto mb-2 flex items-center justify-center`}>
+                      <span className={`text-sm font-bold tier-${tierColors[(card.tier) as keyof typeof tierColors]}`}>
+                        {card.tier}
                       </span>
                     </div>
-                    <div className="text-sm font-semibold mb-1">{card.card?.name || card.name}</div>
+                    <div className="text-sm font-semibold mb-1">{card.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {parseFloat(card.card?.marketValue || card.marketValue || '0').toFixed(2)} credits
+                      {parseFloat(card.marketValue || '0').toFixed(2)} credits
                     </div>
-                    {(card.card?.tier || card.tier) !== "D" && (
+                    {(card.tier) !== "D" && (
                       <div className="absolute top-1 right-1 animate-bounce">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                       </div>
