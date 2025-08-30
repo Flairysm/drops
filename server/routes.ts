@@ -6,6 +6,7 @@ import { z } from "zod";
 import { 
   insertCardSchema, 
   insertPackSchema,
+  insertVirtualLibrarySchema,
   insertVirtualPackSchema,
   insertVirtualPackCardSchema,
   insertShippingRequestSchema,
@@ -409,6 +410,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating pull rates:", error);
       res.status(500).json({ message: "Failed to update pull rates" });
+    }
+  });
+
+  // Virtual library admin routes (separate card pool from mystery packs)
+  app.get('/api/admin/virtual-library', isAuthenticated, async (req: any, res) => {
+    try {
+      const virtualLibraryCards = await storage.getVirtualLibraryCards();
+      res.json(virtualLibraryCards);
+    } catch (error) {
+      console.error("Error fetching virtual library cards:", error);
+      res.status(500).json({ message: "Failed to fetch virtual library cards" });
+    }
+  });
+
+  app.post('/api/admin/virtual-library', isAuthenticated, async (req: any, res) => {
+    try {
+      const cardData = insertVirtualLibrarySchema.parse(req.body);
+      const virtualLibraryCard = await storage.createVirtualLibraryCard(cardData);
+      res.json(virtualLibraryCard);
+    } catch (error) {
+      console.error("Error creating virtual library card:", error);
+      res.status(500).json({ message: "Failed to create virtual library card" });
+    }
+  });
+
+  app.patch('/api/admin/virtual-library/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const cardData = insertVirtualLibrarySchema.partial().parse(req.body);
+      const virtualLibraryCard = await storage.updateVirtualLibraryCard(id, cardData);
+      res.json(virtualLibraryCard);
+    } catch (error) {
+      console.error("Error updating virtual library card:", error);
+      res.status(500).json({ message: "Failed to update virtual library card" });
+    }
+  });
+
+  app.delete('/api/admin/virtual-library/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteVirtualLibraryCard(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting virtual library card:", error);
+      res.status(500).json({ message: "Failed to delete virtual library card" });
     }
   });
 

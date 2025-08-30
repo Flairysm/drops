@@ -74,6 +74,18 @@ export const packOdds = pgTable("pack_odds", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Virtual library - separate card inventory for virtual packs only
+export const virtualLibrary = pgTable("virtual_library", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  tier: varchar("tier", { length: 10 }).notNull(),
+  imageUrl: varchar("image_url"),
+  marketValue: decimal("market_value", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Virtual themed pack definitions (separate from mystery tier packs)
 export const virtualPacks = pgTable("virtual_packs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -86,11 +98,11 @@ export const virtualPacks = pgTable("virtual_packs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Virtual pack card pools - defines which cards can appear in each themed pack
+// Virtual pack card pools - defines which virtual library cards can appear in each themed pack
 export const virtualPackCards = pgTable("virtual_pack_cards", {
   id: uuid("id").primaryKey().defaultRandom(),
   virtualPackId: uuid("virtual_pack_id").references(() => virtualPacks.id),
-  cardId: uuid("card_id").references(() => cards.id),
+  virtualLibraryCardId: uuid("virtual_library_card_id").references(() => virtualLibrary.id),
   weight: integer("weight").default(1).notNull(), // Relative probability weight
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -260,6 +272,25 @@ export const packOddsRelations = relations(packOdds, ({ one }) => ({
   }),
 }));
 
+export const virtualLibraryRelations = relations(virtualLibrary, ({ many }) => ({
+  virtualPackCards: many(virtualPackCards),
+}));
+
+export const virtualPacksRelations = relations(virtualPacks, ({ many }) => ({
+  virtualPackCards: many(virtualPackCards),
+}));
+
+export const virtualPackCardsRelations = relations(virtualPackCards, ({ one }) => ({
+  virtualPack: one(virtualPacks, {
+    fields: [virtualPackCards.virtualPackId],
+    references: [virtualPacks.id],
+  }),
+  virtualLibraryCard: one(virtualLibrary, {
+    fields: [virtualPackCards.virtualLibraryCardId],
+    references: [virtualLibrary.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -329,6 +360,11 @@ export const insertVirtualPackCardSchema = createInsertSchema(virtualPackCards).
   createdAt: true,
 });
 
+export const insertVirtualLibrarySchema = createInsertSchema(virtualLibrary).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -337,6 +373,7 @@ export type Pack = typeof packs.$inferSelect;
 export type PackOdds = typeof packOdds.$inferSelect;
 export type VirtualPack = typeof virtualPacks.$inferSelect;
 export type VirtualPackCard = typeof virtualPackCards.$inferSelect;
+export type VirtualLibraryCard = typeof virtualLibrary.$inferSelect;
 export type UserCard = typeof userCards.$inferSelect;
 export type UserPack = typeof userPacks.$inferSelect;
 export type GlobalFeed = typeof globalFeed.$inferSelect;
@@ -350,6 +387,7 @@ export type InsertCard = z.infer<typeof insertCardSchema>;
 export type InsertPack = z.infer<typeof insertPackSchema>;
 export type InsertVirtualPack = z.infer<typeof insertVirtualPackSchema>;
 export type InsertVirtualPackCard = z.infer<typeof insertVirtualPackCardSchema>;
+export type InsertVirtualLibraryCard = z.infer<typeof insertVirtualLibrarySchema>;
 export type InsertUserCard = z.infer<typeof insertUserCardSchema>;
 export type InsertUserPack = z.infer<typeof insertUserPackSchema>;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;

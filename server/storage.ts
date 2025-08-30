@@ -3,6 +3,7 @@ import {
   cards,
   packs,
   packOdds,
+  virtualLibrary,
   virtualPacks,
   virtualPackCards,
   userCards,
@@ -19,6 +20,7 @@ import {
   type Card,
   type Pack,
   type PackOdds,
+  type VirtualLibraryCard,
   type VirtualPack,
   type VirtualPackCard,
   type UserCard,
@@ -31,6 +33,7 @@ import {
   type GameSetting,
   type InsertCard,
   type InsertPack,
+  type InsertVirtualLibraryCard,
   type InsertVirtualPack,
   type InsertVirtualPackCard,
   type InsertUserCard,
@@ -70,6 +73,12 @@ export interface IStorage {
   getPackOdds(packId: string): Promise<PackOdds[]>;
   setPackOdds(packId: string, odds: { tier: string; probability: string }[]): Promise<void>;
   
+  // Virtual library operations (separate from mystery pack cards)
+  getVirtualLibraryCards(): Promise<VirtualLibraryCard[]>;
+  createVirtualLibraryCard(card: InsertVirtualLibraryCard): Promise<VirtualLibraryCard>;
+  updateVirtualLibraryCard(id: string, card: Partial<InsertVirtualLibraryCard>): Promise<VirtualLibraryCard>;
+  deleteVirtualLibraryCard(id: string): Promise<void>;
+  
   // Virtual pack operations
   getVirtualPacks(): Promise<VirtualPack[]>;
   getActiveVirtualPacks(): Promise<VirtualPack[]>;
@@ -77,7 +86,7 @@ export interface IStorage {
   updateVirtualPack(id: string, pack: Partial<InsertVirtualPack>): Promise<VirtualPack>;
   deleteVirtualPack(id: string): Promise<void>;
   
-  // Virtual pack card pool operations
+  // Virtual pack card pool operations (using virtual library cards)
   getVirtualPackCards(virtualPackId: string): Promise<VirtualPackCard[]>;
   setVirtualPackCards(virtualPackId: string, cardIds: string[], weights: number[]): Promise<void>;
   openVirtualPack(virtualPackId: string, userId: string): Promise<VirtualPackOpenResult>;
@@ -234,6 +243,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Virtual pack operations
+  // Virtual library methods
+  async getVirtualLibraryCards(): Promise<VirtualLibraryCard[]> {
+    return await db.select().from(virtualLibrary).where(eq(virtualLibrary.isActive, true));
+  }
+
+  async createVirtualLibraryCard(card: InsertVirtualLibraryCard): Promise<VirtualLibraryCard> {
+    const [newCard] = await db.insert(virtualLibrary).values(card).returning();
+    return newCard;
+  }
+
+  async updateVirtualLibraryCard(id: string, card: Partial<InsertVirtualLibraryCard>): Promise<VirtualLibraryCard> {
+    const [updatedCard] = await db.update(virtualLibrary)
+      .set(card)
+      .where(eq(virtualLibrary.id, id))
+      .returning();
+    return updatedCard;
+  }
+
+  async deleteVirtualLibraryCard(id: string): Promise<void> {
+    await db.update(virtualLibrary)
+      .set({ isActive: false })
+      .where(eq(virtualLibrary.id, id));
+  }
+
   async getVirtualPacks(): Promise<VirtualPack[]> {
     return await db.select().from(virtualPacks);
   }
@@ -266,10 +299,10 @@ export class DatabaseStorage implements IStorage {
       // Remove existing card pool
       await tx.update(virtualPackCards).set({ isActive: false }).where(eq(virtualPackCards.virtualPackId, virtualPackId));
       
-      // Add new card pool
+      // Add new card pool using virtual library cards
       const newCards = cardIds.map((cardId, index) => ({
         virtualPackId,
-        cardId,
+        virtualLibraryCardId: cardId,
         weight: weights[index] || 1,
       }));
       
@@ -287,14 +320,14 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Virtual pack not found');
       }
 
-      // Get available cards in this pack's pool
+      // Get available cards in this pack's pool from virtual library
       const packCards = await tx
         .select({
-          card: cards,
+          card: virtualLibrary,
           weight: virtualPackCards.weight,
         })
         .from(virtualPackCards)
-        .leftJoin(cards, eq(virtualPackCards.cardId, cards.id))
+        .leftJoin(virtualLibrary, eq(virtualPackCards.virtualLibraryCardId, virtualLibrary.id))
         .where(and(eq(virtualPackCards.virtualPackId, virtualPackId), eq(virtualPackCards.isActive, true)));
 
       if (packCards.length === 0) {
@@ -316,18 +349,21 @@ export class DatabaseStorage implements IStorage {
       // Generate cards based on weights
       const pulledCards: UserCardWithCard[] = [];
       for (let i = 0; i < virtualPack.cardCount; i++) {
-        const selectedCard = this.selectCardByWeight(packCards);
+        const selectedCard = this.selectVirtualCardByWeight(packCards);
         if (selectedCard?.card) {
           const [newUserCard] = await tx.insert(userCards).values({
             userId,
-            cardId: selectedCard.card.id,
+            cardId: selectedCard.card.cardId,
             pullValue: selectedCard.card.marketValue,
             quantity: 1,
           }).returning();
 
+          // Get the actual card details for the result
+          const [cardDetails] = await tx.select().from(cards).where(eq(cards.id, selectedCard.card.cardId));
+          
           pulledCards.push({
             ...newUserCard,
-            card: selectedCard.card,
+            card: cardDetails,
           });
         }
       }
@@ -349,6 +385,24 @@ export class DatabaseStorage implements IStorage {
 
   private selectCardByWeight(weightedCards: { card: Card | null; weight: number }[]): { card: Card; weight: number } | null {
     const validCards = weightedCards.filter(item => item.card !== null) as { card: Card; weight: number }[];
+    if (validCards.length === 0) return null;
+
+    const totalWeight = validCards.reduce((sum, item) => sum + item.weight, 0);
+    const random = Math.random() * totalWeight;
+    
+    let currentWeight = 0;
+    for (const item of validCards) {
+      currentWeight += item.weight;
+      if (random <= currentWeight) {
+        return item;
+      }
+    }
+    
+    return validCards[validCards.length - 1];
+  }
+
+  private selectVirtualCardByWeight(weightedCards: { card: VirtualLibraryCard | null; weight: number }[]): { card: VirtualLibraryCard; weight: number } | null {
+    const validCards = weightedCards.filter(item => item.card !== null) as { card: VirtualLibraryCard; weight: number }[];
     if (validCards.length === 0) return null;
 
     const totalWeight = validCards.reduce((sum, item) => sum + item.weight, 0);

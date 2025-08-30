@@ -33,7 +33,7 @@ import {
   Trash2,
   Save
 } from "lucide-react";
-import type { User, Card as CardType, Pack, VirtualPack, VirtualPackCard } from "@shared/schema";
+import type { User, Card as CardType, Pack, VirtualPack, VirtualPackCard, VirtualLibraryCard } from "@shared/schema";
 
 const cardSchema = z.object({
   name: z.string().min(1, "Card name is required"),
@@ -51,8 +51,17 @@ const virtualPackSchema = z.object({
   cardCount: z.number().min(1, "Card count must be at least 1").max(20, "Card count cannot exceed 20"),
 });
 
+const virtualLibrarySchema = z.object({
+  cardId: z.string().min(1, "Card ID is required"),
+  name: z.string().min(1, "Card name is required"),
+  tier: z.enum(["D", "C", "B", "A", "S", "SS", "SSS"]),
+  imageUrl: z.string().url("Valid image URL required").optional(),
+  marketValue: z.string().min(1, "Market value is required"),
+});
+
 type CardFormData = z.infer<typeof cardSchema>;
 type VirtualPackFormData = z.infer<typeof virtualPackSchema>;
+type VirtualLibraryFormData = z.infer<typeof virtualLibrarySchema>;
 
 export default function Admin() {
   const { toast } = useToast();
@@ -66,6 +75,8 @@ export default function Admin() {
   const [deleteVirtualPackId, setDeleteVirtualPackId] = useState<string | null>(null);
   const [managingPackCards, setManagingPackCards] = useState<VirtualPack | null>(null);
   const [selectedCards, setSelectedCards] = useState<{ cardId: string; weight: number }[]>([]);
+  const [editingVirtualLibraryCard, setEditingVirtualLibraryCard] = useState<VirtualLibraryCard | null>(null);
+  const [deleteVirtualLibraryCardId, setDeleteVirtualLibraryCardId] = useState<string | null>(null);
 
 
   // Redirect if not authenticated
@@ -103,6 +114,11 @@ export default function Admin() {
     enabled: isAuthenticated && activeTab === "virtual-packs",
   });
 
+  const { data: virtualLibraryCards } = useQuery<VirtualLibraryCard[]>({
+    queryKey: ["/api/admin/virtual-library"],
+    enabled: isAuthenticated && activeTab === "virtual-library",
+  });
+
   const form = useForm<CardFormData>({
     resolver: zodResolver(cardSchema),
     defaultValues: {
@@ -122,6 +138,17 @@ export default function Admin() {
       imageUrl: "",
       price: "",
       cardCount: 10,
+    },
+  });
+
+  const virtualLibraryForm = useForm<VirtualLibraryFormData>({
+    resolver: zodResolver(virtualLibrarySchema),
+    defaultValues: {
+      cardId: "",
+      name: "",
+      tier: "D",
+      imageUrl: "",
+      marketValue: "",
     },
   });
 
@@ -340,6 +367,70 @@ export default function Admin() {
     },
   });
 
+  // Virtual library mutations
+  const createVirtualLibraryCardMutation = useMutation({
+    mutationFn: async (data: VirtualLibraryFormData) => {
+      await apiRequest("POST", "/api/admin/virtual-library", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      virtualLibraryForm.reset();
+      toast({
+        title: "Virtual Library Card Created",
+        description: "New card has been added to virtual library",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Creating Virtual Library Card",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateVirtualLibraryCardMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<VirtualLibraryFormData> }) => {
+      await apiRequest("PATCH", `/api/admin/virtual-library/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      setEditingVirtualLibraryCard(null);
+      toast({
+        title: "Virtual Library Card Updated",
+        description: "Card details have been updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Updating Virtual Library Card",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteVirtualLibraryCardMutation = useMutation({
+    mutationFn: async (cardId: string) => {
+      await apiRequest("DELETE", `/api/admin/virtual-library/${cardId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      setDeleteVirtualLibraryCardId(null);
+      toast({
+        title: "Virtual Library Card Deleted",
+        description: "Card has been removed from virtual library",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Deleting Virtual Library Card",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditStock = (card: CardType) => {
     setEditingCard(card);
     setNewStock(card.stock || 0);
@@ -418,6 +509,35 @@ export default function Admin() {
     });
   };
 
+  // Virtual library form handlers
+  const onVirtualLibrarySubmit = (data: VirtualLibraryFormData) => {
+    if (editingVirtualLibraryCard) {
+      updateVirtualLibraryCardMutation.mutate({ id: editingVirtualLibraryCard.id, data });
+    } else {
+      createVirtualLibraryCardMutation.mutate(data);
+    }
+  };
+
+  const handleEditVirtualLibraryCard = (card: VirtualLibraryCard) => {
+    setEditingVirtualLibraryCard(card);
+    virtualLibraryForm.reset({
+      cardId: card.id,
+      name: card.name,
+      tier: card.tier as "D" | "C" | "B" | "A" | "S" | "SS" | "SSS",
+      imageUrl: card.imageUrl || "",
+      marketValue: card.marketValue,
+    });
+  };
+
+  const handleDeleteVirtualLibraryCard = (cardId: string) => {
+    setDeleteVirtualLibraryCardId(cardId);
+  };
+
+  const confirmDeleteVirtualLibraryCard = () => {
+    if (!deleteVirtualLibraryCardId) return;
+    deleteVirtualLibraryCardMutation.mutate(deleteVirtualLibraryCardId);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -478,6 +598,10 @@ export default function Admin() {
               <TabsTrigger value="virtual-packs" data-testid="tab-virtual-packs">
                 <Package className="w-4 h-4 mr-2" />
                 Virtual Packs
+              </TabsTrigger>
+              <TabsTrigger value="virtual-library" data-testid="tab-virtual-library">
+                <Package className="w-4 h-4 mr-2" />
+                Virtual Library
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
                 <Settings className="w-4 h-4 mr-2" />
@@ -978,6 +1102,193 @@ export default function Admin() {
               </div>
             </TabsContent>
 
+            {/* Virtual Library Tab */}
+            <TabsContent value="virtual-library">
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Add New Virtual Library Card */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">
+                      {editingVirtualLibraryCard ? "Edit Virtual Library Card" : "Add New Virtual Library Card"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={virtualLibraryForm.handleSubmit(onVirtualLibrarySubmit)} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cardId" data-testid="label-card-id">Card ID</Label>
+                        <Input
+                          id="cardId"
+                          data-testid="input-card-id"
+                          {...virtualLibraryForm.register("cardId")}
+                          placeholder="Unique card identifier"
+                        />
+                        {virtualLibraryForm.formState.errors.cardId && (
+                          <p className="text-sm text-destructive" data-testid="error-card-id">
+                            {virtualLibraryForm.formState.errors.cardId.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="name" data-testid="label-name">Name</Label>
+                        <Input
+                          id="name"
+                          data-testid="input-name"
+                          {...virtualLibraryForm.register("name")}
+                          placeholder="Card name"
+                        />
+                        {virtualLibraryForm.formState.errors.name && (
+                          <p className="text-sm text-destructive" data-testid="error-name">
+                            {virtualLibraryForm.formState.errors.name.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="tier" data-testid="label-tier">Tier</Label>
+                        <Select 
+                          onValueChange={(value) => virtualLibraryForm.setValue("tier", value as any)}
+                          defaultValue={virtualLibraryForm.watch("tier")}
+                        >
+                          <SelectTrigger data-testid="select-tier">
+                            <SelectValue placeholder="Select tier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="D">D - Common</SelectItem>
+                            <SelectItem value="C">C - Uncommon</SelectItem>
+                            <SelectItem value="B">B - Rare</SelectItem>
+                            <SelectItem value="A">A - Super Rare</SelectItem>
+                            <SelectItem value="S">S - Ultra Rare</SelectItem>
+                            <SelectItem value="SS">SS - Legendary</SelectItem>
+                            <SelectItem value="SSS">SSS - Mythic</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="imageUrl" data-testid="label-image-url">Image URL (optional)</Label>
+                        <Input
+                          id="imageUrl"
+                          data-testid="input-image-url"
+                          {...virtualLibraryForm.register("imageUrl")}
+                          placeholder="https://example.com/card.png"
+                        />
+                        {virtualLibraryForm.formState.errors.imageUrl && (
+                          <p className="text-sm text-destructive" data-testid="error-image-url">
+                            {virtualLibraryForm.formState.errors.imageUrl.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="marketValue" data-testid="label-market-value">Market Value</Label>
+                        <Input
+                          id="marketValue"
+                          data-testid="input-market-value"
+                          {...virtualLibraryForm.register("marketValue")}
+                          placeholder="0.10"
+                        />
+                        {virtualLibraryForm.formState.errors.marketValue && (
+                          <p className="text-sm text-destructive" data-testid="error-market-value">
+                            {virtualLibraryForm.formState.errors.marketValue.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          type="submit" 
+                          disabled={createVirtualLibraryCardMutation.isPending || updateVirtualLibraryCardMutation.isPending}
+                          data-testid="button-save-virtual-library-card"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {editingVirtualLibraryCard ? "Update Card" : "Add Card"}
+                        </Button>
+                        {editingVirtualLibraryCard && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingVirtualLibraryCard(null);
+                              virtualLibraryForm.reset();
+                            }}
+                            data-testid="button-cancel-edit-virtual-library-card"
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Virtual Library Cards List */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Virtual Library Cards</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {virtualLibraryCards ? (
+                      <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                        {virtualLibraryCards.map((card) => (
+                          <div key={card.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  className={`tier-${tierColors[card.tier as keyof typeof tierColors]} text-xs font-bold`}
+                                  data-testid={`badge-tier-${card.tier}`}
+                                >
+                                  {card.tier}
+                                </Badge>
+                                <span className="font-medium" data-testid={`text-card-name-${card.id}`}>
+                                  {card.name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                <span data-testid={`text-card-id-${card.id}`}>ID: {card.id}</span>
+                                <span data-testid={`text-market-value-${card.id}`}>Value: ${card.marketValue}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditVirtualLibraryCard(card)}
+                                data-testid={`button-edit-virtual-library-card-${card.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteVirtualLibraryCard(card.id)}
+                                className="text-destructive hover:text-destructive"
+                                data-testid={`button-delete-virtual-library-card-${card.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {virtualLibraryCards.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Package className="mx-auto w-12 h-12 mb-2 opacity-50" />
+                            <p>No virtual library cards yet</p>
+                            <p className="text-sm">Add cards to build your virtual themed pack library</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                        <p className="mt-2 text-muted-foreground">Loading virtual library...</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             {/* Settings Tab */}
             <TabsContent value="settings">
               <div className="space-y-6">
@@ -1166,6 +1477,39 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Virtual Library Card Confirmation Dialog */}
+      <Dialog open={!!deleteVirtualLibraryCardId} onOpenChange={(open) => !open && setDeleteVirtualLibraryCardId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Virtual Library Card</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this virtual library card? This action cannot be undone.
+              The card will be removed from the virtual library and any themed packs using it.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteVirtualLibraryCardId(null)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteVirtualLibraryCard}
+              disabled={deleteVirtualLibraryCardMutation.isPending}
+              data-testid="button-confirm-delete-virtual-library-card"
+            >
+              {deleteVirtualLibraryCardMutation.isPending ? (
+                "Deleting..."
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Card
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Manage Pack Cards Dialog */}
       <Dialog open={!!managingPackCards} onOpenChange={(open) => !open && setManagingPackCards(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -1184,7 +1528,7 @@ export default function Admin() {
                 <h4 className="font-semibold mb-2">Selected Cards ({selectedCards.length})</h4>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {selectedCards.map((selected) => {
-                    const card = cards?.find(c => c.id === selected.cardId);
+                    const card = virtualLibraryCards?.find(c => c.id === selected.cardId);
                     return (
                       <div key={selected.cardId} className="flex items-center justify-between p-2 rounded-lg border border-border">
                         <div className="flex items-center space-x-2">
@@ -1222,9 +1566,9 @@ export default function Admin() {
 
             {/* Available Cards */}
             <div>
-              <h4 className="font-semibold mb-2">Available Cards</h4>
+              <h4 className="font-semibold mb-2">Available Virtual Library Cards</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                {cards?.filter(card => !selectedCards.find(s => s.cardId === card.id)).map((card) => (
+                {virtualLibraryCards?.filter(card => !selectedCards.find(s => s.cardId === card.id)).map((card) => (
                   <Button
                     key={card.id}
                     variant="outline"
@@ -1241,6 +1585,12 @@ export default function Admin() {
                     <span className="text-xs truncate">{card.name}</span>
                   </Button>
                 ))}
+                {(!virtualLibraryCards || virtualLibraryCards.length === 0) && (
+                  <div className="col-span-full text-center py-4 text-muted-foreground">
+                    <p>No virtual library cards available.</p>
+                    <p className="text-sm">Add cards to the Virtual Library first.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
