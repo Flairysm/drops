@@ -185,7 +185,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                           </div>
                         )}
                         <p className="text-xs font-medium truncate">{card.name}</p>
-                        <p className="text-xs text-muted-foreground">{card.marketValue}</p>
+                        <p className="text-xs text-muted-foreground">{parseFloat(card.marketValue || '0').toFixed(2)} credits</p>
                       </div>
                     )}
                   </div>
@@ -246,7 +246,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     </div>
                     
                     <div className="text-lg font-semibold text-green-400">
-                      Credit Value: {hitCard?.marketValue}
+                      Credit Value: {parseFloat(hitCard?.marketValue || '0').toFixed(2)} credits
                     </div>
                     
                     <div className="text-center space-y-2">
