@@ -14,7 +14,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { data: feedData, isLoading } = useQuery<GlobalFeedWithDetails[]>({
-    queryKey: ["/api/feed", { limit }],
+    queryKey: [`/api/feed?limit=${limit}`],
     refetchInterval: 15000, // Refresh every 15 seconds
   });
 

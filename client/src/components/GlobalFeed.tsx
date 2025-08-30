@@ -13,7 +13,7 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
   const [showCount, setShowCount] = useState(limit);
 
   const { data: feedData, isLoading, refetch } = useQuery<GlobalFeedWithDetails[]>({
-    queryKey: ["/api/feed", { limit: showCount }],
+    queryKey: [`/api/feed?limit=${showCount}`],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
