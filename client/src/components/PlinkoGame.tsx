@@ -155,7 +155,7 @@ export function PlinkoGame() {
     const ball: Ball = {
       x: dropX + (Math.random() - 0.5) * 8, // Slight initial variation
       y: 20,
-      vx: (Math.random() - 0.5) * 0.5, // Minimal initial horizontal velocity
+      vx: (Math.random() - 0.5) * 1.2, // More initial horizontal velocity for dynamic start
       vy: 0,
       radius: BALL_RADIUS,
       color: '#00d4ff'
@@ -218,12 +218,12 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Realistic gravity acceleration
-        ball.vy += 0.18;
+        // Enhanced gravity acceleration for faster gameplay
+        ball.vy += 0.35;
         
-        // Apply subtle air resistance for realism
-        ball.vx *= 0.998; // Very slight horizontal air resistance
-        ball.vy *= 0.9995; // Minimal vertical air resistance
+        // Reduced air resistance for faster movement
+        ball.vx *= 0.999; // Minimal horizontal air resistance
+        ball.vy *= 0.9998; // Almost no vertical air resistance
         
         // Apply movement
         ball.x += ball.vx;
@@ -246,18 +246,18 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
             
-            // Enhanced realistic collision physics
+            // Enhanced energetic collision physics
             const dotProduct = ball.vx * nx + ball.vy * ny;
             
-            // More natural bounce with slight randomness for realism
-            const bounceVariation = 0.95 + (Math.random() * 0.1); // 5% variation in bounce
-            ball.vx -= 1.5 * dotProduct * nx * bounceVariation;
-            ball.vy -= 1.5 * dotProduct * ny * bounceVariation;
+            // More energetic bounce with variation
+            const bounceVariation = 1.0 + (Math.random() * 0.1); // Up to 10% extra energy
+            ball.vx -= 1.8 * dotProduct * nx * bounceVariation;
+            ball.vy -= 1.8 * dotProduct * ny * bounceVariation;
             
-            // Add tiny surface friction variation for realism
-            const surfaceFriction = 0.78 + (Math.random() * 0.04); // Random friction 0.78-0.82
+            // Reduced surface friction for more dynamic movement
+            const surfaceFriction = 0.85 + (Math.random() * 0.04); // Higher friction range 0.85-0.89
             ball.vx *= surfaceFriction;
-            ball.vy *= 0.82;
+            ball.vy *= 0.88;
             
             // Add micro spin effect from collision
             const spinInfluence = (Math.random() - 0.5) * 0.1;
