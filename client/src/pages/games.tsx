@@ -51,7 +51,7 @@ export default function Play() {
           {/* Header */}
           <section className="py-8 text-center">
             <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
-              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">PLAY</span>
+              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">ARCADE</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
               Discover our catalog of games and themed packs. Choose your adventure and test your luck!
