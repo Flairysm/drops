@@ -922,6 +922,9 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Pack opened: Generated ${packCards.length} total cards (${packCards.filter(c => !c.isHit).length} commons + ${packCards.filter(c => c.isHit).length} hit)`);
       
+      // Log stock changes for debugging
+      console.log(`Stock reduction summary:`);
+      
       if (!newUserCard) {
         throw new Error('Failed to create or retrieve user card');
       }
