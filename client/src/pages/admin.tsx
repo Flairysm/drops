@@ -255,21 +255,33 @@ export default function Admin() {
     }
   };
 
-  const handleManagePackCards = (pack: any) => {
+  const handleManagePackCards = async (pack: any) => {
     setEditingPack(pack);
     setShowPackCardSelector(true);
+    
     // Load current cards in pack
-    setSelectedCards([]);
+    try {
+      const currentCards = await apiRequest("GET", `/api/admin/virtual-packs/${pack.id}/cards`);
+      const cardIds = currentCards.map((card: any) => card.virtualLibraryCardId);
+      setSelectedCards(cardIds);
+    } catch (error) {
+      console.error("Failed to load current card pool:", error);
+      setSelectedCards([]);
+    }
   };
 
   const handleSavePackCards = async () => {
     if (!editingPack) return;
     
+    console.log(`Saving card pool for pack ${editingPack.id} with ${selectedCards.length} cards:`, selectedCards);
+    
     try {
-      await apiRequest("POST", `/api/admin/virtual-packs/${editingPack.id}/cards`, {
+      const response = await apiRequest("POST", `/api/admin/virtual-packs/${editingPack.id}/cards`, {
         cardIds: selectedCards,
         weights: selectedCards.map(() => 1),
       });
+      
+      console.log("Card pool save response:", response);
       
       queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
       setShowPackCardSelector(false);
@@ -278,12 +290,13 @@ export default function Admin() {
       
       toast({
         title: "Success",
-        description: "Card pool updated successfully",
+        description: `Card pool updated successfully (${selectedCards.length} cards)`,
       });
     } catch (error: any) {
+      console.error("Card pool save error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to save card pool",
         variant: "destructive",
       });
     }
@@ -750,9 +763,14 @@ export default function Admin() {
               </DialogHeader>
               
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Select which cards from inventory should be included in this pack:
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Select which cards from inventory should be included in this pack:
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    Currently selected: {selectedCards.length} cards
+                  </p>
+                </div>
                 
                 <div className="grid gap-3">
                   {virtualLibraryCards?.map((card: any) => (
