@@ -70,8 +70,11 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
       
       setLoading(true);
       try {
-        const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`) as any[];
-        const virtualLibraryCards = await apiRequest("GET", "/api/admin/virtual-library") as any[];
+        const packCardsResponse = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
+        const virtualLibraryResponse = await apiRequest("GET", "/api/admin/virtual-library");
+        
+        const packCards = await packCardsResponse.json();
+        const virtualLibraryCards = await virtualLibraryResponse.json();
         
         console.log("Pack cards:", packCards);
         console.log("Virtual library cards:", virtualLibraryCards);
