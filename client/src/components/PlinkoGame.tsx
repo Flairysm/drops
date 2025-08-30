@@ -251,8 +251,8 @@ export function PlinkoGame() {
             
             // More energetic bounce with variation
             const bounceVariation = 1.0 + (Math.random() * 0.1); // Up to 10% extra energy
-            ball.vx -= 1.8 * dotProduct * nx * bounceVariation;
-            ball.vy -= 1.8 * dotProduct * ny * bounceVariation;
+            ball.vx -= 1.5 * dotProduct * nx * bounceVariation;
+            ball.vy -= 1.5 * dotProduct * ny * bounceVariation;
             
             // Reduced surface friction for more dynamic movement
             const surfaceFriction = 0.85 + (Math.random() * 0.04); // Higher friction range 0.85-0.89
