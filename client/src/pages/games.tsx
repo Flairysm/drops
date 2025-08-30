@@ -1,22 +1,52 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { CreditCard, Package } from "lucide-react";
+import { VirtualPackOpening } from "@/components/VirtualPackOpening";
+import { apiRequest } from "@/lib/queryClient";
+import type { VirtualPack, User } from "@shared/schema";
 
 export default function Play() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth() as { user: User | null; isLoading: boolean; isAuthenticated: boolean };
+  const queryClient = useQueryClient();
+  const [openingPack, setOpeningPack] = useState<VirtualPack | null>(null);
 
   const { data: virtualPacks } = useQuery({
     queryKey: ["/api/virtual-packs"],
     enabled: isAuthenticated,
   });
+
+  const handlePurchase = (pack: VirtualPack) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to purchase packs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const userCredits = parseFloat(user.credits || '0');
+    const packPrice = parseFloat(pack.price);
+    if (userCredits < packPrice) {
+      toast({
+        title: "Insufficient Credits",
+        description: `You need ${packPrice} credits but only have ${userCredits.toFixed(2)}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Show the opening interface instead of redirecting to store
+    setOpeningPack(pack);
+  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -39,6 +69,17 @@ export default function Play() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
+    );
+  }
+
+  // Show opening interface if a pack is selected
+  if (openingPack) {
+    return (
+      <VirtualPackOpening 
+        packId={openingPack.id}
+        packName={openingPack.name}
+        onClose={() => setOpeningPack(null)}
+      />
     );
   }
 
@@ -195,7 +236,8 @@ export default function Play() {
                         </div>
                         
                         <Button
-                          onClick={() => window.location.href = '/play/themed-packs'}
+                          onClick={() => handlePurchase(pack)}
+                          disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
                           className="w-full bg-gradient-to-r from-primary to-accent"
                           data-testid={`button-open-themed-pack-${pack.id}`}
                         >
