@@ -214,16 +214,8 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               data-testid={`card-result-${index}`}
             >
               <div className="p-2 text-center h-full flex flex-col justify-between">
-                <div className={`w-6 h-6 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto flex items-center justify-center`}>
-                  <span className={`text-xs font-bold tier-${tierColors[(card.tier) as keyof typeof tierColors]}`}>
-                    {card.tier}
-                  </span>
-                </div>
                 <div className="flex-1 flex flex-col justify-center">
                   <div className="text-xs font-semibold mb-1 line-clamp-2">{card.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {parseFloat(card.marketValue || '0').toFixed(2)} credits
-                  </div>
                 </div>
                 {(card.tier) !== "D" && (
                   <div className="absolute top-1 right-1">
@@ -318,12 +310,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                         </div>
                       )}
                       
-                      {/* Tier badge overlay */}
-                      <div className="absolute top-1 left-1">
-                        <div className={`px-1 py-0.5 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}-600 text-white text-xs font-bold`}>
-                          {card.tier}
-                        </div>
-                      </div>
                       
                       {/* Hit card star */}
                       {isHitCard && (
@@ -335,9 +321,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                       {/* Card info at bottom */}
                       <div className="mt-1 text-center">
                         <div className="text-xs font-semibold truncate">{card.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {parseFloat(card.marketValue || '0').toFixed(2)}c
-                        </div>
                       </div>
                     </div>
                   </>
