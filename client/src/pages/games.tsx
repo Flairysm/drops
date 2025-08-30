@@ -67,15 +67,12 @@ export default function Games() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
       <main className="pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <section className="py-8 text-center">
             <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
-              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">
-                GAME ARCADE
-              </span>
+              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">ARCADE</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
               Choose your game and test your luck! Each game offers unique mechanics to discover amazing cards.
