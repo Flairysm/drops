@@ -276,16 +276,16 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     <div className="space-y-6">
       <div className="text-center">
         <h3 className="font-gaming text-2xl mb-4">
-          Open {packName}
+          Open {packName || 'Pack'}
         </h3>
         
         {/* Credits Display */}
-        {user && (
+        {user && (user as any).credits !== undefined && (
           <div className="max-w-xs mx-auto mb-4">
             <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
               <div className="text-sm text-muted-foreground">Available Credits</div>
               <div className="text-2xl font-bold text-primary">
-                {parseFloat(user.credits || '0').toFixed(2)}
+                {parseFloat((user as any).credits || '0').toFixed(2)}
               </div>
             </div>
           </div>
