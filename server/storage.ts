@@ -521,8 +521,8 @@ export class DatabaseStorage implements IStorage {
         .set({ stock: sql`${cards.stock} - 1` })
         .where(eq(cards.id, hitCard.id));
 
-      // Add to global feed only if A-tier or above
-      if (['A', 'S', 'SS', 'SSS'].includes(hitCard.tier)) {
+      // Add to global feed for all hit cards (C-tier and above)
+      if (['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(hitCard.tier)) {
         await tx.insert(globalFeed).values({
           userId,
           cardId: hitCard.id,
@@ -567,7 +567,7 @@ export class DatabaseStorage implements IStorage {
       .from(globalFeed)
       .leftJoin(users, eq(globalFeed.userId, users.id))
       .leftJoin(cards, eq(globalFeed.cardId, cards.id))
-      .where(sql`${globalFeed.tier} IN ('rare', 'superrare', 'legendary')`)
+      .where(sql`${globalFeed.tier} IN ('C', 'B', 'A', 'S', 'SS', 'SSS')`
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
 
