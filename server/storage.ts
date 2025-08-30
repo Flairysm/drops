@@ -702,10 +702,10 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`No available cards in tier ${fullTierName}`);
       }
 
-      // Generate 8 D-tier cards + 1 hit card = 9 total cards
+      // Generate 7 D-tier cards + 1 hit card = 8 total cards
       const packCards = [];
       
-      // Get 8 random D-tier cards (guaranteed base cards)
+      // Get 7 random D-tier cards (guaranteed base cards)
       const commonCards = await tx
         .select()
         .from(cards)
@@ -719,7 +719,7 @@ export class DatabaseStorage implements IStorage {
         throw new Error('No D-tier cards available');
       }
       
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 7; i++) {
         const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
         packCards.push({
           id: randomCommon.id,
@@ -741,7 +741,7 @@ export class DatabaseStorage implements IStorage {
         imageUrl: hitCard.imageUrl || undefined,
         marketValue: hitCard.marketValue,
         isHit: true,
-        position: 8
+        position: 7
       });
       
       // Group common cards by cardId and count quantities
