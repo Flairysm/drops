@@ -374,15 +374,15 @@ export class DatabaseStorage implements IStorage {
       // Get pack-specific cards assigned through manage content
       const packCards = await tx
         .select({
-          card: cards,
+          card: virtualLibrary,
           weight: virtualPackCards.weight,
         })
         .from(virtualPackCards)
-        .innerJoin(cards, eq(virtualPackCards.virtualLibraryCardId, cards.id))
+        .innerJoin(virtualLibrary, eq(virtualPackCards.virtualLibraryCardId, virtualLibrary.id))
         .where(and(
           eq(virtualPackCards.virtualPackId, virtualPackId),
           eq(virtualPackCards.isActive, true),
-          eq(cards.isActive, true)
+          eq(virtualLibrary.isActive, true)
         ));
 
       if (packCards.length === 0) {
