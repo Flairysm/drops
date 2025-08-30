@@ -263,6 +263,9 @@ export default function MyPacks() {
                 
                 return (
                   <div key={tier} className="text-center">
+                    <h3 className={`text-xl font-gaming font-bold mb-4 ${packDisplay.textColor}`}>
+                      {packDisplay.name}
+                    </h3>
                     <div className="mb-6">
                       <PackImage packType={tier} size="large" />
                     </div>
