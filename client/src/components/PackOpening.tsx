@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Package, Sparkles } from "lucide-react";
+import { Package, Sparkles, Coins } from "lucide-react";
 import type { Pack } from "@shared/schema";
 
 interface PackOpeningProps {
@@ -29,6 +29,10 @@ export function PackOpening({ packs }: PackOpeningProps) {
   const [animationPhase, setAnimationPhase] = useState<"closed" | "opening" | "opened">("closed");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
 
   const activePacks = packs.filter(pack => pack.isActive);
   const bnwPacks = activePacks.filter(pack => pack.type === "BNW");
@@ -244,6 +248,21 @@ export function PackOpening({ packs }: PackOpeningProps) {
                   <div className="text-sm text-muted-foreground">
                     Card has been added to your vault!
                   </div>
+
+                  {/* Available Credits Bar */}
+                  <Card className="gaming-card bg-gradient-to-r from-accent/10 to-primary/10 border-accent/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <Coins className="w-5 h-5 text-accent" />
+                        <div className="text-center">
+                          <div className="text-sm text-muted-foreground">Available Credits</div>
+                          <div className="text-xl font-bold text-accent" data-testid="text-available-credits">
+                            {(user as any)?.credits || "0.00"}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
             </div>
