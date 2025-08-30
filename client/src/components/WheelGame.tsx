@@ -34,11 +34,13 @@ export function WheelGame() {
     onSuccess: (result) => {
       // Spin the wheel based on result
       const tierAngles = {
-        C: 0,
-        UC: 72,
-        R: 144,
-        SR: 216,
-        SSS: 288,
+        D: 0,
+        C: 51.4,  // 360/7 degrees per segment
+        B: 102.8,
+        A: 154.2,
+        S: 205.6,
+        SS: 257.0,
+        SSS: 308.4,
       };
       
       const targetAngle = tierAngles[result.result.tier as keyof typeof tierAngles] || 0;
@@ -48,15 +50,17 @@ export function WheelGame() {
       // Show result after animation
       setTimeout(() => {
         setLastResult(result);
-        queryClient.invalidateQueries(["/api/auth/user"]);
-        queryClient.invalidateQueries(["/api/vault"]);
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
         
         const tierNames = {
-          C: "Common",
-          UC: "Uncommon",
-          R: "Rare", 
-          SR: "Super Rare",
-          SSS: "Legendary"
+          D: "D Tier",
+          C: "C Tier",
+          B: "B Tier", 
+          A: "A Tier",
+          S: "S Tier",
+          SS: "SS Tier",
+          SSS: "SSS Tier"
         };
 
         toast({
@@ -109,11 +113,13 @@ export function WheelGame() {
   };
 
   const wheelSegments = [
-    { tier: "C", color: "common", label: "Common", odds: "65%" },
-    { tier: "UC", color: "uncommon", label: "Uncommon", odds: "25%" },
-    { tier: "R", color: "rare", label: "Rare", odds: "8%" },
-    { tier: "SR", color: "superrare", label: "Super Rare", odds: "1.8%" },
-    { tier: "SSS", color: "legendary", label: "Legendary", odds: "0.2%" },
+    { tier: "D", color: "d", label: "D Tier", odds: "50%" },
+    { tier: "C", color: "c", label: "C Tier", odds: "30%" },
+    { tier: "B", color: "b", label: "B Tier", odds: "15%" },
+    { tier: "A", color: "a", label: "A Tier", odds: "4%" },
+    { tier: "S", color: "s", label: "S Tier", odds: "0.8%" },
+    { tier: "SS", color: "ss", label: "SS Tier", odds: "0.15%" },
+    { tier: "SSS", color: "sss", label: "SSS Tier", odds: "0.05%" },
   ];
 
   return (
@@ -134,11 +140,13 @@ export function WheelGame() {
                 style={{
                   background: `conic-gradient(
                     from 0deg,
-                    hsl(var(--tier-common)) 0deg 72deg,
-                    hsl(var(--tier-uncommon)) 72deg 144deg, 
-                    hsl(var(--tier-rare)) 144deg 216deg,
-                    hsl(var(--tier-superrare)) 216deg 288deg,
-                    hsl(var(--tier-legendary)) 288deg 360deg
+                    hsl(var(--tier-d)) 0deg 51.4deg,
+                    hsl(var(--tier-c)) 51.4deg 102.8deg, 
+                    hsl(var(--tier-b)) 102.8deg 154.2deg,
+                    hsl(var(--tier-a)) 154.2deg 205.6deg,
+                    hsl(var(--tier-s)) 205.6deg 257deg,
+                    hsl(var(--tier-ss)) 257deg 308.4deg,
+                    hsl(var(--tier-sss)) 308.4deg 360deg
                   )`,
                   transform: `rotate(${rotation}deg)`,
                   transition: isSpinning ? "transform 3s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
@@ -150,7 +158,7 @@ export function WheelGame() {
                     key={segment.tier}
                     className="absolute w-full h-full flex items-center justify-center text-white font-bold text-sm"
                     style={{
-                      transform: `rotate(${index * 72 + 36}deg)`,
+                      transform: `rotate(${index * 51.4 + 25.7}deg)`,
                       transformOrigin: "center",
                     }}
                   >
@@ -158,7 +166,7 @@ export function WheelGame() {
                       className="absolute"
                       style={{ 
                         top: "20%",
-                        transform: `rotate(-${index * 72 + 36}deg)`,
+                        transform: `rotate(-${index * 51.4 + 25.7}deg)`,
                       }}
                     >
                       {segment.tier}

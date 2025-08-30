@@ -19,19 +19,23 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
   });
 
   const tierColors = {
-    common: "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800",
-    uncommon: "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-800",
-    rare: "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-800",
-    superrare: "text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-800",
-    legendary: "text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-800"
+    D: "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800",
+    C: "text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-800",
+    B: "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-800",
+    A: "text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-800",
+    S: "text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-800",
+    SS: "text-pink-600 bg-pink-100 dark:text-pink-400 dark:bg-pink-800",
+    SSS: "text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-800"
   };
 
   const tierNames = {
-    common: "Common",
-    uncommon: "Uncommon", 
-    rare: "Rare",
-    superrare: "Super Rare",
-    legendary: "Legendary"
+    D: "D Tier",
+    C: "C Tier", 
+    B: "B Tier",
+    A: "A Tier",
+    S: "S Tier",
+    SS: "SS Tier",
+    SSS: "SSS Tier"
   };
 
   const getTimeAgo = (date: string | Date) => {
@@ -177,7 +181,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                         {pull.gameType.toUpperCase()}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {getTimeAgo(pull.createdAt)}
+                        {getTimeAgo(pull.createdAt || new Date())}
                       </span>
                     </div>
                   </div>

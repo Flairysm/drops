@@ -366,21 +366,21 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`No available cards in tier ${fullTierName}`);
       }
 
-      // Generate 8 common cards + 1 hit card = 9 total cards
+      // Generate 8 D-tier cards + 1 hit card = 9 total cards
       const packCards = [];
       
-      // Get 8 random common cards
+      // Get 8 random D-tier cards (lowest tier)
       const commonCards = await tx
         .select()
         .from(cards)
         .where(and(
-          eq(cards.tier, 'common'),
+          eq(cards.tier, 'D'),
           eq(cards.isActive, true),
           sql`${cards.stock} > 0`
         ));
       
       if (commonCards.length === 0) {
-        throw new Error('No common cards available');
+        throw new Error('No D-tier cards available');
       }
       
       for (let i = 0; i < 8; i++) {
@@ -521,8 +521,8 @@ export class DatabaseStorage implements IStorage {
         .set({ stock: sql`${cards.stock} - 1` })
         .where(eq(cards.id, hitCard.id));
 
-      // Add to global feed only if rare or above
-      if (['rare', 'superrare', 'legendary'].includes(hitCard.tier)) {
+      // Add to global feed only if A-tier or above
+      if (['A', 'S', 'SS', 'SSS'].includes(hitCard.tier)) {
         await tx.insert(globalFeed).values({
           userId,
           cardId: hitCard.id,

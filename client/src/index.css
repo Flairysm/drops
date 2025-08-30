@@ -43,12 +43,14 @@
   --sidebar-border: hsl(240, 6%, 20%);
   --sidebar-ring: hsl(194, 100%, 50%);
   
-  /* Gaming tier colors */
-  --tier-common: hsl(220, 13%, 69%);
-  --tier-uncommon: hsl(142, 76%, 56%);
-  --tier-rare: hsl(217, 91%, 60%);
-  --tier-superrare: hsl(262, 83%, 70%);
-  --tier-legendary: hsl(45, 100%, 50%);
+  /* Gaming tier colors - 7-tier system */
+  --tier-d: hsl(120, 10%, 50%);
+  --tier-c: hsl(142, 76%, 56%);
+  --tier-b: hsl(217, 91%, 60%);
+  --tier-a: hsl(262, 83%, 70%);
+  --tier-s: hsl(45, 100%, 50%);
+  --tier-ss: hsl(320, 100%, 70%);
+  --tier-sss: hsl(0, 100%, 50%);
   
   /* Fonts */
   --font-sans: "Inter", system-ui, sans-serif;
@@ -121,24 +123,32 @@
     box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
   }
 
-  .tier-glow-common {
-    box-shadow: 0 0 15px rgba(148, 163, 184, 0.5);
+  .tier-glow-d {
+    box-shadow: 0 0 15px rgba(128, 128, 128, 0.5);
   }
 
-  .tier-glow-uncommon {
+  .tier-glow-c {
     box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
   }
 
-  .tier-glow-rare {
+  .tier-glow-b {
     box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
   }
 
-  .tier-glow-superrare {
+  .tier-glow-a {
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
   }
 
-  .tier-glow-legendary {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  .tier-glow-s {
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.6);
+  }
+
+  .tier-glow-ss {
+    box-shadow: 0 0 20px rgba(255, 64, 191, 0.7);
+  }
+
+  .tier-glow-sss {
+    box-shadow: 0 0 25px rgba(255, 0, 0, 0.8);
   }
 
   .nav-blur {
@@ -150,24 +160,32 @@
     animation: glow-pulse 2s ease-in-out infinite alternate;
   }
 
-  .tier-common {
-    @apply text-[hsl(var(--tier-common))];
+  .tier-d {
+    @apply text-[hsl(var(--tier-d))];
   }
 
-  .tier-uncommon {
-    @apply text-[hsl(var(--tier-uncommon))];
+  .tier-c {
+    @apply text-[hsl(var(--tier-c))];
   }
 
-  .tier-rare {
-    @apply text-[hsl(var(--tier-rare))];
+  .tier-b {
+    @apply text-[hsl(var(--tier-b))];
   }
 
-  .tier-superrare {
-    @apply text-[hsl(var(--tier-superrare))];
+  .tier-a {
+    @apply text-[hsl(var(--tier-a))];
   }
 
-  .tier-legendary {
-    @apply text-[hsl(var(--tier-legendary))];
+  .tier-s {
+    @apply text-[hsl(var(--tier-s))];
+  }
+
+  .tier-ss {
+    @apply text-[hsl(var(--tier-ss))];
+  }
+
+  .tier-sss {
+    @apply text-[hsl(var(--tier-sss))];
   }
 }
 

@@ -529,27 +529,29 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
     throw new Error('No cards available');
   }
 
-  // Simple tier selection for non-Plinko games
+  // Simple tier selection for non-Plinko games using new 7-tier system
   const random = Math.random();
   let tier: string;
   
-  if (random < 0.005) tier = 'legendary';
-  else if (random < 0.05) tier = 'superrare';
-  else if (random < 0.15) tier = 'rare';
-  else if (random < 0.35) tier = 'uncommon';
-  else tier = 'common';
+  if (random < 0.0001) tier = 'SSS';
+  else if (random < 0.0015) tier = 'SS';
+  else if (random < 0.0030) tier = 'S';
+  else if (random < 0.0210) tier = 'A';
+  else if (random < 0.1010) tier = 'B';
+  else if (random < 0.2510) tier = 'C';
+  else tier = 'D';
   
   const tierCards = cards.filter(card => card.tier === tier && (card.stock || 0) > 0);
   
   if (tierCards.length === 0) {
-    const commonCards = cards.filter(card => card.tier === 'common' && (card.stock || 0) > 0);
+    const commonCards = cards.filter(card => card.tier === 'D' && (card.stock || 0) > 0);
     if (commonCards.length === 0) {
       throw new Error('No cards in stock');
     }
     const selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
     return {
       cardId: selectedCard.id,
-      tier: 'common',
+      tier: 'D',
       gameType,
     };
   }

@@ -62,11 +62,13 @@ export default {
           ring: "var(--sidebar-ring)",
         },
         // Gaming tier colors
-        common: "var(--tier-common)",
-        uncommon: "var(--tier-uncommon)",
-        rare: "var(--tier-rare)",
-        superrare: "var(--tier-superrare)",
-        legendary: "var(--tier-legendary)",
+        d: "var(--tier-d)",
+        c: "var(--tier-c)",
+        b: "var(--tier-b)",
+        a: "var(--tier-a)",
+        s: "var(--tier-s)",
+        ss: "var(--tier-ss)",
+        sss: "var(--tier-sss)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

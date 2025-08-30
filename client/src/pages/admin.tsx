@@ -37,7 +37,7 @@ import type { User, Card as CardType, Pack } from "@shared/schema";
 
 const cardSchema = z.object({
   name: z.string().min(1, "Card name is required"),
-  tier: z.enum(["C", "UC", "R", "SR", "SSS"]),
+  tier: z.enum(["D", "C", "B", "A", "S", "SS", "SSS"]),
   imageUrl: z.string().url("Valid image URL required").optional(),
   marketValue: z.string().min(1, "Market value is required"),
   stock: z.number().min(0, "Stock must be non-negative"),
@@ -89,7 +89,7 @@ export default function Admin() {
     resolver: zodResolver(cardSchema),
     defaultValues: {
       name: "",
-      tier: "C",
+      tier: "D",
       imageUrl: "",
       marketValue: "",
       stock: 0,
@@ -261,11 +261,13 @@ export default function Admin() {
   };
 
   const tierColors = {
-    C: "common",
-    UC: "uncommon", 
-    R: "rare",
-    SR: "superrare",
-    SSS: "legendary"
+    D: "d",
+    C: "c", 
+    B: "b",
+    A: "a",
+    S: "s",
+    SS: "ss",
+    SSS: "sss"
   };
 
   return (
@@ -474,11 +476,13 @@ export default function Admin() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="C">Common (C)</SelectItem>
-                            <SelectItem value="UC">Uncommon (UC)</SelectItem>
-                            <SelectItem value="R">Rare (R)</SelectItem>
-                            <SelectItem value="SR">Super Rare (SR)</SelectItem>
-                            <SelectItem value="SSS">Legendary (SSS)</SelectItem>
+                            <SelectItem value="D">D Tier</SelectItem>
+                            <SelectItem value="C">C Tier</SelectItem>
+                            <SelectItem value="B">B Tier</SelectItem>
+                            <SelectItem value="A">A Tier</SelectItem>
+                            <SelectItem value="S">S Tier</SelectItem>
+                            <SelectItem value="SS">SS Tier</SelectItem>
+                            <SelectItem value="SSS">SSS Tier</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

@@ -8,11 +8,13 @@ export default function Landing() {
   const { theme, toggleTheme } = useTheme();
 
   const tierData = [
-    { tier: "C", name: "Common", color: "common", odds: "65.0%" },
-    { tier: "UC", name: "Uncommon", color: "uncommon", odds: "25.0%" },
-    { tier: "R", name: "Rare", color: "rare", odds: "8.0%" },
-    { tier: "SR", name: "Super Rare", color: "superrare", odds: "1.8%" },
-    { tier: "SSS", name: "Legendary", color: "legendary", odds: "0.2%" },
+    { tier: "D", name: "D Tier", color: "d", odds: "75.0%" },
+    { tier: "C", name: "C Tier", color: "c", odds: "15.0%" },
+    { tier: "B", name: "B Tier", color: "b", odds: "8.0%" },
+    { tier: "A", name: "A Tier", color: "a", odds: "1.8%" },
+    { tier: "S", name: "S Tier", color: "s", odds: "0.15%" },
+    { tier: "SS", name: "SS Tier", color: "ss", odds: "0.04%" },
+    { tier: "SSS", name: "SSS Tier", color: "sss", odds: "0.01%" },
   ];
 
   const games = [

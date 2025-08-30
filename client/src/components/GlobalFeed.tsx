@@ -18,11 +18,13 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
   });
 
   const tierColors = {
-    C: "common",
-    UC: "uncommon",
-    R: "rare",
-    SR: "superrare", 
-    SSS: "legendary"
+    D: "d",
+    C: "c",
+    B: "b",
+    A: "a", 
+    S: "s",
+    SS: "ss",
+    SSS: "sss"
   };
 
   const getTimeAgo = (date: string | Date) => {
@@ -81,7 +83,7 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
       {/* Feed Items */}
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {feedData.slice(0, showCount).map((pull) => {
-          const tierColor = tierColors[pull.tier as keyof typeof tierColors] || "common";
+          const tierColor = tierColors[pull.tier as keyof typeof tierColors] || "d";
           
           return (
             <div
@@ -120,7 +122,7 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
               </div>
               
               <div className="text-xs text-muted-foreground text-right flex-shrink-0" data-testid={`text-timestamp-${pull.id}`}>
-                {getTimeAgo(pull.createdAt)}
+                {getTimeAgo(pull.createdAt || new Date())}
               </div>
             </div>
           );

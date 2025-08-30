@@ -48,17 +48,19 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
   const getTierColor = (tier: string) => {
     switch (tier.toLowerCase()) {
-      case 'common': return 'text-gray-500 border-gray-300';
-      case 'uncommon': return 'text-green-500 border-green-300';
-      case 'rare': return 'text-blue-500 border-blue-300';
-      case 'superrare': return 'text-purple-500 border-purple-300';
-      case 'legendary': return 'text-yellow-500 border-yellow-300';
+      case 'd': return 'text-gray-500 border-gray-300';
+      case 'c': return 'text-green-500 border-green-300';
+      case 'b': return 'text-blue-500 border-blue-300';
+      case 'a': return 'text-purple-500 border-purple-300';
+      case 's': return 'text-yellow-500 border-yellow-300';
+      case 'ss': return 'text-pink-500 border-pink-300';
+      case 'sss': return 'text-red-500 border-red-300';
       default: return 'text-gray-500 border-gray-300';
     }
   };
 
   const getTierIcon = (tier: string) => {
-    if (tier === 'legendary' || tier === 'superrare') {
+    if (tier === 'SSS' || tier === 'SS' || tier === 'S') {
       return <Star className="h-4 w-4" />;
     }
     return <Sparkles className="h-4 w-4" />;
@@ -66,32 +68,42 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
   const getHitCardGlow = (tier: string) => {
     switch (tier?.toLowerCase()) {
-      case 'legendary':
       case 'sss':
         return {
-          bg: 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600',
-          glow: 'shadow-2xl shadow-yellow-500/70 ring-4 ring-yellow-400',
+          bg: 'bg-gradient-to-br from-red-400 via-red-500 to-red-600',
+          glow: 'shadow-2xl shadow-red-500/70 ring-4 ring-red-400',
           animate: 'animate-pulse',
           particles: '⭐✨⭐'
         };
-      case 'superrare':
-      case 'sr':
+      case 'ss':
         return {
-          bg: 'bg-gradient-to-br from-red-400 via-red-500 to-red-600', 
-          glow: 'shadow-2xl shadow-red-500/70 ring-4 ring-red-400',
+          bg: 'bg-gradient-to-br from-pink-400 via-pink-500 to-pink-600', 
+          glow: 'shadow-2xl shadow-pink-500/70 ring-4 ring-pink-400',
           animate: 'animate-pulse',
           particles: '💎🔥💎'
         };
-      case 'rare':
-      case 'r':
+      case 's':
+        return {
+          bg: 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600',
+          glow: 'shadow-xl shadow-yellow-500/60 ring-2 ring-yellow-400',
+          animate: 'animate-pulse',
+          particles: '⚡💫⚡'
+        };
+      case 'a':
         return {
           bg: 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600',
           glow: 'shadow-xl shadow-purple-500/60 ring-2 ring-purple-400',
           animate: 'animate-pulse',
           particles: '💜⚡💜'
         };
-      case 'uncommon':
-      case 'uc':
+      case 'b':
+        return {
+          bg: 'bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600',
+          glow: 'shadow-lg shadow-blue-500/50 ring-2 ring-blue-400',
+          animate: '',
+          particles: '💙🔹💙'
+        };
+      case 'c':
         return {
           bg: 'bg-gradient-to-br from-green-400 via-green-500 to-green-600',
           glow: 'shadow-lg shadow-green-500/50 ring-2 ring-green-400',

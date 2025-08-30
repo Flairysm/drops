@@ -108,16 +108,9 @@ export default function Vault() {
     }, 0);
   };
 
-  // Map filter tier codes to database tier names
+  // No need for tier mapping anymore since we're using direct tier codes
   const getTierMapping = (filterValue: string) => {
-    const mapping: Record<string, string> = {
-      'C': 'common',
-      'UC': 'uncommon', 
-      'R': 'rare',
-      'SR': 'superrare',
-      'SSS': 'legendary'
-    };
-    return mapping[filterValue] || filterValue;
+    return filterValue; // Direct mapping since database now uses D, C, B, A, S, SS, SSS
   };
 
   const filteredCards = vaultCards?.filter(card => 
@@ -125,26 +118,20 @@ export default function Vault() {
   ) || [];
 
   const tierCounts = vaultCards?.reduce((acc, card) => {
-    // Map database tier names back to filter codes for counting
-    const tierMapping: Record<string, string> = {
-      'common': 'C',
-      'uncommon': 'UC',
-      'rare': 'R', 
-      'superrare': 'SR',
-      'legendary': 'SSS'
-    };
-    const tierCode = tierMapping[card.card.tier] || card.card.tier;
-    acc[tierCode] = (acc[tierCode] || 0) + 1;
+    // Database now uses direct tier codes (D, C, B, A, S, SS, SSS)
+    acc[card.card.tier] = (acc[card.card.tier] || 0) + 1;
     return acc;
   }, {} as Record<string, number>) || {};
 
   const tiers = [
     { value: "all", label: "All Cards", count: vaultCards?.length || 0 },
-    { value: "SSS", label: "Legendary", count: tierCounts.SSS || 0, color: "legendary" },
-    { value: "SR", label: "Super Rare", count: tierCounts.SR || 0, color: "superrare" },
-    { value: "R", label: "Rare", count: tierCounts.R || 0, color: "rare" },
-    { value: "UC", label: "Uncommon", count: tierCounts.UC || 0, color: "uncommon" },
-    { value: "C", label: "Common", count: tierCounts.C || 0, color: "common" },
+    { value: "SSS", label: "SSS Tier", count: tierCounts.SSS || 0, color: "legendary" },
+    { value: "SS", label: "SS Tier", count: tierCounts.SS || 0, color: "superrare" },
+    { value: "S", label: "S Tier", count: tierCounts.S || 0, color: "rare" },
+    { value: "A", label: "A Tier", count: tierCounts.A || 0, color: "uncommon" },
+    { value: "B", label: "B Tier", count: tierCounts.B || 0, color: "common" },
+    { value: "C", label: "C Tier", count: tierCounts.C || 0, color: "common" },
+    { value: "D", label: "D Tier", count: tierCounts.D || 0, color: "common" },
   ];
 
   return (

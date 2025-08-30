@@ -18,14 +18,16 @@ export function CardDisplay({
   onClick 
 }: CardDisplayProps) {
   const tierColors = {
-    C: "common",
-    UC: "uncommon",
-    R: "rare", 
-    SR: "superrare",
-    SSS: "legendary"
+    D: "d",
+    C: "c",
+    B: "b", 
+    A: "a",
+    S: "s",
+    SS: "ss",
+    SSS: "sss"
   };
 
-  const tierColor = tierColors[card.tier as keyof typeof tierColors] || "common";
+  const tierColor = tierColors[card.tier as keyof typeof tierColors] || "d";
 
   if (viewMode === "list") {
     return (

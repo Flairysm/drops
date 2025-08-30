@@ -39,7 +39,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Gaming System Architecture
 - **Game Types**: Three distinct gaming modes (Plinko, Wheel, Pack Opening)
-- **Card Tiers**: Five-tier rarity system (Common, Uncommon, Rare, Super Rare, Legendary)
+- **Card Tiers**: Seven-tier rarity system (D, C, B, A, S, SS, SSS) - migrated from old 5-tier system (August 30, 2025)
 - **Probability Engine**: Weighted random selection based on configured odds
 - **Credit System**: Virtual currency with purchase and deduction mechanisms
 
@@ -70,3 +70,13 @@ Preferred communication style: Simple, everyday language.
 - **Build Tools**: Vite with React plugin and TypeScript support
 - **Code Quality**: ESBuild for production builds
 - **Development Experience**: Hot module replacement, error overlays, and source mapping
+
+## Recent Changes
+
+### August 30, 2025 - Major Tier System Overhaul
+- **Tier System Migration**: Completely migrated from 5-tier (Common, Uncommon, Rare, Super Rare, Legendary) to 7-tier system (D, C, B, A, S, SS, SSS)
+- **Database Migration**: Updated all existing cards, pull rates, and global feed entries to use new tier names
+- **Frontend Updates**: Updated all UI components including admin forms, vault filters, landing page, wheel game, pack opening animation, and card displays
+- **Pull Rate Rebalancing**: Completely rebalanced pull rates for all pack types with new 7-tier distribution
+- **CSS Styling**: Updated tier colors, glow effects, and styling to support 7 distinct tiers
+- **Vault Functionality**: Confirmed refund calculations use 100% card value and updated tier filtering to work with new system

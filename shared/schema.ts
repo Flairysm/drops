@@ -46,7 +46,7 @@ export const users = pgTable("users", {
 export const cards = pgTable("cards", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
-  tier: varchar("tier", { length: 10 }).notNull(), // C, UC, R, SR, SSS
+  tier: varchar("tier", { length: 10 }).notNull(), // D, C, B, A, S, SS, SSS
   packType: varchar("pack_type", { length: 50 }).default("BNW").notNull(), // BNW, XY, etc.
   imageUrl: varchar("image_url"),
   marketValue: decimal("market_value", { precision: 10, scale: 2 }).notNull(),
