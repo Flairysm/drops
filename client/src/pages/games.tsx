@@ -4,12 +4,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { CreditCard, Package } from "lucide-react";
 
 export default function Play() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+
+  const { data: virtualPacks } = useQuery({
+    queryKey: ["/api/virtual-packs"],
+    enabled: isAuthenticated,
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -139,52 +146,70 @@ export default function Play() {
               </div>
             </section>
             
-            {/* Classic Packs Section */}
+            {/* Themed Packs Section */}
             <section>
               <h2 className="font-gaming text-3xl text-center mb-6">
-                <span className="bg-gradient-to-r from-legendary to-primary bg-clip-text text-transparent">Classic Packs</span>
+                <span className="bg-gradient-to-r from-legendary to-primary bg-clip-text text-transparent">Themed Packs</span>
               </h2>
-              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-mystery-packs">
-                  <CardHeader className="text-center">
-                    <CardTitle className="font-gaming text-xl">Mystery Packs</CardTitle>
-                    <div className="flex justify-center space-x-2">
-                      <Badge variant="secondary">4.99 Credits</Badge>
-                      <Badge className="bg-accent text-primary-foreground">10 Cards</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-muted-foreground mb-4">Random packs with surprise card collections!</p>
-                    <button 
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
-                      onClick={() => window.location.href = '/play/mystery-packs'}
-                      data-testid="button-play-mystery"
-                    >
-                      Open Mystery Pack
-                    </button>
-                  </CardContent>
-                </Card>
-                
-                <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-themed-packs">
-                  <CardHeader className="text-center">
-                    <CardTitle className="font-gaming text-xl">Themed Packs</CardTitle>
-                    <div className="flex justify-center space-x-2">
-                      <Badge className="bg-legendary text-primary-foreground">Curated</Badge>
-                      <Badge variant="secondary">Variable Price</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-muted-foreground mb-4">Curated collections like Black Bolt and more!</p>
-                    <button 
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md w-full transition-colors" 
-                      onClick={() => window.location.href = '/play/themed-packs'}
-                      data-testid="button-play-themed"
-                    >
-                      Browse Themed Packs
-                    </button>
-                  </CardContent>
-                </Card>
-              </div>
+              <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Explore curated collections featuring specific themes and characters!
+              </p>
+              
+              {virtualPacks && virtualPacks.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                  {virtualPacks.filter((pack: any) => pack.isActive).map((pack: any) => (
+                    <Card key={pack.id} className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid={`card-themed-pack-${pack.id}`}>
+                      <CardHeader className="text-center">
+                        {pack.imageUrl && (
+                          <div className="w-full h-32 mb-4 rounded-lg overflow-hidden">
+                            <img 
+                              src={pack.imageUrl} 
+                              alt={pack.name}
+                              className="w-full h-full object-cover"
+                              data-testid={`img-themed-pack-${pack.id}`}
+                            />
+                          </div>
+                        )}
+                        <CardTitle className="font-gaming text-xl" data-testid={`text-themed-pack-name-${pack.id}`}>
+                          {pack.name}
+                        </CardTitle>
+                        {pack.description && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {pack.description}
+                          </p>
+                        )}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex justify-center space-x-2">
+                          <Badge variant="secondary" data-testid={`badge-themed-pack-price-${pack.id}`}>
+                            {pack.price} Credits
+                          </Badge>
+                          <Badge className="bg-accent text-primary-foreground" data-testid={`badge-themed-pack-card-count-${pack.id}`}>
+                            {pack.cardCount} Cards
+                          </Badge>
+                        </div>
+                        
+                        <Button
+                          onClick={() => window.location.href = '/play/themed-packs'}
+                          className="w-full bg-gradient-to-r from-primary to-accent"
+                          data-testid={`button-open-themed-pack-${pack.id}`}
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Open Pack
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 max-w-md mx-auto">
+                  <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Themed Packs Available</h3>
+                  <p className="text-muted-foreground">
+                    Check back later for exclusive themed pack collections!
+                  </p>
+                </div>
+              )}
             </section>
           </div>
 
