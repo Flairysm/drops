@@ -361,7 +361,7 @@ export default function Admin() {
     createVirtualLibraryCardMutation.mutate(data);
   };
 
-  const handleDeleteVirtualLibraryCard = (cardId: string) => {
+  const handleDeleteCard = (cardId: string) => {
     if (confirm("Are you sure you want to delete this card?")) {
       deleteVirtualLibraryCardMutation.mutate(cardId);
     }
@@ -799,14 +799,27 @@ export default function Admin() {
                                     <div className="font-medium">{card.name}</div>
                                     <div className="text-sm text-muted-foreground">${card.marketValue}</div>
                                     <div className="text-xs text-blue-600 dark:text-blue-400">
-                                      Stock: {card.stock || 0} available • Type: {card.packType || 'regular'}
+                                      Stock: {card.stock || 0} available
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
-                                  <span className="text-xs text-muted-foreground px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
-                                    {card.packType === 'virtual' ? 'Virtual' : 'Regular'}
-                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCard(card)}
+                                    data-testid={`button-edit-card-${card.id}`}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteCard(card.id)}
+                                    data-testid={`button-delete-card-${card.id}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
                                 </div>
                               </div>
                             )) || (
@@ -1138,7 +1151,7 @@ export default function Admin() {
                 </div>
                 
                 <div className="grid gap-3">
-                  {allCards?.filter((c: any) => c.packType === 'virtual').map((card: any) => (
+                  {allCards?.map((card: any) => (
                     <div key={card.id} className="flex items-center space-x-3 p-3 border rounded">
                       <Checkbox
                         checked={selectedCards.includes(card.id)}
