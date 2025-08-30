@@ -95,7 +95,6 @@ export default function Games() {
                 <CardHeader className="text-center">
                   <CardTitle className="font-gaming text-2xl">Plinko Drop</CardTitle>
                   <div className="flex justify-center space-x-4 mt-4">
-                    <Badge variant="secondary">Cost: 1.0 Credits</Badge>
                     <Badge className="bg-legendary text-primary-foreground">Max: SSS Tier</Badge>
                   </div>
                 </CardHeader>
