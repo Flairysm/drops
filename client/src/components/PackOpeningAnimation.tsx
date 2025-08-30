@@ -45,13 +45,13 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
       nonHitCards.forEach((_, index) => {
         setTimeout(() => {
           setRevealedCards(index + 1);
-        }, 300 + (index * 150)); // Start after 300ms, then 150ms intervals
+        }, 500 + (index * 200)); // Start after 500ms, then 200ms intervals for smoother timing
       });
       
       // After all non-hit cards are revealed, enable hit card reveal
       setTimeout(() => {
         // Auto-transition hint - ready for hit card reveal
-      }, 300 + (nonHitCards.length * 150) + 500);
+      }, 500 + (nonHitCards.length * 200) + 300);
     }
   }, [showCommons, nonHitCards.length]);
 
@@ -175,12 +175,12 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 return (
                   <div 
                     key={index} 
-                    className={`gaming-card p-3 text-center transition-all duration-500 ${
+                    className={`gaming-card p-3 text-center transition-all duration-700 ease-out transform ${
                       isRevealed
-                        ? 'opacity-100 transform scale-100'
+                        ? 'opacity-100 transform scale-100 animate-in slide-in-from-bottom-2'
                         : canRevealHit
-                        ? `opacity-100 transform scale-100 ${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400 cursor-pointer hover:scale-105 animate-pulse`
-                        : 'opacity-30 transform scale-95'
+                        ? `opacity-100 transform scale-105 ${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400 cursor-pointer hover:scale-110 animate-pulse`
+                        : 'opacity-20 transform scale-90 blur-sm'
                     }`}
                     onClick={canRevealHit ? handleRevealHit : undefined}
                   >
