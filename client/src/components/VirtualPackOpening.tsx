@@ -57,7 +57,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   const openPackMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/virtual-packs/${packId}/open`);
-      return response as VirtualPackResult;
+      return response as unknown as VirtualPackResult;
     },
     onSuccess: (result) => {
       setResult(result);
