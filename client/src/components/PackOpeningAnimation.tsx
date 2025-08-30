@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,8 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const [showCommons, setShowCommons] = useState(true);
   const [showHitCard, setShowHitCard] = useState(false);
   const [isHitRevealed, setIsHitRevealed] = useState(false);
+  const [revealedCards, setRevealedCards] = useState(0);
+  const [hitCardRevealed, setHitCardRevealed] = useState(false);
 
   // Guard against undefined packCards
   if (!packCards || packCards.length === 0) {
@@ -34,6 +36,24 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   // Show all 9 cards in the initial display, but the hit card will have special styling
   const hitCard = packCards.find(card => card.isHit);
   const hitCardIndex = packCards.findIndex(card => card.isHit);
+  const nonHitCards = packCards.filter(card => !card.isHit);
+
+  // Start sequential card reveal animation
+  useEffect(() => {
+    if (showCommons) {
+      // Reveal non-hit cards first (8 cards), then show hint for hit card
+      nonHitCards.forEach((_, index) => {
+        setTimeout(() => {
+          setRevealedCards(index + 1);
+        }, 300 + (index * 150)); // Start after 300ms, then 150ms intervals
+      });
+      
+      // After all non-hit cards are revealed, enable hit card reveal
+      setTimeout(() => {
+        // Auto-transition hint - ready for hit card reveal
+      }, 300 + (nonHitCards.length * 150) + 500);
+    }
+  }, [showCommons, nonHitCards.length]);
 
   const handleRevealHit = () => {
     if (showCommons) {
@@ -131,7 +151,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           </div>
           {showCommons ? (
             <p className="text-gray-300">
-              9 Cards Total - Find Your Hit Card!
+              Revealing cards... {revealedCards}/{nonHitCards.length} commons revealed
             </p>
           ) : showHitCard ? (
             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white animate-pulse">
@@ -147,16 +167,22 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
               {packCards.map((card, index) => {
                 const isHitCard = card.isHit;
+                const nonHitIndex = isHitCard ? -1 : nonHitCards.findIndex(c => c.id === card.id);
+                const isRevealed = isHitCard ? false : nonHitIndex < revealedCards;
+                const canRevealHit = isHitCard && revealedCards >= nonHitCards.length;
                 const hitGlow = isHitCard ? getHitCardGlow(card.tier || '') : null;
                 
                 return (
                   <div 
                     key={index} 
-                    className={`gaming-card p-3 text-center transition-all duration-300 ${
-                      isHitCard 
-                        ? `${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400` 
-                        : ''
+                    className={`gaming-card p-3 text-center transition-all duration-500 ${
+                      isRevealed
+                        ? 'opacity-100 transform scale-100'
+                        : canRevealHit
+                        ? `opacity-100 transform scale-100 ${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400 cursor-pointer hover:scale-105 animate-pulse`
+                        : 'opacity-30 transform scale-95'
                     }`}
+                    onClick={canRevealHit ? handleRevealHit : undefined}
                   >
                     {isHitCard ? (
                       /* Hit Card - Show back with peek effect */
@@ -165,11 +191,11 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                           <Star className="h-6 w-6 text-white" />
                         </div>
                         <div className="text-xs">{hitGlow?.particles}</div>
-                        <p className="text-xs font-bold text-yellow-300">HIT CARD</p>
+                        <p className="text-xs font-bold text-yellow-300">{canRevealHit ? 'TAP!' : 'HIT'}</p>
                         <p className="text-xs text-yellow-200">{card.tier?.toUpperCase()}</p>
                       </div>
-                    ) : (
-                      /* Regular Card */
+                    ) : isRevealed ? (
+                      /* Regular Card - Revealed */
                       <div>
                         {card.imageUrl ? (
                           <img
@@ -185,7 +211,14 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                           </div>
                         )}
                         <p className="text-xs font-medium truncate">{card.name}</p>
-                        <p className="text-xs text-muted-foreground">{parseFloat(card.marketValue || '0').toFixed(2)} credits</p>
+                      </div>
+                    ) : (
+                      /* Regular Card - Hidden */
+                      <div>
+                        <div className="w-12 h-16 mx-auto bg-gray-200 rounded flex items-center justify-center mb-2">
+                          <span className="text-xs text-gray-400">?</span>
+                        </div>
+                        <p className="text-xs text-gray-400">???</p>
                       </div>
                     )}
                   </div>
@@ -271,7 +304,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             data-testid="button-reveal-card"
           >
             {showCommons 
-              ? "Reveal Hit Card" 
+              ? revealedCards >= nonHitCards.length ? "Click Hit Card!" : "Revealing Cards..."
               : !isHitRevealed 
               ? "Tap to Reveal" 
               : "Complete Opening"
@@ -280,7 +313,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           
           <p className="text-sm text-gray-400 mt-2">
             {showCommons 
-              ? "The glowing card is your hit card - click to reveal it!" 
+              ? revealedCards >= nonHitCards.length 
+                ? "All commons revealed! Click the glowing hit card to reveal it!" 
+                : "Watch as your cards pop up one by one..."
               : !isHitRevealed 
               ? "Your hit card is waiting..." 
               : "This card has been added to your vault!"
