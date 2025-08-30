@@ -20,6 +20,7 @@ interface VirtualPackResult {
     id: string;
     name: string;
     tier: string;
+    imageUrl?: string;
     marketValue: string;
     packType: string;
   }>;
@@ -74,6 +75,8 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       return await response.json() as VirtualPackResult;
     },
     onSuccess: (result) => {
+      console.log('Virtual pack result:', result);
+      console.log('Cards with images:', result.cards.map(c => ({ name: c.name, imageUrl: c.imageUrl || 'NO IMAGE' })));
       setResult(result);
       setAnimationPhase("opening");
       
@@ -303,11 +306,13 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                   <>
                     {/* Card Image */}
                     <div className="w-full h-full relative flex flex-col">
-                      {(card as any).imageUrl ? (
+                      {card.imageUrl ? (
                         <img
-                          src={(card as any).imageUrl}
+                          src={card.imageUrl}
                           alt={card.name}
                           className="w-full flex-1 object-cover rounded-md"
+                          onError={(e) => console.log('Image failed to load:', card.imageUrl)}
+                          onLoad={() => console.log('Image loaded successfully:', card.imageUrl)}
                         />
                       ) : (
                         <div className={`w-full flex-1 rounded-md bg-gradient-to-br from-${tierColors[(card.tier) as keyof typeof tierColors]}-400 to-${tierColors[(card.tier) as keyof typeof tierColors]}-600 flex items-center justify-center`}>
