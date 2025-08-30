@@ -108,12 +108,33 @@ export default function Vault() {
     }, 0);
   };
 
+  // Map filter tier codes to database tier names
+  const getTierMapping = (filterValue: string) => {
+    const mapping: Record<string, string> = {
+      'C': 'common',
+      'UC': 'uncommon', 
+      'R': 'rare',
+      'SR': 'superrare',
+      'SSS': 'legendary'
+    };
+    return mapping[filterValue] || filterValue;
+  };
+
   const filteredCards = vaultCards?.filter(card => 
-    filterTier === "all" || card.card.tier === filterTier
+    filterTier === "all" || card.card.tier === getTierMapping(filterTier)
   ) || [];
 
   const tierCounts = vaultCards?.reduce((acc, card) => {
-    acc[card.card.tier] = (acc[card.card.tier] || 0) + 1;
+    // Map database tier names back to filter codes for counting
+    const tierMapping: Record<string, string> = {
+      'common': 'C',
+      'uncommon': 'UC',
+      'rare': 'R', 
+      'superrare': 'SR',
+      'legendary': 'SSS'
+    };
+    const tierCode = tierMapping[card.card.tier] || card.card.tier;
+    acc[tierCode] = (acc[tierCode] || 0) + 1;
     return acc;
   }, {} as Record<string, number>) || {};
 
