@@ -242,6 +242,7 @@ export default function Admin() {
     queryKey: ["/api/admin/cards"],
     enabled: !!isAuthenticated,
     retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
+    refetchInterval: 5000, // Auto-refresh every 5 seconds to catch refunds
   });
 
   const { data: virtualPacks } = useQuery({
