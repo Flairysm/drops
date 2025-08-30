@@ -275,7 +275,6 @@ export default function Admin() {
     mutationFn: (cardId: string) => apiRequest("DELETE", `/api/admin/cards/${cardId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/cards"] });
-      setDeleteVirtualLibraryCardId(null);
       toast({
         title: "Success",
         description: "Card deleted successfully",

@@ -212,7 +212,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateCard(id: string, cardData: Partial<InsertCard>): Promise<Card> {
     const [updatedCard] = await db.update(cards)
-      .set({ ...cardData, updatedAt: new Date() })
+      .set({ ...cardData })
       .where(eq(cards.id, id))
       .returning();
     return updatedCard;
