@@ -131,10 +131,7 @@ export default function Play() {
                           Per play
                         </div>
                       </div>
-                      <div className="flex justify-center space-x-2">
-                        <Badge className="bg-purple-600 text-white">
-                          Win Mystery Packs
-                        </Badge>
+                      <div className="flex justify-center">
                         <Badge className="bg-purple-600 text-white">
                           Win Mystery Packs
                         </Badge>
