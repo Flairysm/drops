@@ -431,6 +431,12 @@ export class DatabaseStorage implements IStorage {
               quantity: 1,
             }).returning();
 
+            // Decrease card stock when added to vault
+            await tx
+              .update(cards)
+              .set({ stock: sql`${cards.stock} - 1` })
+              .where(eq(cards.id, mainCard[0].id));
+
             pulledCards.push({
               ...newUserCard,
               card: mainCard[0],
@@ -467,6 +473,12 @@ export class DatabaseStorage implements IStorage {
             pullValue: randomCard.marketValue,
             quantity: 1,
           }).returning();
+
+          // Decrease card stock when added to vault
+          await tx
+            .update(cards)
+            .set({ stock: sql`${cards.stock} - 1` })
+            .where(eq(cards.id, mainCard[0].id));
 
           pulledCards.push({
             ...newUserCard,
@@ -808,6 +820,12 @@ export class DatabaseStorage implements IStorage {
               pulledAt: sql`NOW()` // Update pulled time to latest
             })
             .where(eq(userCards.id, existingCard.id));
+          
+          // Reduce stock for existing card quantity update
+          await tx
+            .update(cards)
+            .set({ stock: sql`${cards.stock} - ${count}` })
+            .where(eq(cards.id, card.id));
         } else {
           // Insert new card with quantity
           userCardInserts.push({
@@ -845,6 +863,12 @@ export class DatabaseStorage implements IStorage {
           .where(eq(userCards.id, existingHitCard.id))
           .returning();
         newUserCard = updatedCards[0];
+        
+        // Reduce stock for existing hit card quantity update
+        await tx
+          .update(cards)
+          .set({ stock: sql`${cards.stock} - 1` })
+          .where(eq(cards.id, hitCard.id));
       } else {
         // Insert new hit card
         userCardInserts.push({
@@ -864,6 +888,14 @@ export class DatabaseStorage implements IStorage {
           if (!newUserCard) {
             newUserCard = insertedCards.find(c => c.cardId === hitCard.id) || insertedCards[0];
           }
+          
+          // Reduce stock for all newly inserted cards
+          for (const userCardInsert of userCardInserts) {
+            await tx
+              .update(cards)
+              .set({ stock: sql`${cards.stock} - ${userCardInsert.quantity}` })
+              .where(eq(cards.id, userCardInsert.cardId!));
+          }
         } catch (error) {
           console.error('Failed to insert user cards:', error);
           throw new Error('Failed to add cards to vault - please try again');
@@ -876,11 +908,7 @@ export class DatabaseStorage implements IStorage {
         .set({ isOpened: true, openedAt: new Date() })
         .where(eq(userPacks.id, packId));
 
-      // Update card stock for hit card only
-      await tx
-        .update(cards)
-        .set({ stock: sql`${cards.stock} - 1` })
-        .where(eq(cards.id, hitCard.id));
+      // Stock reduction is now handled above for all cards
 
       // Add to global feed for all hit cards (C-tier and above)
       if (['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(hitCard.tier)) {
