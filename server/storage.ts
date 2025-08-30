@@ -362,18 +362,11 @@ export class DatabaseStorage implements IStorage {
         throw new Error('No pull rates configured for this virtual pack');
       }
 
-      // Get available cards in this pack's pool from virtual library, grouped by tier
+      // Get available cards in this pack's pool from main cards table, grouped by tier
       const allVirtualCards = await tx
-        .select({
-          id: virtualLibrary.id,
-          name: virtualLibrary.name,
-          tier: virtualLibrary.tier,
-          imageUrl: virtualLibrary.imageUrl,
-          marketValue: virtualLibrary.marketValue,
-        })
-        .from(virtualPackCards)
-        .innerJoin(virtualLibrary, eq(virtualPackCards.virtualLibraryCardId, virtualLibrary.id))
-        .where(and(eq(virtualPackCards.virtualPackId, virtualPackId), eq(virtualPackCards.isActive, true)));
+        .select()
+        .from(cards)
+        .where(and(eq(cards.packType, 'virtual'), eq(cards.isActive, true)));
 
       if (allVirtualCards.length === 0) {
         throw new Error('No cards available in this virtual pack');
@@ -409,24 +402,9 @@ export class DatabaseStorage implements IStorage {
         for (let i = 0; i < 7; i++) {
           const randomCard = dTierCards[Math.floor(Math.random() * dTierCards.length)];
           if (randomCard) {
-            // Create or find corresponding card in main cards table
-            let mainCard = await tx.select().from(cards).where(eq(cards.name, randomCard.name)).limit(1);
-            
-            if (mainCard.length === 0) {
-              // Create card in main table if it doesn't exist
-              [mainCard[0]] = await tx.insert(cards).values({
-                name: randomCard.name,
-                tier: randomCard.tier,
-                imageUrl: randomCard.imageUrl || undefined,
-                marketValue: randomCard.marketValue,
-                packType: 'virtual', // Mark as virtual pack card
-                stock: 999, // High stock for virtual cards
-              }).returning();
-            }
-
             const [newUserCard] = await tx.insert(userCards).values({
               userId,
-              cardId: mainCard[0].id,
+              cardId: randomCard.id,
               pullValue: randomCard.marketValue,
               quantity: 1,
             }).returning();
@@ -435,11 +413,11 @@ export class DatabaseStorage implements IStorage {
             await tx
               .update(cards)
               .set({ stock: sql`${cards.stock} - 1` })
-              .where(eq(cards.id, mainCard[0].id));
+              .where(eq(cards.id, randomCard.id));
 
             pulledCards.push({
               ...newUserCard,
-              card: mainCard[0],
+              card: randomCard,
             });
           }
         }
@@ -452,24 +430,9 @@ export class DatabaseStorage implements IStorage {
       if (tierCards && tierCards.length > 0) {
         const randomCard = tierCards[Math.floor(Math.random() * tierCards.length)];
         if (randomCard) {
-          // Create or find corresponding card in main cards table
-          let mainCard = await tx.select().from(cards).where(eq(cards.name, randomCard.name)).limit(1);
-          
-          if (mainCard.length === 0) {
-            // Create card in main table if it doesn't exist
-            [mainCard[0]] = await tx.insert(cards).values({
-              name: randomCard.name,
-              tier: randomCard.tier,
-              imageUrl: randomCard.imageUrl || undefined,
-              marketValue: randomCard.marketValue,
-              packType: 'virtual', // Mark as virtual pack card
-              stock: 999, // High stock for virtual cards
-            }).returning();
-          }
-
           const [newUserCard] = await tx.insert(userCards).values({
             userId,
-            cardId: mainCard[0].id,
+            cardId: randomCard.id,
             pullValue: randomCard.marketValue,
             quantity: 1,
           }).returning();
@@ -478,18 +441,18 @@ export class DatabaseStorage implements IStorage {
           await tx
             .update(cards)
             .set({ stock: sql`${cards.stock} - 1` })
-            .where(eq(cards.id, mainCard[0].id));
+            .where(eq(cards.id, randomCard.id));
 
           pulledCards.push({
             ...newUserCard,
-            card: mainCard[0],
+            card: randomCard,
           });
 
           // Add to global feed for rare pulls (A tier and above)
           if (['A', 'S', 'SS', 'SSS'].includes(selectedTier)) {
             await tx.insert(globalFeed).values({
               userId,
-              cardId: mainCard[0].id,
+              cardId: randomCard.id,
               tier: selectedTier,
               gameType: 'virtual-pack',
             });

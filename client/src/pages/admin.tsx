@@ -238,8 +238,8 @@ export default function Admin() {
     retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
   });
 
-  const { data: virtualLibraryCards } = useQuery({
-    queryKey: ["/api/admin/virtual-library"],
+  const { data: allCards } = useQuery({
+    queryKey: ["/api/admin/cards"],
     enabled: !!isAuthenticated,
     retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
   });
@@ -768,7 +768,7 @@ export default function Admin() {
                       <Card className="gaming-card">
                         <CardHeader>
                           <div className="flex items-center justify-between">
-                            <CardTitle>Current Inventory ({virtualLibraryCards?.length || 0} cards)</CardTitle>
+                            <CardTitle>Unified Card Inventory ({allCards?.length || 0} cards)</CardTitle>
                           </div>
                           <div className="mt-3">
                             <Input
@@ -783,7 +783,7 @@ export default function Admin() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-2 max-h-80 overflow-y-auto">
-                            {virtualLibraryCards?.filter((card: any) => {
+                            {allCards?.filter((card: any) => {
                               const searchTerm = inventorySearch.toLowerCase();
                               return card.name.toLowerCase().includes(searchTerm) || 
                                      card.tier.toLowerCase().includes(searchTerm);
@@ -797,29 +797,16 @@ export default function Admin() {
                                   </div>
                                   <div>
                                     <div className="font-medium">{card.name}</div>
-                                    <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
+                                    <div className="text-sm text-muted-foreground">${card.marketValue}</div>
                                     <div className="text-xs text-blue-600 dark:text-blue-400">
-                                      Stock: {card.stock || 0} available
+                                      Stock: {card.stock || 0} available • Type: {card.packType || 'regular'}
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setEditingCard(card)}
-                                    data-testid={`button-edit-card-${card.id}`}
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleDeleteVirtualLibraryCard(card.id)}
-                                    data-testid={`button-delete-card-${card.id}`}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
+                                  <span className="text-xs text-muted-foreground px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                                    {card.packType === 'virtual' ? 'Virtual' : 'Regular'}
+                                  </span>
                                 </div>
                               </div>
                             )) || (
