@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Package, Sparkles, Star } from "lucide-react";
 import type { Card as CardType } from "@shared/schema";
@@ -54,6 +54,11 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   const [hitCardRevealed, setHitCardRevealed] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Get user data for credits display
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
 
   const openPackMutation = useMutation({
     mutationFn: async () => {
@@ -273,6 +278,19 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         <h3 className="font-gaming text-2xl mb-4">
           Open {packName}
         </h3>
+        
+        {/* Credits Display */}
+        {user && (
+          <div className="max-w-xs mx-auto mb-4">
+            <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
+              <div className="text-sm text-muted-foreground">Available Credits</div>
+              <div className="text-2xl font-bold text-primary">
+                {parseFloat(user.credits || '0').toFixed(2)}
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="inline-block">
           <div className="relative">
             <Package className="w-32 h-32 text-primary mx-auto" />
