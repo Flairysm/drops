@@ -218,8 +218,8 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Enhanced gravity acceleration for faster gameplay
-        ball.vy += 0.35;
+        // More balanced gravity for better visual experience
+        ball.vy += 0.2;
         
         // Reduced air resistance for faster movement
         ball.vx *= 0.999; // Minimal horizontal air resistance
