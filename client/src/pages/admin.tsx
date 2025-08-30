@@ -189,6 +189,18 @@ export default function Admin() {
   const [showCardGallery, setShowCardGallery] = useState(false);
   const [galleryPack, setGalleryPack] = useState<any>(null);
 
+  // Set up form data when editing a card
+  useEffect(() => {
+    if (editingCard) {
+      virtualLibraryForm.reset({
+        name: editingCard.name,
+        tier: editingCard.tier,
+        imageUrl: editingCard.imageUrl || "",
+        marketValue: editingCard.marketValue.toString(),
+      });
+    }
+  }, [editingCard]);
+
   const virtualLibraryForm = useForm<VirtualLibraryFormData>({
     resolver: zodResolver(virtualLibrarySchema),
     defaultValues: {
@@ -430,6 +442,30 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to save card pool",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveCardEdit = async (data: VirtualLibraryFormData) => {
+    if (!editingCard) return;
+    
+    try {
+      const response = await apiRequest("PATCH", `/api/admin/virtual-library/${editingCard.id}`, data);
+      await response.json();
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
+      setEditingCard(null);
+      virtualLibraryForm.reset();
+      
+      toast({
+        title: "Success",
+        description: "Card updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update card",
         variant: "destructive",
       });
     }
@@ -982,6 +1018,79 @@ export default function Admin() {
               </DialogHeader>
               
               <CardGalleryContent packId={galleryPack?.id} />
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Card Dialog */}
+          <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Card</DialogTitle>
+              </DialogHeader>
+              
+              <form onSubmit={virtualLibraryForm.handleSubmit(handleSaveCardEdit)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Card Name</Label>
+                  <Input
+                    id="edit-name"
+                    {...virtualLibraryForm.register("name")}
+                    placeholder="Enter card name"
+                    data-testid="input-edit-name"
+                  />
+                  {virtualLibraryForm.formState.errors.name && (
+                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.name.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-tier">Tier</Label>
+                  <Select onValueChange={(value) => virtualLibraryForm.setValue("tier", value as any)}>
+                    <SelectTrigger data-testid="select-edit-tier">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["D", "C", "B", "A", "S", "SS", "SSS"].map((tier) => (
+                        <SelectItem key={tier} value={tier}>{tier}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {virtualLibraryForm.formState.errors.tier && (
+                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.tier.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-marketValue">Market Value (credits)</Label>
+                  <Input
+                    id="edit-marketValue"
+                    {...virtualLibraryForm.register("marketValue")}
+                    placeholder="100"
+                    data-testid="input-edit-market-value"
+                  />
+                  {virtualLibraryForm.formState.errors.marketValue && (
+                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.marketValue.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-imageUrl">Image URL (optional)</Label>
+                  <Input
+                    id="edit-imageUrl"
+                    {...virtualLibraryForm.register("imageUrl")}
+                    placeholder="https://example.com/card-image.jpg"
+                    data-testid="input-edit-image"
+                  />
+                </div>
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setEditingCard(null)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" data-testid="button-save-card-edit">
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
 
