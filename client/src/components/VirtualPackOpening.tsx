@@ -301,22 +301,44 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               <div className="p-2 text-center h-full flex flex-col justify-between">
                 {isRevealed ? (
                   <>
-                    <div className={`w-4 h-4 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto flex items-center justify-center`}>
-                      <span className={`text-xs font-bold tier-${tierColors[(card.tier) as keyof typeof tierColors]}`}>
-                        {card.tier}
-                      </span>
-                    </div>
-                    <div className="flex-1 flex flex-col justify-center">
-                      <div className="text-xs font-semibold mb-1 line-clamp-2 leading-tight">{card.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {parseFloat(card.marketValue || '0').toFixed(2)}c
+                    {/* Card Image */}
+                    <div className="w-full h-full relative flex flex-col">
+                      {(card as any).imageUrl ? (
+                        <img
+                          src={(card as any).imageUrl}
+                          alt={card.name}
+                          className="w-full flex-1 object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className={`w-full flex-1 rounded-md bg-gradient-to-br from-${tierColors[(card.tier) as keyof typeof tierColors]}-400 to-${tierColors[(card.tier) as keyof typeof tierColors]}-600 flex items-center justify-center`}>
+                          <span className="text-white font-bold text-lg">
+                            {card.name?.charAt(0) || '?'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Tier badge overlay */}
+                      <div className="absolute top-1 left-1">
+                        <div className={`px-1 py-0.5 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}-600 text-white text-xs font-bold`}>
+                          {card.tier}
+                        </div>
+                      </div>
+                      
+                      {/* Hit card star */}
+                      {isHitCard && (
+                        <div className="absolute top-1 right-1 animate-bounce">
+                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                        </div>
+                      )}
+                      
+                      {/* Card info at bottom */}
+                      <div className="mt-1 text-center">
+                        <div className="text-xs font-semibold truncate">{card.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {parseFloat(card.marketValue || '0').toFixed(2)}c
+                        </div>
                       </div>
                     </div>
-                    {isHitCard && (
-                      <div className="absolute top-1 right-1 animate-bounce">
-                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      </div>
-                    )}
                   </>
                 ) : (
                   <div className="h-full flex items-center justify-center">
