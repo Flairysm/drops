@@ -152,7 +152,9 @@ export default function Play() {
                 <span className="bg-gradient-to-r from-legendary to-primary bg-clip-text text-transparent">Themed Packs</span>
               </h2>
               <div className="text-center mb-8">
-                <h3 className="font-gaming text-xl mb-2">CLASSIC PACKS</h3>
+                <h3 className="font-gaming text-xl mb-2">
+                  <span className="bg-gradient-to-r from-accent to-legendary bg-clip-text text-transparent">CLASSIC PACKS</span>
+                </h3>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
                   Explore curated collections featuring specific themes and characters!
                 </p>
