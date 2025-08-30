@@ -215,52 +215,6 @@ export default function Home() {
             </Card>
           </section>
 
-          {/* Layout: Additional Games & Feed */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* More Games */}
-            <section>
-              <Card className="gaming-card">
-                <CardHeader>
-                  <CardTitle className="font-gaming">More Games</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {games.filter(game => !game.popular).map((game, index) => (
-                    <div key={index} className="flex items-center space-x-4 p-4 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${game.color} flex items-center justify-center`}>
-                        <Package className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-gaming font-bold">{game.name}</h4>
-                        <p className="text-sm text-muted-foreground">{game.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="mb-2">
-                          {game.cost} Credits
-                        </Badge>
-                        <Link href={game.route}>
-                          <Button size="sm" variant="outline">
-                            Play
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* Global Feed */}
-            <section>
-              <Card className="gaming-card">
-                <CardHeader>
-                  <CardTitle className="font-gaming">Live Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <GlobalFeed limit={8} />
-                </CardContent>
-              </Card>
-            </section>
-          </div>
         </div>
       </main>
     </div>
