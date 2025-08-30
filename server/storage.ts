@@ -366,27 +366,21 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`No available cards in tier ${fullTierName}`);
       }
 
-      // Generate 8 common cards + 1 hit card = 9 total cards
+      // Generate 8 D-tier cards + 1 hit card = 9 total cards
       const packCards = [];
       
-      // Determine the most common tier for this pack type
-      const mostCommonRate = rates.reduce((max, rate) => 
-        rate.probability > max.probability ? rate : max
-      );
-      const commonTier = mostCommonRate.cardTier;
-      
-      // Get 8 random common tier cards
+      // Get 8 random D-tier cards (guaranteed base cards)
       const commonCards = await tx
         .select()
         .from(cards)
         .where(and(
-          eq(cards.tier, commonTier),
+          eq(cards.tier, 'D'),
           eq(cards.isActive, true),
           sql`${cards.stock} > 0`
         ));
       
       if (commonCards.length === 0) {
-        throw new Error(`No ${commonTier}-tier cards available`);
+        throw new Error('No D-tier cards available');
       }
       
       for (let i = 0; i < 8; i++) {
