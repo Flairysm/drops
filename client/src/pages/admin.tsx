@@ -33,7 +33,7 @@ import {
   Trash2,
   Save
 } from "lucide-react";
-import type { User, Card as CardType, Pack } from "@shared/schema";
+import type { User, Card as CardType, Pack, VirtualPack, VirtualPackCard } from "@shared/schema";
 
 const cardSchema = z.object({
   name: z.string().min(1, "Card name is required"),
@@ -43,7 +43,16 @@ const cardSchema = z.object({
   stock: z.number().min(0, "Stock must be non-negative"),
 });
 
+const virtualPackSchema = z.object({
+  name: z.string().min(1, "Pack name is required"),
+  description: z.string().optional(),
+  imageUrl: z.string().url("Valid image URL required").optional(),
+  price: z.string().min(1, "Price is required"),
+  cardCount: z.number().min(1, "Card count must be at least 1").max(20, "Card count cannot exceed 20"),
+});
+
 type CardFormData = z.infer<typeof cardSchema>;
+type VirtualPackFormData = z.infer<typeof virtualPackSchema>;
 
 export default function Admin() {
   const { toast } = useToast();
@@ -53,6 +62,10 @@ export default function Admin() {
   const [editingCard, setEditingCard] = useState<CardType | null>(null);
   const [newStock, setNewStock] = useState<number>(0);
   const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
+  const [editingVirtualPack, setEditingVirtualPack] = useState<VirtualPack | null>(null);
+  const [deleteVirtualPackId, setDeleteVirtualPackId] = useState<string | null>(null);
+  const [managingPackCards, setManagingPackCards] = useState<VirtualPack | null>(null);
+  const [selectedCards, setSelectedCards] = useState<{ cardId: string; weight: number }[]>([]);
 
 
   // Redirect if not authenticated
@@ -85,6 +98,11 @@ export default function Admin() {
     enabled: isAuthenticated && activeTab === "inventory",
   });
 
+  const { data: virtualPacks } = useQuery<VirtualPack[]>({
+    queryKey: ["/api/admin/virtual-packs"],
+    enabled: isAuthenticated && activeTab === "virtual-packs",
+  });
+
   const form = useForm<CardFormData>({
     resolver: zodResolver(cardSchema),
     defaultValues: {
@@ -93,6 +111,17 @@ export default function Admin() {
       imageUrl: "",
       marketValue: "",
       stock: 0,
+    },
+  });
+
+  const virtualPackForm = useForm<VirtualPackFormData>({
+    resolver: zodResolver(virtualPackSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      imageUrl: "",
+      price: "",
+      cardCount: 10,
     },
   });
 
@@ -226,8 +255,90 @@ export default function Admin() {
     },
   });
 
-  // Pull rate mutation
+  // Virtual pack mutations
+  const createVirtualPackMutation = useMutation({
+    mutationFn: async (data: VirtualPackFormData) => {
+      await apiRequest("POST", "/api/admin/virtual-packs", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+      virtualPackForm.reset();
+      toast({
+        title: "Virtual Pack Created",
+        description: "New themed pack has been added",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Creating Virtual Pack",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
+  const updateVirtualPackMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<VirtualPackFormData> }) => {
+      await apiRequest("PATCH", `/api/admin/virtual-packs/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+      setEditingVirtualPack(null);
+      toast({
+        title: "Virtual Pack Updated",
+        description: "Pack details have been updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Updating Virtual Pack",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteVirtualPackMutation = useMutation({
+    mutationFn: async (packId: string) => {
+      await apiRequest("DELETE", `/api/admin/virtual-packs/${packId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+      setDeleteVirtualPackId(null);
+      toast({
+        title: "Virtual Pack Deleted",
+        description: "Pack has been removed from the system",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Deleting Virtual Pack",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateVirtualPackCardsMutation = useMutation({
+    mutationFn: async ({ packId, cardIds, weights }: { packId: string; cardIds: string[]; weights: number[] }) => {
+      await apiRequest("POST", `/api/admin/virtual-packs/${packId}/cards`, { cardIds, weights });
+    },
+    onSuccess: () => {
+      setManagingPackCards(null);
+      setSelectedCards([]);
+      toast({
+        title: "Card Pool Updated",
+        description: "Virtual pack card pool has been configured",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Updating Card Pool",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleEditStock = (card: CardType) => {
     setEditingCard(card);
@@ -246,6 +357,65 @@ export default function Admin() {
   const confirmDeleteCard = () => {
     if (!deleteCardId) return;
     deleteCardMutation.mutate(deleteCardId);
+  };
+
+  const onVirtualPackSubmit = (data: VirtualPackFormData) => {
+    if (editingVirtualPack) {
+      updateVirtualPackMutation.mutate({ id: editingVirtualPack.id, data });
+    } else {
+      createVirtualPackMutation.mutate(data);
+    }
+  };
+
+  const handleEditVirtualPack = (pack: VirtualPack) => {
+    setEditingVirtualPack(pack);
+    virtualPackForm.reset({
+      name: pack.name,
+      description: pack.description || "",
+      imageUrl: pack.imageUrl || "",
+      price: pack.price,
+      cardCount: pack.cardCount,
+    });
+  };
+
+  const handleDeleteVirtualPack = (packId: string) => {
+    setDeleteVirtualPackId(packId);
+  };
+
+  const confirmDeleteVirtualPack = () => {
+    if (!deleteVirtualPackId) return;
+    deleteVirtualPackMutation.mutate(deleteVirtualPackId);
+  };
+
+  const handleManagePackCards = (pack: VirtualPack) => {
+    setManagingPackCards(pack);
+    setSelectedCards([]);
+  };
+
+  const handleAddCardToPack = (cardId: string) => {
+    if (selectedCards.find(c => c.cardId === cardId)) return;
+    setSelectedCards(prev => [...prev, { cardId, weight: 1 }]);
+  };
+
+  const handleRemoveCardFromPack = (cardId: string) => {
+    setSelectedCards(prev => prev.filter(c => c.cardId !== cardId));
+  };
+
+  const handleUpdateCardWeight = (cardId: string, weight: number) => {
+    setSelectedCards(prev => prev.map(c => c.cardId === cardId ? { ...c, weight } : c));
+  };
+
+  const handleSavePackCards = () => {
+    if (!managingPackCards || selectedCards.length === 0) return;
+    
+    const cardIds = selectedCards.map(c => c.cardId);
+    const weights = selectedCards.map(c => c.weight);
+    
+    updateVirtualPackCardsMutation.mutate({
+      packId: managingPackCards.id,
+      cardIds,
+      weights,
+    });
   };
 
   if (isLoading) {
@@ -292,7 +462,7 @@ export default function Admin() {
 
           {/* Admin Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full max-w-4xl mx-auto grid-cols-4 mb-8">
+            <TabsList className="grid w-full max-w-5xl mx-auto grid-cols-5 mb-8">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Overview
@@ -304,6 +474,10 @@ export default function Admin() {
               <TabsTrigger value="inventory" data-testid="tab-inventory">
                 <Package className="w-4 h-4 mr-2" />
                 Inventory
+              </TabsTrigger>
+              <TabsTrigger value="virtual-packs" data-testid="tab-virtual-packs">
+                <Package className="w-4 h-4 mr-2" />
+                Virtual Packs
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
                 <Settings className="w-4 h-4 mr-2" />
@@ -608,6 +782,202 @@ export default function Admin() {
               </div>
             </TabsContent>
 
+            {/* Virtual Packs Tab */}
+            <TabsContent value="virtual-packs">
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Add New Virtual Pack */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">
+                      {editingVirtualPack ? "Edit Virtual Pack" : "Add New Virtual Pack"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={virtualPackForm.handleSubmit(onVirtualPackSubmit)} className="space-y-4">
+                      <div>
+                        <Label htmlFor="pack-name">Pack Name</Label>
+                        <Input
+                          id="pack-name"
+                          {...virtualPackForm.register("name")}
+                          placeholder="e.g. Black Bolt, Destined Rivals"
+                          data-testid="input-virtual-pack-name"
+                        />
+                        {virtualPackForm.formState.errors.name && (
+                          <p className="text-sm text-destructive mt-1">
+                            {virtualPackForm.formState.errors.name.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="pack-description">Description (Optional)</Label>
+                        <Textarea
+                          id="pack-description"
+                          {...virtualPackForm.register("description")}
+                          placeholder="Describe this themed pack..."
+                          data-testid="input-virtual-pack-description"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="pack-image">Image URL (Optional)</Label>
+                        <Input
+                          id="pack-image"
+                          {...virtualPackForm.register("imageUrl")}
+                          placeholder="https://example.com/pack-image.jpg"
+                          data-testid="input-virtual-pack-image"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="pack-price">Price (Credits)</Label>
+                          <Input
+                            id="pack-price"
+                            {...virtualPackForm.register("price")}
+                            placeholder="10.00"
+                            data-testid="input-virtual-pack-price"
+                          />
+                          {virtualPackForm.formState.errors.price && (
+                            <p className="text-sm text-destructive mt-1">
+                              {virtualPackForm.formState.errors.price.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <Label htmlFor="pack-card-count">Cards Per Pack</Label>
+                          <Input
+                            id="pack-card-count"
+                            type="number"
+                            {...virtualPackForm.register("cardCount", { valueAsNumber: true })}
+                            placeholder="10"
+                            min="1"
+                            max="20"
+                            data-testid="input-virtual-pack-card-count"
+                          />
+                          {virtualPackForm.formState.errors.cardCount && (
+                            <p className="text-sm text-destructive mt-1">
+                              {virtualPackForm.formState.errors.cardCount.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-2">
+                        <Button 
+                          type="submit" 
+                          className="flex-1 bg-gradient-to-r from-primary to-accent"
+                          disabled={createVirtualPackMutation.isPending || updateVirtualPackMutation.isPending}
+                          data-testid="button-save-virtual-pack"
+                        >
+                          {(createVirtualPackMutation.isPending || updateVirtualPackMutation.isPending) ? (
+                            <>Saving...</>
+                          ) : editingVirtualPack ? (
+                            <>
+                              <Save className="w-4 h-4 mr-2" />
+                              Update Pack
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4 mr-2" />
+                              Create Pack
+                            </>
+                          )}
+                        </Button>
+                        {editingVirtualPack && (
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingVirtualPack(null);
+                              virtualPackForm.reset();
+                            }}
+                            data-testid="button-cancel-edit-virtual-pack"
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Existing Virtual Packs */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="font-gaming">Virtual Pack Library</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {virtualPacks ? (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {virtualPacks.map((pack) => (
+                          <div key={pack.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                                <Package className="w-6 h-6 text-primary" />
+                              </div>
+                              <div>
+                                <div className="font-semibold" data-testid={`text-virtual-pack-name-${pack.id}`}>
+                                  {pack.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {pack.price} Credits • {pack.cardCount} Cards
+                                </div>
+                                {pack.description && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {pack.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Badge variant={pack.isActive ? "default" : "destructive"}>
+                                {pack.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                              
+                              <div className="flex space-x-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleManagePackCards(pack)}
+                                  data-testid={`button-manage-cards-${pack.id}`}
+                                >
+                                  <Package className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditVirtualPack(pack)}
+                                  data-testid={`button-edit-virtual-pack-${pack.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteVirtualPack(pack.id)}
+                                  data-testid={`button-delete-virtual-pack-${pack.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                        <p className="mt-2 text-muted-foreground">Loading virtual packs...</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             {/* Settings Tab */}
             <TabsContent value="settings">
               <div className="space-y-6">
@@ -756,6 +1126,140 @@ export default function Admin() {
                 <>
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Card
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Virtual Pack Confirmation Dialog */}
+      <Dialog open={!!deleteVirtualPackId} onOpenChange={(open) => !open && setDeleteVirtualPackId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Virtual Pack</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this virtual pack? This action cannot be undone.
+              The pack will be marked as inactive and removed from the system.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteVirtualPackId(null)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteVirtualPack}
+              disabled={deleteVirtualPackMutation.isPending}
+              data-testid="button-confirm-delete-virtual-pack"
+            >
+              {deleteVirtualPackMutation.isPending ? (
+                "Deleting..."
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Pack
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Pack Cards Dialog */}
+      <Dialog open={!!managingPackCards} onOpenChange={(open) => !open && setManagingPackCards(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Card Pool: {managingPackCards?.name}</DialogTitle>
+            <DialogDescription>
+              Select cards and set their probability weights for this themed pack.
+              Higher weights mean cards appear more frequently.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Selected Cards */}
+            {selectedCards.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-2">Selected Cards ({selectedCards.length})</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {selectedCards.map((selected) => {
+                    const card = cards?.find(c => c.id === selected.cardId);
+                    return (
+                      <div key={selected.cardId} className="flex items-center justify-between p-2 rounded-lg border border-border">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-6 h-6 rounded-full bg-${tierColors[card?.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                            <span className={`text-xs font-bold tier-${tierColors[card?.tier as keyof typeof tierColors]}`}>
+                              {card?.tier}
+                            </span>
+                          </div>
+                          <span className="text-sm">{card?.name}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="number"
+                            min="1"
+                            value={selected.weight}
+                            onChange={(e) => handleUpdateCardWeight(selected.cardId, parseInt(e.target.value) || 1)}
+                            className="w-16 h-8"
+                            data-testid={`input-card-weight-${selected.cardId}`}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveCardFromPack(selected.cardId)}
+                            data-testid={`button-remove-card-${selected.cardId}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Available Cards */}
+            <div>
+              <h4 className="font-semibold mb-2">Available Cards</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                {cards?.filter(card => !selectedCards.find(s => s.cardId === card.id)).map((card) => (
+                  <Button
+                    key={card.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddCardToPack(card.id)}
+                    className="justify-start space-x-2"
+                    data-testid={`button-add-card-${card.id}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                      <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
+                        {card.tier}
+                      </span>
+                    </div>
+                    <span className="text-xs truncate">{card.name}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManagingPackCards(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSavePackCards}
+              disabled={selectedCards.length === 0 || updateVirtualPackCardsMutation.isPending}
+              data-testid="button-save-pack-cards"
+            >
+              {updateVirtualPackCardsMutation.isPending ? (
+                "Saving..."
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Card Pool
                 </>
               )}
             </Button>

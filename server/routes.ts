@@ -5,7 +5,9 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { z } from "zod";
 import { 
   insertCardSchema, 
-  insertPackSchema, 
+  insertPackSchema,
+  insertVirtualPackSchema,
+  insertVirtualPackCardSchema,
   insertShippingRequestSchema,
   type GameResult 
 } from "@shared/schema";
@@ -410,6 +412,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Virtual pack admin routes
+  app.get('/api/admin/virtual-packs', isAuthenticated, async (req: any, res) => {
+    try {
+      const virtualPacks = await storage.getVirtualPacks();
+      res.json(virtualPacks);
+    } catch (error) {
+      console.error("Error fetching virtual packs:", error);
+      res.status(500).json({ message: "Failed to fetch virtual packs" });
+    }
+  });
+
+  app.post('/api/admin/virtual-packs', isAuthenticated, async (req: any, res) => {
+    try {
+      const packData = insertVirtualPackSchema.parse(req.body);
+      const virtualPack = await storage.createVirtualPack(packData);
+      res.json(virtualPack);
+    } catch (error) {
+      console.error("Error creating virtual pack:", error);
+      res.status(500).json({ message: "Failed to create virtual pack" });
+    }
+  });
+
+  app.patch('/api/admin/virtual-packs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const packData = insertVirtualPackSchema.partial().parse(req.body);
+      const virtualPack = await storage.updateVirtualPack(id, packData);
+      res.json(virtualPack);
+    } catch (error) {
+      console.error("Error updating virtual pack:", error);
+      res.status(500).json({ message: "Failed to update virtual pack" });
+    }
+  });
+
+  app.delete('/api/admin/virtual-packs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteVirtualPack(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting virtual pack:", error);
+      res.status(500).json({ message: "Failed to delete virtual pack" });
+    }
+  });
+
+  app.get('/api/admin/virtual-packs/:id/cards', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const packCards = await storage.getVirtualPackCards(id);
+      res.json(packCards);
+    } catch (error) {
+      console.error("Error fetching virtual pack cards:", error);
+      res.status(500).json({ message: "Failed to fetch virtual pack cards" });
+    }
+  });
+
+  app.post('/api/admin/virtual-packs/:id/cards', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { cardIds, weights } = req.body;
+      
+      if (!Array.isArray(cardIds) || !Array.isArray(weights)) {
+        return res.status(400).json({ message: "cardIds and weights must be arrays" });
+      }
+      
+      if (cardIds.length !== weights.length) {
+        return res.status(400).json({ message: "cardIds and weights arrays must have same length" });
+      }
+      
+      await storage.setVirtualPackCards(id, cardIds, weights);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting virtual pack cards:", error);
+      res.status(500).json({ message: "Failed to set virtual pack cards" });
+    }
+  });
+
   // Cards and packs routes
   app.get('/api/cards', async (req, res) => {
     try {
@@ -466,6 +545,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching packs:", error);
       res.status(500).json({ message: "Failed to fetch packs" });
+    }
+  });
+
+  // Virtual pack routes
+  app.get('/api/virtual-packs', async (req, res) => {
+    try {
+      const virtualPacks = await storage.getActiveVirtualPacks();
+      res.json(virtualPacks);
+    } catch (error) {
+      console.error("Error fetching virtual packs:", error);
+      res.status(500).json({ message: "Failed to fetch virtual packs" });
+    }
+  });
+
+  app.post('/api/virtual-packs/:id/open', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+
+      const result = await storage.openVirtualPack(id, userId);
+      
+      res.json({ 
+        success: true,
+        ...result
+      });
+    } catch (error) {
+      console.error("Error opening virtual pack:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to open virtual pack" });
+      }
     }
   });
 

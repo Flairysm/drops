@@ -5,6 +5,7 @@ import { Navigation } from "@/components/Navigation";
 import { PlinkoGame } from "@/components/PlinkoGame";
 import { WheelGame } from "@/components/WheelGame";
 import { PackOpening } from "@/components/PackOpening";
+import { VirtualPackStore } from "@/components/VirtualPackStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,24 @@ export default function Games() {
 
   const { data: packs } = useQuery({
     queryKey: ["/api/packs"],
+    enabled: isAuthenticated,
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+    },
+  });
+
+  const { data: virtualPacks } = useQuery({
+    queryKey: ["/api/virtual-packs"],
     enabled: isAuthenticated,
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -81,10 +100,11 @@ export default function Games() {
 
           {/* Games Tabs */}
           <Tabs defaultValue="plinko" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-8">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 mb-8">
               <TabsTrigger value="plinko" data-testid="tab-plinko">Plinko</TabsTrigger>
               <TabsTrigger value="wheel" data-testid="tab-wheel">Wheel</TabsTrigger>
-              <TabsTrigger value="pack" data-testid="tab-pack">Pack</TabsTrigger>
+              <TabsTrigger value="pack" data-testid="tab-pack">Mystery Packs</TabsTrigger>
+              <TabsTrigger value="virtual-packs" data-testid="tab-virtual-packs">Themed Packs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="plinko">
@@ -119,15 +139,31 @@ export default function Games() {
             <TabsContent value="pack">
               <Card className="gaming-card max-w-4xl mx-auto">
                 <CardHeader className="text-center">
-                  <CardTitle className="font-gaming text-2xl">Virtual Pack Opening</CardTitle>
+                  <CardTitle className="font-gaming text-2xl">Mystery Pack Opening</CardTitle>
                   <div className="flex justify-center space-x-4 mt-4">
                     <Badge variant="secondary">Cost: 4.99 Credits</Badge>
                     <Badge className="bg-accent text-primary-foreground">10 Cards Total</Badge>
-                    <Badge className="bg-primary text-primary-foreground">BNW Only</Badge>
+                    <Badge className="bg-primary text-primary-foreground">Random Tiers</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <PackOpening packs={packs || []} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="virtual-packs">
+              <Card className="gaming-card max-w-6xl mx-auto">
+                <CardHeader className="text-center">
+                  <CardTitle className="font-gaming text-2xl">Themed Pack Store</CardTitle>
+                  <div className="flex justify-center space-x-4 mt-4">
+                    <Badge className="bg-legendary text-primary-foreground">Curated Collections</Badge>
+                    <Badge variant="secondary">Variable Pricing</Badge>
+                    <Badge className="bg-accent text-primary-foreground">Custom Card Pools</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <VirtualPackStore virtualPacks={virtualPacks || []} />
                 </CardContent>
               </Card>
             </TabsContent>

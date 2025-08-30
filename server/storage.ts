@@ -3,6 +3,8 @@ import {
   cards,
   packs,
   packOdds,
+  virtualPacks,
+  virtualPackCards,
   userCards,
   userPacks,
   globalFeed,
@@ -17,6 +19,8 @@ import {
   type Card,
   type Pack,
   type PackOdds,
+  type VirtualPack,
+  type VirtualPackCard,
   type UserCard,
   type UserPack,
   type GlobalFeed,
@@ -27,6 +31,8 @@ import {
   type GameSetting,
   type InsertCard,
   type InsertPack,
+  type InsertVirtualPack,
+  type InsertVirtualPackCard,
   type InsertUserCard,
   type InsertUserPack,
   type InsertTransaction,
@@ -37,6 +43,7 @@ import {
   type UserCardWithCard,
   type GlobalFeedWithDetails,
   type GameResult,
+  type VirtualPackOpenResult,
   type PullRate,
 } from "@shared/schema";
 import { db } from "./db";
@@ -62,6 +69,18 @@ export interface IStorage {
   // Pack odds operations
   getPackOdds(packId: string): Promise<PackOdds[]>;
   setPackOdds(packId: string, odds: { tier: string; probability: string }[]): Promise<void>;
+  
+  // Virtual pack operations
+  getVirtualPacks(): Promise<VirtualPack[]>;
+  getActiveVirtualPacks(): Promise<VirtualPack[]>;
+  createVirtualPack(pack: InsertVirtualPack): Promise<VirtualPack>;
+  updateVirtualPack(id: string, pack: Partial<InsertVirtualPack>): Promise<VirtualPack>;
+  deleteVirtualPack(id: string): Promise<void>;
+  
+  // Virtual pack card pool operations
+  getVirtualPackCards(virtualPackId: string): Promise<VirtualPackCard[]>;
+  setVirtualPackCards(virtualPackId: string, cardIds: string[], weights: number[]): Promise<void>;
+  openVirtualPack(virtualPackId: string, userId: string): Promise<VirtualPackOpenResult>;
   
   // Vault operations
   getUserCards(userId: string): Promise<UserCardWithCard[]>;
@@ -212,6 +231,138 @@ export class DatabaseStorage implements IStorage {
         probability: odd.probability,
       }))
     );
+  }
+
+  // Virtual pack operations
+  async getVirtualPacks(): Promise<VirtualPack[]> {
+    return await db.select().from(virtualPacks);
+  }
+
+  async getActiveVirtualPacks(): Promise<VirtualPack[]> {
+    return await db.select().from(virtualPacks).where(eq(virtualPacks.isActive, true));
+  }
+
+  async createVirtualPack(pack: InsertVirtualPack): Promise<VirtualPack> {
+    const [newPack] = await db.insert(virtualPacks).values(pack).returning();
+    return newPack;
+  }
+
+  async updateVirtualPack(id: string, pack: Partial<InsertVirtualPack>): Promise<VirtualPack> {
+    const [updatedPack] = await db.update(virtualPacks).set(pack).where(eq(virtualPacks.id, id)).returning();
+    return updatedPack;
+  }
+
+  async deleteVirtualPack(id: string): Promise<void> {
+    await db.update(virtualPacks).set({ isActive: false }).where(eq(virtualPacks.id, id));
+  }
+
+  // Virtual pack card pool operations
+  async getVirtualPackCards(virtualPackId: string): Promise<VirtualPackCard[]> {
+    return await db.select().from(virtualPackCards).where(and(eq(virtualPackCards.virtualPackId, virtualPackId), eq(virtualPackCards.isActive, true)));
+  }
+
+  async setVirtualPackCards(virtualPackId: string, cardIds: string[], weights: number[]): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Remove existing card pool
+      await tx.update(virtualPackCards).set({ isActive: false }).where(eq(virtualPackCards.virtualPackId, virtualPackId));
+      
+      // Add new card pool
+      const newCards = cardIds.map((cardId, index) => ({
+        virtualPackId,
+        cardId,
+        weight: weights[index] || 1,
+      }));
+      
+      if (newCards.length > 0) {
+        await tx.insert(virtualPackCards).values(newCards);
+      }
+    });
+  }
+
+  async openVirtualPack(virtualPackId: string, userId: string): Promise<VirtualPackOpenResult> {
+    return await db.transaction(async (tx) => {
+      // Get virtual pack info
+      const [virtualPack] = await tx.select().from(virtualPacks).where(eq(virtualPacks.id, virtualPackId));
+      if (!virtualPack) {
+        throw new Error('Virtual pack not found');
+      }
+
+      // Get available cards in this pack's pool
+      const packCards = await tx
+        .select({
+          card: cards,
+          weight: virtualPackCards.weight,
+        })
+        .from(virtualPackCards)
+        .leftJoin(cards, eq(virtualPackCards.cardId, cards.id))
+        .where(and(eq(virtualPackCards.virtualPackId, virtualPackId), eq(virtualPackCards.isActive, true)));
+
+      if (packCards.length === 0) {
+        throw new Error('No cards available in this virtual pack');
+      }
+
+      // Deduct credits
+      const creditCost = parseFloat(virtualPack.price);
+      const user = await tx.select().from(users).where(eq(users.id, userId));
+      if (!user[0] || parseFloat(user[0].credits) < creditCost) {
+        throw new Error('Insufficient credits');
+      }
+
+      await tx.update(users).set({
+        credits: sql`${users.credits} - ${creditCost}`,
+        totalSpent: sql`${users.totalSpent} + ${creditCost}`,
+      }).where(eq(users.id, userId));
+
+      // Generate cards based on weights
+      const pulledCards: UserCardWithCard[] = [];
+      for (let i = 0; i < virtualPack.cardCount; i++) {
+        const selectedCard = this.selectCardByWeight(packCards);
+        if (selectedCard?.card) {
+          const [newUserCard] = await tx.insert(userCards).values({
+            userId,
+            cardId: selectedCard.card.id,
+            pullValue: selectedCard.card.marketValue,
+            quantity: 1,
+          }).returning();
+
+          pulledCards.push({
+            ...newUserCard,
+            card: selectedCard.card,
+          });
+        }
+      }
+
+      // Add transaction record
+      await tx.insert(transactions).values({
+        userId,
+        type: 'debit',
+        amount: virtualPack.price,
+        description: `Opened virtual pack: ${virtualPack.name}`,
+      });
+
+      return {
+        cards: pulledCards,
+        packName: virtualPack.name,
+      };
+    });
+  }
+
+  private selectCardByWeight(weightedCards: { card: Card | null; weight: number }[]): { card: Card; weight: number } | null {
+    const validCards = weightedCards.filter(item => item.card !== null) as { card: Card; weight: number }[];
+    if (validCards.length === 0) return null;
+
+    const totalWeight = validCards.reduce((sum, item) => sum + item.weight, 0);
+    const random = Math.random() * totalWeight;
+    
+    let currentWeight = 0;
+    for (const item of validCards) {
+      currentWeight += item.weight;
+      if (random <= currentWeight) {
+        return item;
+      }
+    }
+    
+    return validCards[validCards.length - 1];
   }
 
   // Vault operations
@@ -567,7 +718,7 @@ export class DatabaseStorage implements IStorage {
       .from(globalFeed)
       .leftJoin(users, eq(globalFeed.userId, users.id))
       .leftJoin(cards, eq(globalFeed.cardId, cards.id))
-      .where(sql`${globalFeed.tier} IN ('C', 'B', 'A', 'S', 'SS', 'SSS')`
+      .where(sql`${globalFeed.tier} IN ('C', 'B', 'A', 'S', 'SS', 'SSS')`)
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
 

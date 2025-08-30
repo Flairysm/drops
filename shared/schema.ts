@@ -74,6 +74,28 @@ export const packOdds = pgTable("pack_odds", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Virtual themed pack definitions (separate from mystery tier packs)
+export const virtualPacks = pgTable("virtual_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(), // "Black Bolt", "Destined Rivals"
+  description: text("description"),
+  imageUrl: varchar("image_url"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  cardCount: integer("card_count").default(10).notNull(), // Number of cards per pack
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Virtual pack card pools - defines which cards can appear in each themed pack
+export const virtualPackCards = pgTable("virtual_pack_cards", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  virtualPackId: uuid("virtual_pack_id").references(() => virtualPacks.id),
+  cardId: uuid("card_id").references(() => cards.id),
+  weight: integer("weight").default(1).notNull(), // Relative probability weight
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Game settings for configurable prices and options
 export const gameSettings = pgTable("game_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -297,12 +319,24 @@ export const insertPullRateSchema = createInsertSchema(pullRates).omit({
   updatedAt: true,
 });
 
+export const insertVirtualPackSchema = createInsertSchema(virtualPacks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertVirtualPackCardSchema = createInsertSchema(virtualPackCards).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Card = typeof cards.$inferSelect;
 export type Pack = typeof packs.$inferSelect;
 export type PackOdds = typeof packOdds.$inferSelect;
+export type VirtualPack = typeof virtualPacks.$inferSelect;
+export type VirtualPackCard = typeof virtualPackCards.$inferSelect;
 export type UserCard = typeof userCards.$inferSelect;
 export type UserPack = typeof userPacks.$inferSelect;
 export type GlobalFeed = typeof globalFeed.$inferSelect;
@@ -314,6 +348,8 @@ export type PullRate = typeof pullRates.$inferSelect;
 
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type InsertPack = z.infer<typeof insertPackSchema>;
+export type InsertVirtualPack = z.infer<typeof insertVirtualPackSchema>;
+export type InsertVirtualPackCard = z.infer<typeof insertVirtualPackCardSchema>;
 export type InsertUserCard = z.infer<typeof insertUserCardSchema>;
 export type InsertUserPack = z.infer<typeof insertUserPackSchema>;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
@@ -332,4 +368,9 @@ export type GameResult = {
   cardId: string;
   tier: string;
   gameType: string;
+};
+
+export type VirtualPackOpenResult = {
+  cards: UserCardWithCard[];
+  packName: string;
 };
