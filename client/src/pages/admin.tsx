@@ -71,13 +71,19 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
       setLoading(true);
       try {
         const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
-        const { data: virtualLibraryCards } = await apiRequest("GET", "/api/admin/virtual-library");
+        const virtualLibraryResponse = await apiRequest("GET", "/api/admin/virtual-library");
+        
+        // Handle both direct array and data property responses
+        const virtualLibraryCards = Array.isArray(virtualLibraryResponse) 
+          ? virtualLibraryResponse 
+          : virtualLibraryResponse?.data || [];
         
         const cardDetails = packCards.map((pc: any) => {
           const card = virtualLibraryCards?.find((c: any) => c.id === pc.virtualLibraryCardId);
           return card ? { ...card, weight: pc.weight } : null;
         }).filter(Boolean);
         
+        console.log("Gallery loaded:", cardDetails.length, "cards for pack", packId);
         setGalleryCards(cardDetails);
       } catch (error) {
         console.error("Failed to load gallery cards:", error);
@@ -867,6 +873,12 @@ export default function Admin() {
                                       onClick={() => {
                                         setGalleryPack(pack);
                                         setShowCardGallery(true);
+                                        // Clear cache to force fresh data load
+                                        setPackCardPools(prev => {
+                                          const updated = { ...prev };
+                                          delete updated[pack.id];
+                                          return updated;
+                                        });
                                       }}
                                       data-testid={`button-view-cards-${pack.id}`}
                                       title="View card gallery"
