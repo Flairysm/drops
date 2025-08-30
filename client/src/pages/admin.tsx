@@ -37,6 +37,7 @@ const virtualLibrarySchema = z.object({
   tier: z.enum(["D", "C", "B", "A", "S", "SS", "SSS"]),
   imageUrl: z.string().optional(),
   marketValue: z.string().min(1, "Market value is required"),
+  stock: z.number().min(0, "Stock must be 0 or greater").optional(),
 });
 
 const virtualPackSchema = z.object({
@@ -198,6 +199,7 @@ export default function Admin() {
         tier: editingCard.tier,
         imageUrl: editingCard.imageUrl || "",
         marketValue: editingCard.marketValue.toString(),
+        stock: editingCard.stock || 0,
       });
     }
   }, [editingCard]);
@@ -209,6 +211,7 @@ export default function Admin() {
       tier: "D",
       imageUrl: "",
       marketValue: "",
+      stock: 0,
     },
   });
 
@@ -467,28 +470,6 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to update card",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStockUpdate = async (cardId: string, newStock: number) => {
-    try {
-      const response = await apiRequest("PATCH", `/api/admin/virtual-library/${cardId}`, {
-        stock: newStock,
-      });
-      await response.json();
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-library"] });
-      
-      toast({
-        title: "Success",
-        description: `Stock updated to ${newStock}`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update stock",
         variant: "destructive",
       });
     }
@@ -813,24 +794,12 @@ export default function Admin() {
                                       {card.tier}
                                     </span>
                                   </div>
-                                  <div className="flex-1">
+                                  <div>
                                     <div className="font-medium">{card.name}</div>
                                     <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
                                     <div className="text-xs text-blue-600 dark:text-blue-400">
                                       Stock: {card.stock || 0} available
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 mr-2">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      value={card.stock || 0}
-                                      onChange={(e) => handleStockUpdate(card.id, parseInt(e.target.value) || 0)}
-                                      className="w-20 h-8 text-sm"
-                                      placeholder="0"
-                                      data-testid={`input-stock-${card.id}`}
-                                    />
-                                    <span className="text-xs text-muted-foreground">stock</span>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
@@ -1134,6 +1103,21 @@ export default function Admin() {
                     placeholder="https://example.com/card-image.jpg"
                     data-testid="input-edit-image"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-stock">Stock Quantity</Label>
+                  <Input
+                    id="edit-stock"
+                    type="number"
+                    min="0"
+                    {...virtualLibraryForm.register("stock", { valueAsNumber: true })}
+                    placeholder="0"
+                    data-testid="input-edit-stock"
+                  />
+                  {virtualLibraryForm.formState.errors.stock && (
+                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.stock.message}</p>
+                  )}
                 </div>
 
                 <DialogFooter>

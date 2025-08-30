@@ -438,9 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/admin/virtual-library/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      console.log("Updating virtual library card with data:", req.body);
       const cardData = insertVirtualLibrarySchema.partial().parse(req.body);
-      console.log("Parsed card data:", cardData);
       const virtualLibraryCard = await storage.updateVirtualLibraryCard(id, cardData);
       res.json(virtualLibraryCard);
     } catch (error) {
