@@ -214,11 +214,29 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               data-testid={`card-result-${index}`}
             >
               <div className="p-2 text-center h-full flex flex-col justify-between">
-                {(card.tier) !== "D" && (
-                  <div className="absolute top-1 right-1">
-                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                  </div>
-                )}
+                {/* Card Image */}
+                <div className="w-full h-full relative flex flex-col">
+                  {card.imageUrl ? (
+                    <img
+                      src={card.imageUrl}
+                      alt={card.name}
+                      className="w-full flex-1 object-cover rounded-md"
+                    />
+                  ) : (
+                    <div className={`w-full flex-1 rounded-md bg-gradient-to-br from-${tierColors[(card.tier) as keyof typeof tierColors]}-400 to-${tierColors[(card.tier) as keyof typeof tierColors]}-600 flex items-center justify-center`}>
+                      <span className="text-white font-bold text-lg">
+                        {card.name?.charAt(0) || '?'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Hit card star */}
+                  {(card.tier) !== "D" && (
+                    <div className="absolute top-1 right-1">
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
