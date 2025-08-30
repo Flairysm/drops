@@ -63,30 +63,38 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       setResult(result);
       setAnimationPhase("opening");
       
-      // Reveal cards one by one with delays
+      // Reveal first 8 cards quickly, then pause before revealing the hit card
       result.cards.forEach((_, index) => {
-        setTimeout(() => {
-          setRevealedCards(index + 1);
-        }, 500 + (index * 200));
+        if (index < 8) {
+          // Reveal commons quickly
+          setTimeout(() => {
+            setRevealedCards(index + 1);
+          }, 500 + (index * 100));
+        } else {
+          // Pause before revealing the hit card (last card)
+          setTimeout(() => {
+            setRevealedCards(index + 1);
+          }, 500 + (8 * 100) + 1500); // Extra 1.5 second pause before hit card
+        }
       });
 
       // After all cards are revealed, show completion
       setTimeout(() => {
         setAnimationPhase("opened");
         
-        const hitCard = result.cards.find(card => card.tier !== "D");
+        const hitCard = result.cards[result.cards.length - 1]; // Last card is the hit card
         const tier = hitCard ? hitCard.tier : "D";
         const tierName = tier ? tierNames[tier as keyof typeof tierNames] : "Common";
         
         toast({
           title: "Pack Opened!",
-          description: `${packName} opened! You got ${result.cards.length} cards including a ${tierName}!`,
+          description: `${packName} opened! You got ${result.cards.length} cards including a ${tierName} hit card!`,
           duration: 5000,
         });
 
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
-      }, 500 + (result.cards.length * 200) + 1000);
+      }, 500 + (8 * 100) + 1500 + 1000); // Wait for all cards + hit card reveal + extra time
     },
     onError: (error: Error) => {
       toast({
@@ -173,12 +181,18 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {result.cards.map((card, index) => (
+          {result.cards.map((card, index) => {
+            const isHitCard = index === result.cards.length - 1;
+            const isRevealed = index < revealedCards;
+            
+            return (
             <div 
               key={`${card.id}-${index}`}
-              className={`relative transition-all duration-300 ${
-                index < revealedCards 
-                  ? `opacity-100 transform scale-100 border-2 border-${tierColors[(card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.tier) as keyof typeof tierColors]}/20 to-transparent` 
+              className={`relative transition-all duration-500 ${
+                isRevealed
+                  ? `opacity-100 transform scale-100 border-2 border-${tierColors[(card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.tier) as keyof typeof tierColors]}/20 to-transparent ${
+                      isHitCard ? 'animate-pulse shadow-lg ring-2 ring-yellow-400' : ''
+                    }` 
                   : "opacity-30 transform scale-95 border-2 border-gray-300 bg-gray-100"
               } overflow-hidden rounded-lg`}
               data-testid={`card-reveal-${index}`}
@@ -195,7 +209,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                     <div className="text-xs text-muted-foreground">
                       {parseFloat(card.marketValue || '0').toFixed(2)} credits
                     </div>
-                    {(card.tier) !== "D" && (
+                    {isHitCard && (
                       <div className="absolute top-1 right-1 animate-bounce">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                       </div>
@@ -203,12 +217,16 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                   </>
                 ) : (
                   <div className="h-20 flex items-center justify-center">
-                    <Package className="w-8 h-8 text-gray-400" />
+                    <div className="text-center">
+                      <Package className="w-8 h-8 text-gray-400 mx-auto mb-1" />
+                      <div className="text-xs text-gray-400">{isHitCard ? "HIT!" : "???"}</div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="text-center">
