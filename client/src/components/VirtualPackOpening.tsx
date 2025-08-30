@@ -150,14 +150,14 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           <p className="text-muted-foreground">Your new cards have been added to your vault</p>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
           {result.cards.map((card, index) => (
             <div 
               key={`${card.id}-${index}`}
               className={`relative overflow-hidden rounded-lg border-2 border-${tierColors[(card.tier) as keyof typeof tierColors]}/50 bg-gradient-to-b from-${tierColors[(card.tier) as keyof typeof tierColors]}/20 to-transparent aspect-[2.5/3.5]`}
               data-testid={`card-result-${index}`}
             >
-              <div className="p-3 text-center h-full flex flex-col justify-between">
+              <div className="p-2 text-center h-full flex flex-col justify-between">
                 <div className={`w-6 h-6 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto flex items-center justify-center`}>
                   <span className={`text-xs font-bold tier-${tierColors[(card.tier) as keyof typeof tierColors]}`}>
                     {card.tier}
@@ -201,7 +201,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
           {result.cards.map((card, index) => {
             const isHitCard = index === result.cards.length - 1;
             const isRevealed = isHitCard ? hitCardRevealed : index < revealedCards;
@@ -222,18 +222,18 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               data-testid={`card-reveal-${index}`}
               onClick={canReveal ? handleRevealHitCard : undefined}
             >
-              <div className="p-3 text-center h-full flex flex-col justify-between">
+              <div className="p-2 text-center h-full flex flex-col justify-between">
                 {isRevealed ? (
                   <>
-                    <div className={`w-6 h-6 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto flex items-center justify-center`}>
+                    <div className={`w-4 h-4 rounded-full bg-${tierColors[(card.tier) as keyof typeof tierColors]}/30 mx-auto flex items-center justify-center`}>
                       <span className={`text-xs font-bold tier-${tierColors[(card.tier) as keyof typeof tierColors]}`}>
                         {card.tier}
                       </span>
                     </div>
                     <div className="flex-1 flex flex-col justify-center">
-                      <div className="text-xs font-semibold mb-1 line-clamp-2">{card.name}</div>
+                      <div className="text-xs font-semibold mb-1 line-clamp-2 leading-tight">{card.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {parseFloat(card.marketValue || '0').toFixed(2)} credits
+                        {parseFloat(card.marketValue || '0').toFixed(2)}c
                       </div>
                     </div>
                     {isHitCard && (
@@ -245,9 +245,9 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                 ) : (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
-                      <Package className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                      <Package className="w-4 h-4 text-gray-400 mx-auto mb-1" />
                       <div className="text-xs text-gray-400">
-                        {canReveal ? "TAP TO REVEAL!" : isHitCard ? "HIT!" : "???"}
+                        {canReveal ? "TAP!" : isHitCard ? "HIT!" : "???"}
                       </div>
                     </div>
                   </div>
