@@ -60,6 +60,14 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     queryKey: ["/api/auth/user"],
   });
 
+  // Get virtual pack details for price
+  const { data: virtualPacks } = useQuery({
+    queryKey: ["/api/virtual-packs"],
+  });
+
+  const currentPack = virtualPacks?.find((pack: any) => pack.id === packId);
+  const packPrice = parseFloat(currentPack?.price || '0');
+
   const openPackMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/virtual-packs/${packId}/open`);
@@ -118,6 +126,33 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     setIsOpening(false);
   };
 
+  const handleOpenAnother = () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to purchase packs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const userCredits = parseFloat((user as any).credits || '0');
+    if (userCredits < packPrice) {
+      toast({
+        title: "Insufficient Credits",
+        description: `You need ${packPrice.toFixed(2)} credits but only have ${userCredits.toFixed(2)}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Reset and open another pack
+    handleReset();
+    setTimeout(() => {
+      handleOpenPack();
+    }, 100);
+  };
+
   const handleRevealHitCard = () => {
     setHitCardRevealed(true);
     if (result) {
@@ -150,6 +185,21 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   if (animationPhase === "opened" && result) {
     return (
       <div className="space-y-6">
+        {/* Persistent Credits Display */}
+        <Card className="gaming-card bg-gradient-to-r from-accent/10 to-primary/10 border-accent/20 max-w-xs mx-auto">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-center gap-2">
+              <Coins className="w-4 h-4 text-accent" />
+              <div className="text-center">
+                <div className="text-xs text-muted-foreground">Available Credits</div>
+                <div className="text-lg font-bold text-accent" data-testid="text-available-credits">
+                  {parseFloat((user as any)?.credits || '0').toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="text-center">
           <h3 className="font-gaming text-2xl mb-2">Pack Opened!</h3>
           <p className="text-muted-foreground">Your new cards have been added to your vault</p>
@@ -185,28 +235,19 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         </div>
 
         <div className="flex justify-center space-x-4">
-          <Button onClick={handleReset} variant="outline" data-testid="button-open-another">
-            Open Another Pack
+          <Button 
+            onClick={handleOpenAnother} 
+            variant="outline" 
+            data-testid="button-open-another"
+            className="bg-gradient-to-r from-primary to-accent text-white"
+          >
+            <Package className="w-4 h-4 mr-2" />
+            Open Another ({packPrice.toFixed(2)} Credits)
           </Button>
           <Button onClick={onClose} data-testid="button-close-opening">
             Back to Store
           </Button>
         </div>
-
-        {/* Available Credits Bar */}
-        <Card className="gaming-card bg-gradient-to-r from-accent/10 to-primary/10 border-accent/20 max-w-xs mx-auto">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-center gap-3">
-              <Coins className="w-5 h-5 text-accent" />
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground">Available Credits</div>
-                <div className="text-xl font-bold text-accent" data-testid="text-available-credits">
-                  {parseFloat((user as any)?.credits || '0').toFixed(2)}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -214,6 +255,21 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   if (animationPhase === "opening" && result) {
     return (
       <div className="space-y-6">
+        {/* Persistent Credits Display */}
+        <Card className="gaming-card bg-gradient-to-r from-accent/10 to-primary/10 border-accent/20 max-w-xs mx-auto">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-center gap-2">
+              <Coins className="w-4 h-4 text-accent" />
+              <div className="text-center">
+                <div className="text-xs text-muted-foreground">Available Credits</div>
+                <div className="text-lg font-bold text-accent" data-testid="text-available-credits">
+                  {parseFloat((user as any)?.credits || '0').toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="text-center">
           <h3 className="font-gaming text-2xl mb-2">Opening {packName}...</h3>
           <div className="animate-pulse">
@@ -289,22 +345,25 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
 
   return (
     <div className="space-y-6">
+      {/* Persistent Credits Display */}
+      <Card className="gaming-card bg-gradient-to-r from-accent/10 to-primary/10 border-accent/20 max-w-xs mx-auto">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-center gap-2">
+            <Coins className="w-4 h-4 text-accent" />
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Available Credits</div>
+              <div className="text-lg font-bold text-accent" data-testid="text-available-credits">
+                {parseFloat((user as any)?.credits || '0').toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="text-center">
         <h3 className="font-gaming text-2xl mb-4">
           Open {packName || 'Pack'}
         </h3>
-        
-        {/* Credits Display */}
-        {user && (user as any).credits !== undefined && (
-          <div className="max-w-xs mx-auto mb-4">
-            <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
-              <div className="text-sm text-muted-foreground">Available Credits</div>
-              <div className="text-2xl font-bold text-primary">
-                {parseFloat((user as any).credits || '0').toFixed(2)}
-              </div>
-            </div>
-          </div>
-        )}
         
         <div className="inline-block">
           <div className="relative">
