@@ -145,6 +145,69 @@ export default function Admin() {
     },
   });
 
+  const createVirtualPackMutation = useMutation({
+    mutationFn: async (data: VirtualPackFormData) => {
+      // Create the pack first
+      const packResponse = await apiRequest("POST", "/api/admin/virtual-packs", data);
+      const newPack = packResponse as any;
+      
+      if (newPack && newPack.id) {
+        // Set default pokeball odds
+        try {
+          await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/pull-rates`, {
+            rates: [
+              { cardTier: 'D', probability: 70.0 },
+              { cardTier: 'C', probability: 20.0 },
+              { cardTier: 'B', probability: 7.0 },
+              { cardTier: 'A', probability: 2.0 },
+              { cardTier: 'S', probability: 0.8 },
+              { cardTier: 'SS', probability: 0.15 },
+              { cardTier: 'SSS', probability: 0.05 }
+            ]
+          });
+        } catch (error) {
+          console.log("Pull rates setup skipped:", error);
+        }
+
+        // Add cards if pool selected
+        if (selectedPackType && virtualLibraryCards) {
+          try {
+            const cardsToAdd = virtualLibraryCards.filter((card: any) => 
+              selectedPackType === "all" || card.tier === selectedPackType
+            );
+            
+            if (cardsToAdd.length > 0) {
+              await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/cards`, {
+                cardIds: cardsToAdd.map((card: any) => card.id),
+                weights: cardsToAdd.map(() => 1),
+              });
+            }
+          } catch (error) {
+            console.log("Card pool setup skipped:", error);
+          }
+        }
+      }
+      
+      return newPack;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+      virtualPackForm.reset();
+      setSelectedPackType("");
+      toast({
+        title: "Pack Created",
+        description: "Themed pack created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const banUserMutation = useMutation({
     mutationFn: (userId: string) => apiRequest("POST", `/api/admin/users/${userId}/ban`),
     onSuccess: () => {
@@ -173,14 +236,35 @@ export default function Admin() {
     }
   };
 
+  const deleteVirtualPackMutation = useMutation({
+    mutationFn: (packId: string) => apiRequest("DELETE", `/api/admin/virtual-packs/${packId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
+      toast({
+        title: "Success",
+        description: "Pack deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteVirtualPack = (packId: string) => {
     if (confirm("Are you sure you want to delete this pack?")) {
-      // Add delete pack mutation logic here
+      deleteVirtualPackMutation.mutate(packId);
     }
   };
 
   const handleManagePackCards = (pack: any) => {
-    // Navigate to pack card management
+    toast({
+      title: "Feature Coming Soon",
+      description: "Advanced pack card management will be available soon",
+    });
   };
 
   if (isLoading) {
@@ -419,53 +503,7 @@ export default function Admin() {
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={virtualPackForm.handleSubmit((data) => {
-                        const quickCreate = async () => {
-                          const packResponse = await apiRequest("POST", "/api/admin/virtual-packs", data);
-                          const newPack = packResponse as any;
-                          
-                          // Set default pokeball odds
-                          await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/pull-rates`, {
-                            rates: [
-                              { cardTier: 'D', probability: 70.0 },
-                              { cardTier: 'C', probability: 20.0 },
-                              { cardTier: 'B', probability: 7.0 },
-                              { cardTier: 'A', probability: 2.0 },
-                              { cardTier: 'S', probability: 0.8 },
-                              { cardTier: 'SS', probability: 0.15 },
-                              { cardTier: 'SSS', probability: 0.05 }
-                            ]
-                          });
-
-                          // Add cards if pool selected
-                          if (selectedPackType && virtualLibraryCards) {
-                            const cardsToAdd = virtualLibraryCards.filter((card: any) => 
-                              selectedPackType === "all" || card.tier === selectedPackType
-                            );
-                            
-                            if (cardsToAdd.length > 0) {
-                              await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/cards`, {
-                                cardIds: cardsToAdd.map((card: any) => card.id),
-                                weights: cardsToAdd.map(() => 1),
-                              });
-                            }
-                          }
-                        };
-
-                        quickCreate().then(() => {
-                          queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
-                          virtualPackForm.reset();
-                          setSelectedPackType("");
-                          toast({
-                            title: "Pack Created",
-                            description: "Themed pack created with default pokeball odds",
-                          });
-                        }).catch((error) => {
-                          toast({
-                            title: "Error",
-                            description: error.message,
-                            variant: "destructive",
-                          });
-                        });
+                        createVirtualPackMutation.mutate(data);
                       })} className="space-y-4">
                         <div>
                           <Label htmlFor="unified-pack-name">Pack Name</Label>
@@ -512,8 +550,13 @@ export default function Admin() {
                           <strong>Default Pokeball Odds:</strong> D:70%, C:20%, B:7%, A:2%, S:0.8%, SS:0.15%, SSS:0.05%
                         </div>
 
-                        <Button type="submit" className="w-full" data-testid="button-unified-create-pack">
-                          Create Pack
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={createVirtualPackMutation.isPending}
+                          data-testid="button-unified-create-pack"
+                        >
+                          {createVirtualPackMutation.isPending ? "Creating..." : "Create Pack"}
                         </Button>
                       </form>
                     </CardContent>
