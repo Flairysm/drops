@@ -176,7 +176,7 @@ export default function MyPacks() {
       }
     };
     
-    const imageSize = size === 'small' ? 'w-16 h-20' : 'w-32 h-40';
+    const imageSize = size === 'small' ? 'w-16 h-20' : 'w-48 h-60';
     
     return (
       <div className={`${imageSize} mx-auto`}>
@@ -256,139 +256,71 @@ export default function MyPacks() {
             </div>
           ) : (
             /* 4 Pack Types Inline */
-            <div className="space-y-8">
-              <div className="flex justify-center items-start gap-8 flex-wrap">
-                {packTiers.map((tier) => {
-                  const packs = groupedPacks[tier] || [];
-                  const packDisplay = getPackTypeDisplay(tier);
-                  
-                  return (
-                    <div key={tier} className="text-center">
-                      <div className="mb-4">
-                        <PackImage packType={tier} size="large" />
-                      </div>
-                      
-                      {packs.length > 0 && (
-                        <div className="space-y-3">
-                          <Badge className={`${packDisplay.textColor} text-sm px-3 py-1`} variant="outline">
-                            {packs.length} available
-                          </Badge>
-                          
-                          <div className="space-y-2">
-                            {packs.slice(0, 3).map((pack: any) => {
-                              const isOpening = openingPack === pack.id;
-                              
-                              return (
-                                <Button 
-                                  key={pack.id}
-                                  onClick={() => handleOpenPack(pack.id)}
-                                  disabled={isOpening}
-                                  className={`w-full bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
-                                  data-testid={`button-open-pack-${pack.id}`}
-                                  size="sm"
-                                >
-                                  {isOpening ? (
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                      Opening...
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-2">
-                                      <Package2 className="h-3 w-3" />
-                                      Open Pack
-                                    </div>
-                                  )}
-                                </Button>
-                              );
-                            })}
-                            
-                            {packs.length > 3 && (
-                              <p className="text-xs text-muted-foreground">
-                                +{packs.length - 3} more packs
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {packs.length === 0 && (
-                        <div className="mt-4">
-                          <p className="text-sm text-muted-foreground">No packs available</p>
-                        </div>
-                      )}
+            <div className="flex justify-center items-start gap-16 flex-wrap py-8">
+              {packTiers.map((tier) => {
+                const packs = groupedPacks[tier] || [];
+                const packDisplay = getPackTypeDisplay(tier);
+                
+                return (
+                  <div key={tier} className="text-center">
+                    <div className="mb-6">
+                      <PackImage packType={tier} size="large" />
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    {packs.length > 0 && (
+                      <div className="space-y-3">
+                        <Badge className={`${packDisplay.textColor} text-sm px-3 py-1`} variant="outline">
+                          {packs.length} available
+                        </Badge>
+                        
+                        <div className="space-y-2">
+                          {packs.slice(0, 3).map((pack: any) => {
+                            const isOpening = openingPack === pack.id;
+                            
+                            return (
+                              <Button 
+                                key={pack.id}
+                                onClick={() => handleOpenPack(pack.id)}
+                                disabled={isOpening}
+                                className={`w-full bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
+                                data-testid={`button-open-pack-${pack.id}`}
+                                size="sm"
+                              >
+                                {isOpening ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Opening...
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Package2 className="h-3 w-3" />
+                                    Open Pack
+                                  </div>
+                                )}
+                              </Button>
+                            );
+                          })}
+                          
+                          {packs.length > 3 && (
+                            <p className="text-xs text-muted-foreground">
+                              +{packs.length - 3} more packs
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {packs.length === 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-muted-foreground">No packs available</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {/* Pack Statistics and Info */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pack Statistics */}
-            <div className="gaming-card p-6 rounded-xl">
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Pack Statistics
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {packTiers.map((tier) => {
-                  const packs = groupedPacks[tier] || [];
-                  const packDisplay = getPackTypeDisplay(tier);
-                  
-                  return (
-                    <div key={tier} className={`p-3 rounded-lg ${packDisplay.bgColor} ${packDisplay.borderColor} border`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <PackImage packType={tier} size="small" />
-                        <div className="ml-2">
-                          <p className={`font-semibold text-sm ${packDisplay.textColor}`}>
-                            {packDisplay.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {packDisplay.tier}
-                          </p>
-                        </div>
-                      </div>
-                      <p className={`text-2xl font-bold ${packDisplay.textColor}`}>
-                        {packs.length}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            
-            {/* Pack Information */}
-            <div className="gaming-card p-6 rounded-xl">
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Package2 className="h-5 w-5 text-primary" />
-                How It Works
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Play Plinko to Earn</p>
-                    <p className="text-muted-foreground">Different landing zones give different tier packs</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Package2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">One Card Per Pack</p>
-                    <p className="text-muted-foreground">Each pack contains one card with weighted probabilities</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Gift className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Auto-Vault Storage</p>
-                    <p className="text-muted-foreground">Opened cards automatically go to your vault</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       
