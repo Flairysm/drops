@@ -72,22 +72,22 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
       setLoading(true);
       try {
         const packCardsResponse = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
-        const virtualLibraryResponse = await apiRequest("GET", "/api/admin/virtual-library");
+        const allCardsResponse = await apiRequest("GET", "/api/admin/cards");
         
         const packCards = await packCardsResponse.json();
-        const virtualLibraryCards = await virtualLibraryResponse.json();
+        const allCards = await allCardsResponse.json();
         
         console.log("Pack cards:", packCards);
-        console.log("Virtual library cards:", virtualLibraryCards);
+        console.log("All cards:", allCards);
         
-        if (!Array.isArray(packCards) || !Array.isArray(virtualLibraryCards)) {
+        if (!Array.isArray(packCards) || !Array.isArray(allCards)) {
           console.error("Invalid data structure - expected arrays");
           setGalleryCards([]);
           return;
         }
         
         const cardDetails = packCards.map((pc: any) => {
-          const card = virtualLibraryCards.find((c: any) => c.id === pc.virtualLibraryCardId);
+          const card = allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
           return card ? { ...card, weight: pc.weight } : null;
         }).filter(Boolean);
         
@@ -498,7 +498,7 @@ export default function Admin() {
           const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
           const cardDetails = await Promise.all(
             packCards.map(async (pc: any) => {
-              const card = virtualLibraryCards?.find((c: any) => c.id === pc.virtualLibraryCardId);
+              const card = allCards?.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
               return card ? { ...card, weight: pc.weight } : null;
             })
           );
@@ -591,7 +591,7 @@ export default function Admin() {
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{virtualLibraryCards?.length || 0}</div>
+                    <div className="text-2xl font-bold">{allCards?.length || 0}</div>
                   </CardContent>
                 </Card>
 
@@ -1138,7 +1138,7 @@ export default function Admin() {
                 </div>
                 
                 <div className="grid gap-3">
-                  {virtualLibraryCards?.map((card: any) => (
+                  {allCards?.filter((c: any) => c.packType === 'virtual').map((card: any) => (
                     <div key={card.id} className="flex items-center space-x-3 p-3 border rounded">
                       <Checkbox
                         checked={selectedCards.includes(card.id)}
