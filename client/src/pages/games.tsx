@@ -201,7 +201,7 @@ export default function Play() {
                 </p>
               </div>
               
-              {virtualPacks && virtualPacks.length > 0 ? (
+              {virtualPacks && Array.isArray(virtualPacks) && virtualPacks.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
                   {virtualPacks.filter((pack: any) => pack.isActive).map((pack: any) => (
                     <Card key={pack.id} className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid={`card-themed-pack-${pack.id}`}>
