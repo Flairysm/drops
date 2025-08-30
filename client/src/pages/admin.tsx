@@ -250,11 +250,6 @@ export default function Admin() {
     retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
   });
 
-  const { data: regularCards } = useQuery({
-    queryKey: ["/api/admin/cards"],
-    enabled: !!isAuthenticated,
-    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
-  });
 
   // Mutations
   const createVirtualLibraryCardMutation = useMutation({
@@ -773,12 +768,7 @@ export default function Admin() {
                       <Card className="gaming-card">
                         <CardHeader>
                           <div className="flex items-center justify-between">
-                            <CardTitle>
-                              Current Inventory 
-                              <div className="text-sm font-normal text-muted-foreground mt-1">
-                                Virtual: {virtualLibraryCards?.length || 0} • Regular: {regularCards?.length || 0}
-                              </div>
-                            </CardTitle>
+                            <CardTitle>Current Inventory ({virtualLibraryCards?.length || 0} cards)</CardTitle>
                           </div>
                           <div className="mt-3">
                             <Input
@@ -792,91 +782,49 @@ export default function Admin() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="space-y-4">
-                            {/* Virtual Library Cards */}
-                            <div>
-                              <h4 className="font-medium text-sm mb-2 text-purple-600 dark:text-purple-400">Virtual Pack Cards</h4>
-                              <div className="space-y-2 max-h-40 overflow-y-auto">
-                                {virtualLibraryCards?.filter((card: any) => {
-                                  const searchTerm = inventorySearch.toLowerCase();
-                                  return card.name.toLowerCase().includes(searchTerm) || 
-                                         card.tier.toLowerCase().includes(searchTerm);
-                                }).map((card: any) => (
-                                  <div key={`virtual-${card.id}`} className="flex items-center justify-between p-3 rounded border bg-purple-50/30 dark:bg-purple-950/20">
-                                    <div className="flex items-center gap-3">
-                                      <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
-                                        <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
-                                          {card.tier}
-                                        </span>
-                                      </div>
-                                      <div>
-                                        <div className="font-medium">{card.name}</div>
-                                        <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
-                                        <div className="text-xs text-blue-600 dark:text-blue-400">
-                                          Stock: {card.stock || 0} available
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-1">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setEditingCard(card)}
-                                        data-testid={`button-edit-card-${card.id}`}
-                                      >
-                                        <Edit className="w-3 h-3" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => handleDeleteVirtualLibraryCard(card.id)}
-                                        data-testid={`button-delete-card-${card.id}`}
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
+                          <div className="space-y-2 max-h-80 overflow-y-auto">
+                            {virtualLibraryCards?.filter((card: any) => {
+                              const searchTerm = inventorySearch.toLowerCase();
+                              return card.name.toLowerCase().includes(searchTerm) || 
+                                     card.tier.toLowerCase().includes(searchTerm);
+                            }).map((card: any) => (
+                              <div key={card.id} className="flex items-center justify-between p-3 rounded border">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                                    <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
+                                      {card.tier}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">{card.name}</div>
+                                    <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
+                                    <div className="text-xs text-blue-600 dark:text-blue-400">
+                                      Stock: {card.stock || 0} available
                                     </div>
                                   </div>
-                                )) || (
-                                  <p className="text-center text-muted-foreground py-4">No virtual cards yet.</p>
-                                )}
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingCard(card)}
+                                    data-testid={`button-edit-card-${card.id}`}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteVirtualLibraryCard(card.id)}
+                                    data-testid={`button-delete-card-${card.id}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-
-                            {/* Regular Pack Cards */}
-                            <div>
-                              <h4 className="font-medium text-sm mb-2 text-green-600 dark:text-green-400">Regular Pack Cards</h4>
-                              <div className="space-y-2 max-h-40 overflow-y-auto">
-                                {regularCards?.filter((card: any) => {
-                                  const searchTerm = inventorySearch.toLowerCase();
-                                  return card.name.toLowerCase().includes(searchTerm) || 
-                                         card.tier.toLowerCase().includes(searchTerm);
-                                }).map((card: any) => (
-                                  <div key={`regular-${card.id}`} className="flex items-center justify-between p-3 rounded border bg-green-50/30 dark:bg-green-950/20">
-                                    <div className="flex items-center gap-3">
-                                      <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
-                                        <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
-                                          {card.tier}
-                                        </span>
-                                      </div>
-                                      <div>
-                                        <div className="font-medium">{card.name}</div>
-                                        <div className="text-sm text-muted-foreground">${card.marketValue}</div>
-                                        <div className="text-xs text-blue-600 dark:text-blue-400">
-                                          Stock: {card.stock || 0} available
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex gap-1">
-                                      <span className="text-xs text-muted-foreground px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
-                                        Pack Cards
-                                      </span>
-                                    </div>
-                                  </div>
-                                )) || (
-                                  <p className="text-center text-muted-foreground py-4">No regular cards yet.</p>
-                                )}
-                              </div>
-                            </div>
+                            )) || (
+                              <p className="text-center text-muted-foreground py-8">No cards in inventory yet.</p>
+                            )}
                           </div>
                         </CardContent>
                       </Card>

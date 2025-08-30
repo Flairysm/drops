@@ -317,16 +317,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/cards', isAuthenticated, async (req: any, res) => {
-    try {
-      const cards = await storage.getCards();
-      res.json(cards);
-    } catch (error) {
-      console.error("Error fetching cards:", error);
-      res.status(500).json({ message: "Failed to fetch cards" });
-    }
-  });
-
   app.post('/api/admin/cards', isAuthenticated, async (req: any, res) => {
     try {
       const cardData = insertCardSchema.parse(req.body);
