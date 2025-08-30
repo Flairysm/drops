@@ -33,7 +33,7 @@ import {
   Trash2,
   Save
 } from "lucide-react";
-import type { User, Card as CardType, Pack, VirtualPack, VirtualPackCard, VirtualLibraryCard } from "@shared/schema";
+import type { User, Card as CardType, Pack, VirtualPack, VirtualPackCard, VirtualPackPullRate, VirtualLibraryCard } from "@shared/schema";
 
 const cardSchema = z.object({
   name: z.string().min(1, "Card name is required"),
@@ -77,6 +77,16 @@ export default function Admin() {
   const [selectedCards, setSelectedCards] = useState<{ cardId: string; weight: number }[]>([]);
   const [editingVirtualLibraryCard, setEditingVirtualLibraryCard] = useState<VirtualLibraryCard | null>(null);
   const [deleteVirtualLibraryCardId, setDeleteVirtualLibraryCardId] = useState<string | null>(null);
+  const [managingPullRates, setManagingPullRates] = useState<VirtualPack | null>(null);
+  const [pullRates, setPullRates] = useState<{ cardTier: string; probability: number }[]>([
+    { cardTier: 'D', probability: 70 },
+    { cardTier: 'C', probability: 20 },
+    { cardTier: 'B', probability: 7 },
+    { cardTier: 'A', probability: 2 },
+    { cardTier: 'S', probability: 0.8 },
+    { cardTier: 'SS', probability: 0.15 },
+    { cardTier: 'SSS', probability: 0.05 }
+  ]);
 
 
   // Redirect if not authenticated
@@ -117,6 +127,11 @@ export default function Admin() {
   const { data: virtualLibraryCards } = useQuery<VirtualLibraryCard[]>({
     queryKey: ["/api/admin/virtual-library"],
     enabled: isAuthenticated && activeTab === "virtual-library",
+  });
+
+  const { data: currentPullRates } = useQuery<VirtualPackPullRate[]>({
+    queryKey: ["/api/admin/virtual-packs", managingPullRates?.id, "pull-rates"],
+    enabled: !!managingPullRates?.id,
   });
 
   const form = useForm<CardFormData>({
@@ -431,6 +446,27 @@ export default function Admin() {
     },
   });
 
+  // Pull rate mutations
+  const updateVirtualPackPullRatesMutation = useMutation({
+    mutationFn: async ({ packId, rates }: { packId: string; rates: { cardTier: string; probability: number }[] }) => {
+      await apiRequest("POST", `/api/admin/virtual-packs/${packId}/pull-rates`, { rates });
+    },
+    onSuccess: () => {
+      setManagingPullRates(null);
+      toast({
+        title: "Pull Rates Updated",
+        description: "Virtual pack pull rates have been configured",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Updating Pull Rates",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditStock = (card: CardType) => {
     setEditingCard(card);
     setNewStock(card.stock || 0);
@@ -485,22 +521,18 @@ export default function Admin() {
 
   const handleAddCardToPack = (cardId: string) => {
     if (selectedCards.find(c => c.cardId === cardId)) return;
-    setSelectedCards(prev => [...prev, { cardId, weight: 1 }]);
+    setSelectedCards(prev => [...prev, { cardId, weight: 1 }]); // Keep weight for backward compatibility
   };
 
   const handleRemoveCardFromPack = (cardId: string) => {
     setSelectedCards(prev => prev.filter(c => c.cardId !== cardId));
   };
 
-  const handleUpdateCardWeight = (cardId: string, weight: number) => {
-    setSelectedCards(prev => prev.map(c => c.cardId === cardId ? { ...c, weight } : c));
-  };
-
   const handleSavePackCards = () => {
     if (!managingPackCards || selectedCards.length === 0) return;
     
     const cardIds = selectedCards.map(c => c.cardId);
-    const weights = selectedCards.map(c => c.weight);
+    const weights = selectedCards.map(c => 1); // Use weight of 1 for all cards since we use tier-based probabilities now
     
     updateVirtualPackCardsMutation.mutate({
       packId: managingPackCards.id,
@@ -536,6 +568,51 @@ export default function Admin() {
   const confirmDeleteVirtualLibraryCard = () => {
     if (!deleteVirtualLibraryCardId) return;
     deleteVirtualLibraryCardMutation.mutate(deleteVirtualLibraryCardId);
+  };
+
+  // Pull rate handlers
+  const handleManagePullRates = (pack: VirtualPack) => {
+    setManagingPullRates(pack);
+    // Reset to default pull rates when opening
+    setPullRates([
+      { cardTier: 'D', probability: 70 },
+      { cardTier: 'C', probability: 20 },
+      { cardTier: 'B', probability: 7 },
+      { cardTier: 'A', probability: 2 },
+      { cardTier: 'S', probability: 0.8 },
+      { cardTier: 'SS', probability: 0.15 },
+      { cardTier: 'SSS', probability: 0.05 }
+    ]);
+  };
+
+  // Load existing pull rates when data becomes available
+  useEffect(() => {
+    if (currentPullRates && currentPullRates.length > 0) {
+      const existingRates = currentPullRates.map(rate => ({
+        cardTier: rate.cardTier,
+        probability: rate.probability
+      }));
+      setPullRates(existingRates);
+    }
+  }, [currentPullRates]);
+
+  const handleUpdatePullRate = (tierIndex: number, probability: number) => {
+    setPullRates(prev => prev.map((rate, index) => 
+      index === tierIndex ? { ...rate, probability } : rate
+    ));
+  };
+
+  const handleSavePullRates = () => {
+    if (!managingPullRates) return;
+    
+    updateVirtualPackPullRatesMutation.mutate({
+      packId: managingPullRates.id,
+      rates: pullRates,
+    });
+  };
+
+  const getTotalProbability = () => {
+    return pullRates.reduce((sum, rate) => sum + rate.probability, 0);
   };
 
   if (isLoading) {
@@ -1067,14 +1144,25 @@ export default function Admin() {
                                   variant="outline"
                                   onClick={() => handleManagePackCards(pack)}
                                   data-testid={`button-manage-cards-${pack.id}`}
+                                  title="Manage Card Pool"
                                 >
                                   <Package className="w-4 h-4" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  onClick={() => handleManagePullRates(pack)}
+                                  data-testid={`button-manage-pull-rates-${pack.id}`}
+                                  title="Manage Pull Rates"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   onClick={() => handleEditVirtualPack(pack)}
                                   data-testid={`button-edit-virtual-pack-${pack.id}`}
+                                  title="Edit Pack"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
@@ -1516,8 +1604,10 @@ export default function Admin() {
           <DialogHeader>
             <DialogTitle>Manage Card Pool: {managingPackCards?.name}</DialogTitle>
             <DialogDescription>
-              Select cards and set their probability weights for this themed pack.
-              Higher weights mean cards appear more frequently.
+              Select cards for this themed pack's available pool. Use "Manage Pull Rates" to configure tier-based probabilities.
+              <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded text-sm">
+                <strong>Note:</strong> Individual card weights are deprecated. The pack now uses tier-based pull rates for consistent probabilities.
+              </div>
             </DialogDescription>
           </DialogHeader>
           
@@ -1539,24 +1629,14 @@ export default function Admin() {
                           </div>
                           <span className="text-sm">{card?.name}</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={selected.weight}
-                            onChange={(e) => handleUpdateCardWeight(selected.cardId, parseInt(e.target.value) || 1)}
-                            className="w-16 h-8"
-                            data-testid={`input-card-weight-${selected.cardId}`}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRemoveCardFromPack(selected.cardId)}
-                            data-testid={`button-remove-card-${selected.cardId}`}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRemoveCardFromPack(selected.cardId)}
+                          data-testid={`button-remove-card-${selected.cardId}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     );
                   })}
@@ -1610,6 +1690,78 @@ export default function Admin() {
                 <>
                   <Save className="w-4 h-4 mr-2" />
                   Save Card Pool
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Pull Rates Dialog */}
+      <Dialog open={!!managingPullRates} onOpenChange={(open) => !open && setManagingPullRates(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Configure Pull Rates: {managingPullRates?.name}</DialogTitle>
+            <DialogDescription>
+              Set tier-based probabilities for pack openings. Each pack gives 7 D-tier commons plus 1 hit card based on these rates.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-sm font-medium">Card Tier</div>
+              <div className="text-sm font-medium">Probability (%)</div>
+            </div>
+            
+            {pullRates.map((rate, index) => (
+              <div key={rate.cardTier} className="grid grid-cols-2 gap-4 items-center">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-6 h-6 rounded-full bg-${tierColors[rate.cardTier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                    <span className={`text-xs font-bold tier-${tierColors[rate.cardTier as keyof typeof tierColors]}`}>
+                      {rate.cardTier}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium">{rate.cardTier} Tier</span>
+                </div>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={rate.probability}
+                  onChange={(e) => handleUpdatePullRate(index, parseFloat(e.target.value) || 0)}
+                  data-testid={`input-pull-rate-${rate.cardTier}`}
+                />
+              </div>
+            ))}
+            
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <div className="text-sm text-muted-foreground">
+                Total Probability: {getTotalProbability().toFixed(2)}%
+                {getTotalProbability() !== 100 && (
+                  <span className="text-destructive ml-2">
+                    (Should total 100%)
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManagingPullRates(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSavePullRates}
+              disabled={getTotalProbability() !== 100 || updateVirtualPackPullRatesMutation.isPending}
+              data-testid="button-save-pull-rates"
+            >
+              {updateVirtualPackPullRatesMutation.isPending ? (
+                "Saving..."
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Pull Rates
                 </>
               )}
             </Button>

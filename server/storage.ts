@@ -6,6 +6,7 @@ import {
   virtualLibrary,
   virtualPacks,
   virtualPackCards,
+  virtualPackPullRates,
   userCards,
   userPacks,
   globalFeed,
@@ -23,6 +24,7 @@ import {
   type VirtualLibraryCard,
   type VirtualPack,
   type VirtualPackCard,
+  type VirtualPackPullRate,
   type UserCard,
   type UserPack,
   type GlobalFeed,
@@ -36,6 +38,7 @@ import {
   type InsertVirtualLibraryCard,
   type InsertVirtualPack,
   type InsertVirtualPackCard,
+  type InsertVirtualPackPullRate,
   type InsertUserCard,
   type InsertUserPack,
   type InsertTransaction,
@@ -89,6 +92,11 @@ export interface IStorage {
   // Virtual pack card pool operations (using virtual library cards)
   getVirtualPackCards(virtualPackId: string): Promise<VirtualPackCard[]>;
   setVirtualPackCards(virtualPackId: string, cardIds: string[], weights: number[]): Promise<void>;
+  
+  // Virtual pack pull rate operations (tier-based probabilities)
+  getVirtualPackPullRates(virtualPackId: string): Promise<VirtualPackPullRate[]>;
+  setVirtualPackPullRates(virtualPackId: string, rates: { cardTier: string; probability: number }[], updatedBy?: string): Promise<void>;
+  
   openVirtualPack(virtualPackId: string, userId: string): Promise<VirtualPackOpenResult>;
   
   // Vault operations
@@ -312,6 +320,31 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getVirtualPackPullRates(virtualPackId: string): Promise<VirtualPackPullRate[]> {
+    return await db.select()
+      .from(virtualPackPullRates)
+      .where(eq(virtualPackPullRates.virtualPackId, virtualPackId));
+  }
+
+  async setVirtualPackPullRates(virtualPackId: string, rates: { cardTier: string; probability: number }[], updatedBy?: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Remove existing pull rates for this pack
+      await tx.delete(virtualPackPullRates).where(eq(virtualPackPullRates.virtualPackId, virtualPackId));
+      
+      // Add new pull rates
+      const newRates = rates.map(rate => ({
+        virtualPackId,
+        cardTier: rate.cardTier,
+        probability: rate.probability,
+        updatedBy: updatedBy || 'system',
+      }));
+      
+      if (newRates.length > 0) {
+        await tx.insert(virtualPackPullRates).values(newRates);
+      }
+    });
+  }
+
   async openVirtualPack(virtualPackId: string, userId: string): Promise<VirtualPackOpenResult> {
     return await db.transaction(async (tx) => {
       // Get virtual pack info
@@ -320,19 +353,39 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Virtual pack not found');
       }
 
-      // Get available cards in this pack's pool from virtual library
-      const packCards = await tx
+      // Get virtual pack pull rates (tier-based probabilities)
+      const pullRates = await tx.select()
+        .from(virtualPackPullRates)
+        .where(eq(virtualPackPullRates.virtualPackId, virtualPackId));
+
+      if (pullRates.length === 0) {
+        throw new Error('No pull rates configured for this virtual pack');
+      }
+
+      // Get available cards in this pack's pool from virtual library, grouped by tier
+      const allVirtualCards = await tx
         .select({
-          card: virtualLibrary,
-          weight: virtualPackCards.weight,
+          id: virtualLibrary.id,
+          cardId: virtualLibrary.cardId,
+          marketValue: virtualLibrary.marketValue,
+          cardTier: virtualLibrary.cardTier,
         })
         .from(virtualPackCards)
         .leftJoin(virtualLibrary, eq(virtualPackCards.virtualLibraryCardId, virtualLibrary.id))
         .where(and(eq(virtualPackCards.virtualPackId, virtualPackId), eq(virtualPackCards.isActive, true)));
 
-      if (packCards.length === 0) {
+      if (allVirtualCards.length === 0) {
         throw new Error('No cards available in this virtual pack');
       }
+
+      // Group cards by tier
+      const cardsByTier = allVirtualCards.reduce((acc, card) => {
+        if (card.cardTier) {
+          if (!acc[card.cardTier]) acc[card.cardTier] = [];
+          acc[card.cardTier].push(card);
+        }
+        return acc;
+      }, {} as Record<string, typeof allVirtualCards>);
 
       // Deduct credits
       const creditCost = parseFloat(virtualPack.price);
@@ -346,25 +399,66 @@ export class DatabaseStorage implements IStorage {
         totalSpent: sql`${users.totalSpent} + ${creditCost}`,
       }).where(eq(users.id, userId));
 
-      // Generate cards based on weights
+      // Generate cards using tier-based probabilities
       const pulledCards: UserCardWithCard[] = [];
-      for (let i = 0; i < virtualPack.cardCount; i++) {
-        const selectedCard = this.selectVirtualCardByWeight(packCards);
-        if (selectedCard?.card) {
+      
+      // First, add 7 guaranteed D-tier "Random Commons" cards
+      const dTierCards = cardsByTier['D'] || [];
+      if (dTierCards.length > 0) {
+        for (let i = 0; i < 7; i++) {
+          const randomCard = dTierCards[Math.floor(Math.random() * dTierCards.length)];
+          if (randomCard && randomCard.cardId) {
+            const [newUserCard] = await tx.insert(userCards).values({
+              userId,
+              cardId: randomCard.cardId,
+              pullValue: randomCard.marketValue,
+              quantity: 1,
+            }).returning();
+
+            // Get the actual card details for the result
+            const [cardDetails] = await tx.select().from(cards).where(eq(cards.id, randomCard.cardId));
+            if (cardDetails) {
+              pulledCards.push({
+                ...newUserCard,
+                card: cardDetails,
+              });
+            }
+          }
+        }
+      }
+
+      // Then, generate 1 hit card based on pull rates
+      const selectedTier = this.selectTierByProbability(pullRates);
+      const tierCards = cardsByTier[selectedTier];
+      
+      if (tierCards && tierCards.length > 0) {
+        const randomCard = tierCards[Math.floor(Math.random() * tierCards.length)];
+        if (randomCard && randomCard.cardId) {
           const [newUserCard] = await tx.insert(userCards).values({
             userId,
-            cardId: selectedCard.card.cardId,
-            pullValue: selectedCard.card.marketValue,
+            cardId: randomCard.cardId,
+            pullValue: randomCard.marketValue,
             quantity: 1,
           }).returning();
 
           // Get the actual card details for the result
-          const [cardDetails] = await tx.select().from(cards).where(eq(cards.id, selectedCard.card.cardId));
-          
-          pulledCards.push({
-            ...newUserCard,
-            card: cardDetails,
-          });
+          const [cardDetails] = await tx.select().from(cards).where(eq(cards.id, randomCard.cardId));
+          if (cardDetails) {
+            pulledCards.push({
+              ...newUserCard,
+              card: cardDetails,
+            });
+
+            // Add to global feed for rare pulls (A tier and above)
+            if (['A', 'S', 'SS', 'SSS'].includes(selectedTier)) {
+              await tx.insert(globalFeed).values({
+                userId,
+                cardId: randomCard.cardId,
+                tier: selectedTier,
+                gameType: 'virtual-pack',
+              });
+            }
+          }
         }
       }
 
@@ -417,6 +511,22 @@ export class DatabaseStorage implements IStorage {
     }
     
     return validCards[validCards.length - 1];
+  }
+
+  private selectTierByProbability(pullRates: VirtualPackPullRate[]): string {
+    const totalProbability = pullRates.reduce((sum, rate) => sum + rate.probability, 0);
+    const random = Math.random() * totalProbability;
+    
+    let currentProbability = 0;
+    for (const rate of pullRates) {
+      currentProbability += rate.probability;
+      if (random <= currentProbability) {
+        return rate.cardTier;
+      }
+    }
+    
+    // Fallback to D tier if something goes wrong
+    return 'D';
   }
 
   // Vault operations

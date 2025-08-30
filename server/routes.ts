@@ -535,6 +535,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Virtual pack pull rate routes
+  app.get('/api/admin/virtual-packs/:id/pull-rates', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const pullRates = await storage.getVirtualPackPullRates(id);
+      res.json(pullRates);
+    } catch (error) {
+      console.error("Error fetching virtual pack pull rates:", error);
+      res.status(500).json({ message: "Failed to fetch virtual pack pull rates" });
+    }
+  });
+
+  app.post('/api/admin/virtual-packs/:id/pull-rates', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { rates } = req.body;
+      
+      if (!Array.isArray(rates)) {
+        return res.status(400).json({ message: "rates must be an array" });
+      }
+      
+      // Validate rates format
+      for (const rate of rates) {
+        if (!rate.cardTier || typeof rate.probability !== 'number') {
+          return res.status(400).json({ message: "Each rate must have cardTier and probability" });
+        }
+      }
+      
+      const userId = req.user.claims.sub;
+      await storage.setVirtualPackPullRates(id, rates, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting virtual pack pull rates:", error);
+      res.status(500).json({ message: "Failed to set virtual pack pull rates" });
+    }
+  });
+
   // Cards and packs routes
   app.get('/api/cards', async (req, res) => {
     try {
