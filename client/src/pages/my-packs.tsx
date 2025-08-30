@@ -59,6 +59,9 @@ export default function MyPacks() {
       setPackOpenData(result);
       setShowAnimation(true);
       setOpeningPack(null);
+      // Immediately invalidate cache so pack disappears from UI
+      queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
     },
     onError: (error: any) => {
       toast({
@@ -83,9 +86,6 @@ export default function MyPacks() {
       description: "Your card has been added to your vault!",
       variant: "default",
     });
-    // Invalidate packs and vault queries
-    queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
   };
 
   const getPackTypeDisplay = (packType: string) => {
