@@ -293,19 +293,10 @@ export default function MyPacks() {
                             <CardContent className="p-4 text-center">
                               <PixelPokeBall packType={tier} size="small" />
                               
-                              <div className="mt-3 space-y-2">
-                                <p className="text-xs text-muted-foreground">
-                                  Earned: {new Date(pack.earnedAt).toLocaleDateString()}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  From: {pack.earnedFrom}
-                                </p>
-                              </div>
-                              
                               <Button 
                                 onClick={() => handleOpenPack(pack.id)}
                                 disabled={isOpening}
-                                className={`w-full mt-3 bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
+                                className={`w-full mt-4 bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
                                 data-testid={`button-open-pack-${pack.id}`}
                                 size="sm"
                               >
