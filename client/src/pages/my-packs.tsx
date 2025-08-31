@@ -331,23 +331,31 @@ export default function MyPacks() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">D Tier:</span>
-                  <span className="font-semibold">60.0%</span>
+                  <span className="font-semibold">84.8%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">30.0%</span>
+                  <span className="font-semibold">7.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-blue-600">B Tier:</span>
-                  <span className="font-semibold">9.0%</span>
+                  <span className="font-semibold">5.2%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-purple-600">A Tier:</span>
-                  <span className="font-semibold">0.9%</span>
+                  <span className="font-semibold">2.8%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S+ Tier:</span>
-                  <span className="font-semibold">0.1%</span>
+                  <span className="text-yellow-600">S Tier:</span>
+                  <span className="font-semibold">0.15%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-pink-600">SS Tier:</span>
+                  <span className="font-semibold">0.05%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-red-600">SSS Tier:</span>
+                  <span className="font-semibold">0.0%</span>
                 </div>
               </div>
             </div>
@@ -363,11 +371,11 @@ export default function MyPacks() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">D Tier:</span>
-                  <span className="font-semibold">45.0%</span>
+                  <span className="font-semibold">50.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">35.0%</span>
+                  <span className="font-semibold">22.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-blue-600">B Tier:</span>
@@ -375,11 +383,19 @@ export default function MyPacks() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-purple-600">A Tier:</span>
-                  <span className="font-semibold">4.5%</span>
+                  <span className="font-semibold">9.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S+ Tier:</span>
-                  <span className="font-semibold">0.5%</span>
+                  <span className="text-yellow-600">S Tier:</span>
+                  <span className="font-semibold">3.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-pink-600">SS Tier:</span>
+                  <span className="font-semibold">1.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-red-600">SSS Tier:</span>
+                  <span className="font-semibold">0.0%</span>
                 </div>
               </div>
             </div>
@@ -395,23 +411,31 @@ export default function MyPacks() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">D Tier:</span>
-                  <span className="font-semibold">30.0%</span>
+                  <span className="font-semibold">20.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">30.0%</span>
+                  <span className="font-semibold">32.5%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-blue-600">B Tier:</span>
-                  <span className="font-semibold">25.0%</span>
+                  <span className="font-semibold">27.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-purple-600">A Tier:</span>
                   <span className="font-semibold">12.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S+ Tier:</span>
-                  <span className="font-semibold">3.0%</span>
+                  <span className="text-yellow-600">S Tier:</span>
+                  <span className="font-semibold">6.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-pink-600">SS Tier:</span>
+                  <span className="font-semibold">2.5%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-red-600">SSS Tier:</span>
+                  <span className="font-semibold">0.0%</span>
                 </div>
               </div>
             </div>
@@ -427,23 +451,31 @@ export default function MyPacks() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">D Tier:</span>
-                  <span className="font-semibold">15.0%</span>
+                  <span className="font-semibold">0.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">25.0%</span>
+                  <span className="font-semibold">0.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-blue-600">B Tier:</span>
-                  <span className="font-semibold">30.0%</span>
+                  <span className="font-semibold">39.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-purple-600">A Tier:</span>
-                  <span className="font-semibold">20.0%</span>
+                  <span className="font-semibold">35.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S+ Tier:</span>
-                  <span className="font-semibold">10.0%</span>
+                  <span className="text-yellow-600">S Tier:</span>
+                  <span className="font-semibold">15.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-pink-600">SS Tier:</span>
+                  <span className="font-semibold">8.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-red-600">SSS Tier:</span>
+                  <span className="font-semibold">3.0%</span>
                 </div>
               </div>
             </div>
