@@ -28,7 +28,8 @@ import {
   Trash2,
   Eye,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X
 } from "lucide-react";
 import type { User, VirtualLibraryCard } from "@shared/schema";
 
@@ -64,6 +65,37 @@ const tierColors = {
 const CardGalleryContent = ({ packId }: { packId: string }) => {
   const [galleryCards, setGalleryCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const handleRemoveCard = async (cardId: string) => {
+    try {
+      // Remove the card from the pack by filtering it out and resaving
+      const currentPackCards = galleryCards.filter(card => card.id !== cardId);
+      const cardIds = currentPackCards.map(card => card.id);
+      const weights = currentPackCards.map(() => 1);
+      
+      const response = await apiRequest("POST", `/api/admin/virtual-packs/${packId}/cards`, {
+        cardIds,
+        weights
+      });
+      
+      if (response.ok) {
+        // Update local state immediately
+        setGalleryCards(currentPackCards);
+        toast({
+          title: "Success",
+          description: "Card removed from pack",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to remove card:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove card from pack",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     const loadGalleryCards = async () => {
@@ -160,6 +192,17 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
                       <Package className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
+                  
+                  {/* Remove Button */}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 w-5 h-5 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRemoveCard(card.id)}
+                    data-testid={`button-remove-card-${card.id}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
                   
                   {/* Card Info Overlay */}
                   <div className="absolute bottom-0 left-0 right-0 bg-black/90 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -89,32 +89,18 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       
       try {
         setLoadingCards(true);
-        console.log("Starting API request for pack cards...");
         const response = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         const packCardsData = await response.json();
         
-        console.log("Raw API response:", packCardsData);
-        console.log("Response type:", typeof packCardsData);
-        console.log("Is response array?", Array.isArray(packCardsData));
-        console.log("AllCards type:", typeof allCards);
-        console.log("Is allCards array?", Array.isArray(allCards));
-        
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
-          console.log("Processing pack cards data:", packCardsData);
-          console.log("Sample pack card:", packCardsData[0]);
-          console.log("Sample all card:", allCards[0]);
-          
           const cardDetails = packCardsData.map((pc: any) => {
             // Match by cardId
             const card = allCards.find((c: any) => c.id === pc.cardId);
-            console.log(`Looking for cardId ${pc.cardId}, found:`, card ? card.name : 'NOT FOUND');
             return card ? { ...card, weight: pc.weight } : null;
           }).filter(Boolean);
           
-          console.log("Final card details:", cardDetails);
           setPackCards(cardDetails);
         } else {
-          console.log("Data format issue - setting empty array");
           setPackCards([]);
         }
       } catch (error) {
@@ -140,13 +126,8 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     
     try {
       setLoadingCards(true);
-      console.log("Refreshing pack cards for packId:", packId);
       const response = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
       const packCardsData = await response.json();
-      
-      console.log("Refresh - Raw API response:", packCardsData);
-      console.log("Refresh - Response type:", typeof packCardsData);
-      console.log("Refresh - Is response array?", Array.isArray(packCardsData));
       
       if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
         const cardDetails = packCardsData.map((pc: any) => {
@@ -154,7 +135,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           return card ? { ...card, weight: pc.weight } : null;
         }).filter(Boolean);
         
-        console.log("Refresh - Final card details:", cardDetails);
         setPackCards(cardDetails);
       } else {
         setPackCards([]);
@@ -168,21 +148,13 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
 
   // Add an effect to refresh cards periodically when the dialog is open
   useEffect(() => {
-    if (!open || !packId || !allCards) {
-      console.log("Auto-refresh not starting:", { open, packId: !!packId, allCards: !!allCards });
-      return;
-    }
+    if (!open || !packId || !allCards) return;
     
-    console.log("Starting auto-refresh interval for pack:", packId);
     const interval = setInterval(() => {
-      console.log("Auto-refresh triggering...");
       refreshPackCards();
     }, 2000); // Refresh every 2 seconds when dialog is open
     
-    return () => {
-      console.log("Stopping auto-refresh interval");
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [open, packId, allCards]);
 
   const getTierColor = (tier: string) => {
