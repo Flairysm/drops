@@ -312,8 +312,8 @@ export function WheelGame() {
             {wheelSegments.map((segment) => (
               <div key={segment.tier} className="text-center p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border-2 border-muted/50 hover:border-primary/50 transition-all">
                 {/* Pack Image */}
-                <div className="w-16 h-20 mx-auto mb-3 rounded-lg overflow-hidden border-2 border-muted/30">
-                  <PackImage packType={segment.tier} size="small" />
+                <div className="w-24 h-32 mx-auto mb-3">
+                  <PackImage packType={segment.tier} size="large" />
                 </div>
                 <div className="text-sm font-bold">{segment.label}</div>
                 <div className="text-lg font-bold text-primary">{segment.odds}</div>
