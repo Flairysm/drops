@@ -146,16 +146,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     }
   };
 
-  // Add an effect to refresh cards periodically when the dialog is open
-  useEffect(() => {
-    if (!open || !packId || !allCards) return;
-    
-    const interval = setInterval(() => {
-      refreshPackCards();
-    }, 2000); // Refresh every 2 seconds when dialog is open
-    
-    return () => clearInterval(interval);
-  }, [open, packId, allCards]);
+  // Removed auto-refresh functionality as requested
 
   const getTierColor = (tier: string) => {
     const colors = {
@@ -546,39 +537,73 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                   <p className="text-sm text-muted-foreground mt-2">Loading card pool...</p>
                 </div>
               ) : (
-                <div className="max-h-96 overflow-y-auto space-y-2">
-                  {packCards
-                    .sort((a, b) => {
-                      const tierOrder = { 'SSS': 6, 'SS': 5, 'S': 4, 'A': 3, 'B': 2, 'C': 1, 'D': 0 };
-                      return (tierOrder[b.tier as keyof typeof tierOrder] || 0) - (tierOrder[a.tier as keyof typeof tierOrder] || 0);
-                    })
-                    .map((card: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-gradient-to-br from-muted to-muted/60 rounded flex items-center justify-center flex-shrink-0">
-                          {card.imageUrl ? (
-                            <img
-                              src={card.imageUrl}
-                              alt={card.name}
-                              className="w-full h-full object-cover rounded"
-                            />
-                          ) : (
-                            <Package className="w-4 h-4 text-muted-foreground" />
-                          )}
+                <div className="max-h-96 overflow-y-auto space-y-4">
+                  {(() => {
+                    // Group cards by tier
+                    const cardsByTier = packCards.reduce((acc, card: any) => {
+                      const tier = card.tier || 'D';
+                      if (!acc[tier]) acc[tier] = [];
+                      acc[tier].push(card);
+                      return acc;
+                    }, {} as Record<string, any[]>);
+
+                    const tierOrder = ['SSS', 'SS', 'S', 'A', 'B', 'C', 'D'];
+                    const tierColors = {
+                      D: "gray",
+                      C: "green", 
+                      B: "blue",
+                      A: "purple",
+                      S: "yellow",
+                      SS: "orange",
+                      SSS: "red"
+                    };
+
+                    return tierOrder.map(tier => {
+                      const tierCards = cardsByTier[tier];
+                      if (!tierCards || tierCards.length === 0) return null;
+                      
+                      return (
+                        <div key={tier} className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-6 h-6 rounded-full bg-${tierColors[tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
+                              <span className={`text-sm font-bold tier-${tierColors[tier as keyof typeof tierColors]}`}>
+                                {tier}
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-semibold">
+                              {tier} Tier ({tierCards.length} card{tierCards.length !== 1 ? 's' : ''})
+                            </h4>
+                          </div>
+                          
+                          <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 pl-8">
+                            {tierCards.map((card: any, index: number) => (
+                              <div key={`${tier}-${index}`} className="relative group">
+                                <div className="aspect-[3/4] rounded-md overflow-hidden bg-muted/30 border border-muted hover:border-primary/50 transition-colors w-16 h-20">
+                                  {card.imageUrl ? (
+                                    <img 
+                                      src={card.imageUrl} 
+                                      alt={card.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center">
+                                      <Package className="w-3 h-3 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Card Info Overlay */}
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/90 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="text-[9px] font-medium truncate">{card.name}</div>
+                                  <div className="text-[8px] text-gray-300">{card.marketValue}c</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium truncate">{card.name}</div>
-                          <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
-                        </div>
-                      </div>
-                      <Badge 
-                        className={`${getTierColor(card.tier)} border-0 flex-shrink-0`}
-                        data-testid={`badge-tier-${card.tier}`}
-                      >
-                        {card.tier}
-                      </Badge>
-                    </div>
-                  ))}
+                      );
+                    });
+                  })()}
                 </div>
               )}
             </CardContent>
