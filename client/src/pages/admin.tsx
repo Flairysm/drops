@@ -31,7 +31,10 @@ import {
   ChevronUp,
   X,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Coins,
+  History,
+  DollarSign
 } from "lucide-react";
 import type { User, VirtualLibraryCard } from "@shared/schema";
 
@@ -50,8 +53,13 @@ const virtualPackSchema = z.object({
   category: z.enum(["Special", "Classic"]),
 });
 
+const userEditSchema = z.object({
+  credits: z.number().min(0, "Credits must be 0 or greater"),
+});
+
 type VirtualLibraryFormData = z.infer<typeof virtualLibrarySchema>;
 type VirtualPackFormData = z.infer<typeof virtualPackSchema>;
+type UserEditFormData = z.infer<typeof userEditSchema>;
 
 const tierColors = {
   D: "gray",
@@ -235,6 +243,9 @@ export default function Admin() {
   const [showCardGallery, setShowCardGallery] = useState(false);
   const [galleryPack, setGalleryPack] = useState<any>(null);
   const [inventorySearch, setInventorySearch] = useState("");
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [showUserTransactions, setShowUserTransactions] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // Set up form data when editing a card
   useEffect(() => {
@@ -270,6 +281,22 @@ export default function Admin() {
     },
   });
 
+  const userEditForm = useForm<UserEditFormData>({
+    resolver: zodResolver(userEditSchema),
+    defaultValues: {
+      credits: 0,
+    },
+  });
+
+  // Set up form data when editing a user
+  useEffect(() => {
+    if (editingUser) {
+      userEditForm.reset({
+        credits: parseFloat(editingUser.credits || '0'),
+      });
+    }
+  }, [editingUser]);
+
   // Data queries
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
@@ -299,6 +326,12 @@ export default function Admin() {
   const { data: systemSettings } = useQuery({
     queryKey: ["/api/admin/system-settings"],
     enabled: !!isAuthenticated,
+    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
+  });
+
+  const { data: userTransactions } = useQuery({
+    queryKey: ["/api/admin/users", selectedUserId, "transactions"],
+    enabled: !!isAuthenticated && !!selectedUserId && showUserTransactions,
     retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
   });
 
@@ -396,6 +429,27 @@ export default function Admin() {
       toast({
         title: "Success",
         description: "User banned successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateUserCreditsMutation = useMutation({
+    mutationFn: ({ userId, credits }: { userId: string; credits: number }) => 
+      apiRequest("PATCH", `/api/admin/users/${userId}/credits`, { credits }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setEditingUser(null);
+      userEditForm.reset();
+      toast({
+        title: "Success",
+        description: "User credits updated successfully",
       });
     },
     onError: (error) => {
@@ -550,6 +604,23 @@ export default function Admin() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditUserCredits = (user: any) => {
+    setEditingUser(user);
+  };
+
+  const handleSaveUserCredits = (data: UserEditFormData) => {
+    if (!editingUser) return;
+    updateUserCreditsMutation.mutate({
+      userId: editingUser.id,
+      credits: data.credits
+    });
+  };
+
+  const handleViewUserTransactions = (userId: string) => {
+    setSelectedUserId(userId);
+    setShowUserTransactions(true);
   };
 
   const toggleCardSelection = (cardId: string) => {
@@ -724,6 +795,26 @@ export default function Admin() {
                             {user.isSuspended && (
                               <Badge variant="secondary">Suspended</Badge>
                             )}
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditUserCredits(user)}
+                              data-testid={`button-edit-credits-${user.id}`}
+                            >
+                              <Coins className="w-3 h-3 mr-1" />
+                              Edit Credits
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewUserTransactions(user.id)}
+                              data-testid={`button-view-transactions-${user.id}`}
+                            >
+                              <History className="w-3 h-3 mr-1" />
+                              Transactions
+                            </Button>
                             
                             <Button
                               variant="destructive"
@@ -1401,6 +1492,126 @@ export default function Admin() {
                   data-testid="button-save-card-pool"
                 >
                   Save Card Pool ({selectedCards.length} selected)
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit User Credits Dialog */}
+          <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit User Credits</DialogTitle>
+              </DialogHeader>
+              
+              <form onSubmit={userEditForm.handleSubmit(handleSaveUserCredits)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>User Email</Label>
+                  <div className="px-3 py-2 bg-muted rounded-md">
+                    {editingUser?.email}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Current Credits</Label>
+                  <div className="px-3 py-2 bg-muted rounded-md">
+                    {editingUser?.credits}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="credits">New Credits Amount</Label>
+                  <Input
+                    id="credits"
+                    type="number"
+                    min="0"
+                    step="1"
+                    {...userEditForm.register("credits", { valueAsNumber: true })}
+                    placeholder="Enter new credits amount"
+                    data-testid="input-user-credits"
+                  />
+                  {userEditForm.formState.errors.credits && (
+                    <p className="text-sm text-destructive">{userEditForm.formState.errors.credits.message}</p>
+                  )}
+                </div>
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={updateUserCreditsMutation.isPending}
+                    data-testid="button-save-user-credits"
+                  >
+                    {updateUserCreditsMutation.isPending ? "Saving..." : "Save Credits"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* User Transactions Dialog */}
+          <Dialog open={showUserTransactions} onOpenChange={setShowUserTransactions}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>User Transaction History</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {userTransactions ? (
+                  userTransactions.length > 0 ? (
+                    <div className="space-y-3">
+                      {userTransactions.map((transaction: any) => (
+                        <div key={transaction.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                              <DollarSign className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-semibold">{transaction.type}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {new Date(transaction.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <div className="font-bold text-lg">
+                              {transaction.type === 'credit_purchase' ? '+' : '-'}
+                              {transaction.amount} credits
+                            </div>
+                            {transaction.description && (
+                              <div className="text-sm text-muted-foreground">
+                                {transaction.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No transactions found for this user.</p>
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-2 text-muted-foreground">Loading transactions...</p>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowUserTransactions(false);
+                    setSelectedUserId(null);
+                  }}
+                >
+                  Close
                 </Button>
               </DialogFooter>
             </DialogContent>

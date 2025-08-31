@@ -147,6 +147,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   banUser(userId: string): Promise<void>;
   suspendUser(userId: string): Promise<void>;
+  setUserCredits(userId: string, credits: number): Promise<void>;
   getSystemStats(): Promise<{ totalUsers: number; totalRevenue: string; totalCards: number }>;
   
   // Game settings operations
@@ -1183,6 +1184,10 @@ export class DatabaseStorage implements IStorage {
 
   async suspendUser(userId: string): Promise<void> {
     await db.update(users).set({ isSuspended: true }).where(eq(users.id, userId));
+  }
+
+  async setUserCredits(userId: string, credits: number): Promise<void> {
+    await db.update(users).set({ credits: credits.toString() }).where(eq(users.id, userId));
   }
 
   async getSystemStats(): Promise<{ totalUsers: number; totalRevenue: string; totalCards: number }> {

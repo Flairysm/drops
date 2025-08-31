@@ -580,6 +580,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/admin/users/:id/credits', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { credits } = req.body;
+
+      // Validate credits amount
+      if (typeof credits !== 'number' || credits < 0) {
+        return res.status(400).json({ message: "Invalid credits amount" });
+      }
+
+      await storage.setUserCredits(id, credits);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating user credits:", error);
+      res.status(500).json({ message: "Failed to update user credits" });
+    }
+  });
+
+  app.get('/api/admin/users/:id/transactions', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const transactions = await storage.getUserTransactions(id);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching user transactions:", error);
+      res.status(500).json({ message: "Failed to fetch user transactions" });
+    }
+  });
+
   // Public route for users to view pack cards
   app.get('/api/virtual-packs/:id/cards', async (req: any, res) => {
     try {
