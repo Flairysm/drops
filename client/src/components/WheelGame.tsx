@@ -8,6 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { RotateCcw, Coins } from "lucide-react";
+import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png';
+import ultraballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png';
+import greatballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png';
+import pokeballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png';
 
 interface GameResult {
   success: boolean;
@@ -19,11 +23,42 @@ interface GameResult {
   sessionId: string;
 }
 
+const PackImage = ({ packType, size = 'small' }: { packType: string; size?: 'small' | 'large' }) => {
+  const getPackImage = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'masterball':
+        return masterballPack;
+      case 'ultraball':
+        return ultraballPack;
+      case 'greatball':
+        return greatballPack;
+      case 'pokeball':
+        return pokeballPack;
+      default:
+        return pokeballPack;
+    }
+  };
+  
+  const imageSize = size === 'small' ? 'w-8 h-10' : 'w-16 h-20';
+  
+  return (
+    <div className={`${imageSize} mx-auto`}>
+      <img 
+        src={getPackImage(packType)} 
+        alt={`${packType} pack`}
+        className="w-full h-full object-contain pixel-crisp"
+        style={{ imageRendering: 'pixelated' }}
+      />
+    </div>
+  );
+};
+
 export function WheelGame() {
   const [betAmount, setBetAmount] = useState("20");
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastResult, setLastResult] = useState<GameResult | null>(null);
+  const [showPackDialog, setShowPackDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -113,21 +148,9 @@ export function WheelGame() {
       // Show result after animation
       setTimeout(() => {
         setLastResult(result);
+        setShowPackDialog(true);
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
-        
-        const tierNames = {
-          pokeball: "Poké Ball",
-          greatball: "Great Ball",
-          ultraball: "Ultra Ball",
-          masterball: "Master Ball"
-        };
-
-        toast({
-          title: "Pack Won!",
-          description: `You won a ${tierNames[result.result.tier as keyof typeof tierNames]} pack!`,
-          duration: 5000,
-        });
       }, 3500);
     },
     onError: (error: Error) => {
@@ -166,6 +189,7 @@ export function WheelGame() {
 
     setIsSpinning(true);
     setLastResult(null);
+    setShowPackDialog(false);
     playGameMutation.mutate({
       gameType: "wheel",
       betAmount: betAmount,
@@ -296,6 +320,44 @@ export function WheelGame() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pack Assignment Dialog */}
+      {showPackDialog && lastResult && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
+          <div className="text-center space-y-6 p-6 bg-background/90 rounded-lg border border-border max-w-sm">
+            <div className="space-y-3">
+              <div className={`w-20 h-28 mx-auto rounded-lg overflow-hidden border-2 ${
+                lastResult.result.tier === 'masterball' ? 'border-purple-500 shadow-lg shadow-purple-500/50' :
+                lastResult.result.tier === 'ultraball' ? 'border-yellow-500 shadow-lg shadow-yellow-500/50' :
+                lastResult.result.tier === 'greatball' ? 'border-blue-500 shadow-lg shadow-blue-500/50' :
+                'border-red-500 shadow-lg shadow-red-500/50'
+              }`}>
+                <PackImage packType={lastResult.result.tier} size="large" />
+              </div>
+              <h4 className="font-bold text-xl text-white">Pack Won!</h4>
+              <p className="text-green-400 font-medium">
+                {lastResult.result.tier === 'pokeball' ? 'Poké Ball' :
+                 lastResult.result.tier === 'greatball' ? 'Great Ball' :
+                 lastResult.result.tier === 'ultraball' ? 'Ultra Ball' :
+                 'Master Ball'} Pack added to "My Packs"
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Your {lastResult.result.tier === 'pokeball' ? 'Poké Ball' :
+                      lastResult.result.tier === 'greatball' ? 'Great Ball' :
+                      lastResult.result.tier === 'ultraball' ? 'Ultra Ball' :
+                      'Master Ball'} pack is ready to open!
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowPackDialog(false)}
+              className="w-full bg-gradient-to-r from-primary to-accent"
+              data-testid="button-pack-dialog-ok"
+            >
+              OK
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
