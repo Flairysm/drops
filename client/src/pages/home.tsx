@@ -98,7 +98,7 @@ export default function Home() {
     },
     {
       name: "Wheel Spin", 
-      description: "Spin for multipliers and bonus rewards",
+      description: "Spin and Win!",
       cost: "20",
       icon: <RotateCcw className="w-8 h-8 text-white" />,
       color: "from-orange-500 to-red-600",
