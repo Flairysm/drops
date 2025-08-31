@@ -22,8 +22,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const user = req.user; // User is now attached directly by custom middleware
-      res.json(user);
+      if (!req.dbUser) {
+        return res.status(404).json({ message: "User not found in database" });
+      }
+      
+      // Return database user data
+      res.json(req.dbUser);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -48,7 +52,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game routes
   app.post('/api/games/play', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.dbUser?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
       const { gameType, betAmount, plinkoResult, wheelResult } = req.body;
 
       // Validate input

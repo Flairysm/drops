@@ -23,17 +23,13 @@ export function Navigation() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Use Replit OAuth logout
+      // Clear cache and redirect to Replit OAuth logout
+      queryClient.clear();
       window.location.href = "/api/logout";
       return Promise.resolve();
     },
     onSuccess: () => {
-      queryClient.clear(); // Clear all cached data
-      toast({
-        title: "Logged out",
-        description: "You've been logged out successfully.",
-      });
-      setLocation("/");
+      // Don't show toast since we're redirecting
     },
     onError: (error: any) => {
       toast({
