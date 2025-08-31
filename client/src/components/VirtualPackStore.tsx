@@ -89,7 +89,7 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
                   />
                 </div>
               )}
-              <CardTitle className="font-gaming text-xl" data-testid={`text-virtual-pack-name-${pack.id}`}>
+              <CardTitle className="font-gaming text-lg sm:text-xl" data-testid={`text-virtual-pack-name-${pack.id}`}>
                 {pack.name}
               </CardTitle>
               {pack.description && (
@@ -111,10 +111,11 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
               <Button
                 onClick={() => handlePurchase(pack)}
                 disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
-                className="w-full bg-gradient-to-r from-primary to-accent"
+                size="sm"
+                className="w-full bg-gradient-to-r from-primary to-accent sm:text-base text-sm sm:py-2 py-1.5"
                 data-testid={`button-purchase-virtual-pack-${pack.id}`}
               >
-                <CreditCard className="w-4 h-4 mr-2" />
+                <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Open Pack
               </Button>
 

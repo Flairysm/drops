@@ -188,13 +188,13 @@ export default function Home() {
                   
                   <CardContent className="p-6 relative">
                     <div className="text-center mb-6">
-                      <div className={`w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300 mb-4 group-hover:scale-110`}>
+                      <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-2xl sm:rounded-3xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300 mb-4 group-hover:scale-110`}>
                         {game.icon}
                       </div>
-                      <h3 className="font-gaming font-bold text-2xl mb-2 group-hover:text-primary transition-colors">
+                      <h3 className="font-gaming font-bold text-lg sm:text-2xl mb-2 group-hover:text-primary transition-colors">
                         {game.name}
                       </h3>
-                      <p className="text-muted-foreground text-base leading-relaxed mb-4">
+                      <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-4">
                         {game.description}
                       </p>
                     </div>
@@ -203,20 +203,20 @@ export default function Home() {
                       <div className="flex items-center justify-center">
                         <Badge 
                           variant="outline" 
-                          className={`text-lg px-4 py-2 font-bold border-2 bg-gradient-to-r ${game.color} text-white border-transparent group-hover:shadow-lg transition-all`}
+                          className={`text-sm sm:text-lg px-2 sm:px-4 py-1 sm:py-2 font-bold border-2 bg-gradient-to-r ${game.color} text-white border-transparent group-hover:shadow-lg transition-all`}
                         >
-                          <Coins className="w-4 h-4 mr-2" />
+                          <Coins className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                           {game.cost} Credits
                         </Badge>
                       </div>
                       
                       <Link href={game.route} className="block">
                         <Button 
-                          size="lg"
-                          className={`w-full bg-gradient-to-r ${game.color} hover:glow-effect transition-all duration-300 text-lg py-3 font-bold shadow-lg hover:shadow-xl transform hover:scale-105`}
+                          size="default"
+                          className={`w-full bg-gradient-to-r ${game.color} hover:glow-effect transition-all duration-300 text-sm sm:text-lg py-2 sm:py-3 font-bold shadow-lg hover:shadow-xl transform hover:scale-105`}
                           data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
                         >
-                          <Play className="w-5 h-5 mr-2" />
+                          <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                           {game.name === "Black Bolt" ? "Open Packs" : "Play Now"}
                         </Button>
                       </Link>
