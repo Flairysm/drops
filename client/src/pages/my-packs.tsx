@@ -323,8 +323,10 @@ export default function MyPacks() {
             {/* Pokeball Pack */}
             <div className="gaming-card p-6 rounded-xl">
               <div className="text-center mb-4">
-                <PackImage packType="pokeball" size="medium" />
-                <h3 className="font-bold text-lg mt-2 text-blue-600">Pokeball Pack</h3>
+                <div className="flex justify-center mb-3">
+                  <PackImage packType="pokeball" size="large" />
+                </div>
+                <h3 className="font-bold text-lg text-red-600">Pokeball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -353,8 +355,10 @@ export default function MyPacks() {
             {/* Greatball Pack */}
             <div className="gaming-card p-6 rounded-xl">
               <div className="text-center mb-4">
-                <PackImage packType="greatball" size="medium" />
-                <h3 className="font-bold text-lg mt-2 text-green-600">Greatball Pack</h3>
+                <div className="flex justify-center mb-3">
+                  <PackImage packType="greatball" size="large" />
+                </div>
+                <h3 className="font-bold text-lg text-blue-600">Great Ball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -383,8 +387,10 @@ export default function MyPacks() {
             {/* Ultraball Pack */}
             <div className="gaming-card p-6 rounded-xl">
               <div className="text-center mb-4">
-                <PackImage packType="ultraball" size="medium" />
-                <h3 className="font-bold text-lg mt-2 text-purple-600">Ultraball Pack</h3>
+                <div className="flex justify-center mb-3">
+                  <PackImage packType="ultraball" size="large" />
+                </div>
+                <h3 className="font-bold text-lg text-yellow-600">Ultra Ball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -413,8 +419,10 @@ export default function MyPacks() {
             {/* Masterball Pack */}
             <div className="gaming-card p-6 rounded-xl">
               <div className="text-center mb-4">
-                <PackImage packType="masterball" size="medium" />
-                <h3 className="font-bold text-lg mt-2 text-yellow-600">Masterball Pack</h3>
+                <div className="flex justify-center mb-3">
+                  <PackImage packType="masterball" size="large" />
+                </div>
+                <h3 className="font-bold text-lg text-purple-600">Master Ball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
