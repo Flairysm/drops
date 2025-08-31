@@ -15,6 +15,7 @@ import {
   notifications,
   shippingRequests,
   gameSettings,
+  adminSettings,
   pullRates,
   type User,
   type UpsertUser,
@@ -46,6 +47,8 @@ import {
   type InsertNotification,
   type InsertShippingRequest,
   type InsertGameSetting,
+  type AdminSetting,
+  type InsertAdminSetting,
   type UserCardWithCard,
   type GlobalFeedWithDetails,
   type GameResult,
@@ -149,6 +152,12 @@ export interface IStorage {
   // Game settings operations
   getGameSetting(gameType: string): Promise<GameSetting | undefined>;
   updateGameSetting(gameType: string, price: string, updatedBy?: string): Promise<GameSetting>;
+  
+  // Admin settings operations
+  getAdminSettings(): Promise<AdminSetting[]>;
+  getAdminSetting(settingKey: string): Promise<AdminSetting | undefined>;
+  updateAdminSetting(settingKey: string, settingValue: string, settingType?: string, description?: string, updatedBy?: string): Promise<AdminSetting>;
+  createAdminSetting(setting: InsertAdminSetting): Promise<AdminSetting>;
   
   // Pull rate operations
   getPackPullRates(packType: string): Promise<PullRate[]>;
@@ -1211,6 +1220,51 @@ export class DatabaseStorage implements IStorage {
       .where(eq(gameSettings.gameType, gameType))
       .returning();
     return updated;
+  }
+
+  // Admin settings operations
+  async getAdminSettings(): Promise<AdminSetting[]> {
+    return await db.select().from(adminSettings).orderBy(adminSettings.settingKey);
+  }
+
+  async getAdminSetting(settingKey: string): Promise<AdminSetting | undefined> {
+    const [setting] = await db.select().from(adminSettings).where(eq(adminSettings.settingKey, settingKey));
+    return setting;
+  }
+
+  async updateAdminSetting(settingKey: string, settingValue: string, settingType?: string, description?: string, updatedBy?: string): Promise<AdminSetting> {
+    // Check if setting exists
+    const existing = await this.getAdminSetting(settingKey);
+    
+    if (existing) {
+      // Update existing setting
+      const [updated] = await db
+        .update(adminSettings)
+        .set({
+          settingValue,
+          settingType: settingType || existing.settingType,
+          description: description || existing.description,
+          updatedAt: new Date(),
+          updatedBy: updatedBy
+        })
+        .where(eq(adminSettings.settingKey, settingKey))
+        .returning();
+      return updated;
+    } else {
+      // Create new setting
+      return await this.createAdminSetting({
+        settingKey,
+        settingValue,
+        settingType: settingType || 'text',
+        description: description || null,
+        updatedBy: updatedBy
+      });
+    }
+  }
+
+  async createAdminSetting(setting: InsertAdminSetting): Promise<AdminSetting> {
+    const [newSetting] = await db.insert(adminSettings).values(setting).returning();
+    return newSetting;
   }
 
   // Pull rate operations

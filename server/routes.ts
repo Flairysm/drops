@@ -630,6 +630,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin settings routes
+  app.get('/api/admin/settings', isAdmin, async (req: any, res) => {
+    try {
+      const settings = await storage.getAdminSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching admin settings:", error);
+      res.status(500).json({ message: "Failed to fetch admin settings" });
+    }
+  });
+
+  app.get('/api/admin/settings/:key', isAdmin, async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const setting = await storage.getAdminSetting(key);
+      if (!setting) {
+        return res.status(404).json({ message: "Setting not found" });
+      }
+      res.json(setting);
+    } catch (error) {
+      console.error("Error fetching admin setting:", error);
+      res.status(500).json({ message: "Failed to fetch admin setting" });
+    }
+  });
+
+  app.put('/api/admin/settings/:key', isAdmin, async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const { value, type, description } = req.body;
+      const userId = req.user.id;
+
+      if (!value && value !== '') {
+        return res.status(400).json({ message: "Setting value is required" });
+      }
+
+      const setting = await storage.updateAdminSetting(key, value, type, description, userId);
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating admin setting:", error);
+      res.status(500).json({ message: "Failed to update admin setting" });
+    }
+  });
+
+  app.post('/api/admin/settings', isAdmin, async (req: any, res) => {
+    try {
+      const { settingKey, settingValue, settingType, description } = req.body;
+      const userId = req.user.id;
+
+      if (!settingKey || (!settingValue && settingValue !== '')) {
+        return res.status(400).json({ message: "Setting key and value are required" });
+      }
+
+      const setting = await storage.createAdminSetting({
+        settingKey,
+        settingValue,
+        settingType: settingType || 'text',
+        description: description || null,
+        updatedBy: userId
+      });
+      
+      res.json(setting);
+    } catch (error) {
+      console.error("Error creating admin setting:", error);
+      res.status(500).json({ message: "Failed to create admin setting" });
+    }
+  });
+
   // Cards and packs routes
   app.get('/api/cards', async (req, res) => {
     try {

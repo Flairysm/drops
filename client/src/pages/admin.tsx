@@ -31,7 +31,7 @@ import {
   ChevronUp,
   X
 } from "lucide-react";
-import type { User, VirtualLibraryCard } from "@shared/schema";
+import type { User, VirtualLibraryCard, AdminSetting } from "@shared/schema";
 
 const virtualLibrarySchema = z.object({
   name: z.string().min(1, "Card name is required"),
@@ -48,8 +48,16 @@ const virtualPackSchema = z.object({
   category: z.enum(["Special", "Classic"]),
 });
 
+const adminSettingSchema = z.object({
+  settingKey: z.string().min(1, "Setting key is required"),
+  settingValue: z.string(),
+  settingType: z.enum(["text", "number", "boolean", "textarea"]).default("text"),
+  description: z.string().optional(),
+});
+
 type VirtualLibraryFormData = z.infer<typeof virtualLibrarySchema>;
 type VirtualPackFormData = z.infer<typeof virtualPackSchema>;
+type AdminSettingFormData = z.infer<typeof adminSettingSchema>;
 
 const tierColors = {
   D: "gray",
@@ -268,6 +276,18 @@ export default function Admin() {
     },
   });
 
+  const adminSettingForm = useForm<AdminSettingFormData>({
+    resolver: zodResolver(adminSettingSchema),
+    defaultValues: {
+      settingKey: "",
+      settingValue: "",
+      settingType: "text",
+      description: "",
+    },
+  });
+
+  const [editingSetting, setEditingSetting] = useState<AdminSetting | null>(null);
+
   // Data queries
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
@@ -294,6 +314,11 @@ export default function Admin() {
     retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
   });
 
+  const { data: adminSettings } = useQuery({
+    queryKey: ["/api/admin/settings"],
+    enabled: !!isAuthenticated,
+    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
+  });
 
   // Mutations
   const createVirtualLibraryCardMutation = useMutation({
@@ -400,8 +425,76 @@ export default function Admin() {
     },
   });
 
+  const createAdminSettingMutation = useMutation({
+    mutationFn: (data: AdminSettingFormData) => apiRequest("POST", "/api/admin/settings", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      adminSettingForm.reset();
+      toast({
+        title: "Success",
+        description: "Setting created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateAdminSettingMutation = useMutation({
+    mutationFn: ({ key, value, type, description }: { key: string, value: string, type?: string, description?: string }) => 
+      apiRequest("PUT", `/api/admin/settings/${key}`, { value, type, description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      setEditingSetting(null);
+      adminSettingForm.reset();
+      toast({
+        title: "Success",
+        description: "Setting updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const onVirtualLibrarySubmit = (data: VirtualLibraryFormData) => {
     createVirtualLibraryCardMutation.mutate(data);
+  };
+
+  const onAdminSettingSubmit = (data: AdminSettingFormData) => {
+    if (editingSetting) {
+      updateAdminSettingMutation.mutate({
+        key: editingSetting.settingKey,
+        value: data.settingValue,
+        type: data.settingType,
+        description: data.description
+      });
+    } else {
+      createAdminSettingMutation.mutate(data);
+    }
+  };
+
+  const handleEditSetting = (setting: AdminSetting) => {
+    setEditingSetting(setting);
+    adminSettingForm.reset({
+      settingKey: setting.settingKey,
+      settingValue: setting.settingValue,
+      settingType: setting.settingType as any,
+      description: setting.description || "",
+    });
+  };
+
+  const handleCancelEditSetting = () => {
+    setEditingSetting(null);
+    adminSettingForm.reset();
   };
 
   const handleDeleteCard = (cardId: string) => {
@@ -1074,14 +1167,220 @@ export default function Admin() {
 
             {/* Settings Tab */}
             <TabsContent value="settings">
-              <Card className="gaming-card">
-                <CardHeader>
-                  <CardTitle>System Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Settings panel coming soon...</p>
-                </CardContent>
-              </Card>
+              <div className="grid gap-6">
+                {/* Create/Edit Setting Form */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle>
+                      {editingSetting ? `Edit Setting: ${editingSetting.settingKey}` : "Create New Setting"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={adminSettingForm.handleSubmit(onAdminSettingSubmit)} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="setting-key">Setting Key</Label>
+                          <Input
+                            id="setting-key"
+                            {...adminSettingForm.register("settingKey")}
+                            placeholder="e.g., maintenance_mode"
+                            disabled={!!editingSetting}
+                            data-testid="input-setting-key"
+                          />
+                          {adminSettingForm.formState.errors.settingKey && (
+                            <p className="text-sm text-destructive">{adminSettingForm.formState.errors.settingKey.message}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="setting-type">Setting Type</Label>
+                          <Select onValueChange={(value) => adminSettingForm.setValue("settingType", value as any)}>
+                            <SelectTrigger data-testid="select-setting-type">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="text">Text</SelectItem>
+                              <SelectItem value="number">Number</SelectItem>
+                              <SelectItem value="boolean">Boolean</SelectItem>
+                              <SelectItem value="textarea">Textarea</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="setting-value">Setting Value</Label>
+                        <Input
+                          id="setting-value"
+                          {...adminSettingForm.register("settingValue")}
+                          placeholder="Enter value"
+                          data-testid="input-setting-value"
+                        />
+                        {adminSettingForm.formState.errors.settingValue && (
+                          <p className="text-sm text-destructive">{adminSettingForm.formState.errors.settingValue.message}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="setting-description">Description (Optional)</Label>
+                        <Input
+                          id="setting-description"
+                          {...adminSettingForm.register("description")}
+                          placeholder="Brief description of this setting"
+                          data-testid="input-setting-description"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          type="submit" 
+                          disabled={createAdminSettingMutation.isPending || updateAdminSettingMutation.isPending}
+                          data-testid="button-save-setting"
+                        >
+                          {editingSetting ? "Update Setting" : "Create Setting"}
+                        </Button>
+                        {editingSetting && (
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={handleCancelEditSetting}
+                            data-testid="button-cancel-setting"
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Settings List */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle>Current Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {adminSettings && adminSettings.length > 0 ? (
+                      <div className="space-y-4">
+                        {adminSettings.map((setting: AdminSetting) => (
+                          <div key={setting.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold">{setting.settingKey}</h3>
+                                <Badge variant="outline">{setting.settingType}</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {setting.description || "No description"}
+                              </p>
+                              <p className="text-sm font-mono mt-2 bg-muted/50 p-2 rounded">
+                                {setting.settingValue}
+                              </p>
+                              {setting.updatedAt && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Last updated: {new Date(setting.updatedAt).toLocaleString()}
+                                  {setting.updatedBy && ` by ${setting.updatedBy}`}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditSetting(setting)}
+                                data-testid={`button-edit-setting-${setting.settingKey}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Settings className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No settings configured yet</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Create your first setting using the form above
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Quick Settings Templates */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle>Quick Setup</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Click these buttons to quickly create common admin settings:
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          adminSettingForm.reset({
+                            settingKey: "maintenance_mode",
+                            settingValue: "false",
+                            settingType: "boolean",
+                            description: "Enable/disable maintenance mode"
+                          });
+                        }}
+                        data-testid="button-template-maintenance"
+                      >
+                        Maintenance Mode
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          adminSettingForm.reset({
+                            settingKey: "site_title",
+                            settingValue: "Drops",
+                            settingType: "text",
+                            description: "Main site title displayed in header"
+                          });
+                        }}
+                        data-testid="button-template-title"
+                      >
+                        Site Title
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          adminSettingForm.reset({
+                            settingKey: "registration_enabled",
+                            settingValue: "true",
+                            settingType: "boolean",
+                            description: "Allow new user registrations"
+                          });
+                        }}
+                        data-testid="button-template-registration"
+                      >
+                        Registration
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          adminSettingForm.reset({
+                            settingKey: "max_credits_per_user",
+                            settingValue: "10000",
+                            settingType: "number",
+                            description: "Maximum credits a user can hold"
+                          });
+                        }}
+                        data-testid="button-template-max-credits"
+                      >
+                        Max Credits
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
 
