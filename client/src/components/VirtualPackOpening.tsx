@@ -97,11 +97,12 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
           console.log("Pack cards:", packCardsData);
-          console.log("All cards:", allCards);
+          console.log("All cards sample IDs:", allCards.slice(0, 5).map(c => ({ id: c.id, name: c.name })));
           
           const cardDetails = packCardsData.map((pc: any) => {
             // Match by virtualLibraryCardId
             const card = allCards.find((c: any) => c.id === pc.virtualLibraryCardId);
+            console.log(`Looking for card with ID ${pc.virtualLibraryCardId}, found:`, card ? card.name : 'NOT FOUND');
             return card ? { ...card, weight: pc.weight } : null;
           }).filter(Boolean);
           
