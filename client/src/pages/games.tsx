@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { CreditCard, Package, Circle, RotateCcw } from "lucide-react";
+import plinkoLogo from "@assets/plinko_1756655741427.png";
 import { VirtualPackOpening } from "@/components/VirtualPackOpening";
 import { apiRequest } from "@/lib/queryClient";
 import type { VirtualPack, User } from "@shared/schema";
@@ -118,8 +119,8 @@ export default function Play() {
                 <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid="card-plinko">
                   <CardHeader className="text-center">
                     <div className="w-full h-32 mb-4 rounded-lg bg-gradient-to-br from-blue-600/20 to-purple-600/20 relative flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                        <Circle className="h-8 w-8 text-white" />
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center p-2">
+                        <img src={plinkoLogo} alt="Plinko" className="w-12 h-12" />
                       </div>
                     </div>
                     <CardTitle className="font-gaming text-xl">Plinko Drop</CardTitle>

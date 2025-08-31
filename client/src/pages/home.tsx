@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2, Star } from "lucide-react";
+import plinkoLogo from "@assets/plinko_1756655741427.png";
 import { Link } from "wouter";
 import type { User } from "@shared/schema";
 
@@ -91,7 +92,7 @@ export default function Home() {
       name: "Plinko Drop",
       description: "Drop, Bounce, Win!",
       cost: "20",
-      icon: <Play className="w-8 h-8 text-white" />,
+      icon: <img src={plinkoLogo} alt="Plinko" className="w-8 h-8" />,
       color: "from-blue-500 to-purple-600",
       route: "/games",
       popular: true,
