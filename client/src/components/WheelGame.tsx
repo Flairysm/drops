@@ -134,16 +134,11 @@ export function WheelGame() {
       return response.json() as Promise<GameResult>;
     },
     onSuccess: (result) => {
-      // Animation will be handled after we get the result
-      // The wheel result was already determined by handleSpin
-      
-      // Show result after animation
-      setTimeout(() => {
-        setLastResult(result);
-        setShowPackDialog(true);
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
-      }, 3500);
+      // Server result received, show popup immediately (animation is already complete)
+      setLastResult(result);
+      setShowPackDialog(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
     },
     onError: (error: Error) => {
       toast({
@@ -153,9 +148,8 @@ export function WheelGame() {
       });
     },
     onSettled: () => {
-      setTimeout(() => {
-        setIsSpinning(false);
-      }, 3500);
+      // Stop spinning state immediately when server responds
+      setIsSpinning(false);
     },
   });
 
