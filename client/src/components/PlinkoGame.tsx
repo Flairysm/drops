@@ -5,6 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Play, Package, DollarSign } from "lucide-react";
+import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png';
+import ultraballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png';
+import greatballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png';
+import pokeballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png';
 
 interface GameResult {
   success: boolean;
@@ -32,6 +36,36 @@ const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
 
+const PackImage = ({ packType, size = 'small' }: { packType: string; size?: 'small' | 'large' }) => {
+  const getPackImage = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'masterball':
+        return masterballPack;
+      case 'ultraball':
+        return ultraballPack;
+      case 'greatball':
+        return greatballPack;
+      case 'pokeball':
+        return pokeballPack;
+      default:
+        return pokeballPack;
+    }
+  };
+  
+  const imageSize = size === 'small' ? 'w-8 h-10' : 'w-16 h-20';
+  
+  return (
+    <div className={`${imageSize} mx-auto`}>
+      <img 
+        src={getPackImage(packType)} 
+        alt={`${packType} pack`}
+        className="w-full h-full object-contain pixel-crisp"
+        style={{ imageRendering: 'pixelated' }}
+      />
+    </div>
+  );
+};
+
 export function PlinkoGame() {
   const [fixedPrice, setFixedPrice] = useState("5.00");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -51,7 +85,7 @@ export function PlinkoGame() {
   });
 
   useEffect(() => {
-    if (gameSettings?.price) {
+    if (gameSettings && 'price' in gameSettings) {
       setFixedPrice(gameSettings.price);
     }
   }, [gameSettings]);
@@ -447,47 +481,42 @@ export function PlinkoGame() {
                 className="border border-border rounded-lg bg-background/50"
               />
               
-              {/* Result Overlay */}
+              {/* Result Overlay with Pack Design */}
               {animationComplete && finalOutcome && !showPackAssigned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
                   <div className="text-center space-y-4">
-                    <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center ${
-                      finalOutcome === 'Masterball' ? 'bg-purple-500/30 border-2 border-purple-500' :
-                      finalOutcome === 'Ultraball' ? 'bg-yellow-500/30 border-2 border-yellow-500' :
-                      finalOutcome === 'Greatball' ? 'bg-blue-500/30 border-2 border-blue-500' :
-                      'bg-gray-500/30 border-2 border-gray-500'
+                    <div className={`w-24 h-32 mx-auto rounded-lg overflow-hidden border-2 ${
+                      finalOutcome === 'Masterball' ? 'border-purple-500 shadow-lg shadow-purple-500/50' :
+                      finalOutcome === 'Ultraball' ? 'border-yellow-500 shadow-lg shadow-yellow-500/50' :
+                      finalOutcome === 'Greatball' ? 'border-blue-500 shadow-lg shadow-blue-500/50' :
+                      'border-red-500 shadow-lg shadow-red-500/50'
                     }`}>
-                      <span className={`text-2xl font-bold ${
-                        finalOutcome === 'Masterball' ? 'text-purple-400' :
-                        finalOutcome === 'Ultraball' ? 'text-yellow-400' :
-                        finalOutcome === 'Greatball' ? 'text-blue-400' :
-                        'text-gray-400'
-                      }`}>
-                        {finalOutcome === 'Masterball' ? '🏆' :
-                         finalOutcome === 'Ultraball' ? '⭐' :
-                         finalOutcome === 'Greatball' ? '🔹' :
-                         '⚪'}
-                      </span>
+                      <PackImage packType={finalOutcome.toLowerCase()} size="large" />
                     </div>
                     <div className="text-white">
-                      <h4 className="font-bold text-xl">{finalOutcome}!</h4>
+                      <h4 className="font-bold text-xl">{finalOutcome} Pack!</h4>
                       <p className="text-sm opacity-80">Ball landed in the {finalOutcome} bucket</p>
                     </div>
                   </div>
                 </div>
               )}
               
-              {/* Pack Assignment Overlay */}
+              {/* Pack Assignment Overlay with Pack Design */}
               {showPackAssigned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
                   <div className="text-center space-y-6 p-6 bg-background/90 rounded-lg border border-border max-w-sm">
                     <div className="space-y-3">
-                      <div className="w-16 h-16 rounded-full mx-auto bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-                        <Package className="h-8 w-8 text-white" />
+                      <div className={`w-20 h-28 mx-auto rounded-lg overflow-hidden border-2 ${
+                        finalOutcome === 'Masterball' ? 'border-purple-500 shadow-lg shadow-purple-500/50' :
+                        finalOutcome === 'Ultraball' ? 'border-yellow-500 shadow-lg shadow-yellow-500/50' :
+                        finalOutcome === 'Greatball' ? 'border-blue-500 shadow-lg shadow-blue-500/50' :
+                        'border-red-500 shadow-lg shadow-red-500/50'
+                      }`}>
+                        <PackImage packType={finalOutcome?.toLowerCase() || 'pokeball'} size="large" />
                       </div>
                       <h4 className="font-bold text-xl text-white">Pack Assigned!</h4>
                       <p className="text-green-400 font-medium">
-                        Pack assigned to "My Packs"
+                        {finalOutcome} Pack added to "My Packs"
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Your {finalOutcome} pack is ready to open!
@@ -548,44 +577,44 @@ export function PlinkoGame() {
         </CardContent>
       </Card>
 
-      {/* Payout Table */}
+      {/* Pack Tiers Display */}
       <Card className="gaming-card">
         <CardContent className="p-6">
-          <h4 className="font-semibold mb-4">Pokéball Tiers</h4>
+          <h4 className="font-semibold mb-4">Pack Tiers</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-gray-500/20 rounded-full mx-auto flex items-center justify-center">
-                <span className="text-xl">⚪</span>
+              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-red-500 shadow-lg shadow-red-500/50">
+                <PackImage packType="pokeball" size="large" />
               </div>
               <div>
-                <p className="font-semibold text-gray-400">Pokeball</p>
+                <p className="font-semibold text-red-400">Pokeball</p>
                 <p className="text-xs text-muted-foreground">Most Common</p>
               </div>
             </div>
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-full mx-auto flex items-center justify-center">
-                <span className="text-xl">🔹</span>
+              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-blue-500 shadow-lg shadow-blue-500/50">
+                <PackImage packType="greatball" size="large" />
               </div>
               <div>
-                <p className="font-semibold text-blue-400">Greatball</p>
+                <p className="font-semibold text-blue-400">Great Ball</p>
                 <p className="text-xs text-muted-foreground">Uncommon</p>
               </div>
             </div>
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-yellow-500/20 rounded-full mx-auto flex items-center justify-center">
-                <span className="text-xl">⭐</span>
+              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-yellow-500 shadow-lg shadow-yellow-500/50">
+                <PackImage packType="ultraball" size="large" />
               </div>
               <div>
-                <p className="font-semibold text-yellow-400">Ultraball</p>
+                <p className="font-semibold text-yellow-400">Ultra Ball</p>
                 <p className="text-xs text-muted-foreground">Rare</p>
               </div>
             </div>
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-full mx-auto flex items-center justify-center">
-                <span className="text-xl">🏆</span>
+              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-purple-500 shadow-lg shadow-purple-500/50">
+                <PackImage packType="masterball" size="large" />
               </div>
               <div>
-                <p className="font-semibold text-purple-400">Masterball</p>
+                <p className="font-semibold text-purple-400">Master Ball</p>
                 <p className="text-xs text-muted-foreground">Legendary</p>
               </div>
             </div>
