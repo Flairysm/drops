@@ -1179,9 +1179,12 @@ export class DatabaseStorage implements IStorage {
 
   async getSystemStats(): Promise<{ totalUsers: number; totalRevenue: string; totalCards: number }> {
     const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
+    
+    // Only count actual payments (purchase transactions), not game spending
     const [revenueSum] = await db.select({ 
-      sum: sql<string>`coalesce(sum(${users.totalSpent}), 0)` 
-    }).from(users);
+      sum: sql<string>`coalesce(sum(${transactions.amount}), 0)` 
+    }).from(transactions).where(eq(transactions.type, 'purchase'));
+    
     const [cardCount] = await db.select({ count: sql<number>`count(*)` }).from(cards);
 
     return {
