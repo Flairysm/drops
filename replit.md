@@ -1,8 +1,8 @@
-# Flair TCG Arcade - Trading Card Game Application
+# Drops - Trading Card Game Application
 
 ## Overview
 
-Flair TCG Arcade is a modern web application that simulates a trading card game (TCG) arcade experience. Users can play various games to earn virtual trading cards, manage their card collection, and purchase credits. The application features multiple gaming modes including Plinko, Wheel of Fortune, and virtual pack openings with different card rarities and tiers.
+Drops is a modern web application that simulates a trading card game (TCG) arcade experience. Users can play various games to earn virtual trading cards, manage their card collection, and purchase credits. The application features multiple gaming modes including Plinko, Wheel of Fortune, and virtual pack openings with different card rarities and tiers.
 
 ## User Preferences
 
@@ -80,3 +80,10 @@ Preferred communication style: Simple, everyday language.
 - **Pull Rate Rebalancing**: Completely rebalanced pull rates for all pack types with new 7-tier distribution
 - **CSS Styling**: Updated tier colors, glow effects, and styling to support 7 distinct tiers
 - **Vault Functionality**: Confirmed refund calculations use 100% card value and updated tier filtering to work with new system
+
+### August 31, 2025 - App Rebranding to "Drops"
+- **Complete Rebranding**: Updated all app name references from "Flair TCG Arcade" to "Drops"
+- **Navigation Updates**: Updated header and navigation branding across all pages
+- **Landing Page**: Updated main hero section and footer branding
+- **Documentation**: Updated replit.md to reflect new app name
+- **Toast Messages**: Updated registration welcome message to use new branding

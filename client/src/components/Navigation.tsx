@@ -65,7 +65,7 @@ export function Navigation() {
                 <Zap className="text-primary-foreground text-xl" />
               </div>
               <span className="font-gaming font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Flair TCG Arcade
+                Drops
               </span>
             </div>
           </Link>

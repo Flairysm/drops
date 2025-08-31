@@ -49,7 +49,7 @@ export default function Home() {
               
               <h1 className="font-gaming font-bold text-4xl md:text-6xl lg:text-7xl mb-6">
                 <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">
-                  Flair TCG Arcade
+                  Drops
                 </span>
               </h1>
               
@@ -76,7 +76,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <p className="text-muted-foreground">
-                &copy; 2025 Flair TCG Arcade. Built for collectors, by collectors.
+                &copy; 2025 Drops. Built for collectors, by collectors.
               </p>
             </div>
           </div>
@@ -233,7 +233,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <p className="text-muted-foreground">
-              &copy; 2025 Flair TCG Arcade. Built for collectors, by collectors.
+              &copy; 2025 Drops. Built for collectors, by collectors.
             </p>
           </div>
         </div>

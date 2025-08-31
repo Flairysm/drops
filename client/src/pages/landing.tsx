@@ -48,7 +48,7 @@ export default function Landing() {
                 <Zap className="text-primary-foreground text-xl" />
               </div>
               <span className="font-gaming font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Flair TCG Arcade
+                Drops
               </span>
             </div>
             
@@ -74,7 +74,7 @@ export default function Landing() {
             <div className="text-center">
               <h1 className="font-gaming font-black text-4xl md:text-6xl lg:text-7xl mb-6">
                 <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">
-                  FLAIR TCG ARCADE
+                  DROPS
                 </span>
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
@@ -117,7 +117,7 @@ export default function Landing() {
                 <Zap className="text-primary-foreground text-xl" />
               </div>
               <span className="font-gaming font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Flair TCG Arcade
+                Drops
               </span>
             </div>
             <p className="text-muted-foreground mb-4">Premium TCG pack opening experience with transparent odds</p>
@@ -128,7 +128,7 @@ export default function Landing() {
               <a href="#" className="hover:text-primary transition-colors">Odds Transparency</a>
             </div>
             <div className="mt-6 text-xs text-muted-foreground">
-              © 2024 Flair TCG Arcade. All rights reserved. • Play responsibly.
+              © 2024 Drops. All rights reserved. • Play responsibly.
             </div>
           </div>
         </div>

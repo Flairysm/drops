@@ -41,7 +41,7 @@ export default function Register() {
     },
     onSuccess: () => {
       toast({
-        title: "Welcome to Flair TCG Arcade!",
+        title: "Welcome to Drops!",
         description: "Your account has been created successfully. You've been given 50 credits to get started!",
       });
       setLocation("/");
