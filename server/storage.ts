@@ -677,20 +677,24 @@ export class DatabaseStorage implements IStorage {
 
   async refundCards(cardIds: string[], userId: string): Promise<void> {
     await db.transaction(async (tx) => {
-      // Get cards to refund with card details
+      // Get cards to refund with card details including current market value
       const cardsToRefund = await tx
         .select({
           id: userCards.id,
           cardId: userCards.cardId,
           pullValue: userCards.pullValue,
           quantity: userCards.quantity,
+          marketValue: cards.marketValue,
         })
         .from(userCards)
+        .leftJoin(cards, eq(userCards.cardId, cards.id))
         .where(and(inArray(userCards.id, cardIds), eq(userCards.userId, userId)));
 
       let totalRefund = 0;
       for (const card of cardsToRefund) {
-        totalRefund += parseFloat(card.pullValue) * 0.8; // 80% refund
+        // Use 100% of current market value for refund (as per documentation)
+        const refundAmount = card.marketValue ? parseFloat(card.marketValue.toString()) : parseFloat(card.pullValue);
+        totalRefund += refundAmount;
         
         // Restore card stock when refunded
         if (card.cardId) {
