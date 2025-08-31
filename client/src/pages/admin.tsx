@@ -445,6 +445,8 @@ export default function Admin() {
       apiRequest("PATCH", `/api/admin/users/${userId}/credits`, { credits }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      // Also invalidate the auth user query to refresh personal credits display
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setEditingUser(null);
       userEditForm.reset();
       toast({
