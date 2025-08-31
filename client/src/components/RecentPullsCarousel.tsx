@@ -113,9 +113,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
               <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <h3 className="font-gaming font-bold text-xl">
-                Recent Pulls (A+ Only)
-              </h3>
+              <h3 className="font-gaming font-bold text-xl">Recent Pulls </h3>
               <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                 Live
               </Badge>
@@ -227,7 +225,6 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
           </div>
         </CardContent>
       </Card>
-
       {/* Modal for All Recent Pulls */}
       <Dialog open={showAllModal} onOpenChange={setShowAllModal}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
