@@ -92,11 +92,16 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         const packCardsData = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
+          console.log("Pack cards:", packCardsData);
+          console.log("All cards:", allCards);
+          
           const cardDetails = packCardsData.map((pc: any) => {
-            const card = allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
+            // Match by virtualLibraryCardId
+            const card = allCards.find((c: any) => c.id === pc.virtualLibraryCardId);
             return card ? { ...card, weight: pc.weight } : null;
           }).filter(Boolean);
           
+          console.log("Gallery loaded:", cardDetails.length, "cards for pack", packId);
           setPackCards(cardDetails);
         } else {
           console.error("Invalid data format:", { packCardsData, allCards });
