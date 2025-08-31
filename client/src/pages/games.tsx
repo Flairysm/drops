@@ -102,9 +102,7 @@ export default function Play() {
             <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">ARCADE</span>
             </h1>
-            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
-              Discover our catalog of games and themed packs. Choose your adventure and test your luck!
-            </p>
+            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">Discover our catalogue of games and stand a chance to win top-tier cards</p>
           </section>
 
           {/* Game Categories */}
