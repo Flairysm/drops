@@ -27,23 +27,92 @@ export function WheelGame() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const wheelSegments = [
+    { tier: "pokeball", color: "red", label: "Poké Ball", odds: "61%", slices: 22 },
+    { tier: "greatball", color: "blue", label: "Great Ball", odds: "22%", slices: 8 },
+    { tier: "ultraball", color: "yellow", label: "Ultra Ball", odds: "14%", slices: 5 },
+    { tier: "masterball", color: "purple", label: "Master Ball", odds: "2.8%", slices: 1 },
+  ];
+
+  // Generate wheel slice positions for 36 total slices with red pokeballs as separators
+  const generateWheelSlices = () => {
+    const slices: Array<{
+      tier: string;
+      color: string;
+      label: string;
+      odds: string;
+      slices: number;
+      startAngle: number;
+      endAngle: number;
+      midAngle: number;
+    }> = [];
+    let currentAngle = 0;
+    const anglePerSlice = 360 / 36;
+    
+    // Create pattern with red pokeballs strategically placed to separate other colors
+    const pattern = [];
+    
+    // Start with strategic layout: red between different colors
+    // Place masterball (1)
+    pattern.push('masterball');
+    pattern.push('pokeball'); // red separator
+    pattern.push('pokeball'); // red separator
+    
+    // Place ultraballs (5) with red separation
+    for (let i = 0; i < 5; i++) {
+      pattern.push('ultraball');
+      pattern.push('pokeball'); // red separator
+      if (i < 2) pattern.push('pokeball'); // extra red for separation
+    }
+    
+    // Place greatballs (8) with red separation
+    for (let i = 0; i < 8; i++) {
+      pattern.push('greatball');
+      pattern.push('pokeball'); // red separator
+      if (i < 3) pattern.push('pokeball'); // extra red for separation
+    }
+    
+    // Fill remaining with pokeballs to reach 36 total
+    while (pattern.length < 36) {
+      pattern.push('pokeball');
+    }
+    
+    // Shuffle while maintaining some separation
+    for (let i = pattern.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pattern[i], pattern[j]] = [pattern[j], pattern[i]];
+    }
+    
+    pattern.forEach((tier, index) => {
+      const segment = wheelSegments.find(s => s.tier === tier) || wheelSegments[0];
+      slices.push({
+        ...segment,
+        startAngle: currentAngle,
+        endAngle: currentAngle + anglePerSlice,
+        midAngle: currentAngle + anglePerSlice / 2
+      });
+      currentAngle += anglePerSlice;
+    });
+    
+    return slices;
+  };
+
+  const wheelSlices = generateWheelSlices();
+
   const playGameMutation = useMutation({
     mutationFn: async (data: { gameType: string; betAmount: string }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
       return response.json() as Promise<GameResult>;
     },
     onSuccess: (result) => {
-      // Calculate smooth wheel animation with proper landing
-      const tierToAngleMap = {
-        pokeball: 0,
-        greatball: 90, 
-        ultraball: 180,
-        masterball: 270,
-      };
+      // Find a slice that matches the result tier
+      const matchingSlices = wheelSlices.filter(slice => slice.tier === result.result.tier);
+      const targetSlice = matchingSlices[Math.floor(Math.random() * matchingSlices.length)];
+      const targetAngle = targetSlice.midAngle;
       
-      const targetAngle = tierToAngleMap[result.result.tier as keyof typeof tierToAngleMap] || 0;
-      // Use multiple full rotations (5 full = 1800deg) plus target for smooth animation
-      const finalRotation = rotation + 1800 + (360 - targetAngle);
+      // Calculate final rotation to land on target with no additional shifts
+      const spins = 5; // Number of full rotations
+      const finalRotation = (spins * 360) + (360 - targetAngle);
       
       setRotation(finalRotation);
       
@@ -109,79 +178,6 @@ export function WheelGame() {
     });
   };
 
-  const wheelSegments = [
-    { tier: "pokeball", color: "red", label: "Poké Ball", odds: "61%", slices: 22 },
-    { tier: "greatball", color: "blue", label: "Great Ball", odds: "22%", slices: 8 },
-    { tier: "ultraball", color: "yellow", label: "Ultra Ball", odds: "14%", slices: 5 },
-    { tier: "masterball", color: "purple", label: "Master Ball", odds: "2.8%", slices: 1 },
-  ];
-
-  // Generate wheel slice positions for 36 total slices with distributed colors
-  const generateWheelSlices = () => {
-    const slices: Array<{
-      tier: string;
-      color: string;
-      label: string;
-      odds: string;
-      slices: number;
-      startAngle: number;
-      endAngle: number;
-      midAngle: number;
-    }> = [];
-    let currentAngle = 0;
-    const anglePerSlice = 360 / 36;
-    
-    // Create evenly distributed pattern with better spacing
-    const distributedPattern = new Array(36);
-    
-    // First, place the single masterball at a random position
-    const masterballPos = Math.floor(Math.random() * 36);
-    distributedPattern[masterballPos] = wheelSegments[3]; // masterball
-    
-    // Place ultraballs (5 slices) with good spacing - every ~7 positions
-    const ultraballPositions = [];
-    for (let i = 0; i < 5; i++) {
-      let pos;
-      do {
-        pos = Math.floor(Math.random() * 36);
-      } while (distributedPattern[pos] || ultraballPositions.some(p => Math.abs(p - pos) < 4));
-      ultraballPositions.push(pos);
-      distributedPattern[pos] = wheelSegments[2]; // ultraball
-    }
-    
-    // Place greatballs (8 slices) with good spacing - every ~4 positions
-    const greatballPositions = [];
-    for (let i = 0; i < 8; i++) {
-      let pos;
-      do {
-        pos = Math.floor(Math.random() * 36);
-      } while (distributedPattern[pos] || greatballPositions.some(p => Math.abs(p - pos) < 3));
-      greatballPositions.push(pos);
-      distributedPattern[pos] = wheelSegments[1]; // greatball
-    }
-    
-    // Fill remaining positions with pokeballs (22 slices)
-    for (let i = 0; i < 36; i++) {
-      if (!distributedPattern[i]) {
-        distributedPattern[i] = wheelSegments[0]; // pokeball
-      }
-    }
-    
-    distributedPattern.forEach((segment, index) => {
-      slices.push({
-        ...segment,
-        startAngle: currentAngle,
-        endAngle: currentAngle + anglePerSlice,
-        midAngle: currentAngle + anglePerSlice / 2
-      });
-      currentAngle += anglePerSlice;
-    });
-    
-    return slices;
-  };
-
-  const wheelSlices = generateWheelSlices();
-
   return (
     <div className="space-y-6">
       {/* Wheel Visualization */}
@@ -206,7 +202,7 @@ export function WheelGame() {
                     }).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
-                  transition: isSpinning ? "transform 3.5s cubic-bezier(0.25, 0.1, 0.25, 1)" : "transform 0.2s ease-out",
+                  transition: isSpinning ? "transform 3.5s cubic-bezier(0.25, 0.1, 0.25, 1)" : "none",
                 }}
               >
                 {/* Slice Separators */}
