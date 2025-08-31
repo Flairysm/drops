@@ -311,6 +311,136 @@ export default function MyPacks() {
           )}
 
         </div>
+
+        {/* Pack Odds Section */}
+        <div className="max-w-4xl mx-auto mt-16 mb-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-gaming font-bold mb-2">Pack Odds</h2>
+            <p className="text-muted-foreground">Probability of pulling each tier from different pack types</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Pokeball Pack */}
+            <div className="gaming-card p-6 rounded-xl">
+              <div className="text-center mb-4">
+                <PackImage packType="pokeball" size="medium" />
+                <h3 className="font-bold text-lg mt-2 text-blue-600">Pokeball Pack</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">D Tier:</span>
+                  <span className="font-semibold">60.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600">C Tier:</span>
+                  <span className="font-semibold">30.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">B Tier:</span>
+                  <span className="font-semibold">9.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-600">A Tier:</span>
+                  <span className="font-semibold">0.9%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-yellow-600">S+ Tier:</span>
+                  <span className="font-semibold">0.1%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Greatball Pack */}
+            <div className="gaming-card p-6 rounded-xl">
+              <div className="text-center mb-4">
+                <PackImage packType="greatball" size="medium" />
+                <h3 className="font-bold text-lg mt-2 text-green-600">Greatball Pack</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">D Tier:</span>
+                  <span className="font-semibold">45.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600">C Tier:</span>
+                  <span className="font-semibold">35.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">B Tier:</span>
+                  <span className="font-semibold">15.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-600">A Tier:</span>
+                  <span className="font-semibold">4.5%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-yellow-600">S+ Tier:</span>
+                  <span className="font-semibold">0.5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ultraball Pack */}
+            <div className="gaming-card p-6 rounded-xl">
+              <div className="text-center mb-4">
+                <PackImage packType="ultraball" size="medium" />
+                <h3 className="font-bold text-lg mt-2 text-purple-600">Ultraball Pack</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">D Tier:</span>
+                  <span className="font-semibold">30.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600">C Tier:</span>
+                  <span className="font-semibold">30.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">B Tier:</span>
+                  <span className="font-semibold">25.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-600">A Tier:</span>
+                  <span className="font-semibold">12.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-yellow-600">S+ Tier:</span>
+                  <span className="font-semibold">3.0%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Masterball Pack */}
+            <div className="gaming-card p-6 rounded-xl">
+              <div className="text-center mb-4">
+                <PackImage packType="masterball" size="medium" />
+                <h3 className="font-bold text-lg mt-2 text-yellow-600">Masterball Pack</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">D Tier:</span>
+                  <span className="font-semibold">15.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-600">C Tier:</span>
+                  <span className="font-semibold">25.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-600">B Tier:</span>
+                  <span className="font-semibold">30.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-600">A Tier:</span>
+                  <span className="font-semibold">20.0%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-yellow-600">S+ Tier:</span>
+                  <span className="font-semibold">10.0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       {/* Pack Opening Animation */}
       {showAnimation && packOpenData && (
