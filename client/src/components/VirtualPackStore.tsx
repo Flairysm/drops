@@ -107,7 +107,7 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
                   {pack.price} Credits
                 </Badge>
                 <Badge className="bg-accent text-primary-foreground" data-testid={`badge-pack-card-count-${pack.id}`}>
-                  {pack.cardCount} Cards
+                  8 Cards
                 </Badge>
               </div>
 
