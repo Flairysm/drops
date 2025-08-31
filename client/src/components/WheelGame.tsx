@@ -49,38 +49,32 @@ export function WheelGame() {
     let currentAngle = 0;
     const anglePerSlice = 360 / 36;
     
-    // Create pattern with red pokeballs strategically placed to separate other colors
-    const pattern = [];
+    // Create evenly distributed pattern with red pokeballs as separators
+    const pattern = new Array(36);
     
-    // Start with strategic layout: red between different colors
-    // Place masterball (1)
-    pattern.push('masterball');
-    pattern.push('pokeball'); // red separator
-    pattern.push('pokeball'); // red separator
+    // Place non-red balls first in evenly spaced positions
+    // Place the 1 masterball
+    pattern[0] = 'masterball';
     
-    // Place ultraballs (5) with red separation
+    // Place 5 ultraballs evenly (every ~7 positions)
     for (let i = 0; i < 5; i++) {
-      pattern.push('ultraball');
-      pattern.push('pokeball'); // red separator
-      if (i < 2) pattern.push('pokeball'); // extra red for separation
+      const pos = 5 + (i * 7); // positions 5, 12, 19, 26, 33
+      if (pos < 36) pattern[pos] = 'ultraball';
     }
     
-    // Place greatballs (8) with red separation
-    for (let i = 0; i < 8; i++) {
-      pattern.push('greatball');
-      pattern.push('pokeball'); // red separator
-      if (i < 3) pattern.push('pokeball'); // extra red for separation
-    }
+    // Place 8 greatballs in remaining good positions
+    const greatballPositions = [2, 8, 11, 15, 18, 22, 28, 31];
+    greatballPositions.forEach((pos, i) => {
+      if (pos < 36 && !pattern[pos]) {
+        pattern[pos] = 'greatball';
+      }
+    });
     
-    // Fill remaining with pokeballs to reach 36 total
-    while (pattern.length < 36) {
-      pattern.push('pokeball');
-    }
-    
-    // Shuffle while maintaining some separation
-    for (let i = pattern.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pattern[i], pattern[j]] = [pattern[j], pattern[i]];
+    // Fill all remaining positions with pokeballs (red separators)
+    for (let i = 0; i < 36; i++) {
+      if (!pattern[i]) {
+        pattern[i] = 'pokeball';
+      }
     }
     
     pattern.forEach((tier, index) => {
@@ -110,9 +104,9 @@ export function WheelGame() {
       const targetSlice = matchingSlices[Math.floor(Math.random() * matchingSlices.length)];
       const targetAngle = targetSlice.midAngle;
       
-      // Calculate final rotation to land on target with no additional shifts
+      // Calculate final rotation to land on target (just add spins, no reset)
       const spins = 5; // Number of full rotations
-      const finalRotation = (spins * 360) + (360 - targetAngle);
+      const finalRotation = rotation + (spins * 360) + (360 - targetAngle);
       
       setRotation(finalRotation);
       
