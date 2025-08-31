@@ -39,7 +39,7 @@ const PackImage = ({ packType, size = 'small' }: { packType: string; size?: 'sma
     }
   };
   
-  const imageSize = size === 'small' ? 'w-8 h-10' : 'w-16 h-20';
+  const imageSize = size === 'small' ? 'w-8 h-10' : 'w-full h-full';
   
   return (
     <div className={`${imageSize} mx-auto`}>
@@ -312,8 +312,8 @@ export function WheelGame() {
             {wheelSegments.map((segment) => (
               <div key={segment.tier} className="flex items-center gap-4 p-3 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10 border border-muted/30 hover:border-primary/40 transition-all">
                 {/* Pack Image */}
-                <div className="w-16 h-20 flex-shrink-0">
-                  <PackImage packType={segment.tier} size="small" />
+                <div className="w-24 h-32 flex-shrink-0">
+                  <PackImage packType={segment.tier} size="large" />
                 </div>
                 
                 {/* Pack Info */}
