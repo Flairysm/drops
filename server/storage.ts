@@ -420,16 +420,24 @@ export class DatabaseStorage implements IStorage {
         for (let i = 0; i < 7; i++) {
           const randomCard = dTierCards[Math.floor(Math.random() * dTierCards.length)];
           if (randomCard) {
-            // Check if user already has this card
+            // Check if user already has this card (non-refunded)
             const existingCard = await tx.select().from(userCards)
-              .where(and(eq(userCards.userId, userId), eq(userCards.cardId, randomCard.id)));
+              .where(and(
+                eq(userCards.userId, userId), 
+                eq(userCards.cardId, randomCard.id),
+                eq(userCards.isRefunded, false)
+              ));
             
             let newUserCard;
             if (existingCard.length > 0) {
               // Update existing card quantity
               [newUserCard] = await tx.update(userCards)
                 .set({ quantity: sql`${userCards.quantity} + 1` })
-                .where(and(eq(userCards.userId, userId), eq(userCards.cardId, randomCard.id)))
+                .where(and(
+                  eq(userCards.userId, userId), 
+                  eq(userCards.cardId, randomCard.id),
+                  eq(userCards.isRefunded, false)
+                ))
                 .returning();
             } else {
               // Insert new card
@@ -462,16 +470,24 @@ export class DatabaseStorage implements IStorage {
       if (tierCards && tierCards.length > 0) {
         const randomCard = tierCards[Math.floor(Math.random() * tierCards.length)];
         if (randomCard) {
-          // Check if user already has this card
+          // Check if user already has this card (non-refunded)
           const existingCard = await tx.select().from(userCards)
-            .where(and(eq(userCards.userId, userId), eq(userCards.cardId, randomCard.id)));
+            .where(and(
+              eq(userCards.userId, userId), 
+              eq(userCards.cardId, randomCard.id),
+              eq(userCards.isRefunded, false)
+            ));
           
           let newUserCard;
           if (existingCard.length > 0) {
             // Update existing card quantity
             [newUserCard] = await tx.update(userCards)
               .set({ quantity: sql`${userCards.quantity} + 1` })
-              .where(and(eq(userCards.userId, userId), eq(userCards.cardId, randomCard.id)))
+              .where(and(
+                eq(userCards.userId, userId), 
+                eq(userCards.cardId, randomCard.id),
+                eq(userCards.isRefunded, false)
+              ))
               .returning();
           } else {
             // Insert new card
