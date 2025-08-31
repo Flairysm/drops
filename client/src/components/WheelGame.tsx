@@ -270,12 +270,12 @@ export function WheelGame() {
                 <RotateCcw className="w-6 h-6 text-white" />
               </div>
 
-              {/* Pack Assignment Dialog - Positioned over wheel */}
+              {/* Pack Assignment Dialog - Same as Plinko */}
               {showPackDialog && lastResult && (
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
-                  <div className="text-center space-y-6 p-8 bg-background rounded-xl border-4 border-primary shadow-2xl min-w-80">
-                    <div className="space-y-4">
-                      <div className={`w-24 h-32 mx-auto rounded-lg overflow-hidden border-4 ${
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
+                  <div className="text-center space-y-6 p-6 bg-background/90 rounded-lg border border-border max-w-sm">
+                    <div className="space-y-3">
+                      <div className={`w-20 h-28 mx-auto rounded-lg overflow-hidden border-2 ${
                         lastResult.result.tier === 'masterball' ? 'border-purple-500 shadow-lg shadow-purple-500/50' :
                         lastResult.result.tier === 'ultraball' ? 'border-yellow-500 shadow-lg shadow-yellow-500/50' :
                         lastResult.result.tier === 'greatball' ? 'border-blue-500 shadow-lg shadow-blue-500/50' :
@@ -283,14 +283,14 @@ export function WheelGame() {
                       }`}>
                         <PackImage packType={lastResult.result.tier} size="large" />
                       </div>
-                      <h4 className="font-bold text-2xl">Pack Won!</h4>
-                      <p className="text-green-400 font-bold text-lg">
+                      <h4 className="font-bold text-xl text-white">Pack Won!</h4>
+                      <p className="text-green-400 font-medium">
                         {lastResult.result.tier === 'pokeball' ? 'Poké Ball' :
                          lastResult.result.tier === 'greatball' ? 'Great Ball' :
                          lastResult.result.tier === 'ultraball' ? 'Ultra Ball' :
                          'Master Ball'} Pack added to "My Packs"
                       </p>
-                      <p className="text-base text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         Your {lastResult.result.tier === 'pokeball' ? 'Poké Ball' :
                               lastResult.result.tier === 'greatball' ? 'Great Ball' :
                               lastResult.result.tier === 'ultraball' ? 'Ultra Ball' :
@@ -299,7 +299,7 @@ export function WheelGame() {
                     </div>
                     <Button
                       onClick={() => setShowPackDialog(false)}
-                      className="w-full bg-gradient-to-r from-primary to-accent text-lg py-3 font-bold"
+                      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                       data-testid="button-pack-dialog-ok"
                     >
                       OK
