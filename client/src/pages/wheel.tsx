@@ -64,7 +64,6 @@ export default function Wheel() {
             <CardHeader className="text-center">
               <CardTitle className="font-gaming text-2xl">Wheel Spin</CardTitle>
               <div className="flex justify-center space-x-4 mt-4">
-                <Badge variant="secondary">Cost: 2.5 Credits</Badge>
                 <Badge className="bg-superrare text-primary-foreground">Bonus: 2x Multiplier</Badge>
               </div>
             </CardHeader>
