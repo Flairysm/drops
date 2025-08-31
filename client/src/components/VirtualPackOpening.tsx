@@ -91,26 +91,15 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         setLoadingCards(true);
         const packCardsData = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         
-        console.log("Raw pack cards response:", packCardsData);
-        console.log("Pack cards type:", typeof packCardsData);
-        console.log("Is array:", Array.isArray(packCardsData));
-        
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
-          console.log("Pack cards:", packCardsData);
-          console.log("All cards sample IDs:", allCards.slice(0, 5).map(c => ({ id: c.id, name: c.name })));
-          
           const cardDetails = packCardsData.map((pc: any) => {
             // Match by virtualLibraryCardId
             const card = allCards.find((c: any) => c.id === pc.virtualLibraryCardId);
-            console.log(`Looking for card with ID ${pc.virtualLibraryCardId}, found:`, card ? card.name : 'NOT FOUND');
             return card ? { ...card, weight: pc.weight } : null;
           }).filter(Boolean);
           
-          console.log("Gallery loaded:", cardDetails.length, "cards for pack", packId);
           setPackCards(cardDetails);
         } else {
-          console.error("Invalid data format:", { packCardsData, allCards });
-          console.log("Setting empty cards array");
           setPackCards([]);
         }
       } catch (error) {
@@ -571,13 +560,18 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
             
             <Button
               onClick={handleOpenPack}
-              disabled={!user || parseFloat((user as any)?.credits || '0') < packPrice}
+              disabled={!user || parseFloat((user as any)?.credits || '0') < packPrice || packCards.length === 0}
               size="lg"
               className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 flex items-center space-x-2"
               data-testid="button-proceed-to-open"
             >
               <ShoppingCart className="w-4 h-4" />
-              <span>Open Pack Now</span>
+              <span>
+                {packCards.length === 0 
+                  ? "No cards in pool" 
+                  : "Open Pack Now"
+                }
+              </span>
             </Button>
           </div>
         </div>
@@ -627,12 +621,14 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         
         <Button
           onClick={handleOpenPack}
-          disabled={isOpening}
+          disabled={isOpening || packCards.length === 0}
           size="lg"
           className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
           data-testid="button-open-virtual-pack"
         >
-          {isOpening ? (
+          {packCards.length === 0 ? (
+            "No cards in pool"
+          ) : isOpening ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
               Opening Pack...
