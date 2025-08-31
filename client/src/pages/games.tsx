@@ -285,9 +285,6 @@ export default function Play() {
                             <Badge className="bg-accent text-primary-foreground">
                               7 Commons + 1 Hit
                             </Badge>
-                            <Badge variant="secondary">
-                              Realistic Odds
-                            </Badge>
                           </div>
                         </div>
                         
