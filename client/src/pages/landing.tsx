@@ -61,25 +61,6 @@ export default function Landing() {
               >
                 {theme === "dark" ? "🌞" : "🌙"}
               </Button>
-              
-              <Link href="/login">
-                <Button
-                  variant="outline"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  data-testid="button-login"
-                >
-                  Sign In
-                </Button>
-              </Link>
-              
-              <Link href="/register">
-                <Button
-                  className="bg-gradient-to-r from-primary to-accent hover:glow-effect"
-                  data-testid="button-register"
-                >
-                  Create Account
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
@@ -105,124 +86,23 @@ export default function Landing() {
                   <Button
                     size="lg"
                     className="bg-gradient-to-r from-primary to-accent hover:glow-effect transform hover:scale-105 transition-all"
-                    data-testid="button-start-playing"
+                    data-testid="button-register"
                   >
                     <Play className="mr-2 h-4 w-4" />
-                    Start Playing
+                    Create Account
                   </Button>
                 </Link>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  data-testid="button-view-odds"
-                >
-                  <Info className="mr-2 h-4 w-4" />
-                  View Odds
-                </Button>
+                <Link href="/login">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    data-testid="button-login"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Minigames Section */}
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="font-gaming font-bold text-3xl md:text-4xl mb-4">Launch Minigames</h2>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Choose your adventure! Each game offers unique ways to unlock premium cards.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {games.map((game, index) => (
-                <Card key={index} className="gaming-card hover:glow-effect transition-all transform hover:scale-105 group">
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <div className="w-full h-48 rounded-lg mb-6 overflow-hidden bg-gradient-to-br from-blue-600/20 to-purple-600/20 relative flex items-center justify-center">
-                        <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${game.color} flex items-center justify-center`}>
-                          {game.icon}
-                        </div>
-                      </div>
-                      <h3 className="font-gaming font-bold text-xl mb-3 text-primary">{game.name}</h3>
-                      <p className="text-muted-foreground mb-6">
-                        {game.description}
-                      </p>
-                      <div className="space-y-3 mb-6">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Cost per play:</span>
-                          <span className="font-semibold text-accent">{game.cost}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Max payout:</span>
-                          <span className="font-semibold text-legendary">{game.maxPayout}</span>
-                        </div>
-                      </div>
-                      <Link href="/register">
-                        <Button
-                          className={`w-full bg-gradient-to-r ${game.color} text-white hover:glow-effect transition-all`}
-                          data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
-                        >
-                          {game.icon}
-                          <span className="ml-2">Play {game.name.split(' ')[0]}</span>
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-16 bg-gradient-to-b from-background to-secondary/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="font-gaming font-bold text-3xl md:text-4xl mb-4">Premium Features</h2>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Built for serious collectors with professional-grade tools and transparency.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="gaming-card">
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-primary/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <DollarSign className="w-8 h-8 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Credits Never Expire</h3>
-                  <p className="text-muted-foreground">
-                    Your credits are safe forever. No expiration dates, no pressure to spend.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="gaming-card">
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-accent/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <Info className="w-8 h-8 text-accent" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">100% Transparent</h3>
-                  <p className="text-muted-foreground">
-                    All odds published publicly. No hidden mechanics or rigged outcomes.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="gaming-card">
-                <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 bg-legendary/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <Gift className="w-8 h-8 text-legendary" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Unlimited Vault</h3>
-                  <p className="text-muted-foreground">
-                    Store unlimited cards. Refund for 80% value or ship to your door.
-                  </p>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </section>
