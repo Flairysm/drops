@@ -134,7 +134,7 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
       <div className="text-center text-sm text-muted-foreground mt-8">
         <p>
           <strong>How Themed Packs Work:</strong> Each pack contains {activePacks[0]?.cardCount || 'multiple'} cards from a curated collection.
-          You'll receive 8 guaranteed D-tier "Random Commons" (0.01 credits each) plus 1 special card based on the pack's unique pull rates.
+          You'll receive 9 guaranteed D-tier "Random Commons" (0.01 credits each) plus 1 special card based on the pack's unique pull rates.
         </p>
       </div>
     </div>
