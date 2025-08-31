@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/games/play', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { gameType, betAmount, plinkoResult } = req.body;
+      const { gameType, betAmount, plinkoResult, wheelResult } = req.body;
 
       // Validate input
       if (!['plinko', 'wheel', 'pack'].includes(gameType)) {
@@ -98,6 +98,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           gameType,
         };
         console.log(`Plinko result from frontend: ${plinkoResult} → pack type=${result.tier}`);
+      } else if (gameType === 'wheel' && wheelResult) {
+        // Use frontend wheel result for Wheel
+        result = {
+          cardId: '',
+          tier: wheelResult.toLowerCase(), // Use wheel result from frontend
+          gameType,
+        };
+        console.log(`Wheel result from frontend: ${wheelResult} → pack type=${result.tier}`);
       } else {
         // Use backend simulation for other games
         result = await simulateGame(gameType, parseFloat(actualBetAmount));

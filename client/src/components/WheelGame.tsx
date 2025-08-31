@@ -129,7 +129,7 @@ export function WheelGame() {
   const wheelSlices = generateWheelSlices();
 
   const playGameMutation = useMutation({
-    mutationFn: async (data: { gameType: string; betAmount: string }) => {
+    mutationFn: async (data: { gameType: string; betAmount: string; wheelResult?: string }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
       return response.json() as Promise<GameResult>;
     },
@@ -187,12 +187,22 @@ export function WheelGame() {
       return;
     }
 
+    // Determine wheel outcome based on defined odds
+    const random = Math.random();
+    let wheelResult: string;
+    
+    if (random < 0.028) wheelResult = 'masterball';      // 2.8%
+    else if (random < 0.168) wheelResult = 'ultraball';  // 14% (0.028 + 0.14)
+    else if (random < 0.388) wheelResult = 'greatball';  // 22% (0.168 + 0.22)
+    else wheelResult = 'pokeball';                       // 61.2% (remaining)
+
     setIsSpinning(true);
     setLastResult(null);
     setShowPackDialog(false);
     playGameMutation.mutate({
       gameType: "wheel",
       betAmount: betAmount,
+      wheelResult: wheelResult,
     });
   };
 
