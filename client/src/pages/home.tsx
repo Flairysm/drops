@@ -227,6 +227,17 @@ export default function Home() {
 
         </div>
       </main>
+      
+      {/* Footer */}
+      <footer className="bg-secondary/20 border-t border-border py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-muted-foreground">
+              &copy; 2025 Flair TCG Arcade. Built for collectors, by collectors.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
