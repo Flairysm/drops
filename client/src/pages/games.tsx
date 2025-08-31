@@ -242,9 +242,7 @@ export default function Play() {
                 <h3 className="font-gaming mb-2 text-[26px]">
                   <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">CLASSIC PACKS</span>
                 </h3>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Explore curated collections featuring specific themes and characters!
-                </p>
+                <p className="text-muted-foreground max-w-2xl mx-auto">Experience Rip and Ship in a whole new way with virtual packs</p>
               </div>
               
               {virtualPacks && Array.isArray(virtualPacks) && virtualPacks.length > 0 ? (
