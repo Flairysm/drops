@@ -119,7 +119,7 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-1">
                   <span className="font-semibold truncate" data-testid={`text-username-${pull.id}`}>
-                    {pull.user.username}
+                    {pull.user?.username || 'Unknown'}
                   </span>
                   <span className="text-muted-foreground text-sm">pulled</span>
                   <Badge className={`bg-${tierColor}/90 tier-${tierColor} text-white text-xs`}>

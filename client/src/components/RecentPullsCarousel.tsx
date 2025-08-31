@@ -176,7 +176,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
                       <span className="font-gaming font-bold text-lg truncate" data-testid={`text-puller-${index}`}>
-                        {pull.user.username}
+                        {pull.user?.username || 'Unknown'}
                       </span>
                       <span className="text-muted-foreground text-sm">pulled</span>
                     </div>
@@ -273,7 +273,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-1">
                         <span className="font-semibold truncate">
-                          {pull.user.username}
+                          {pull.user?.username || 'Unknown'}
                         </span>
                         <span className="text-muted-foreground text-sm">pulled</span>
                         <Badge 
