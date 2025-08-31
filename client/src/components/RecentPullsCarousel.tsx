@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { GlobalFeedWithDetails } from "@shared/schema";
 
@@ -12,11 +13,19 @@ interface RecentPullsCarouselProps {
 
 export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showAllTiers, setShowAllTiers] = useState(false);
+  const [showAllModal, setShowAllModal] = useState(false);
 
+  // Always show A+ tier only in the carousel
   const { data: feedData, isLoading } = useQuery<GlobalFeedWithDetails[]>({
-    queryKey: [`/api/feed?limit=${limit}${showAllTiers ? '' : '&minTier=A'}`],
+    queryKey: [`/api/feed?limit=${limit}&minTier=A`],
     refetchInterval: 15000, // Refresh every 15 seconds
+  });
+
+  // Separate query for all recent pulls in the modal
+  const { data: allFeedData, isLoading: isLoadingAll } = useQuery<GlobalFeedWithDetails[]>({
+    queryKey: [`/api/feed?limit=100`], // Get more data for the modal
+    enabled: showAllModal, // Only fetch when modal is open
+    refetchInterval: 15000,
   });
 
   const tierColors = {
@@ -105,7 +114,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <h3 className="font-gaming font-bold text-xl">
-                Recent Pulls {!showAllTiers && "(A+ Only)"}
+                Recent Pulls (A+ Only)
               </h3>
               <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                 Live
@@ -114,12 +123,12 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
             
             <div className="flex items-center space-x-2">
               <Button
-                variant={showAllTiers ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                onClick={() => setShowAllTiers(!showAllTiers)}
-                data-testid="button-toggle-carousel-tiers"
+                onClick={() => setShowAllModal(true)}
+                data-testid="button-see-all-pulls"
               >
-                {showAllTiers ? "A+ Only" : "See All"}
+                See All
               </Button>
               <Button
                 variant="ghost"
@@ -218,6 +227,81 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal for All Recent Pulls */}
+      <Dialog open={showAllModal} onOpenChange={setShowAllModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <span>All Recent Pulls</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="overflow-y-auto max-h-[60vh] pr-2">
+            {isLoadingAll ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading all recent pulls...</p>
+              </div>
+            ) : !allFeedData || allFeedData.length === 0 ? (
+              <div className="text-center py-8">
+                <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No recent pulls found</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {allFeedData.map((pull) => (
+                  <div
+                    key={pull.id}
+                    className="flex items-center space-x-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                  >
+                    {/* Card Image */}
+                    <div className="w-12 h-16 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-primary/20">
+                      {pull.card.imageUrl ? (
+                        <img 
+                          src={pull.card.imageUrl} 
+                          alt={pull.card.name}
+                          className="w-full h-full object-cover rounded-lg"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                          <Sparkles className="w-3 h-3 text-primary" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pull Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="font-semibold truncate">
+                          {pull.user.username}
+                        </span>
+                        <span className="text-muted-foreground text-sm">pulled</span>
+                        <Badge 
+                          variant="secondary" 
+                          className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold text-xs`}
+                        >
+                          {tierNames[pull.tier as keyof typeof tierNames] || pull.tier}
+                        </Badge>
+                      </div>
+                      <div className="font-medium truncate text-sm">
+                        {pull.card.name}
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                        <span>from {pull.gameType.toUpperCase()}</span>
+                        <span>•</span>
+                        <span>{getTimeAgo(pull.createdAt || new Date())}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
