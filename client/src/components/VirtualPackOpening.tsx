@@ -93,8 +93,8 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
           const cardDetails = packCardsData.map((pc: any) => {
-            // Match by virtualLibraryCardId
-            const card = allCards.find((c: any) => c.id === pc.virtualLibraryCardId);
+            // Match by cardId
+            const card = allCards.find((c: any) => c.id === pc.cardId);
             return card ? { ...card, weight: pc.weight } : null;
           }).filter(Boolean);
           

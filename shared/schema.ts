@@ -102,11 +102,11 @@ export const virtualPacks = pgTable("virtual_packs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Virtual pack card pools - defines which virtual library cards can appear in each themed pack
+// Virtual pack card pools - defines which cards can appear in each themed pack
 export const virtualPackCards = pgTable("virtual_pack_cards", {
   id: uuid("id").primaryKey().defaultRandom(),
   virtualPackId: uuid("virtual_pack_id").references(() => virtualPacks.id),
-  virtualLibraryCardId: uuid("virtual_library_card_id").references(() => virtualLibrary.id),
+  cardId: uuid("card_id").references(() => cards.id),
   weight: integer("weight").default(1).notNull(), // Relative probability weight
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -301,9 +301,9 @@ export const virtualPackCardsRelations = relations(virtualPackCards, ({ one }) =
     fields: [virtualPackCards.virtualPackId],
     references: [virtualPacks.id],
   }),
-  virtualLibraryCard: one(virtualLibrary, {
-    fields: [virtualPackCards.virtualLibraryCardId],
-    references: [virtualLibrary.id],
+  card: one(cards, {
+    fields: [virtualPackCards.cardId],
+    references: [cards.id],
   }),
 }));
 

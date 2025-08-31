@@ -340,10 +340,10 @@ export class DatabaseStorage implements IStorage {
       // Remove existing card pool
       await tx.update(virtualPackCards).set({ isActive: false }).where(eq(virtualPackCards.virtualPackId, virtualPackId));
       
-      // Add new card pool using virtual library cards
+      // Add new card pool using regular cards
       const newCards = cardIds.map((cardId, index) => ({
         virtualPackId,
-        virtualLibraryCardId: cardId,
+        cardId: cardId,
         weight: weights[index] || 1,
       }));
       
@@ -398,15 +398,15 @@ export class DatabaseStorage implements IStorage {
       // Get pack-specific cards assigned through manage content
       const packCards = await tx
         .select({
-          card: virtualLibrary,
+          card: cards,
           weight: virtualPackCards.weight,
         })
         .from(virtualPackCards)
-        .innerJoin(virtualLibrary, eq(virtualPackCards.virtualLibraryCardId, virtualLibrary.id))
+        .innerJoin(cards, eq(virtualPackCards.cardId, cards.id))
         .where(and(
           eq(virtualPackCards.virtualPackId, virtualPackId),
           eq(virtualPackCards.isActive, true),
-          eq(virtualLibrary.isActive, true)
+          eq(cards.isActive, true)
         ));
 
       if (packCards.length === 0) {
@@ -525,9 +525,9 @@ export class DatabaseStorage implements IStorage {
 
           // Decrease card stock when added to vault
           await tx
-            .update(virtualLibrary)
-            .set({ stock: sql`${virtualLibrary.stock} - 1` })
-            .where(eq(virtualLibrary.id, randomCard.id));
+            .update(cards)
+            .set({ stock: sql`${cards.stock} - 1` })
+            .where(eq(cards.id, randomCard.id));
 
           pulledCards.push({
             ...newUserCard,
