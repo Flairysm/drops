@@ -123,20 +123,20 @@ export default function Home() {
       <main className="pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Credits Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div>
-              <h1 className="font-gaming font-bold text-3xl mb-2">
+              <h1 className="font-gaming font-bold text-xl sm:text-3xl mb-2">
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   Hey {userData?.firstName || "Player"}! 👋
                 </span>
               </h1>
-              <p className="text-muted-foreground">Time to win some cards</p>
+              <p className="text-muted-foreground text-sm sm:text-base">Time to win some cards</p>
             </div>
             <Card className="gaming-card">
-              <CardContent className="p-4 flex items-center space-x-3">
-                <Coins className="w-6 h-6 text-yellow-500" />
+              <CardContent className="p-2 sm:p-4 flex items-center space-x-2 sm:space-x-3">
+                <Coins className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-500" />
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-yellow-500" data-testid="text-user-credits">
+                  <div className="text-lg sm:text-2xl font-bold text-yellow-500" data-testid="text-user-credits">
                     {userData?.credits || "0"}
                   </div>
                   <div className="text-xs text-muted-foreground">Credits</div>
@@ -152,25 +152,25 @@ export default function Home() {
 
           {/* Games Collection - FIRST PRIORITY */}
           <section className="mb-12">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Gamepad2 className="w-6 h-6 text-white" />
+            <div className="flex items-center justify-between mb-6 sm:mb-8">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                  <Gamepad2 className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-gaming font-bold text-3xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  <h2 className="font-gaming font-bold text-xl sm:text-3xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                     Quick Play
                   </h2>
-                  <p className="text-muted-foreground">Choose your adventure and win amazing cards</p>
+                  <p className="text-muted-foreground text-sm sm:text-base">Choose your adventure and win amazing cards</p>
                 </div>
               </div>
-              <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 dark:from-orange-900 dark:to-red-900 dark:text-orange-200 px-4 py-2 text-sm font-medium">
+              <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 dark:from-orange-900 dark:to-red-900 dark:text-orange-200 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium">
                 🔥 All Games Available
               </Badge>
             </div>
 
             {/* Enhanced grid layout for all 3 games */}
-            <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
               {games.map((game, index) => (
                 <Card key={index} className="gaming-card hover:glow-effect transition-all duration-300 transform hover:scale-[1.05] hover:-translate-y-2 group border-2 hover:border-primary/50 relative overflow-hidden">
                   {/* Popular badge for featured games */}
@@ -186,8 +186,8 @@ export default function Home() {
                   {/* Animated background gradient */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
                   
-                  <CardContent className="p-6 relative">
-                    <div className="text-center mb-6">
+                  <CardContent className="p-4 sm:p-6 relative">
+                    <div className="text-center mb-4 sm:mb-6">
                       <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-2xl sm:rounded-3xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300 mb-4 group-hover:scale-110`}>
                         {game.icon}
                       </div>
@@ -199,7 +199,7 @@ export default function Home() {
                       </p>
                     </div>
                     
-                    <div className="space-y-4">
+                    <div className="space-y-2 sm:space-y-4">
                       <div className="flex items-center justify-center">
                         <Badge 
                           variant="outline" 
@@ -227,22 +227,22 @@ export default function Home() {
             </div>
 
             {/* Enhanced call-to-action */}
-            <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-legendary/10 rounded-2xl p-8 text-center border border-primary/20">
-              <div className="mb-4">
-                <TrendingUp className="w-12 h-12 mx-auto text-primary mb-3" />
-                <h3 className="font-gaming font-bold text-2xl mb-2">Ready for More Action?</h3>
-                <p className="text-muted-foreground text-lg">
+            <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-legendary/10 rounded-xl sm:rounded-2xl p-4 sm:p-8 text-center border border-primary/20">
+              <div className="mb-3 sm:mb-4">
+                <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-primary mb-2 sm:mb-3" />
+                <h3 className="font-gaming font-bold text-lg sm:text-2xl mb-2">Ready for More Action?</h3>
+                <p className="text-muted-foreground text-sm sm:text-lg">
                   Explore additional game modes and special events in our games lobby
                 </p>
               </div>
               <Link href="/play">
                 <Button 
-                  size="lg" 
+                  size="default" 
                   variant="outline"
-                  className="text-lg px-10 py-4 border-2 border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-105 font-bold"
+                  className="text-sm sm:text-lg px-6 sm:px-10 py-2 sm:py-4 border-2 border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-105 font-bold"
                   data-testid="button-view-all-games"
                 >
-                  <Gamepad2 className="w-5 h-5 mr-2" />
+                  <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                   Explore Games Lobby
                 </Button>
               </Link>
@@ -251,15 +251,15 @@ export default function Home() {
 
           {/* Get More Credits - SECOND PRIORITY */}
           <section className="mb-12">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Coins className="w-5 h-5 text-white" />
+            <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                <Coins className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h2 className="font-gaming font-bold text-3xl">Get More Credits</h2>
+              <h2 className="font-gaming font-bold text-xl sm:text-3xl">Get More Credits</h2>
             </div>
             
             <Card className="gaming-card border-2 border-green-200 dark:border-green-700">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-8">
                 <CreditPurchase />
               </CardContent>
             </Card>
