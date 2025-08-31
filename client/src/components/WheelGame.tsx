@@ -205,7 +205,7 @@ export function WheelGame() {
                     }).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
-                  transition: isSpinning ? "transform 3.5s cubic-bezier(0.25, 0.1, 0.25, 1)" : "none",
+                  transition: isSpinning ? "transform 3.5s cubic-bezier(0.25, 0.1, 0.25, 1)" : "transform 0.2s ease-out",
                 }}
               >
                 {/* Slice Separators */}
