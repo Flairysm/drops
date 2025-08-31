@@ -175,12 +175,9 @@ export default function Play() {
                           Per spin
                         </div>
                       </div>
-                      <div className="flex justify-center space-x-2">
-                        <Badge className="bg-legendary text-primary-foreground">
+                      <div className="flex justify-center">
+                        <Badge className="bg-purple-600 text-white">
                           Win Mystery Packs
-                        </Badge>
-                        <Badge className="bg-superrare text-primary-foreground">
-                          2x Multiplier
                         </Badge>
                       </div>
                     </div>
