@@ -23,7 +23,9 @@ export function Navigation() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/auth/logout");
+      // Use Replit OAuth logout
+      window.location.href = "/api/logout";
+      return Promise.resolve();
     },
     onSuccess: () => {
       queryClient.clear(); // Clear all cached data
@@ -128,7 +130,7 @@ export function Navigation() {
             ) : (
               <>
                 {/* Login/Signup buttons for non-authenticated users */}
-                <Link href="/login">
+                <a href="/api/login">
                   <Button
                     variant="outline"
                     className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
@@ -136,16 +138,7 @@ export function Navigation() {
                   >
                     Sign In
                   </Button>
-                </Link>
-                
-                <Link href="/register">
-                  <Button
-                    className="bg-gradient-to-r from-primary to-accent hover:glow-effect"
-                    data-testid="button-register"
-                  >
-                    Create Account
-                  </Button>
-                </Link>
+                </a>
               </>
             )}
           </div>
@@ -210,28 +203,16 @@ export function Navigation() {
                     {logoutMutation.isPending ? "Logging out..." : "Logout"}
                   </Button>
                 ) : (
-                  <div className="space-x-2">
-                    <Link href="/login">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        data-testid="button-mobile-login"
-                      >
-                        Sign In
-                      </Button>
-                    </Link>
-                    <Link href="/register">
-                      <Button
-                        size="sm"
-                        className="bg-gradient-to-r from-primary to-accent"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        data-testid="button-mobile-register"
-                      >
-                        Create Account
-                      </Button>
-                    </Link>
-                  </div>
+                  <a href="/api/login">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      data-testid="button-mobile-login"
+                    >
+                      Sign In
+                    </Button>
+                  </a>
                 )}
               </div>
             </div>

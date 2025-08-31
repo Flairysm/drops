@@ -57,13 +57,18 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
+  try {
+    await storage.upsertUser({
+      id: claims["sub"],
+      email: claims["email"] || null,
+      firstName: claims["first_name"] || null,
+      lastName: claims["last_name"] || null,
+      profileImageUrl: claims["profile_image_url"] || null,
+      username: claims["email"] || `user_${claims["sub"]}`, // Use email as username or generate one
+    });
+  } catch (error) {
+    console.error("Error upserting user:", error);
+  }
 }
 
 export async function setupAuth(app: Express) {
@@ -154,4 +159,21 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
+};
+
+export const isAdmin: RequestHandler = async (req, res, next) => {
+  // First check authentication
+  const user = req.user as any;
+  if (!req.isAuthenticated() || !user?.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Check if user has admin role
+  const userId = user.claims.sub;
+  const dbUser = await storage.getUser(userId);
+  if (!dbUser || dbUser.role !== 'admin') {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+
+  next();
 };

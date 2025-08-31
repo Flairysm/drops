@@ -32,8 +32,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
       {isAuthenticated && (
         <>
           <Route path="/play" component={Play} />
