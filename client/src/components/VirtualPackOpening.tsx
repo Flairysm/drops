@@ -559,7 +559,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
             </Button>
             
             <Button
-              onClick={() => setCurrentView("opening")}
+              onClick={handleOpenPack}
               disabled={!user || parseFloat((user as any)?.credits || '0') < packPrice}
               size="lg"
               className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 flex items-center space-x-2"
