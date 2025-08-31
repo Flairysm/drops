@@ -90,7 +90,8 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       try {
         setLoadingCards(true);
         console.log("Starting API request for pack cards...");
-        const packCardsData = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
+        const response = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
+        const packCardsData = await response.json();
         
         console.log("Raw API response:", packCardsData);
         console.log("Response type:", typeof packCardsData);

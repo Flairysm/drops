@@ -573,10 +573,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Public route for users to view pack cards
-  app.get('/api/virtual-packs/:id/cards', isAuthenticated, async (req: any, res) => {
+  app.get('/api/virtual-packs/:id/cards', async (req: any, res) => {
     try {
       const { id } = req.params;
       const packCards = await storage.getVirtualPackCards(id);
+      console.log("Returning pack cards for pack", id, ":", packCards);
       res.json(packCards);
     } catch (error) {
       console.error("Error fetching virtual pack cards:", error);
