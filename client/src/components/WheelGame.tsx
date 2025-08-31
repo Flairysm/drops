@@ -164,10 +164,8 @@ export function WheelGame() {
                   background: `conic-gradient(
                     from 0deg,
                     ${wheelSlices.map((slice, index) => {
-                      // Alternate colors for visual distinction
-                      const colors = ['red', 'blue', 'yellow', 'purple'];
-                      const color = colors[index % 4];
-                      return `var(--${color}) ${slice.startAngle}deg ${slice.endAngle}deg`;
+                      // Use the slice's actual color based on tier
+                      return `var(--${slice.color}) ${slice.startAngle}deg ${slice.endAngle}deg`;
                     }).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
