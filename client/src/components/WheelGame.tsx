@@ -311,14 +311,9 @@ export function WheelGame() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {wheelSegments.map((segment) => (
               <div key={segment.tier} className="text-center p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border-2 border-muted/50 hover:border-primary/50 transition-all">
-                {/* Pokeball Design */}
-                <div className="w-16 h-16 mx-auto mb-3 relative">
-                  <div className={`w-full h-full rounded-full bg-gradient-to-br from-${segment.color}-400 to-${segment.color}-600 shadow-lg border-2 border-white/20`}>
-                    {/* Pokeball center line */}
-                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-black/30 transform -translate-y-1/2"></div>
-                    {/* Pokeball center button */}
-                    <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-white rounded-full border border-black/20 transform -translate-x-1/2 -translate-y-1/2"></div>
-                  </div>
+                {/* Pack Image */}
+                <div className="w-16 h-20 mx-auto mb-3 rounded-lg overflow-hidden border-2 border-muted/30">
+                  <PackImage packType={segment.tier} size="small" />
                 </div>
                 <div className="text-sm font-bold">{segment.label}</div>
                 <div className="text-lg font-bold text-primary">{segment.odds}</div>
