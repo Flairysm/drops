@@ -473,12 +473,13 @@ export function PlinkoGame() {
           </div>
           
           <div className="flex justify-center">
-            <div className="relative">
+            <div className="relative w-full max-w-[600px]">
               <canvas 
                 ref={canvasRef}
                 width={BOARD_WIDTH}
                 height={BOARD_HEIGHT}
-                className="border border-border rounded-lg bg-background/50"
+                className="border border-border rounded-lg bg-background/50 w-full h-auto max-w-full"
+                style={{ maxWidth: '100%', height: 'auto' }}
               />
               
               {/* Result Overlay with Pack Design */}
