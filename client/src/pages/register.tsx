@@ -122,7 +122,7 @@ export default function Register() {
                 data-testid="input-phone"
                 {...form.register("phoneNumber")}
                 className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
-                placeholder="+1 (555) 123-4567"
+                placeholder="+60 12-345 6789"
               />
               {form.formState.errors.phoneNumber && (
                 <p className="text-red-400 text-sm">{form.formState.errors.phoneNumber.message}</p>
