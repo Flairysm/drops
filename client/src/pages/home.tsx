@@ -150,60 +150,100 @@ export default function Home() {
             <RecentPullsCarousel limit={10} />
           </section>
 
-          {/* Popular Games - FIRST PRIORITY */}
+          {/* Games Collection - FIRST PRIORITY */}
           <section className="mb-12">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Gamepad2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-gaming font-bold text-3xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    Game Collection
+                  </h2>
+                  <p className="text-muted-foreground">Choose your adventure and win amazing cards</p>
+                </div>
               </div>
-              <h2 className="font-gaming font-bold text-3xl">Popular Games</h2>
-              <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                Most played
+              <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 dark:from-orange-900 dark:to-red-900 dark:text-orange-200 px-4 py-2 text-sm font-medium">
+                🔥 All Games Available
               </Badge>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              {games.filter(game => game.popular).map((game, index) => (
-                <Card key={index} className="gaming-card hover:glow-effect transition-all transform hover:scale-[1.02] group border-2">
-                  <CardContent className="p-8">
-                    <div className="flex items-center space-x-6">
-                      <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all`}>
+            {/* Enhanced grid layout for all 3 games */}
+            <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6 mb-8">
+              {games.map((game, index) => (
+                <Card key={index} className="gaming-card hover:glow-effect transition-all duration-300 transform hover:scale-[1.05] hover:-translate-y-2 group border-2 hover:border-primary/50 relative overflow-hidden">
+                  {/* Popular badge for featured games */}
+                  {game.popular && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-lg">
+                        <Star className="w-3 h-3 mr-1" />
+                        Popular
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {/* Animated background gradient */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
+                  
+                  <CardContent className="p-6 relative">
+                    <div className="text-center mb-6">
+                      <div className={`w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300 mb-4 group-hover:scale-110`}>
                         {game.icon}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-gaming font-bold text-2xl mb-2">{game.name}</h3>
-                        <p className="text-muted-foreground mb-4 text-lg">{game.description}</p>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-lg px-3 py-1">
-                            {game.cost} Credits
-                          </Badge>
-                          <Link href={game.route}>
-                            <Button 
-                              size="lg"
-                              className={`bg-gradient-to-r ${game.color} hover:glow-effect transition-all text-lg px-8`}
-                              data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
-                            >
-                              <Gamepad2 className="w-5 h-5 mr-2" />
-                              Play Now
-                            </Button>
-                          </Link>
-                        </div>
+                      <h3 className="font-gaming font-bold text-2xl mb-2 group-hover:text-primary transition-colors">
+                        {game.name}
+                      </h3>
+                      <p className="text-muted-foreground text-base leading-relaxed mb-4">
+                        {game.description}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-lg px-4 py-2 font-bold border-2 bg-gradient-to-r ${game.color} text-white border-transparent group-hover:shadow-lg transition-all`}
+                        >
+                          <Coins className="w-4 h-4 mr-2" />
+                          {game.cost} Credits
+                        </Badge>
                       </div>
+                      
+                      <Link href={game.route} className="block">
+                        <Button 
+                          size="lg"
+                          className={`w-full bg-gradient-to-r ${game.color} hover:glow-effect transition-all duration-300 text-lg py-3 font-bold shadow-lg hover:shadow-xl transform hover:scale-105`}
+                          data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        >
+                          <Play className="w-5 h-5 mr-2" />
+                          {game.name === "Virtual Pack" ? "Open Packs" : "Play Now"}
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
 
-            <div className="text-center">
+            {/* Enhanced call-to-action */}
+            <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-legendary/10 rounded-2xl p-8 text-center border border-primary/20">
+              <div className="mb-4">
+                <TrendingUp className="w-12 h-12 mx-auto text-primary mb-3" />
+                <h3 className="font-gaming font-bold text-2xl mb-2">Ready for More Action?</h3>
+                <p className="text-muted-foreground text-lg">
+                  Explore additional game modes and special events in our games lobby
+                </p>
+              </div>
               <Link href="/games">
                 <Button 
                   size="lg" 
                   variant="outline"
-                  className="text-lg px-8 py-3 border-2 hover:bg-primary hover:text-primary-foreground"
+                  className="text-lg px-10 py-4 border-2 border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-105 font-bold"
                   data-testid="button-view-all-games"
                 >
-                  View All Games
+                  <Gamepad2 className="w-5 h-5 mr-2" />
+                  Explore Games Lobby
                 </Button>
               </Link>
             </div>
