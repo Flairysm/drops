@@ -52,6 +52,12 @@
   --tier-ss: hsl(320, 100%, 70%);
   --tier-sss: hsl(0, 100%, 50%);
   
+  /* Pokemon ball colors for wheel */
+  --blue: hsl(217, 91%, 60%);
+  --red: hsl(0, 84%, 60%);
+  --yellow: hsl(45, 100%, 50%);
+  --purple: hsl(262, 83%, 70%);
+  
   /* Fonts */
   --font-sans: "Inter", system-ui, sans-serif;
   --font-gaming: "Orbitron", monospace;

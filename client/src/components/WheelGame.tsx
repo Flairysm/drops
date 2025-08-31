@@ -34,13 +34,10 @@ export function WheelGame() {
     onSuccess: (result) => {
       // Spin the wheel based on result
       const tierAngles = {
-        D: 0,
-        C: 51.4,  // 360/7 degrees per segment
-        B: 102.8,
-        A: 154.2,
-        S: 205.6,
-        SS: 257.0,
-        SSS: 308.4,
+        pokeball: 0,
+        greatball: 90,
+        ultraball: 180,
+        masterball: 270,
       };
       
       const targetAngle = tierAngles[result.result.tier as keyof typeof tierAngles] || 0;
@@ -54,13 +51,10 @@ export function WheelGame() {
         queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
         
         const tierNames = {
-          D: "D Tier",
-          C: "C Tier",
-          B: "B Tier", 
-          A: "A Tier",
-          S: "S Tier",
-          SS: "SS Tier",
-          SSS: "SSS Tier"
+          pokeball: "Poké Ball",
+          greatball: "Great Ball",
+          ultraball: "Ultra Ball",
+          masterball: "Master Ball"
         };
 
         toast({
@@ -113,14 +107,43 @@ export function WheelGame() {
   };
 
   const wheelSegments = [
-    { tier: "D", color: "d", label: "D Tier", odds: "50%" },
-    { tier: "C", color: "c", label: "C Tier", odds: "30%" },
-    { tier: "B", color: "b", label: "B Tier", odds: "15%" },
-    { tier: "A", color: "a", label: "A Tier", odds: "4%" },
-    { tier: "S", color: "s", label: "S Tier", odds: "0.8%" },
-    { tier: "SS", color: "ss", label: "SS Tier", odds: "0.15%" },
-    { tier: "SSS", color: "sss", label: "SSS Tier", odds: "0.05%" },
+    { tier: "pokeball", color: "blue", label: "Poké Ball", odds: "61%", slices: 22 },
+    { tier: "greatball", color: "red", label: "Great Ball", odds: "22%", slices: 8 },
+    { tier: "ultraball", color: "yellow", label: "Ultra Ball", odds: "14%", slices: 5 },
+    { tier: "masterball", color: "purple", label: "Master Ball", odds: "2.8%", slices: 1 },
   ];
+
+  // Generate wheel slice positions for 36 total slices
+  const generateWheelSlices = () => {
+    const slices: Array<{
+      tier: string;
+      color: string;
+      label: string;
+      odds: string;
+      slices: number;
+      startAngle: number;
+      endAngle: number;
+      midAngle: number;
+    }> = [];
+    let currentAngle = 0;
+    const anglePerSlice = 360 / 36;
+    
+    wheelSegments.forEach((segment) => {
+      for (let i = 0; i < segment.slices; i++) {
+        slices.push({
+          ...segment,
+          startAngle: currentAngle,
+          endAngle: currentAngle + anglePerSlice,
+          midAngle: currentAngle + anglePerSlice / 2
+        });
+        currentAngle += anglePerSlice;
+      }
+    });
+    
+    return slices;
+  };
+
+  const wheelSlices = generateWheelSlices();
 
   return (
     <div className="space-y-6">
@@ -136,43 +159,59 @@ export function WheelGame() {
             <div className="relative">
               {/* Wheel */}
               <div 
-                className="w-64 h-64 rounded-full border-4 border-primary relative overflow-hidden"
+                className="w-80 h-80 rounded-full border-4 border-primary relative overflow-hidden shadow-2xl"
                 style={{
                   background: `conic-gradient(
                     from 0deg,
-                    hsl(var(--tier-d)) 0deg 51.4deg,
-                    hsl(var(--tier-c)) 51.4deg 102.8deg, 
-                    hsl(var(--tier-b)) 102.8deg 154.2deg,
-                    hsl(var(--tier-a)) 154.2deg 205.6deg,
-                    hsl(var(--tier-s)) 205.6deg 257deg,
-                    hsl(var(--tier-ss)) 257deg 308.4deg,
-                    hsl(var(--tier-sss)) 308.4deg 360deg
+                    ${wheelSlices.map(slice => 
+                      `hsl(var(--${slice.color})) ${slice.startAngle}deg ${slice.endAngle}deg`
+                    ).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
-                  transition: isSpinning ? "transform 3s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
+                  transition: isSpinning ? "transform 4s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
                 }}
               >
-                {/* Segment Labels */}
-                {wheelSegments.map((segment, index) => (
+                {/* Slice Separators */}
+                {wheelSlices.map((slice, index) => (
                   <div
-                    key={segment.tier}
-                    className="absolute w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                    key={index}
+                    className="absolute w-full h-full"
                     style={{
-                      transform: `rotate(${index * 51.4 + 25.7}deg)`,
+                      transform: `rotate(${slice.startAngle}deg)`,
                       transformOrigin: "center",
                     }}
                   >
-                    <span 
-                      className="absolute"
-                      style={{ 
-                        top: "20%",
-                        transform: `rotate(-${index * 51.4 + 25.7}deg)`,
-                      }}
-                    >
-                      {segment.tier}
-                    </span>
+                    <div className="absolute top-0 left-1/2 w-0.5 h-1/2 bg-white/20 transform -translate-x-1/2"></div>
                   </div>
                 ))}
+                
+                {/* Ball Type Labels - only show one per type */}
+                {wheelSegments.map((segment) => {
+                  const firstSlice = wheelSlices.find(s => s.tier === segment.tier);
+                  if (!firstSlice) return null;
+                  
+                  return (
+                    <div
+                      key={segment.tier}
+                      className="absolute w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                      style={{
+                        transform: `rotate(${firstSlice.midAngle}deg)`,
+                        transformOrigin: "center",
+                      }}
+                    >
+                      <span 
+                        className="absolute text-white drop-shadow-lg"
+                        style={{ 
+                          top: "25%",
+                          transform: `rotate(-${firstSlice.midAngle}deg)`,
+                          fontSize: segment.tier === 'masterball' ? '10px' : '12px'
+                        }}
+                      >
+                        {segment.label.split(' ')[0]}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               
               {/* Pointer */}
@@ -181,8 +220,8 @@ export function WheelGame() {
               </div>
               
               {/* Center Circle */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <RotateCcw className="w-4 h-4 text-white" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                <RotateCcw className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
@@ -265,13 +304,15 @@ export function WheelGame() {
       <Card className="gaming-card">
         <CardContent className="p-6">
           <h4 className="font-semibold mb-4">Wheel Odds</h4>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {wheelSegments.map((segment) => (
-              <div key={segment.tier} className="text-center">
-                <div className={`w-8 h-8 rounded-full bg-${segment.color}/20 mx-auto mb-1 flex items-center justify-center`}>
-                  <span className={`text-xs font-bold tier-${segment.color}`}>{segment.tier}</span>
+              <div key={segment.tier} className="text-center p-3 rounded-lg bg-muted/20 border">
+                <div className={`w-12 h-12 rounded-full bg-${segment.color}/20 mx-auto mb-2 flex items-center justify-center border-2 border-${segment.color}/50`}>
+                  <span className={`text-sm font-bold text-${segment.color}-600`}>{segment.slices}</span>
                 </div>
+                <div className="text-sm font-medium">{segment.label}</div>
                 <div className="text-xs text-muted-foreground">{segment.odds}</div>
+                <div className="text-xs text-muted-foreground">{segment.slices} slices</div>
               </div>
             ))}
           </div>
