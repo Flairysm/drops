@@ -958,7 +958,7 @@ export class DatabaseStorage implements IStorage {
       .from(globalFeed)
       .leftJoin(users, eq(globalFeed.userId, users.id))
       .leftJoin(cards, eq(globalFeed.cardId, cards.id))
-      .where(sql`${globalFeed.tier} IN (${tierFilter.map(t => `'${t}'`).join(', ')})`)
+      .where(inArray(globalFeed.tier, tierFilter))
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
 
