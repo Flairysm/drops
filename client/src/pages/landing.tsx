@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,13 +62,24 @@ export default function Landing() {
                 {theme === "dark" ? "🌞" : "🌙"}
               </Button>
               
-              <Button
-                onClick={() => window.location.href = "/api/login"}
-                className="bg-gradient-to-r from-primary to-accent hover:glow-effect"
-                data-testid="button-login"
-              >
-                Sign In
-              </Button>
+              <Link href="/login">
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  data-testid="button-login"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              
+              <Link href="/register">
+                <Button
+                  className="bg-gradient-to-r from-primary to-accent hover:glow-effect"
+                  data-testid="button-register"
+                >
+                  Create Account
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -89,15 +101,16 @@ export default function Landing() {
                 unlimited vault storage, and exciting minigames.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  size="lg"
-                  onClick={() => window.location.href = "/api/login"}
-                  className="bg-gradient-to-r from-primary to-accent hover:glow-effect transform hover:scale-105 transition-all"
-                  data-testid="button-start-playing"
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  Start Playing
-                </Button>
+                <Link href="/register">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-primary to-accent hover:glow-effect transform hover:scale-105 transition-all"
+                    data-testid="button-start-playing"
+                  >
+                    <Play className="mr-2 h-4 w-4" />
+                    Start Playing
+                  </Button>
+                </Link>
                 <Button
                   size="lg"
                   variant="outline"
@@ -146,14 +159,15 @@ export default function Landing() {
                           <span className="font-semibold text-legendary">{game.maxPayout}</span>
                         </div>
                       </div>
-                      <Button
-                        className={`w-full bg-gradient-to-r ${game.color} text-white hover:glow-effect transition-all`}
-                        onClick={() => window.location.href = "/api/login"}
-                        data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
-                      >
-                        {game.icon}
-                        <span className="ml-2">Play {game.name.split(' ')[0]}</span>
-                      </Button>
+                      <Link href="/register">
+                        <Button
+                          className={`w-full bg-gradient-to-r ${game.color} text-white hover:glow-effect transition-all`}
+                          data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        >
+                          {game.icon}
+                          <span className="ml-2">Play {game.name.split(' ')[0]}</span>
+                        </Button>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>

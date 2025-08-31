@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { z } from "zod";
 import { 
   insertCardSchema, 
@@ -17,13 +17,12 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const user = req.user; // User is now attached directly by custom middleware
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -49,7 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game routes
   app.post('/api/games/play', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { gameType, betAmount, plinkoResult } = req.body;
 
       // Validate input
@@ -178,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Vault routes
   app.get('/api/vault', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const userCards = await storage.getUserCards(userId);
       res.json(userCards);
     } catch (error) {
@@ -189,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/vault/refund', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { cardIds } = req.body;
 
       if (!Array.isArray(cardIds) || cardIds.length === 0) {
@@ -229,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Credits routes
   app.post('/api/credits/purchase', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { amount, bundleType } = req.body;
 
       const purchaseAmount = parseFloat(amount);
@@ -274,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Shipping routes
   app.post('/api/shipping/request', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const requestData = insertShippingRequestSchema.parse({
         ...req.body,
         userId,
@@ -405,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { packType } = req.params;
       const { rates } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Validate rates array
       if (!Array.isArray(rates)) {
@@ -589,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       await storage.setVirtualPackPullRates(id, rates, userId);
       res.json({ success: true });
     } catch (error) {
@@ -625,7 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notifications routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const notifications = await storage.getUserNotifications(userId);
       res.json(notifications);
     } catch (error) {
@@ -648,7 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pack routes
   app.get('/api/packs', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const userPacks = await storage.getUserPacks(userId);
       res.json(userPacks);
     } catch (error) {
@@ -670,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/virtual-packs/:id/open', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { id } = req.params;
 
       const result = await storage.openVirtualPack(id, userId);
@@ -704,7 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/packs/open/:packId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { packId } = req.params;
 
       const packResult = await storage.openUserPack(packId, userId);
