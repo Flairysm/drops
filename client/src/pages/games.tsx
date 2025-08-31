@@ -124,7 +124,7 @@ export default function Play() {
                     </div>
                     <CardTitle className="font-gaming text-xl">Plinko Drop</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Drop balls and watch them bounce through pegs
+                      Drop, Bounce, Win!
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -164,7 +164,7 @@ export default function Play() {
                     </div>
                     <CardTitle className="font-gaming text-xl">Wheel Spin</CardTitle>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Spin the wheel of fortune for bonus rewards
+                      Spin and Win!
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
