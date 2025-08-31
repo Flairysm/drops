@@ -166,14 +166,14 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
 
   // Add an effect to refresh cards periodically when the dialog is open
   useEffect(() => {
-    if (!isOpen || !packId || !allCards) return;
+    if (!open || !packId || !allCards) return;
     
     const interval = setInterval(() => {
       refreshPackCards();
     }, 2000); // Refresh every 2 seconds when dialog is open
     
     return () => clearInterval(interval);
-  }, [isOpen, packId, allCards]);
+  }, [open, packId, allCards]);
 
   const getTierColor = (tier: string) => {
     const colors = {
