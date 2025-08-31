@@ -195,8 +195,6 @@ export function WheelGame() {
       // This means we need to look at the original slice positions offset by the wheel rotation
       const needlePointsAt = (360 - wheelFinalPosition) % 360;
       
-      console.log('Wheel final position:', wheelFinalPosition, 'Needle points at:', needlePointsAt);
-      
       // Find which slice the needle is pointing to
       const targetSlice = wheelSlices.find(slice => {
         // Handle wrap-around cases
@@ -207,8 +205,6 @@ export function WheelGame() {
           return needlePointsAt >= slice.startAngle || needlePointsAt < slice.endAngle;
         }
       }) || wheelSlices[0]; // fallback to first slice
-      
-      console.log('Target slice:', targetSlice.tier, 'at angles:', targetSlice.startAngle, '-', targetSlice.endAngle);
       
       const wheelResult = targetSlice.tier;
       
@@ -276,18 +272,6 @@ export function WheelGame() {
             </div>
           </div>
 
-          {lastResult && !isSpinning && (
-            <div className="text-center mt-6">
-              <div className={`inline-flex items-center px-4 py-2 rounded-full bg-${wheelSegments.find(s => s.tier === lastResult.result.tier)?.color}/20 border border-${wheelSegments.find(s => s.tier === lastResult.result.tier)?.color}/50`}>
-                <span className={`font-bold tier-${wheelSegments.find(s => s.tier === lastResult.result.tier)?.color} mr-2`}>
-                  {lastResult.result.tier}
-                </span>
-                <span className="text-muted-foreground">
-                  {wheelSegments.find(s => s.tier === lastResult.result.tier)?.label} Card!
-                </span>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
