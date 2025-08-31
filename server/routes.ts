@@ -106,10 +106,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update game session with result
       await storage.updateGameSession(gameSession.id, result, 'completed');
 
-      if (gameType === 'plinko') {
-        // For Plinko, award packs based on visual outcome
+      if (gameType === 'plinko' || gameType === 'wheel') {
+        // For Plinko and Wheel, award packs based on outcome
         const packType = result.tier;
-        console.log(`Plinko pack assignment: ${packType}`);
+        console.log(`${gameType} pack assignment: ${packType}`);
         
         const packs = await storage.getActivePacks();
         const targetPack = packs.find(p => p.type === packType);
@@ -775,6 +775,24 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
     return {
       cardId: '', // Not needed for Plinko
       tier: packType, // This is now the pack type directly
+      gameType,
+    };
+  }
+
+  if (gameType === 'wheel') {
+    // For wheel game, use pokeball pack system like plinko
+    // Wheel odds: Pokeball 61%, Greatball 22%, Ultraball 14%, Masterball 2.8%
+    const random = Math.random();
+    let tier: string;
+    
+    if (random < 0.028) tier = 'masterball';
+    else if (random < 0.168) tier = 'ultraball'; // 0.028 + 0.14
+    else if (random < 0.388) tier = 'greatball'; // 0.168 + 0.22
+    else tier = 'pokeball'; // remaining 61.2%
+    
+    return {
+      cardId: '', // Not needed for wheel
+      tier: tier, // Pack type
       gameType,
     };
   }

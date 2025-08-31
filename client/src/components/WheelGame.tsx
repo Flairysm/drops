@@ -19,7 +19,7 @@ interface GameResult {
 }
 
 export function WheelGame() {
-  const [betAmount, setBetAmount] = useState("2.5");
+  const [betAmount, setBetAmount] = useState("20");
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [lastResult, setLastResult] = useState<GameResult | null>(null);
@@ -89,10 +89,10 @@ export function WheelGame() {
       return;
     }
 
-    if (bet < 2.5) {
+    if (bet !== 20) {
       toast({
-        title: "Minimum Bet",
-        description: "Minimum bet for Wheel Spin is 2.5 credits",
+        title: "Fixed Entry Cost",
+        description: "Wheel Spin requires exactly 20 credits",
         variant: "destructive",
       });
       return;
@@ -185,33 +185,7 @@ export function WheelGame() {
                   </div>
                 ))}
                 
-                {/* Ball Type Labels - only show one per type */}
-                {wheelSegments.map((segment) => {
-                  const firstSlice = wheelSlices.find(s => s.tier === segment.tier);
-                  if (!firstSlice) return null;
-                  
-                  return (
-                    <div
-                      key={segment.tier}
-                      className="absolute w-full h-full flex items-center justify-center text-white font-bold text-sm"
-                      style={{
-                        transform: `rotate(${firstSlice.midAngle}deg)`,
-                        transformOrigin: "center",
-                      }}
-                    >
-                      <span 
-                        className="absolute text-white drop-shadow-lg"
-                        style={{ 
-                          top: "25%",
-                          transform: `rotate(-${firstSlice.midAngle}deg)`,
-                          fontSize: segment.tier === 'masterball' ? '10px' : '12px'
-                        }}
-                      >
-                        {segment.label.split(' ')[0]}
-                      </span>
-                    </div>
-                  );
-                })}
+                {/* No labels - colors only */}
               </div>
               
               {/* Pointer */}
@@ -251,30 +225,14 @@ export function WheelGame() {
                 <Input
                   id="wheel-bet-amount"
                   type="number"
-                  min="2.5"
-                  step="0.5"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
-                  placeholder="2.5"
-                  disabled={isSpinning}
+                  value="20"
+                  disabled={true}
                   data-testid="input-wheel-bet-amount"
+                  className="bg-muted"
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => setBetAmount("2.5")}
-                  disabled={isSpinning}
-                  data-testid="button-wheel-bet-min"
-                >
-                  Min
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setBetAmount("25.0")}
-                  disabled={isSpinning}
-                  data-testid="button-wheel-bet-max"
-                >
-                  Max
-                </Button>
+                <div className="flex items-center text-muted-foreground text-sm">
+                  Fixed Entry Cost
+                </div>
               </div>
             </div>
 
@@ -292,7 +250,7 @@ export function WheelGame() {
               ) : (
                 <>
                   <RotateCcw className="w-5 h-5 mr-2" />
-                  Spin Wheel ({betAmount} Credits)
+                  Spin Wheel (20 Credits)
                 </>
               )}
             </Button>
