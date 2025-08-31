@@ -89,7 +89,7 @@ export default function Home() {
   const games = [
     {
       name: "Plinko Drop",
-      description: "Drop balls, win packs! Physics-based excitement",
+      description: "Drop, Bounce, Win!",
       cost: "20",
       icon: <Play className="w-8 h-8 text-white" />,
       color: "from-blue-500 to-purple-600",
@@ -106,7 +106,7 @@ export default function Home() {
       popular: true,
     },
     {
-      name: "Virtual Pack",
+      name: "Black Bolt",
       description: "Open premium card packs instantly",
       cost: "15",
       icon: <Package className="w-8 h-8 text-white" />,
@@ -159,7 +159,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h2 className="font-gaming font-bold text-3xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    Game Collection
+                    Quick Play
                   </h2>
                   <p className="text-muted-foreground">Choose your adventure and win amazing cards</p>
                 </div>
@@ -217,7 +217,7 @@ export default function Home() {
                           data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
                         >
                           <Play className="w-5 h-5 mr-2" />
-                          {game.name === "Virtual Pack" ? "Open Packs" : "Play Now"}
+                          {game.name === "Black Bolt" ? "Open Packs" : "Play Now"}
                         </Button>
                       </Link>
                     </div>
