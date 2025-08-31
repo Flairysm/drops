@@ -92,12 +92,18 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         const packCardsData = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
+          console.log("Processing pack cards data:", packCardsData);
+          console.log("Sample pack card:", packCardsData[0]);
+          console.log("Sample all card:", allCards[0]);
+          
           const cardDetails = packCardsData.map((pc: any) => {
             // Match by cardId
             const card = allCards.find((c: any) => c.id === pc.cardId);
+            console.log(`Looking for cardId ${pc.cardId}, found:`, card ? card.name : 'NOT FOUND');
             return card ? { ...card, weight: pc.weight } : null;
           }).filter(Boolean);
           
+          console.log("Final card details:", cardDetails);
           setPackCards(cardDetails);
         } else {
           setPackCards([]);
