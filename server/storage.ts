@@ -694,6 +694,7 @@ export class DatabaseStorage implements IStorage {
       for (const card of cardsToRefund) {
         // Use 100% of current market value for refund (as per documentation)
         const refundAmount = card.marketValue ? parseFloat(card.marketValue.toString()) : parseFloat(card.pullValue);
+        console.log(`Refund calculation: card pullValue=${card.pullValue}, marketValue=${card.marketValue}, refundAmount=${refundAmount}`);
         totalRefund += refundAmount;
         
         // Restore card stock when refunded
@@ -704,6 +705,8 @@ export class DatabaseStorage implements IStorage {
             .where(eq(cards.id, card.cardId));
         }
       }
+
+      console.log(`Total refund calculated: ${totalRefund}, fixed to 2 decimals: ${totalRefund.toFixed(2)}`);
 
       // Mark cards as refunded
       await tx
