@@ -69,7 +69,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     queryKey: ["/api/virtual-packs"],
   });
 
-  const currentPack = virtualPacks?.find((pack: any) => pack.id === packId);
+  const currentPack = Array.isArray(virtualPacks) ? virtualPacks.find((pack: any) => pack.id === packId) : null;
   const packPrice = parseFloat(currentPack?.price || '0');
 
   // Get all cards for card pool display
@@ -80,13 +80,14 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   // Load pack card pool when component mounts
   useEffect(() => {
     const loadPackCards = async () => {
-      if (!packId) return;
+      if (!packId || !allCards) return;
       
       try {
         setLoadingCards(true);
-        const packCardsResponse = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
-        const cardDetails = packCardsResponse.map((pc: any) => {
-          const card = allCards?.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
+        const packCardsData = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
+        
+        const cardDetails = packCardsData.map((pc: any) => {
+          const card = allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
           return card ? { ...card, weight: pc.weight } : null;
         }).filter(Boolean);
         

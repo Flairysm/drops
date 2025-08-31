@@ -572,6 +572,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public route for users to view pack cards
+  app.get('/api/virtual-packs/:id/cards', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const packCards = await storage.getVirtualPackCards(id);
+      res.json(packCards);
+    } catch (error) {
+      console.error("Error fetching virtual pack cards:", error);
+      res.status(500).json({ message: "Failed to fetch virtual pack cards" });
+    }
+  });
+
   // Virtual pack pull rate routes
   app.get('/api/admin/virtual-packs/:id/pull-rates', isAdmin, async (req: any, res) => {
     try {
