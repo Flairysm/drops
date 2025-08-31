@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -1353,6 +1353,9 @@ export default function Admin() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Edit Card</DialogTitle>
+                <DialogDescription>
+                  Modify the card details including name, tier, market value, and stock quantity.
+                </DialogDescription>
               </DialogHeader>
               
               <form onSubmit={virtualLibraryForm.handleSubmit(handleSaveCardEdit)} className="space-y-4">
@@ -1504,6 +1507,9 @@ export default function Admin() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Edit User Credits</DialogTitle>
+                <DialogDescription>
+                  Update the credit amount for this user account.
+                </DialogDescription>
               </DialogHeader>
               
               <form onSubmit={userEditForm.handleSubmit(handleSaveUserCredits)} className="space-y-4">
@@ -1558,6 +1564,9 @@ export default function Admin() {
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>User Transaction History</DialogTitle>
+                <DialogDescription>
+                  View all transactions for this user including credit purchases, refunds, and game expenses.
+                </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-4">
