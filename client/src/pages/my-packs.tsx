@@ -246,9 +246,9 @@ export default function MyPacks() {
                 <h3 className="text-xl font-semibold mb-2 mt-6">No Packs Yet</h3>
                 <p className="text-muted-foreground mb-6">Play Minigames to earn Mystery Packs</p>
                 <Button asChild className="gaming-gradient">
-                  <a href="/games" data-testid="button-play-plinko">
+                  <a href="/play" data-testid="button-play">
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Play Plinko
+                    Play
                   </a>
                 </Button>
               </div>
