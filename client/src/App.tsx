@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import Home from "@/pages/home";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 import Play from "@/pages/games";
 import Plinko from "@/pages/plinko";
 import Wheel from "@/pages/wheel";
@@ -30,6 +32,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       {isAuthenticated && (
         <>
           <Route path="/play" component={Play} />

@@ -57,30 +57,13 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  try {
-    // Check if user already exists by looking for a user with this Replit ID in their username or a custom field
-    const replitUserId = claims["sub"];
-    const email = claims["email"];
-    
-    // First try to find user by email
-    let user = email ? await storage.getUserByEmail(email) : null;
-    
-    if (!user) {
-      // If no user found, create a new one
-      user = await storage.createUser({
-        email: email || null,
-        firstName: claims["first_name"] || null,
-        lastName: claims["last_name"] || null,
-        profileImageUrl: claims["profile_image_url"] || null,
-        username: email || `replit_user_${replitUserId}`,
-      });
-    }
-    
-    return user;
-  } catch (error) {
-    console.error("Error upserting user:", error);
-    throw error;
-  }
+  await storage.upsertUser({
+    id: claims["sub"],
+    email: claims["email"],
+    firstName: claims["first_name"],
+    lastName: claims["last_name"],
+    profileImageUrl: claims["profile_image_url"],
+  });
 }
 
 export async function setupAuth(app: Express) {
@@ -95,28 +78,14 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    try {
-      const user = {};
-      updateUserSession(user, tokens);
-      const dbUser = await upsertUser(tokens.claims());
-      // Store database user ID in session for later use
-      (user as any).dbUserId = dbUser.id;
-      verified(null, user);
-    } catch (error) {
-      console.error("Authentication verification failed:", error);
-      verified(error, false);
-    }
+    const user = {};
+    updateUserSession(user, tokens);
+    await upsertUser(tokens.claims());
+    verified(null, user);
   };
 
-  // Get all domains including localhost for development
-  const domains = process.env.REPLIT_DOMAINS!.split(",");
-  if (process.env.NODE_ENV === "development") {
-    domains.push("localhost:5000");
-    domains.push("localhost");
-  }
-  
-  for (const domain of domains) {
-    console.log(`Registering strategy: replitauth:${domain}`);
+  for (const domain of process.env
+    .REPLIT_DOMAINS!.split(",")) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -133,8 +102,6 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    console.log(`Login attempt for hostname: ${req.hostname}`);
-    console.log(`Available strategies:`, passport._strategies);
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -142,7 +109,6 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    console.log(`Callback received for hostname: ${req.hostname}`);
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
@@ -170,8 +136,6 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
-    // Attach database user to request for easier access
-    await attachDatabaseUser(req, user);
     return next();
   }
 
@@ -185,45 +149,9 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
-    await attachDatabaseUser(req, user);
     return next();
   } catch (error) {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
-};
-
-// Helper function to attach database user to request
-async function attachDatabaseUser(req: any, sessionUser: any) {
-  try {
-    let dbUser;
-    if (sessionUser.dbUserId) {
-      dbUser = await storage.getUser(sessionUser.dbUserId);
-    } else if (sessionUser.claims?.email) {
-      dbUser = await storage.getUserByEmail(sessionUser.claims.email);
-    }
-    
-    if (dbUser) {
-      req.dbUser = dbUser;
-    }
-  } catch (error) {
-    console.error("Error attaching database user:", error);
-  }
-}
-
-export const isAdmin: RequestHandler = async (req, res, next) => {
-  // First check authentication
-  const user = req.user as any;
-  if (!req.isAuthenticated() || !user?.claims?.sub) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  // Check if user has admin role
-  const userId = user.claims.sub;
-  const dbUser = await storage.getUser(userId);
-  if (!dbUser || dbUser.role !== 'admin') {
-    return res.status(403).json({ message: "Admin access required" });
-  }
-
-  next();
 };

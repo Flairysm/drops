@@ -23,13 +23,15 @@ export function Navigation() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Clear cache and redirect to Replit OAuth logout
-      queryClient.clear();
-      window.location.href = "/api/logout";
-      return Promise.resolve();
+      return await apiRequest("POST", "/api/auth/logout");
     },
     onSuccess: () => {
-      // Don't show toast since we're redirecting
+      queryClient.clear(); // Clear all cached data
+      toast({
+        title: "Logged out",
+        description: "You've been logged out successfully.",
+      });
+      setLocation("/");
     },
     onError: (error: any) => {
       toast({
@@ -126,7 +128,7 @@ export function Navigation() {
             ) : (
               <>
                 {/* Login/Signup buttons for non-authenticated users */}
-                <a href="/api/login">
+                <Link href="/login">
                   <Button
                     variant="outline"
                     className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
@@ -134,16 +136,16 @@ export function Navigation() {
                   >
                     Sign In
                   </Button>
-                </a>
+                </Link>
                 
-                <a href="/api/login">
+                <Link href="/register">
                   <Button
                     className="bg-gradient-to-r from-primary to-accent hover:glow-effect"
                     data-testid="button-register"
                   >
                     Create Account
                   </Button>
-                </a>
+                </Link>
               </>
             )}
           </div>
@@ -209,7 +211,7 @@ export function Navigation() {
                   </Button>
                 ) : (
                   <div className="space-x-2">
-                    <a href="/api/login">
+                    <Link href="/login">
                       <Button
                         variant="outline"
                         size="sm"
@@ -218,8 +220,8 @@ export function Navigation() {
                       >
                         Sign In
                       </Button>
-                    </a>
-                    <a href="/api/login">
+                    </Link>
+                    <Link href="/register">
                       <Button
                         size="sm"
                         className="bg-gradient-to-r from-primary to-accent"
@@ -228,7 +230,7 @@ export function Navigation() {
                       >
                         Create Account
                       </Button>
-                    </a>
+                    </Link>
                   </div>
                 )}
               </div>
