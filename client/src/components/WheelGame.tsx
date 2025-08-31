@@ -187,14 +187,28 @@ export function WheelGame() {
     
     // After animation completes, determine what the needle landed on
     setTimeout(() => {
-      // Calculate where needle points after rotation (needle is at top pointing down)
-      const normalizedAngle = (finalRotation % 360 + 360) % 360;
-      const needleAngle = normalizedAngle;
+      // The needle is fixed at top (0°) pointing down into the wheel
+      // We need to find what slice is at the top after rotation
+      const wheelFinalPosition = (finalRotation % 360 + 360) % 360;
+      
+      // Since the wheel rotated, we need to find what slice is now at position 0° (top)
+      // This means we need to look at the original slice positions offset by the wheel rotation
+      const needlePointsAt = (360 - wheelFinalPosition) % 360;
+      
+      console.log('Wheel final position:', wheelFinalPosition, 'Needle points at:', needlePointsAt);
       
       // Find which slice the needle is pointing to
-      const targetSlice = wheelSlices.find(slice => 
-        needleAngle >= slice.startAngle && needleAngle < slice.endAngle
-      ) || wheelSlices[0]; // fallback to first slice
+      const targetSlice = wheelSlices.find(slice => {
+        // Handle wrap-around cases
+        if (slice.startAngle <= slice.endAngle) {
+          return needlePointsAt >= slice.startAngle && needlePointsAt < slice.endAngle;
+        } else {
+          // Case where slice crosses 0° boundary
+          return needlePointsAt >= slice.startAngle || needlePointsAt < slice.endAngle;
+        }
+      }) || wheelSlices[0]; // fallback to first slice
+      
+      console.log('Target slice:', targetSlice.tier, 'at angles:', targetSlice.startAngle, '-', targetSlice.endAngle);
       
       const wheelResult = targetSlice.tier;
       
