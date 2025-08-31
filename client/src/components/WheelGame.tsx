@@ -304,20 +304,29 @@ export function WheelGame() {
         </CardContent>
       </Card>
 
-      {/* Pokeball Pack Odds Display */}
+      {/* Pack Odds Display */}
       <Card className="gaming-card">
         <CardContent className="p-6">
-          <h4 className="font-semibold mb-4">Pokeball Pack Odds</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h4 className="font-semibold mb-6 text-center">Pack Rewards & Odds</h4>
+          <div className="space-y-3">
             {wheelSegments.map((segment) => (
-              <div key={segment.tier} className="text-center p-2 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border-2 border-muted/50 hover:border-primary/50 transition-all">
+              <div key={segment.tier} className="flex items-center gap-4 p-3 rounded-lg bg-gradient-to-r from-muted/20 to-muted/10 border border-muted/30 hover:border-primary/40 transition-all">
                 {/* Pack Image */}
-                <div className="w-full h-56 mb-2">
-                  <PackImage packType={segment.tier} size="large" />
+                <div className="w-16 h-20 flex-shrink-0">
+                  <PackImage packType={segment.tier} size="small" />
                 </div>
-                <div className="text-sm font-bold">{segment.label}</div>
-                <div className="text-lg font-bold text-primary">{segment.odds}</div>
-                <div className="text-xs text-muted-foreground">{segment.slices} slices</div>
+                
+                {/* Pack Info */}
+                <div className="flex-1">
+                  <div className="font-bold text-lg">{segment.label}</div>
+                  <div className="text-sm text-muted-foreground">{segment.slices} slices on wheel</div>
+                </div>
+                
+                {/* Odds */}
+                <div className="text-right flex-shrink-0">
+                  <div className="text-2xl font-bold text-primary">{segment.odds}</div>
+                  <div className="text-xs text-muted-foreground">chance</div>
+                </div>
               </div>
             ))}
           </div>
