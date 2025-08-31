@@ -179,25 +179,37 @@ export function WheelGame() {
       return;
     }
 
-    // Pick a random slice from the wheel to land on
-    const targetSliceIndex = Math.floor(Math.random() * wheelSlices.length);
-    const targetSlice = wheelSlices[targetSliceIndex];
-    const wheelResult = targetSlice.tier;
-    
-    // Calculate wheel animation to land on the target slice
-    const spins = 5; // Number of full rotations
-    const finalRotation = rotation + (spins * 360) + (360 - targetSlice.midAngle);
-    
+    // Start spinning animation
     setIsSpinning(true);
     setLastResult(null);
     setShowPackDialog(false);
+    
+    // Generate random final rotation (multiple spins + random final position)
+    const spins = 5 + Math.random() * 3; // 5-8 full rotations
+    const finalAngle = Math.random() * 360; // Random final position
+    const finalRotation = rotation + (spins * 360) + finalAngle;
+    
     setRotation(finalRotation);
     
-    playGameMutation.mutate({
-      gameType: "wheel",
-      betAmount: betAmount,
-      wheelResult: wheelResult,
-    });
+    // After animation completes, determine what the needle landed on
+    setTimeout(() => {
+      // Calculate where needle points after rotation (needle is at top pointing down)
+      const normalizedAngle = (finalRotation % 360 + 360) % 360;
+      const needleAngle = normalizedAngle;
+      
+      // Find which slice the needle is pointing to
+      const targetSlice = wheelSlices.find(slice => 
+        needleAngle >= slice.startAngle && needleAngle < slice.endAngle
+      ) || wheelSlices[0]; // fallback to first slice
+      
+      const wheelResult = targetSlice.tier;
+      
+      playGameMutation.mutate({
+        gameType: "wheel",
+        betAmount: betAmount,
+        wheelResult: wheelResult,
+      });
+    }, 3500); // Wait for animation to complete
   };
 
   return (
@@ -244,8 +256,8 @@ export function WheelGame() {
                 {/* No labels - colors only */}
               </div>
               
-              {/* Pointer - flipped to point down into the wheel */}
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2">
+              {/* Pointer - pointing down into the wheel */}
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
                 <div className="w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
               </div>
               
