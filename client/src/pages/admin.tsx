@@ -986,9 +986,6 @@ export default function Admin() {
                                 {/* Expanded Card Pool View */}
                                 {expandedPacks.has(pack.id) && (
                                   <div className="border-t bg-muted/30 p-3">
-                                    <div className="text-xs font-medium mb-2 text-muted-foreground">
-                                      Card Pool ({packCardPools[pack.id]?.length || 0} cards):
-                                    </div>
                                     {packCardPools[pack.id]?.length > 0 ? (
                                       <div className="grid gap-2 max-h-32 overflow-y-auto">
                                         {packCardPools[pack.id].map((card: any) => (
