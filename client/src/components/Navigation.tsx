@@ -135,6 +135,15 @@ export function Navigation() {
                     Sign In
                   </Button>
                 </a>
+                
+                <a href="/api/login">
+                  <Button
+                    className="bg-gradient-to-r from-primary to-accent hover:glow-effect"
+                    data-testid="button-register"
+                  >
+                    Create Account
+                  </Button>
+                </a>
               </>
             )}
           </div>
@@ -199,16 +208,28 @@ export function Navigation() {
                     {logoutMutation.isPending ? "Logging out..." : "Logout"}
                   </Button>
                 ) : (
-                  <a href="/api/login">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      data-testid="button-mobile-login"
-                    >
-                      Sign In
-                    </Button>
-                  </a>
+                  <div className="space-x-2">
+                    <a href="/api/login">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        data-testid="button-mobile-login"
+                      >
+                        Sign In
+                      </Button>
+                    </a>
+                    <a href="/api/login">
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-primary to-accent"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        data-testid="button-mobile-register"
+                      >
+                        Create Account
+                      </Button>
+                    </a>
+                  </div>
                 )}
               </div>
             </div>
