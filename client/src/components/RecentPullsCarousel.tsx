@@ -12,9 +12,10 @@ interface RecentPullsCarouselProps {
 
 export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showAllTiers, setShowAllTiers] = useState(false);
 
   const { data: feedData, isLoading } = useQuery<GlobalFeedWithDetails[]>({
-    queryKey: [`/api/feed?limit=${limit}`],
+    queryKey: [`/api/feed?limit=${limit}${showAllTiers ? '' : '&minTier=A'}`],
     refetchInterval: 15000, // Refresh every 15 seconds
   });
 
@@ -103,13 +104,23 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
               <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <h3 className="font-gaming font-bold text-xl">Recent Pulls</h3>
+              <h3 className="font-gaming font-bold text-xl">
+                Recent Pulls {!showAllTiers && "(A+ Only)"}
+              </h3>
               <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
                 Live
               </Badge>
             </div>
             
             <div className="flex items-center space-x-2">
+              <Button
+                variant={showAllTiers ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowAllTiers(!showAllTiers)}
+                data-testid="button-toggle-carousel-tiers"
+              >
+                {showAllTiers ? "A+ Only" : "See All"}
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
