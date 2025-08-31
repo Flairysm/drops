@@ -107,8 +107,8 @@ export function WheelGame() {
   };
 
   const wheelSegments = [
-    { tier: "pokeball", color: "blue", label: "Poké Ball", odds: "61%", slices: 22 },
-    { tier: "greatball", color: "red", label: "Great Ball", odds: "22%", slices: 8 },
+    { tier: "pokeball", color: "red", label: "Poké Ball", odds: "61%", slices: 22 },
+    { tier: "greatball", color: "blue", label: "Great Ball", odds: "22%", slices: 8 },
     { tier: "ultraball", color: "yellow", label: "Ultra Ball", odds: "14%", slices: 5 },
     { tier: "masterball", color: "purple", label: "Master Ball", odds: "2.8%", slices: 1 },
   ];
@@ -164,7 +164,7 @@ export function WheelGame() {
                   background: `conic-gradient(
                     from 0deg,
                     ${wheelSlices.map(slice => 
-                      `hsl(var(--${slice.color})) ${slice.startAngle}deg ${slice.endAngle}deg`
+  `var(--${slice.color}) ${slice.startAngle}deg ${slice.endAngle}deg`
                     ).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
@@ -218,43 +218,24 @@ export function WheelGame() {
       {/* Game Controls */}
       <Card className="gaming-card">
         <CardContent className="p-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="wheel-bet-amount">Bet Amount (Credits)</Label>
-              <div className="flex space-x-2 mt-2">
-                <Input
-                  id="wheel-bet-amount"
-                  type="number"
-                  value="20"
-                  disabled={true}
-                  data-testid="input-wheel-bet-amount"
-                  className="bg-muted"
-                />
-                <div className="flex items-center text-muted-foreground text-sm">
-                  Fixed Entry Cost
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleSpin}
-              disabled={isSpinning || playGameMutation.isPending}
-              className="w-full bg-gradient-to-r from-uncommon to-rare hover:glow-effect transition-all text-lg py-6"
-              data-testid="button-spin-wheel"
-            >
-              {isSpinning || playGameMutation.isPending ? (
-                <>
-                  <RotateCcw className="w-5 h-5 mr-2 animate-spin" />
-                  Spinning...
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="w-5 h-5 mr-2" />
-                  Spin Wheel (20 Credits)
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={handleSpin}
+            disabled={isSpinning || playGameMutation.isPending}
+            className="w-full bg-gradient-to-r from-uncommon to-rare hover:glow-effect transition-all text-lg py-6"
+            data-testid="button-spin-wheel"
+          >
+            {isSpinning || playGameMutation.isPending ? (
+              <>
+                <RotateCcw className="w-5 h-5 mr-2 animate-spin" />
+                Spinning...
+              </>
+            ) : (
+              <>
+                <RotateCcw className="w-5 h-5 mr-2" />
+                Spin Wheel (20 Credits)
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
