@@ -163,9 +163,12 @@ export function WheelGame() {
                 style={{
                   background: `conic-gradient(
                     from 0deg,
-                    ${wheelSlices.map(slice => 
-  `var(--${slice.color}) ${slice.startAngle}deg ${slice.endAngle}deg`
-                    ).join(', ')}
+                    ${wheelSlices.map((slice, index) => {
+                      // Alternate colors for visual distinction
+                      const colors = ['red', 'blue', 'yellow', 'purple'];
+                      const color = colors[index % 4];
+                      return `var(--${color}) ${slice.startAngle}deg ${slice.endAngle}deg`;
+                    }).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
                   transition: isSpinning ? "transform 4s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
@@ -239,18 +242,24 @@ export function WheelGame() {
         </CardContent>
       </Card>
 
-      {/* Odds Display */}
+      {/* Pokeball Pack Odds Display */}
       <Card className="gaming-card">
         <CardContent className="p-6">
-          <h4 className="font-semibold mb-4">Wheel Odds</h4>
+          <h4 className="font-semibold mb-4">Pokeball Pack Odds</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {wheelSegments.map((segment) => (
-              <div key={segment.tier} className="text-center p-3 rounded-lg bg-muted/20 border">
-                <div className={`w-12 h-12 rounded-full bg-${segment.color}/20 mx-auto mb-2 flex items-center justify-center border-2 border-${segment.color}/50`}>
-                  <span className={`text-sm font-bold text-${segment.color}-600`}>{segment.slices}</span>
+              <div key={segment.tier} className="text-center p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border-2 border-muted/50 hover:border-primary/50 transition-all">
+                {/* Pokeball Design */}
+                <div className="w-16 h-16 mx-auto mb-3 relative">
+                  <div className={`w-full h-full rounded-full bg-gradient-to-br from-${segment.color}-400 to-${segment.color}-600 shadow-lg border-2 border-white/20`}>
+                    {/* Pokeball center line */}
+                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-black/30 transform -translate-y-1/2"></div>
+                    {/* Pokeball center button */}
+                    <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-white rounded-full border border-black/20 transform -translate-x-1/2 -translate-y-1/2"></div>
+                  </div>
                 </div>
-                <div className="text-sm font-medium">{segment.label}</div>
-                <div className="text-xs text-muted-foreground">{segment.odds}</div>
+                <div className="text-sm font-bold">{segment.label}</div>
+                <div className="text-lg font-bold text-primary">{segment.odds}</div>
                 <div className="text-xs text-muted-foreground">{segment.slices} slices</div>
               </div>
             ))}
