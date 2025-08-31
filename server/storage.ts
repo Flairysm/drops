@@ -996,6 +996,7 @@ export class DatabaseStorage implements IStorage {
         gameType: globalFeed.gameType,
         createdAt: globalFeed.createdAt,
         username: users.username,
+        email: users.email,
         cardName: cards.name,
         cardImageUrl: cards.imageUrl,
       })
@@ -1006,20 +1007,30 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
 
-    return result.map(row => ({
-      id: row.id,
-      userId: row.userId,
-      cardId: row.cardId,
-      tier: row.tier,
-      gameType: row.gameType,
-      createdAt: row.createdAt,
-      user: { username: row.username || 'Unknown' },
-      card: {
-        id: row.cardId,
-        name: row.cardName || 'Unknown Card',
-        imageUrl: row.cardImageUrl,
-      } as Card,
-    }));
+    return result.map(row => {
+      // Create a display name from username or email prefix
+      let displayName = row.username;
+      if (!displayName && row.email) {
+        // Extract username from email (everything before @)
+        displayName = row.email.split('@')[0];
+      }
+      displayName = displayName || 'Unknown';
+
+      return {
+        id: row.id,
+        userId: row.userId,
+        cardId: row.cardId,
+        tier: row.tier,
+        gameType: row.gameType,
+        createdAt: row.createdAt,
+        user: { username: displayName },
+        card: {
+          id: row.cardId,
+          name: row.cardName || 'Unknown Card',
+          imageUrl: row.cardImageUrl,
+        } as Card,
+      };
+    });
   }
 
   async addGlobalFeedEntry(entry: { userId: string; cardId: string; tier: string; gameType: string }): Promise<void> {
