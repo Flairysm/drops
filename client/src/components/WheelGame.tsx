@@ -128,25 +128,40 @@ export function WheelGame() {
     let currentAngle = 0;
     const anglePerSlice = 360 / 36;
     
-    // Create distributed pattern: spread out different ball types evenly
-    const distributedPattern = [];
+    // Create evenly distributed pattern with better spacing
+    const distributedPattern = new Array(36);
     
-    // Add pokeball (22 slices) - most common, distribute throughout
-    for (let i = 0; i < 22; i++) distributedPattern.push(wheelSegments[0]); // pokeball
+    // First, place the single masterball at a random position
+    const masterballPos = Math.floor(Math.random() * 36);
+    distributedPattern[masterballPos] = wheelSegments[3]; // masterball
     
-    // Add greatball (8 slices) - distribute every ~4-5 positions  
-    for (let i = 0; i < 8; i++) distributedPattern.push(wheelSegments[1]); // greatball
+    // Place ultraballs (5 slices) with good spacing - every ~7 positions
+    const ultraballPositions = [];
+    for (let i = 0; i < 5; i++) {
+      let pos;
+      do {
+        pos = Math.floor(Math.random() * 36);
+      } while (distributedPattern[pos] || ultraballPositions.some(p => Math.abs(p - pos) < 4));
+      ultraballPositions.push(pos);
+      distributedPattern[pos] = wheelSegments[2]; // ultraball
+    }
     
-    // Add ultraball (5 slices) - distribute every ~7 positions
-    for (let i = 0; i < 5; i++) distributedPattern.push(wheelSegments[2]); // ultraball
+    // Place greatballs (8 slices) with good spacing - every ~4 positions
+    const greatballPositions = [];
+    for (let i = 0; i < 8; i++) {
+      let pos;
+      do {
+        pos = Math.floor(Math.random() * 36);
+      } while (distributedPattern[pos] || greatballPositions.some(p => Math.abs(p - pos) < 3));
+      greatballPositions.push(pos);
+      distributedPattern[pos] = wheelSegments[1]; // greatball
+    }
     
-    // Add masterball (1 slice) - single rare slice
-    distributedPattern.push(wheelSegments[3]); // masterball
-    
-    // Shuffle the pattern to distribute them randomly but maintain counts
-    for (let i = distributedPattern.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [distributedPattern[i], distributedPattern[j]] = [distributedPattern[j], distributedPattern[i]];
+    // Fill remaining positions with pokeballs (22 slices)
+    for (let i = 0; i < 36; i++) {
+      if (!distributedPattern[i]) {
+        distributedPattern[i] = wheelSegments[0]; // pokeball
+      }
     }
     
     distributedPattern.forEach((segment, index) => {
