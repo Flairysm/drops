@@ -240,13 +240,11 @@ export default function MyPacks() {
 
           {noPacks ? (
             /* No Packs State */
-            <div className="text-center py-16">
+            (<div className="text-center py-16">
               <div className="gaming-card max-w-md mx-auto p-8 rounded-xl">
                 <PackImage packType="pokeball" size="large" />
                 <h3 className="text-xl font-semibold mb-2 mt-6">No Packs Yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Play Plinko to earn packs! Different landing zones give different tier packs.
-                </p>
+                <p className="text-muted-foreground mb-6">Play Minigames to earn Mystery Packs</p>
                 <Button asChild className="gaming-gradient">
                   <a href="/games" data-testid="button-play-plinko">
                     <Sparkles className="mr-2 h-4 w-4" />
@@ -254,10 +252,10 @@ export default function MyPacks() {
                   </a>
                 </Button>
               </div>
-            </div>
+            </div>)
           ) : (
             /* 4 Pack Types Inline */
-            <div className="flex justify-center items-start gap-16 flex-wrap py-8">
+            (<div className="flex justify-center items-start gap-16 flex-wrap py-8">
               {packTiers.map((tier) => {
                 const packs = groupedPacks[tier] || [];
                 const packDisplay = getPackTypeDisplay(tier);
@@ -309,12 +307,11 @@ export default function MyPacks() {
                   </div>
                 );
               })}
-            </div>
+            </div>)
           )}
 
         </div>
       </div>
-      
       {/* Pack Opening Animation */}
       {showAnimation && packOpenData && (
         <PackOpeningAnimation
