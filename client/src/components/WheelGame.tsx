@@ -113,7 +113,7 @@ export function WheelGame() {
     { tier: "masterball", color: "purple", label: "Master Ball", odds: "2.8%", slices: 1 },
   ];
 
-  // Generate wheel slice positions for 36 total slices
+  // Generate wheel slice positions for 36 total slices with alternating colors
   const generateWheelSlices = () => {
     const slices: Array<{
       tier: string;
@@ -124,20 +124,31 @@ export function WheelGame() {
       startAngle: number;
       endAngle: number;
       midAngle: number;
+      displayColor: string;
     }> = [];
     let currentAngle = 0;
     const anglePerSlice = 360 / 36;
     
+    // Create an array representing the actual distribution
+    const distribution = [];
     wheelSegments.forEach((segment) => {
       for (let i = 0; i < segment.slices; i++) {
-        slices.push({
-          ...segment,
-          startAngle: currentAngle,
-          endAngle: currentAngle + anglePerSlice,
-          midAngle: currentAngle + anglePerSlice / 2
-        });
-        currentAngle += anglePerSlice;
+        distribution.push(segment);
       }
+    });
+    
+    // Now create alternating visual colors while keeping the tier distribution
+    const alternatingColors = ['red', 'blue', 'yellow', 'purple'];
+    
+    distribution.forEach((segment, index) => {
+      slices.push({
+        ...segment,
+        startAngle: currentAngle,
+        endAngle: currentAngle + anglePerSlice,
+        midAngle: currentAngle + anglePerSlice / 2,
+        displayColor: alternatingColors[index % 4] // Alternate visual colors
+      });
+      currentAngle += anglePerSlice;
     });
     
     return slices;
@@ -164,8 +175,8 @@ export function WheelGame() {
                   background: `conic-gradient(
                     from 0deg,
                     ${wheelSlices.map((slice, index) => {
-                      // Use the slice's actual color based on tier
-                      return `var(--${slice.color}) ${slice.startAngle}deg ${slice.endAngle}deg`;
+                      // Use alternating display colors for visual appeal
+                      return `var(--${slice.displayColor}) ${slice.startAngle}deg ${slice.endAngle}deg`;
                     }).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
