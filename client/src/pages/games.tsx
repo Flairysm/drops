@@ -5,9 +5,10 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { CreditCard, Package, Circle, RotateCcw } from "lucide-react";
+import { CreditCard, Package, Circle, RotateCcw, ChevronDown, ChevronUp, Eye, Sparkles } from "lucide-react";
 import { VirtualPackOpening } from "@/components/VirtualPackOpening";
 import { apiRequest } from "@/lib/queryClient";
 import type { VirtualPack, User } from "@shared/schema";
@@ -17,9 +18,16 @@ export default function Play() {
   const { user, isAuthenticated, isLoading } = useAuth() as { user: User | null; isLoading: boolean; isAuthenticated: boolean };
   const queryClient = useQueryClient();
   const [openingPack, setOpeningPack] = useState<VirtualPack | null>(null);
+  const [expandedPacks, setExpandedPacks] = useState<Set<string>>(new Set());
+  const [packCardPools, setPackCardPools] = useState<Record<string, any[]>>({});
 
   const { data: virtualPacks } = useQuery({
     queryKey: ["/api/virtual-packs"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: allCards } = useQuery({
+    queryKey: ["/api/cards"],
     enabled: isAuthenticated,
   });
 
@@ -46,6 +54,56 @@ export default function Play() {
 
     // Show the opening interface instead of redirecting to store
     setOpeningPack(pack);
+  };
+
+  const togglePackExpansion = async (packId: string) => {
+    const newExpanded = new Set(expandedPacks);
+    
+    if (expandedPacks.has(packId)) {
+      newExpanded.delete(packId);
+    } else {
+      newExpanded.add(packId);
+      
+      // Load card pool if not already loaded
+      if (!packCardPools[packId]) {
+        try {
+          const packCards = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
+          const cardDetails = await Promise.all(
+            packCards.map(async (pc: any) => {
+              const card = allCards?.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
+              return card ? { ...card, weight: pc.weight } : null;
+            })
+          );
+          
+          setPackCardPools(prev => ({
+            ...prev,
+            [packId]: cardDetails.filter(Boolean)
+          }));
+        } catch (error) {
+          console.error("Failed to load pack cards:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load card pool",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+    
+    setExpandedPacks(newExpanded);
+  };
+
+  const getTierColor = (tier: string) => {
+    const colors = {
+      'D': 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+      'C': 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200',
+      'B': 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200',
+      'A': 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-200',
+      'S': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200',
+      'SS': 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200',
+      'SSS': 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200'
+    };
+    return colors[tier as keyof typeof colors] || colors['D'];
   };
 
   // Redirect if not authenticated
@@ -246,9 +304,9 @@ export default function Play() {
               </div>
               
               {virtualPacks && Array.isArray(virtualPacks) && virtualPacks.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
                   {virtualPacks.filter((pack: any) => pack.isActive).map((pack: any) => (
-                    <Card key={pack.id} className="gaming-card hover:scale-105 transition-transform cursor-pointer" data-testid={`card-themed-pack-${pack.id}`}>
+                    <Card key={pack.id} className="gaming-card" data-testid={`card-themed-pack-${pack.id}`}>
                       <CardHeader className="text-center">
                         {pack.imageUrl && (
                           <div className="w-full h-32 mb-4 rounded-lg overflow-hidden">
@@ -284,15 +342,89 @@ export default function Play() {
                           </div>
                         </div>
                         
-                        <Button
-                          onClick={() => handlePurchase(pack)}
-                          disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
-                          className="w-full bg-gradient-to-r from-primary to-accent"
-                          data-testid={`button-open-themed-pack-${pack.id}`}
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Open Pack
-                        </Button>
+                        <div className="space-y-3">
+                          <Button
+                            onClick={() => handlePurchase(pack)}
+                            disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
+                            className="w-full bg-gradient-to-r from-primary to-accent"
+                            data-testid={`button-open-themed-pack-${pack.id}`}
+                          >
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Open Pack
+                          </Button>
+
+                          <Collapsible open={expandedPacks.has(pack.id)} onOpenChange={() => togglePackExpansion(pack.id)}>
+                            <CollapsibleTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full"
+                                data-testid={`button-view-cards-${pack.id}`}
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Card Pool
+                                {expandedPacks.has(pack.id) ? 
+                                  <ChevronUp className="w-4 h-4 ml-2" /> : 
+                                  <ChevronDown className="w-4 h-4 ml-2" />
+                                }
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="space-y-2 mt-3">
+                              {packCardPools[pack.id] ? (
+                                <div className="space-y-3">
+                                  <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-2 mb-2">
+                                      <Sparkles className="w-4 h-4 text-primary" />
+                                      <span className="text-sm font-medium text-primary">Available Cards</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      {packCardPools[pack.id].length} cards in this pack
+                                    </p>
+                                  </div>
+                                  
+                                  <div className="max-h-48 overflow-y-auto space-y-2 bg-muted/30 rounded-lg p-3">
+                                    {packCardPools[pack.id]
+                                      .sort((a, b) => {
+                                        const tierOrder = { 'SSS': 6, 'SS': 5, 'S': 4, 'A': 3, 'B': 2, 'C': 1, 'D': 0 };
+                                        return (tierOrder[b.tier as keyof typeof tierOrder] || 0) - (tierOrder[a.tier as keyof typeof tierOrder] || 0);
+                                      })
+                                      .map((card: any, index: number) => (
+                                      <div key={index} className="flex items-center justify-between p-2 bg-background/50 rounded border">
+                                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                          <div className="w-8 h-8 bg-gradient-to-br from-muted to-muted/60 rounded flex items-center justify-center flex-shrink-0">
+                                            {card.imageUrl ? (
+                                              <img
+                                                src={card.imageUrl}
+                                                alt={card.name}
+                                                className="w-full h-full object-cover rounded"
+                                              />
+                                            ) : (
+                                              <Package className="w-3 h-3 text-muted-foreground" />
+                                            )}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <div className="font-medium text-sm truncate">{card.name}</div>
+                                            <div className="text-xs text-muted-foreground">{card.marketValue} credits</div>
+                                          </div>
+                                        </div>
+                                        <Badge 
+                                          className={`text-xs ${getTierColor(card.tier)} border-0 flex-shrink-0`}
+                                          data-testid={`badge-tier-${card.tier}`}
+                                        >
+                                          {card.tier}
+                                        </Badge>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-center py-4">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                                  <p className="text-sm text-muted-foreground mt-2">Loading cards...</p>
+                                </div>
+                              )}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
