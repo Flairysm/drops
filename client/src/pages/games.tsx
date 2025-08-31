@@ -282,9 +282,7 @@ export default function Play() {
                             </div>
                           </div>
                           <div className="flex justify-center space-x-2">
-                            <Badge className="bg-accent text-primary-foreground">
-                              7 Commons + 1 Hit
-                            </Badge>
+                            <Badge className="bg-accent text-primary-foreground">7 Commons + 1 Chance Card</Badge>
                           </div>
                         </div>
                         
