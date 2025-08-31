@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Package, Sparkles, Star, Coins, Eye, ShoppingCart, ArrowLeft } from "lucide-react";
@@ -59,6 +60,9 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get auth status first
+  const { user: currentUser, isAuthenticated } = useAuth() as { user: any; isAuthenticated: boolean; };
+
   // Get user data for credits display
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -75,6 +79,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   // Get all cards for card pool display
   const { data: allCards } = useQuery({
     queryKey: ["/api/cards"],
+    enabled: isAuthenticated,
   });
 
   // Load pack card pool when component mounts
@@ -86,12 +91,17 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         setLoadingCards(true);
         const packCardsData = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         
-        const cardDetails = packCardsData.map((pc: any) => {
-          const card = allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
-          return card ? { ...card, weight: pc.weight } : null;
-        }).filter(Boolean);
-        
-        setPackCards(cardDetails);
+        if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
+          const cardDetails = packCardsData.map((pc: any) => {
+            const card = allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
+            return card ? { ...card, weight: pc.weight } : null;
+          }).filter(Boolean);
+          
+          setPackCards(cardDetails);
+        } else {
+          console.error("Invalid data format:", { packCardsData, allCards });
+          setPackCards([]);
+        }
       } catch (error) {
         console.error("Failed to load pack cards:", error);
         toast({
