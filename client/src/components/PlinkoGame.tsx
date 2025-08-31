@@ -252,8 +252,8 @@ export function PlinkoGame() {
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // More balanced gravity for better visual experience
-        ball.vy += 0.2;
+        // Increased gravity for faster ball dropping
+        ball.vy += 0.4;
         
         // Reduced air resistance for faster movement
         ball.vx *= 0.999; // Minimal horizontal air resistance
@@ -547,11 +547,11 @@ export function PlinkoGame() {
       <Card className="gaming-card">
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-700">
-              <div className="flex items-center justify-center space-x-2">
-                <DollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                <span className="text-xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-game-cost">
-                  Cost: {fixedPrice} credit per play
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-2 border border-blue-200 dark:border-blue-700">
+              <div className="flex items-center justify-center space-x-1">
+                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400" data-testid="text-game-cost">
+                  Cost: {fixedPrice} credits per play
                 </span>
               </div>
             </div>
