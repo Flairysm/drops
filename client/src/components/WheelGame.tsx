@@ -32,17 +32,19 @@ export function WheelGame() {
       return response.json() as Promise<GameResult>;
     },
     onSuccess: (result) => {
-      // Spin the wheel based on result
-      const tierAngles = {
+      // Calculate smooth wheel animation with proper landing
+      const tierToAngleMap = {
         pokeball: 0,
-        greatball: 90,
+        greatball: 90, 
         ultraball: 180,
         masterball: 270,
       };
       
-      const targetAngle = tierAngles[result.result.tier as keyof typeof tierAngles] || 0;
-      const spinAmount = 1800 + targetAngle; // 5 full rotations + target
-      setRotation(prev => prev + spinAmount);
+      const targetAngle = tierToAngleMap[result.result.tier as keyof typeof tierToAngleMap] || 0;
+      // Use multiple full rotations (5 full = 1800deg) plus target for smooth animation
+      const finalRotation = rotation + 1800 + (360 - targetAngle);
+      
+      setRotation(finalRotation);
       
       // Show result after animation
       setTimeout(() => {
@@ -58,11 +60,11 @@ export function WheelGame() {
         };
 
         toast({
-          title: "Card Pulled!",
-          description: `You got a ${tierNames[result.result.tier as keyof typeof tierNames]} card!`,
+          title: "Pack Won!",
+          description: `You won a ${tierNames[result.result.tier as keyof typeof tierNames]} pack!`,
           duration: 5000,
         });
-      }, 3000);
+      }, 3500);
     },
     onError: (error: Error) => {
       toast({
@@ -74,7 +76,7 @@ export function WheelGame() {
     onSettled: () => {
       setTimeout(() => {
         setIsSpinning(false);
-      }, 3000);
+      }, 3500);
     },
   });
 
@@ -203,7 +205,7 @@ export function WheelGame() {
                     }).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
-                  transition: isSpinning ? "transform 4s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
+                  transition: isSpinning ? "transform 3.5s cubic-bezier(0.25, 0.1, 0.25, 1)" : "none",
                 }}
               >
                 {/* Slice Separators */}
