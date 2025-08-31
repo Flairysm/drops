@@ -87,7 +87,7 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
         }
         
         const cardDetails = packCards.map((pc: any) => {
-          const card = allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
+          const card = allCards.find((c: any) => c.id === pc.cardId);
           return card ? { ...card, weight: pc.weight } : null;
         }).filter(Boolean);
         
