@@ -140,11 +140,13 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     
     try {
       setLoadingCards(true);
-      console.log("Refreshing pack cards...");
+      console.log("Refreshing pack cards for packId:", packId);
       const response = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
       const packCardsData = await response.json();
       
       console.log("Refresh - Raw API response:", packCardsData);
+      console.log("Refresh - Response type:", typeof packCardsData);
+      console.log("Refresh - Is response array?", Array.isArray(packCardsData));
       
       if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
         const cardDetails = packCardsData.map((pc: any) => {
