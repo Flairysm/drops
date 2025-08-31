@@ -134,16 +134,8 @@ export function WheelGame() {
       return response.json() as Promise<GameResult>;
     },
     onSuccess: (result) => {
-      // Find a slice that matches the result tier
-      const matchingSlices = wheelSlices.filter(slice => slice.tier === result.result.tier);
-      const targetSlice = matchingSlices[Math.floor(Math.random() * matchingSlices.length)];
-      const targetAngle = targetSlice.midAngle;
-      
-      // Calculate final rotation to land on target (just add spins, no reset)
-      const spins = 5; // Number of full rotations
-      const finalRotation = rotation + (spins * 360) + (360 - targetAngle);
-      
-      setRotation(finalRotation);
+      // Animation will be handled after we get the result
+      // The wheel result was already determined by handleSpin
       
       // Show result after animation
       setTimeout(() => {
@@ -187,18 +179,20 @@ export function WheelGame() {
       return;
     }
 
-    // Determine wheel outcome based on defined odds
-    const random = Math.random();
-    let wheelResult: string;
+    // Pick a random slice from the wheel to land on
+    const targetSliceIndex = Math.floor(Math.random() * wheelSlices.length);
+    const targetSlice = wheelSlices[targetSliceIndex];
+    const wheelResult = targetSlice.tier;
     
-    if (random < 0.028) wheelResult = 'masterball';      // 2.8%
-    else if (random < 0.168) wheelResult = 'ultraball';  // 14% (0.028 + 0.14)
-    else if (random < 0.388) wheelResult = 'greatball';  // 22% (0.168 + 0.22)
-    else wheelResult = 'pokeball';                       // 61.2% (remaining)
-
+    // Calculate wheel animation to land on the target slice
+    const spins = 5; // Number of full rotations
+    const finalRotation = rotation + (spins * 360) + (360 - targetSlice.midAngle);
+    
     setIsSpinning(true);
     setLastResult(null);
     setShowPackDialog(false);
+    setRotation(finalRotation);
+    
     playGameMutation.mutate({
       gameType: "wheel",
       betAmount: betAmount,
@@ -250,9 +244,9 @@ export function WheelGame() {
                 {/* No labels - colors only */}
               </div>
               
-              {/* Pointer */}
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
-                <div className="w-0 h-0 border-l-4 border-r-4 border-b-8 border-l-transparent border-r-transparent border-b-white"></div>
+              {/* Pointer - flipped to point down into the wheel */}
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2">
+                <div className="w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
               </div>
               
               {/* Center Circle */}
