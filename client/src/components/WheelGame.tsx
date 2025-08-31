@@ -113,7 +113,7 @@ export function WheelGame() {
     { tier: "masterball", color: "purple", label: "Master Ball", odds: "2.8%", slices: 1 },
   ];
 
-  // Generate wheel slice positions for 36 total slices with alternating colors
+  // Generate wheel slice positions for 36 total slices with distributed colors
   const generateWheelSlices = () => {
     const slices: Array<{
       tier: string;
@@ -124,29 +124,37 @@ export function WheelGame() {
       startAngle: number;
       endAngle: number;
       midAngle: number;
-      displayColor: string;
     }> = [];
     let currentAngle = 0;
     const anglePerSlice = 360 / 36;
     
-    // Create an array representing the actual distribution
-    const distribution = [];
-    wheelSegments.forEach((segment) => {
-      for (let i = 0; i < segment.slices; i++) {
-        distribution.push(segment);
-      }
-    });
+    // Create distributed pattern: spread out different ball types evenly
+    const distributedPattern = [];
     
-    // Now create alternating visual colors while keeping the tier distribution
-    const alternatingColors = ['red', 'blue', 'yellow', 'purple'];
+    // Add pokeball (22 slices) - most common, distribute throughout
+    for (let i = 0; i < 22; i++) distributedPattern.push(wheelSegments[0]); // pokeball
     
-    distribution.forEach((segment, index) => {
+    // Add greatball (8 slices) - distribute every ~4-5 positions  
+    for (let i = 0; i < 8; i++) distributedPattern.push(wheelSegments[1]); // greatball
+    
+    // Add ultraball (5 slices) - distribute every ~7 positions
+    for (let i = 0; i < 5; i++) distributedPattern.push(wheelSegments[2]); // ultraball
+    
+    // Add masterball (1 slice) - single rare slice
+    distributedPattern.push(wheelSegments[3]); // masterball
+    
+    // Shuffle the pattern to distribute them randomly but maintain counts
+    for (let i = distributedPattern.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [distributedPattern[i], distributedPattern[j]] = [distributedPattern[j], distributedPattern[i]];
+    }
+    
+    distributedPattern.forEach((segment, index) => {
       slices.push({
         ...segment,
         startAngle: currentAngle,
         endAngle: currentAngle + anglePerSlice,
-        midAngle: currentAngle + anglePerSlice / 2,
-        displayColor: alternatingColors[index % 4] // Alternate visual colors
+        midAngle: currentAngle + anglePerSlice / 2
       });
       currentAngle += anglePerSlice;
     });
@@ -175,8 +183,8 @@ export function WheelGame() {
                   background: `conic-gradient(
                     from 0deg,
                     ${wheelSlices.map((slice, index) => {
-                      // Use alternating display colors for visual appeal
-                      return `var(--${slice.displayColor}) ${slice.startAngle}deg ${slice.endAngle}deg`;
+                      // Use the slice's actual pokeball color
+                      return `var(--${slice.color}) ${slice.startAngle}deg ${slice.endAngle}deg`;
                     }).join(', ')}
                   )`,
                   transform: `rotate(${rotation}deg)`,
