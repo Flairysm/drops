@@ -122,17 +122,6 @@ export const gameSettings = pgTable("game_settings", {
   updatedBy: varchar("updated_by").references(() => users.id),
 });
 
-// Admin settings for app configuration
-export const adminSettings = pgTable("admin_settings", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  settingKey: varchar("setting_key", { length: 100 }).notNull().unique(),
-  settingValue: text("setting_value").notNull(),
-  settingType: varchar("setting_type", { length: 20 }).notNull().default("text"), // 'text', 'boolean', 'number'
-  description: text("description"),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  updatedBy: varchar("updated_by").references(() => users.id),
-});
-
 // Pull rate configuration for pack tiers
 export const pullRates = pgTable("pull_rates", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -393,11 +382,6 @@ export const insertGameSettingSchema = createInsertSchema(gameSettings).omit({
   id: true,
 });
 
-export const insertAdminSettingSchema = createInsertSchema(adminSettings).omit({
-  id: true,
-  updatedAt: true,
-});
-
 export const insertPullRateSchema = createInsertSchema(pullRates).omit({
   id: true,
   updatedAt: true,
@@ -441,7 +425,6 @@ export type GameSession = typeof gameSessions.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type ShippingRequest = typeof shippingRequests.$inferSelect;
 export type PullRate = typeof pullRates.$inferSelect;
-export type AdminSetting = typeof adminSettings.$inferSelect;
 
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type InsertPack = z.infer<typeof insertPackSchema>;
@@ -455,7 +438,6 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type InsertShippingRequest = z.infer<typeof insertShippingRequestSchema>;
-export type InsertAdminSetting = z.infer<typeof insertAdminSettingSchema>;
 
 // Game settings types
 export type GameSetting = typeof gameSettings.$inferSelect;
