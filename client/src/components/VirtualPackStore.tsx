@@ -75,7 +75,7 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
       <div className="text-center mb-6">
         <p className="text-muted-foreground">Rip virtual packs and stand a chance to win top-tier cards</p>
       </div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {activePacks.map((pack) => (
           <Card key={pack.id} className="gaming-card">
             <CardHeader className="text-center">
