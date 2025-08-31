@@ -73,11 +73,8 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <p className="text-muted-foreground">
-          Discover carefully curated card collections with exclusive themes and guaranteed pulls!
-        </p>
+        <p className="text-muted-foreground">Rip virtual packs and stand a chance to win top-tier cards</p>
       </div>
-
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {activePacks.map((pack) => (
           <Card key={pack.id} className="gaming-card">
@@ -130,7 +127,6 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
           </Card>
         ))}
       </div>
-
       <div className="text-center text-sm text-muted-foreground mt-8">
         <p>
           <strong>How Themed Packs Work:</strong> Each pack contains {activePacks[0]?.cardCount || 'multiple'} cards from a curated collection.
