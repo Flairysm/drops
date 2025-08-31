@@ -122,6 +122,16 @@ export const gameSettings = pgTable("game_settings", {
   updatedBy: varchar("updated_by").references(() => users.id),
 });
 
+// System settings for administrative controls
+export const systemSettings = pgTable("system_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  settingKey: varchar("setting_key", { length: 100 }).notNull().unique(), // 'maintenance_mode', 'new_registrations', etc
+  settingValue: boolean("setting_value").notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: varchar("updated_by").references(() => users.id),
+});
+
 // Pull rate configuration for pack tiers
 export const pullRates = pgTable("pull_rates", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -387,6 +397,11 @@ export const insertPullRateSchema = createInsertSchema(pullRates).omit({
   updatedAt: true,
 });
 
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
 export const insertVirtualPackSchema = createInsertSchema(virtualPacks).omit({
   id: true,
   createdAt: true,
@@ -442,6 +457,10 @@ export type InsertShippingRequest = z.infer<typeof insertShippingRequestSchema>;
 // Game settings types
 export type GameSetting = typeof gameSettings.$inferSelect;
 export type InsertGameSetting = typeof gameSettings.$inferInsert;
+
+// System settings types
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 
 // Extended types for API responses
 export type UserCardWithCard = UserCard & { card: Card };

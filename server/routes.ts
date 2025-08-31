@@ -630,6 +630,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin system settings routes
+  app.get('/api/admin/system-settings', isAdmin, async (req: any, res) => {
+    try {
+      const settings = await storage.getAllSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching system settings:", error);
+      res.status(500).json({ message: "Failed to fetch system settings" });
+    }
+  });
+
+  app.post('/api/admin/system-settings/:settingKey', isAdmin, async (req: any, res) => {
+    try {
+      const { settingKey } = req.params;
+      const { settingValue } = req.body;
+      const userId = req.user.id;
+      
+      if (typeof settingValue !== 'boolean') {
+        return res.status(400).json({ message: "settingValue must be a boolean" });
+      }
+      
+      const setting = await storage.updateSystemSetting(settingKey, settingValue, userId);
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating system setting:", error);
+      res.status(500).json({ message: "Failed to update system setting" });
+    }
+  });
+
   // Cards and packs routes
   app.get('/api/cards', async (req, res) => {
     try {

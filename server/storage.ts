@@ -15,6 +15,7 @@ import {
   notifications,
   shippingRequests,
   gameSettings,
+  systemSettings,
   pullRates,
   type User,
   type UpsertUser,
@@ -46,6 +47,8 @@ import {
   type InsertNotification,
   type InsertShippingRequest,
   type InsertGameSetting,
+  type SystemSetting,
+  type InsertSystemSetting,
   type UserCardWithCard,
   type GlobalFeedWithDetails,
   type GameResult,
@@ -149,6 +152,11 @@ export interface IStorage {
   // Game settings operations
   getGameSetting(gameType: string): Promise<GameSetting | undefined>;
   updateGameSetting(gameType: string, price: string, updatedBy?: string): Promise<GameSetting>;
+  
+  // System settings operations
+  getSystemSetting(settingKey: string): Promise<SystemSetting | undefined>;
+  updateSystemSetting(settingKey: string, settingValue: boolean, updatedBy?: string): Promise<SystemSetting>;
+  getAllSystemSettings(): Promise<SystemSetting[]>;
   
   // Pull rate operations
   getPackPullRates(packType: string): Promise<PullRate[]>;
@@ -1251,6 +1259,48 @@ export class DatabaseStorage implements IStorage {
         );
       }
     });
+  }
+
+  // System settings operations
+  async getSystemSetting(settingKey: string): Promise<SystemSetting | undefined> {
+    const [setting] = await db.select().from(systemSettings).where(eq(systemSettings.settingKey, settingKey));
+    return setting;
+  }
+
+  async updateSystemSetting(settingKey: string, settingValue: boolean, updatedBy?: string): Promise<SystemSetting> {
+    const [updated] = await db
+      .insert(systemSettings)
+      .values({
+        settingKey,
+        settingValue,
+        updatedBy: updatedBy,
+        description: this.getSettingDescription(settingKey),
+      })
+      .onConflictDoUpdate({
+        target: systemSettings.settingKey,
+        set: {
+          settingValue: settingValue,
+          updatedAt: new Date(),
+          updatedBy: updatedBy,
+        },
+      })
+      .returning();
+    return updated;
+  }
+
+  async getAllSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings).orderBy(systemSettings.settingKey);
+  }
+
+  private getSettingDescription(settingKey: string): string {
+    const descriptions: Record<string, string> = {
+      'maintenance_mode': 'When enabled, displays maintenance message to users and restricts access',
+      'new_registrations': 'Allow new users to register accounts',
+      'pack_openings': 'Allow users to open packs and earn cards',
+      'credit_purchases': 'Allow users to purchase credits',
+      'global_feed': 'Display the global activity feed to users',
+    };
+    return descriptions[settingKey] || 'Administrative setting';
   }
 }
 

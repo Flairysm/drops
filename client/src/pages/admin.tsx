@@ -29,7 +29,9 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  ToggleLeft,
+  ToggleRight
 } from "lucide-react";
 import type { User, VirtualLibraryCard } from "@shared/schema";
 
@@ -294,6 +296,11 @@ export default function Admin() {
     retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
   });
 
+  const { data: systemSettings } = useQuery({
+    queryKey: ["/api/admin/system-settings"],
+    enabled: !!isAuthenticated,
+    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
+  });
 
   // Mutations
   const createVirtualLibraryCardMutation = useMutation({
@@ -399,6 +406,32 @@ export default function Admin() {
       });
     },
   });
+
+  const updateSystemSettingMutation = useMutation({
+    mutationFn: ({ settingKey, settingValue }: { settingKey: string; settingValue: boolean }) => 
+      apiRequest("POST", `/api/admin/system-settings/${settingKey}`, { settingValue }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/system-settings"] });
+      toast({
+        title: "Setting Updated",
+        description: "System setting has been updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleSystemSetting = (settingKey: string, currentValue: boolean) => {
+    updateSystemSettingMutation.mutate({
+      settingKey,
+      settingValue: !currentValue,
+    });
+  };
 
   const onVirtualLibrarySubmit = (data: VirtualLibraryFormData) => {
     createVirtualLibraryCardMutation.mutate(data);
@@ -1074,14 +1107,140 @@ export default function Admin() {
 
             {/* Settings Tab */}
             <TabsContent value="settings">
-              <Card className="gaming-card">
-                <CardHeader>
-                  <CardTitle>System Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Settings panel coming soon...</p>
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      System Settings
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Control administrative settings and system behavior
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {systemSettings?.length ? (
+                      <div className="space-y-4">
+                        {systemSettings.map((setting: any) => (
+                          <div key={setting.settingKey} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="space-y-1">
+                              <div className="font-medium capitalize">
+                                {setting.settingKey.replace(/_/g, ' ')}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {setting.description}
+                              </div>
+                              {setting.updatedBy && (
+                                <div className="text-xs text-muted-foreground">
+                                  Last updated by: {setting.updatedBy} on {new Date(setting.updatedAt).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleSystemSetting(setting.settingKey, setting.settingValue)}
+                              disabled={updateSystemSettingMutation.isPending}
+                              className="ml-4"
+                              data-testid={`button-toggle-${setting.settingKey}`}
+                            >
+                              {setting.settingValue ? (
+                                <ToggleRight className="w-6 h-6 text-green-500" />
+                              ) : (
+                                <ToggleLeft className="w-6 h-6 text-gray-400" />
+                              )}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Settings className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No Settings Configured</h3>
+                        <p className="text-muted-foreground">
+                          System settings will appear here once they are created.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Common administrative actions and system controls
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleToggleSystemSetting('maintenance_mode', 
+                          systemSettings?.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue || false)}
+                        disabled={updateSystemSettingMutation.isPending}
+                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
+                        data-testid="button-toggle-maintenance"
+                      >
+                        <div className="font-medium">Toggle Maintenance Mode</div>
+                        <div className="text-sm text-muted-foreground">
+                          {systemSettings?.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue 
+                            ? 'Disable maintenance mode' 
+                            : 'Enable maintenance mode'}
+                        </div>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => handleToggleSystemSetting('new_registrations', 
+                          systemSettings?.find((s: any) => s.settingKey === 'new_registrations')?.settingValue || true)}
+                        disabled={updateSystemSettingMutation.isPending}
+                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
+                        data-testid="button-toggle-registrations"
+                      >
+                        <div className="font-medium">Toggle New Registrations</div>
+                        <div className="text-sm text-muted-foreground">
+                          {systemSettings?.find((s: any) => s.settingKey === 'new_registrations')?.settingValue !== false
+                            ? 'Disable new user registrations'
+                            : 'Enable new user registrations'}
+                        </div>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => handleToggleSystemSetting('pack_openings', 
+                          systemSettings?.find((s: any) => s.settingKey === 'pack_openings')?.settingValue || true)}
+                        disabled={updateSystemSettingMutation.isPending}
+                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
+                        data-testid="button-toggle-pack-openings"
+                      >
+                        <div className="font-medium">Toggle Pack Openings</div>
+                        <div className="text-sm text-muted-foreground">
+                          {systemSettings?.find((s: any) => s.settingKey === 'pack_openings')?.settingValue !== false
+                            ? 'Disable pack opening feature'
+                            : 'Enable pack opening feature'}
+                        </div>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => handleToggleSystemSetting('global_feed', 
+                          systemSettings?.find((s: any) => s.settingKey === 'global_feed')?.settingValue || true)}
+                        disabled={updateSystemSettingMutation.isPending}
+                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
+                        data-testid="button-toggle-global-feed"
+                      >
+                        <div className="font-medium">Toggle Global Feed</div>
+                        <div className="text-sm text-muted-foreground">
+                          {systemSettings?.find((s: any) => s.settingKey === 'global_feed')?.settingValue !== false
+                            ? 'Hide global activity feed'
+                            : 'Show global activity feed'}
+                        </div>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
 
