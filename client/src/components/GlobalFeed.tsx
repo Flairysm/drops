@@ -11,9 +11,10 @@ interface GlobalFeedProps {
 
 export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
   const [showCount, setShowCount] = useState(limit);
+  const [showAllTiers, setShowAllTiers] = useState(false);
 
   const { data: feedData, isLoading, refetch } = useQuery<GlobalFeedWithDetails[]>({
-    queryKey: [`/api/feed?limit=${showCount}`],
+    queryKey: [`/api/feed?limit=${showCount}${showAllTiers ? '' : '&minTier=A'}`],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
@@ -68,16 +69,28 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-          <span className="font-semibold" data-testid="text-live-feed">Live Feed</span>
+          <span className="font-semibold" data-testid="text-live-feed">
+            Live Feed {!showAllTiers && "(A+ Tier Only)"}
+          </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          data-testid="button-refresh-feed"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={showAllTiers ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowAllTiers(!showAllTiers)}
+            data-testid="button-toggle-tiers"
+          >
+            {showAllTiers ? "A+ Only" : "See All"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            data-testid="button-refresh-feed"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Feed Items */}

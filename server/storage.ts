@@ -924,7 +924,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Global feed operations
-  async getGlobalFeed(limit = 500): Promise<GlobalFeedWithDetails[]> {
+  async getGlobalFeed(limit = 500, minTier?: string): Promise<GlobalFeedWithDetails[]> {
+    // Define tier hierarchy for filtering (higher index = rarer tier)
+    const tierHierarchy = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+    
+    let tierFilter: string[];
+    if (minTier) {
+      const minIndex = tierHierarchy.indexOf(minTier);
+      if (minIndex >= 0) {
+        // Include all tiers from minTier and above
+        tierFilter = tierHierarchy.slice(minIndex);
+      } else {
+        // Invalid minTier, default to all non-D tiers
+        tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
+      }
+    } else {
+      // No filter, show all non-D tiers
+      tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
+    }
+
     const result = await db
       .select({
         id: globalFeed.id,
@@ -940,7 +958,7 @@ export class DatabaseStorage implements IStorage {
       .from(globalFeed)
       .leftJoin(users, eq(globalFeed.userId, users.id))
       .leftJoin(cards, eq(globalFeed.cardId, cards.id))
-      .where(sql`${globalFeed.tier} IN ('C', 'B', 'A', 'S', 'SS', 'SSS')`)
+      .where(sql`${globalFeed.tier} IN (${tierFilter.map(t => `'${t}'`).join(', ')})`)
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
 

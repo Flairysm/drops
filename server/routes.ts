@@ -217,7 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/feed', async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
-      const feed = await storage.getGlobalFeed(limit);
+      const minTier = req.query.minTier as string;
+      const feed = await storage.getGlobalFeed(limit, minTier);
       res.json(feed);
     } catch (error) {
       console.error("Error fetching feed:", error);
