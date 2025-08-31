@@ -134,6 +134,47 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
     }
   }, [packId, allCards, toast]);
 
+  // Function to refresh pack cards
+  const refreshPackCards = async () => {
+    if (!packId || !allCards) return;
+    
+    try {
+      setLoadingCards(true);
+      console.log("Refreshing pack cards...");
+      const response = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
+      const packCardsData = await response.json();
+      
+      console.log("Refresh - Raw API response:", packCardsData);
+      
+      if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
+        const cardDetails = packCardsData.map((pc: any) => {
+          const card = allCards.find((c: any) => c.id === pc.cardId);
+          return card ? { ...card, weight: pc.weight } : null;
+        }).filter(Boolean);
+        
+        console.log("Refresh - Final card details:", cardDetails);
+        setPackCards(cardDetails);
+      } else {
+        setPackCards([]);
+      }
+    } catch (error) {
+      console.error("Failed to refresh pack cards:", error);
+    } finally {
+      setLoadingCards(false);
+    }
+  };
+
+  // Add an effect to refresh cards periodically when the dialog is open
+  useEffect(() => {
+    if (!isOpen || !packId || !allCards) return;
+    
+    const interval = setInterval(() => {
+      refreshPackCards();
+    }, 2000); // Refresh every 2 seconds when dialog is open
+    
+    return () => clearInterval(interval);
+  }, [isOpen, packId, allCards]);
+
   const getTierColor = (tier: string) => {
     const colors = {
       'D': 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
