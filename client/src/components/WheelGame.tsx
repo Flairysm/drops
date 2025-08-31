@@ -8,10 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { RotateCcw, Coins } from "lucide-react";
-import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png';
-import ultraballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png';
-import greatballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png';
-import pokeballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png';
+import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756651828049.png';
+import ultraballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756651828049.png';
+import greatballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756651828048.png';
+import pokeballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756651828048.png';
 
 interface GameResult {
   success: boolean;
