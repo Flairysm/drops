@@ -108,8 +108,15 @@ export async function setupAuth(app: Express) {
     }
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  // Get all domains including localhost for development
+  const domains = process.env.REPLIT_DOMAINS!.split(",");
+  if (process.env.NODE_ENV === "development") {
+    domains.push("localhost:5000");
+    domains.push("localhost");
+  }
+  
+  for (const domain of domains) {
+    console.log(`Registering strategy: replitauth:${domain}`);
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -126,6 +133,8 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    console.log(`Login attempt for hostname: ${req.hostname}`);
+    console.log(`Available strategies:`, passport._strategies);
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -133,6 +142,7 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
+    console.log(`Callback received for hostname: ${req.hostname}`);
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
