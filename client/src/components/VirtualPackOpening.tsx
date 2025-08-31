@@ -91,6 +91,10 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
         setLoadingCards(true);
         const packCardsData = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         
+        console.log("Raw pack cards response:", packCardsData);
+        console.log("Pack cards type:", typeof packCardsData);
+        console.log("Is array:", Array.isArray(packCardsData));
+        
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
           console.log("Pack cards:", packCardsData);
           console.log("All cards:", allCards);
@@ -105,6 +109,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           setPackCards(cardDetails);
         } else {
           console.error("Invalid data format:", { packCardsData, allCards });
+          console.log("Setting empty cards array");
           setPackCards([]);
         }
       } catch (error) {
