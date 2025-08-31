@@ -93,7 +93,7 @@ export default function Home() {
       cost: "20",
       icon: <Play className="w-8 h-8 text-white" />,
       color: "from-blue-500 to-purple-600",
-      route: "/games",
+      route: "/play/plinko",
       popular: true,
     },
     {
@@ -102,7 +102,7 @@ export default function Home() {
       cost: "20",
       icon: <RotateCcw className="w-8 h-8 text-white" />,
       color: "from-orange-500 to-red-600",
-      route: "/games",
+      route: "/play/wheel",
       popular: true,
     },
     {
@@ -235,7 +235,7 @@ export default function Home() {
                   Explore additional game modes and special events in our games lobby
                 </p>
               </div>
-              <Link href="/games">
+              <Link href="/play">
                 <Button 
                   size="lg" 
                   variant="outline"
