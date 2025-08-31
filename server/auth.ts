@@ -168,3 +168,25 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   (req as any).user = user;
   next();
 };
+
+// Admin middleware
+export const isAdmin: RequestHandler = async (req, res, next) => {
+  const userId = (req.session as any)?.userId;
+  
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Attach user to request and check admin role
+  const user = await storage.getUser(userId);
+  if (!user) {
+    return res.status(401).json({ message: "User not found" });
+  }
+
+  if (user.role !== 'admin') {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+
+  (req as any).user = user;
+  next();
+};

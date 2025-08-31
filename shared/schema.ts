@@ -36,6 +36,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  role: varchar("role", { length: 20 }).default("user").notNull(), // user, admin
   credits: decimal("credits", { precision: 10, scale: 2 }).default("0.00"),
   totalSpent: decimal("total_spent", { precision: 10, scale: 2 }).default("0.00"),
   isBanned: boolean("is_banned").default(false),

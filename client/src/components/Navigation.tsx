@@ -9,7 +9,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export function Navigation() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [location] = useLocation();
   const [, setLocation] = useLocation();
@@ -51,7 +51,7 @@ export function Navigation() {
     { path: "/play", label: "Play" },
     { path: "/my-packs", label: "My Packs" },
     { path: "/vault", label: "Vault" },
-    { path: "/admin", label: "Admin" },
+    ...(isAdmin ? [{ path: "/admin", label: "Admin" }] : []),
   ];
 
   return (

@@ -178,7 +178,7 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
 
 export default function Admin() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [inventorySection, setInventorySection] = useState<"inventory" | "content">("inventory");
   const [editingCard, setEditingCard] = useState<any>(null);
@@ -530,6 +530,17 @@ export default function Admin() {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
           <p className="text-muted-foreground">Please log in to access the admin panel.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="text-muted-foreground">You don't have permission to access the admin panel.</p>
         </div>
       </div>
     );
