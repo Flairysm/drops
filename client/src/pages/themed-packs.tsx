@@ -62,7 +62,7 @@ export default function ThemedPacks() {
               <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">THEMED PACKS</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
-              Explore curated collections featuring specific themes and characters!
+              Experience a new way of Rip and Ship.
             </p>
           </section>
 
@@ -70,11 +70,6 @@ export default function ThemedPacks() {
           <Card className="gaming-card max-w-6xl mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="font-gaming text-2xl">Themed Pack Store</CardTitle>
-              <div className="flex justify-center space-x-4 mt-4">
-                <Badge className="bg-legendary text-primary-foreground">Curated Collections</Badge>
-                <Badge variant="secondary">Variable Pricing</Badge>
-                <Badge className="bg-accent text-primary-foreground">Custom Card Pools</Badge>
-              </div>
             </CardHeader>
             <CardContent>
               <VirtualPackStore virtualPacks={(virtualPacks as any) || []} />

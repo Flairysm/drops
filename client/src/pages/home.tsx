@@ -106,8 +106,8 @@ export default function Home() {
       popular: true,
     },
     {
-      name: "Black Bolt",
-      description: "Open premium card packs instantly",
+      name: "Classic Packs",
+      description: "Rip some classic packs",
       cost: "16",
       icon: <Package className="w-8 h-8 text-white" />,
       color: "from-green-500 to-emerald-600",
