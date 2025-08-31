@@ -1,6 +1,4 @@
-import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { GlobalFeed } from "@/components/GlobalFeed";
 import { CreditPurchase } from "@/components/CreditPurchase";
@@ -9,63 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2 } from "lucide-react";
+import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2, Star } from "lucide-react";
 import { Link } from "wouter";
+import type { User } from "@shared/schema";
 
 export default function Home() {
-  const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/user"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
-  });
+  }) as { data: User | undefined };
 
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-    },
   });
 
   if (isLoading) {
@@ -73,6 +29,60 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
+    );
+  }
+
+  // Landing page for non-authenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        
+        <main className="pt-20">
+          {/* Hero Section */}
+          <section className="py-20 bg-gradient-to-b from-background via-primary/5 to-accent/5">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <div className="inline-flex items-center space-x-2 bg-primary/10 rounded-full px-4 py-2 mb-6">
+                <Star className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Premium TCG Experience</span>
+              </div>
+              
+              <h1 className="font-gaming font-bold text-4xl md:text-6xl lg:text-7xl mb-6">
+                <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">
+                  Flair TCG Arcade
+                </span>
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+                Experience the thrill of premium TCG pack opening with transparent odds, 
+                unlimited vault storage, and exciting minigames.
+              </p>
+              
+              <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Create an account to start earning cards and playing games!
+              </p>
+            </div>
+          </section>
+        
+        {/* Recent Pulls for non-authenticated users */}
+        <section className="py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <RecentPullsCarousel limit={10} />
+          </div>
+        </section>
+        
+        {/* Footer */}
+        <footer className="bg-secondary/20 border-t border-border py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <p className="text-muted-foreground">
+                &copy; 2025 Flair TCG Arcade. Built for collectors, by collectors.
+              </p>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
     );
   }
 

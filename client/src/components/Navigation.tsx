@@ -46,8 +46,6 @@ export function Navigation() {
     logoutMutation.mutate();
   };
 
-  if (!isAuthenticated) return null;
-
   const navItems = [
     { path: "/", label: "Home" },
     { path: "/play", label: "Play" },
@@ -74,7 +72,7 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            {navItems.map((item) => (
+            {isAuthenticated && navItems.map((item) => (
               <Link key={item.path} href={item.path}>
                 <span 
                   className={`hover:text-primary transition-colors cursor-pointer ${
@@ -87,14 +85,6 @@ export function Navigation() {
               </Link>
             ))}
 
-            {/* Credits Display */}
-            <div className="gaming-card px-4 py-2 rounded-lg" data-testid="display-credits">
-              <span className="text-sm text-muted-foreground">Credits:</span>
-              <span className="font-bold text-accent ml-2">
-                {(userData as any)?.credits || "0.00"}
-              </span>
-            </div>
-
             {/* Theme Toggle */}
             <Button
               variant="ghost"
@@ -105,25 +95,59 @@ export function Navigation() {
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
 
-            {/* User Menu */}
-            <div className="flex items-center space-x-2 gaming-card px-3 py-2 rounded-lg">
-              <img
-                src={(user as any)?.profileImageUrl || "https://via.placeholder.com/32"}
-                alt="User avatar"
-                className="w-8 h-8 rounded-full border-2 border-primary"
-                data-testid="img-avatar"
-              />
-              <span data-testid="text-username">{(user as any)?.username || (userData as any)?.username || "Player"}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                disabled={logoutMutation.isPending}
-                data-testid="button-logout"
-              >
-                {logoutMutation.isPending ? "Logging out..." : "Logout"}
-              </Button>
-            </div>
+            {isAuthenticated ? (
+              <>
+                {/* Credits Display */}
+                <div className="gaming-card px-4 py-2 rounded-lg" data-testid="display-credits">
+                  <span className="text-sm text-muted-foreground">Credits:</span>
+                  <span className="font-bold text-accent ml-2">
+                    {(userData as any)?.credits || "0.00"}
+                  </span>
+                </div>
+
+                {/* User Menu */}
+                <div className="flex items-center space-x-2 gaming-card px-3 py-2 rounded-lg">
+                  <img
+                    src={(user as any)?.profileImageUrl || "https://via.placeholder.com/32"}
+                    alt="User avatar"
+                    className="w-8 h-8 rounded-full border-2 border-primary"
+                    data-testid="img-avatar"
+                  />
+                  <span data-testid="text-username">{(user as any)?.username || (userData as any)?.username || "Player"}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                    data-testid="button-logout"
+                  >
+                    {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Login/Signup buttons for non-authenticated users */}
+                <Link href="/login">
+                  <Button
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    data-testid="button-login"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                
+                <Link href="/register">
+                  <Button
+                    className="bg-gradient-to-r from-primary to-accent hover:glow-effect"
+                    data-testid="button-register"
+                  >
+                    Create Account
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -142,7 +166,7 @@ export function Navigation() {
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="space-y-4">
-              {navItems.map((item) => (
+              {isAuthenticated && navItems.map((item) => (
                 <Link key={item.path} href={item.path}>
                   <span 
                     className={`block hover:text-primary transition-colors cursor-pointer ${
@@ -156,12 +180,14 @@ export function Navigation() {
                 </Link>
               ))}
               
-              <div className="gaming-card px-4 py-2 rounded-lg">
-                <span className="text-sm text-muted-foreground">Credits:</span>
-                <span className="font-bold text-accent ml-2">
-                  {(userData as any)?.credits || "0.00"}
-                </span>
-              </div>
+              {isAuthenticated && (
+                <div className="gaming-card px-4 py-2 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Credits:</span>
+                  <span className="font-bold text-accent ml-2">
+                    {(userData as any)?.credits || "0.00"}
+                  </span>
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <Button
@@ -173,15 +199,40 @@ export function Navigation() {
                   {theme === "dark" ? "Light Mode" : "Dark Mode"}
                 </Button>
                 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  disabled={logoutMutation.isPending}
-                  data-testid="button-mobile-logout"
-                >
-                  {logoutMutation.isPending ? "Logging out..." : "Logout"}
-                </Button>
+                {isAuthenticated ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                    data-testid="button-mobile-logout"
+                  >
+                    {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                  </Button>
+                ) : (
+                  <div className="space-x-2">
+                    <Link href="/login">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        data-testid="button-mobile-login"
+                      >
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link href="/register">
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-primary to-accent"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        data-testid="button-mobile-register"
+                      >
+                        Create Account
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>

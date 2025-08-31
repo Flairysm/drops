@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { CreditCard, Coins, Zap, Star } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { CreditCard, Coins, Zap, Star, Lock } from "lucide-react";
+import { Link } from "wouter";
 
 interface PurchaseResult {
   success: boolean;
@@ -18,6 +20,7 @@ export function CreditPurchase() {
   const [customAmount, setCustomAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
 
   const purchaseMutation = useMutation({
     mutationFn: async (data: { amount: string; bundleType?: string }) => {
@@ -25,7 +28,7 @@ export function CreditPurchase() {
       return response.json() as Promise<PurchaseResult>;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries(["/api/auth/user"]);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Credits Added!",
         description: `Successfully added ${result.creditsAdded.toFixed(2)} credits to your account`,
@@ -94,6 +97,33 @@ export function CreditPurchase() {
       color: "from-yellow-500 to-yellow-600",
     },
   ];
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <Card className="gaming-card border-2 border-primary/50">
+        <CardContent className="p-8 text-center">
+          <Lock className="w-16 h-16 mx-auto mb-4 text-primary/50" />
+          <h3 className="font-gaming font-bold text-xl mb-2">Account Required</h3>
+          <p className="text-muted-foreground mb-6">
+            Create an account to purchase credits and start playing!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/register">
+              <Button className="bg-gradient-to-r from-primary to-accent hover:glow-effect" data-testid="button-register-prompt">
+                Create Account
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground" data-testid="button-login-prompt">
+                Sign In
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
