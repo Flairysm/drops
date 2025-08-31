@@ -170,9 +170,7 @@ export default function Play() {
                   <CardContent className="space-y-4">
                     <div className="text-center space-y-2">
                       <div className="bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg p-3 border border-primary/30">
-                        <div className="text-2xl font-bold text-primary">
-                          2.5 Credits
-                        </div>
+                        <div className="text-2xl font-bold text-primary">20 Credits</div>
                         <div className="text-sm text-muted-foreground">
                           Per spin
                         </div>
