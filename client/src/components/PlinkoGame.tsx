@@ -85,8 +85,8 @@ export function PlinkoGame() {
   });
 
   useEffect(() => {
-    if (gameSettings && 'price' in gameSettings) {
-      setFixedPrice(gameSettings.price);
+    if (gameSettings && typeof gameSettings === 'object' && gameSettings !== null && 'price' in gameSettings) {
+      setFixedPrice(String(gameSettings.price));
     }
   }, [gameSettings]);
 
