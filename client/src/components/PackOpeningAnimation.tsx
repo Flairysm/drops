@@ -179,12 +179,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   return (
                     <div 
                       key={index} 
-                      className="gaming-card p-3 text-center border-dashed border-2 border-gray-500 opacity-50"
+                      className="gaming-card p-3 text-center opacity-30"
                     >
-                      <div className="w-12 h-16 mx-auto bg-gray-700/30 rounded flex items-center justify-center mb-2">
-                        <span className="text-xs text-gray-500">?</span>
-                      </div>
-                      <p className="text-xs text-gray-500">???</p>
+                      <div className="w-12 h-16 mx-auto bg-gray-700/20 rounded mb-2"></div>
                     </div>
                   );
                 }
