@@ -610,7 +610,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex justify-center">
             <Button
               variant="outline"
               onClick={onClose}
@@ -620,23 +620,26 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
               <ArrowLeft className="w-4 h-4" />
               <span>Cancel</span>
             </Button>
-            
-            <Button
-              onClick={handleOpenPack}
-              disabled={!user || parseFloat((user as any)?.credits || '0') < packPrice || packCards.length === 0}
-              size="lg"
-              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 flex items-center space-x-2"
-              data-testid="button-proceed-to-open"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>
-                {packCards.length === 0 
-                  ? "No cards in pool" 
-                  : "Open Pack Now"
-                }
-              </span>
-            </Button>
           </div>
+        </div>
+
+        {/* Floating Open Pack Button */}
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <Button
+            onClick={handleOpenPack}
+            disabled={!user || parseFloat((user as any)?.credits || '0') < packPrice || packCards.length === 0}
+            size="lg"
+            className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 flex items-center space-x-2 shadow-lg border-2 border-accent/30"
+            data-testid="button-proceed-to-open"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>
+              {packCards.length === 0 
+                ? "No cards in pool" 
+                : "Open Pack Now"
+              }
+            </span>
+          </Button>
         </div>
       </div>
     );
