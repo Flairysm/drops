@@ -326,8 +326,8 @@ export function PlinkoGame() {
 
             // Natural bounce with slight energy loss
             const restitution = 0.75 + Math.random() * 0.15; // Natural bounce coefficient
-            ball.vx -= 2.0 * dotProduct * nx * restitution;
-            ball.vy -= 2.0 * dotProduct * ny * restitution;
+            ball.vx -= 1.5 * dotProduct * nx * restitution;
+            ball.vy -= 1.5 * dotProduct * ny * restitution;
 
             // Realistic surface friction
             const friction = 0.82 + Math.random() * 0.08; // Natural friction variation
