@@ -291,7 +291,7 @@ export function PlinkoGame() {
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
         // More realistic gravity (similar to real world)
-        ball.vy += 0.32;
+        ball.vy += 0.25;
 
         // Natural air resistance
         ball.vx *= 0.995; // Very light horizontal air resistance
