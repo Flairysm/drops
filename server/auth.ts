@@ -23,7 +23,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
     },
   });
@@ -32,6 +32,39 @@ export function getSession() {
 export function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
+  
+  // Local development bypass - auto-login as admin user
+  if (process.env.NODE_ENV === 'development') {
+    app.use(async (req, res, next) => {
+      // Skip for auth endpoints to prevent conflicts
+      if (req.path.startsWith('/api/auth/')) {
+        return next();
+      }
+      
+      // Auto-login as admin if no session exists
+      const session = req.session as any;
+      if (!session.userId) {
+        try {
+          // Get or create admin user
+          let adminUser = await storage.getUserByEmail('admin@drops.app');
+          if (!adminUser) {
+            const hashedPassword = await bcrypt.hash('admin123', 12);
+            adminUser = await storage.createUser({
+              username: 'admin',
+              email: 'admin@drops.app',
+              password: hashedPassword,
+              role: 'admin',
+              credits: 1000,
+            });
+          }
+          session.userId = adminUser.id;
+        } catch (error) {
+          console.error('Auto-login failed:', error);
+        }
+      }
+      next();
+    });
+  }
   
   // Registration endpoint
   app.post('/api/auth/register', async (req, res) => {
