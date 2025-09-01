@@ -5,10 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Play, Package, DollarSign } from "lucide-react";
-import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png';
-import ultraballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png';
-import greatballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png';
-import pokeballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png';
+import masterballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png";
+import ultraballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png";
+import greatballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png";
+import pokeballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png";
 
 interface GameResult {
   success: boolean;
@@ -34,33 +34,49 @@ const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 6;
 const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
-const OUTCOMES = ["Masterball", "Ultraball", "Greatball", "Pokeball", "Pokeball", "Pokeball", "Greatball", "Ultraball", "Masterball"];
+const OUTCOMES = [
+  "Masterball",
+  "Ultraball",
+  "Greatball",
+  "Pokeball",
+  "Pokeball",
+  "Pokeball",
+  "Greatball",
+  "Ultraball",
+  "Masterball",
+];
 
-const PackImage = ({ packType, size = 'small' }: { packType: string; size?: 'small' | 'large' }) => {
+const PackImage = ({
+  packType,
+  size = "small",
+}: {
+  packType: string;
+  size?: "small" | "large";
+}) => {
   const getPackImage = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'masterball':
+      case "masterball":
         return masterballPack;
-      case 'ultraball':
+      case "ultraball":
         return ultraballPack;
-      case 'greatball':
+      case "greatball":
         return greatballPack;
-      case 'pokeball':
+      case "pokeball":
         return pokeballPack;
       default:
         return pokeballPack;
     }
   };
-  
-  const imageSize = size === 'small' ? 'w-8 h-10' : 'w-16 h-20';
-  
+
+  const imageSize = size === "small" ? "w-8 h-10" : "w-16 h-20";
+
   return (
     <div className={`${imageSize} mx-auto`}>
-      <img 
-        src={getPackImage(packType)} 
+      <img
+        src={getPackImage(packType)}
         alt={`${packType} pack`}
         className="w-full h-full object-contain pixel-crisp"
-        style={{ imageRendering: 'pixelated' }}
+        style={{ imageRendering: "pixelated" }}
       />
     </div>
   );
@@ -81,17 +97,26 @@ export function PlinkoGame() {
 
   // Fetch fixed price for Plinko
   const { data: gameSettings } = useQuery({
-    queryKey: ['/api/games/plinko/settings'],
+    queryKey: ["/api/games/plinko/settings"],
   });
 
   useEffect(() => {
-    if (gameSettings && typeof gameSettings === 'object' && gameSettings !== null && 'price' in gameSettings) {
+    if (
+      gameSettings &&
+      typeof gameSettings === "object" &&
+      gameSettings !== null &&
+      "price" in gameSettings
+    ) {
       setFixedPrice(String(gameSettings.price));
     }
   }, [gameSettings]);
 
   const playGameMutation = useMutation({
-    mutationFn: async (data: { gameType: string; betAmount: string; plinkoResult?: string }) => {
+    mutationFn: async (data: {
+      gameType: string;
+      betAmount: string;
+      plinkoResult?: string;
+    }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
       return response.json() as Promise<GameResult>;
     },
@@ -100,7 +125,7 @@ export function PlinkoGame() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
-      
+
       // This mutation is no longer needed for Plinko - physics handles everything
       console.log("Plinko mutation result (not used):", result);
     },
@@ -116,43 +141,43 @@ export function PlinkoGame() {
 
   const getPins = () => {
     const pins = [];
-    
+
     // Exact Stake.us Plinko pyramid layout
     // Row 1: 3 pins, Row 2: 4 pins, ..., Row 8: 10 pins
     const rows = 8;
     const startY = 140;
     const rowSpacing = 40; // Vertical spacing between rows
     const edgePadding = 10; // Distance from board edges for last row
-    
+
     for (let row = 0; row < rows; row++) {
       const pinsInRow = row + 3; // Row 0: 3 pins, Row 1: 4 pins, etc.
-      const y = startY + (row * rowSpacing);
-      
+      const y = startY + row * rowSpacing;
+
       // For the last row (10 pins), make it span nearly edge to edge
       if (row === rows - 1) {
-        const availableWidth = BOARD_WIDTH - (edgePadding * 2);
+        const availableWidth = BOARD_WIDTH - edgePadding * 2;
         const pinSpacing = availableWidth / (pinsInRow - 1);
         const startX = edgePadding;
-        
+
         for (let pin = 0; pin < pinsInRow; pin++) {
-          const x = startX + (pin * pinSpacing);
+          const x = startX + pin * pinSpacing;
           pins.push({ x, y });
         }
       } else {
         // For other rows, maintain proportional spacing based on last row
-        const lastRowWidth = BOARD_WIDTH - (edgePadding * 2);
+        const lastRowWidth = BOARD_WIDTH - edgePadding * 2;
         const maxPinSpacing = lastRowWidth / 9; // 9 spaces between 10 pins
         const pinSpacing = maxPinSpacing;
         const rowWidth = (pinsInRow - 1) * pinSpacing;
         const startX = (BOARD_WIDTH - rowWidth) / 2;
-        
+
         for (let pin = 0; pin < pinsInRow; pin++) {
-          const x = startX + (pin * pinSpacing);
+          const x = startX + pin * pinSpacing;
           pins.push({ x, y });
         }
       }
     }
-    
+
     return pins;
   };
 
@@ -160,12 +185,12 @@ export function PlinkoGame() {
     const positions = [];
     const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
     const y = BOARD_HEIGHT - 40;
-    
+
     for (let i = 0; i < OUTCOMES.length; i++) {
       positions.push({
         x: bucketWidth * i + bucketWidth / 2,
         y,
-        outcome: OUTCOMES[i]
+        outcome: OUTCOMES[i],
       });
     }
     return positions;
@@ -175,7 +200,7 @@ export function PlinkoGame() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // No predetermined target - let physics determine the outcome naturally
@@ -184,15 +209,16 @@ export function PlinkoGame() {
     // Initialize ball to drop randomly between pins 1-2 or 2-3
     const firstLayerPins = getPins().filter((_, index) => index < 3); // First 3 pins
     const dropChoice = Math.random() < 0.5 ? 0 : 1; // Choose between first two gaps
-    const dropX = (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
-    
+    const dropX =
+      (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
+
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 8, // Slight initial variation
+      x: dropX + (Math.random() - 0.5) * 12, // More natural drop variation
       y: 20,
-      vx: (Math.random() - 0.5) * 0.5, // Reduced initial horizontal velocity to keep ball contained
-      vy: 0,
+      vx: (Math.random() - 0.5) * 0.8, // Slightly more horizontal variance
+      vy: 0.5, // Small initial downward velocity
       radius: BALL_RADIUS,
-      color: '#00d4ff'
+      color: "#00d4ff",
     };
 
     ballRef.current = ball;
@@ -201,21 +227,21 @@ export function PlinkoGame() {
 
     const animate = () => {
       ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-      
+
       // Draw background
       const gradient = ctx.createLinearGradient(0, 0, 0, BOARD_HEIGHT);
-      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.1)');
-      gradient.addColorStop(1, 'rgba(147, 51, 234, 0.1)');
+      gradient.addColorStop(0, "rgba(59, 130, 246, 0.1)");
+      gradient.addColorStop(1, "rgba(147, 51, 234, 0.1)");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
       // Draw pins
-      pins.forEach(pin => {
+      pins.forEach((pin) => {
         ctx.beginPath();
         ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = "#64748b";
         ctx.fill();
-        ctx.strokeStyle = '#94a3b8';
+        ctx.strokeStyle = "#94a3b8";
         ctx.lineWidth = 1;
         ctx.stroke();
       });
@@ -224,89 +250,104 @@ export function PlinkoGame() {
       outcomePositions.forEach((pos, index) => {
         const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
         const bucketX = index * bucketWidth;
-        
+
         // Bucket background
-        ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(139, 92, 246, 0.2)' :
-                        pos.outcome === 'Ultraball' ? 'rgba(255, 215, 0, 0.2)' :
-                        pos.outcome === 'Greatball' ? 'rgba(59, 130, 246, 0.2)' :
-                        'rgba(148, 163, 184, 0.2)';
+        ctx.fillStyle =
+          pos.outcome === "Masterball"
+            ? "rgba(139, 92, 246, 0.2)"
+            : pos.outcome === "Ultraball"
+              ? "rgba(255, 215, 0, 0.2)"
+              : pos.outcome === "Greatball"
+                ? "rgba(59, 130, 246, 0.2)"
+                : "rgba(148, 163, 184, 0.2)";
         ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
-        
+
         // Bucket border
-        ctx.strokeStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
-                         pos.outcome === 'Ultraball' ? '#ffd700' :
-                         pos.outcome === 'Greatball' ? '#3b82f6' :
-                         '#94a3b8';
+        ctx.strokeStyle =
+          pos.outcome === "Masterball"
+            ? "#8b5cf6"
+            : pos.outcome === "Ultraball"
+              ? "#ffd700"
+              : pos.outcome === "Greatball"
+                ? "#3b82f6"
+                : "#94a3b8";
         ctx.lineWidth = 2;
         ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
 
         // Bucket label - properly centered
-        ctx.fillStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
-                       pos.outcome === 'Ultraball' ? '#ffd700' :
-                       pos.outcome === 'Greatball' ? '#3b82f6' :
-                       '#64748b';
-        ctx.font = 'bold 11px Inter';
-        ctx.textAlign = 'center';
+        ctx.fillStyle =
+          pos.outcome === "Masterball"
+            ? "#8b5cf6"
+            : pos.outcome === "Ultraball"
+              ? "#ffd700"
+              : pos.outcome === "Greatball"
+                ? "#3b82f6"
+                : "#64748b";
+        ctx.font = "bold 11px Inter";
+        ctx.textAlign = "center";
         ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
       });
 
       // Physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Increased gravity for faster ball dropping
-        ball.vy += 0.4;
-        
-        // Reduced air resistance for faster movement
-        ball.vx *= 0.999; // Minimal horizontal air resistance
-        ball.vy *= 0.9998; // Almost no vertical air resistance
-        
+        // More realistic gravity (similar to real world)
+        ball.vy += 0.32;
+
+        // Natural air resistance
+        ball.vx *= 0.995; // Very light horizontal air resistance
+        ball.vy *= 0.998; // Minimal vertical air resistance
+
         // Apply movement
         ball.x += ball.vx;
         ball.y += ball.vy;
-        
+
+        // Add slight random wind effect for more natural movement
+        ball.vx += (Math.random() - 0.5) * 0.02;
+
         // Natural collision detection - let physics handle the bouncing
-        pins.forEach(pin => {
+        pins.forEach((pin) => {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           const minDistance = ball.radius + PIN_RADIUS;
-          
+
           if (distance < minDistance && distance > 0) {
             // Calculate collision normal
             const nx = dx / distance;
             const ny = dy / distance;
-            
+
             // Separate ball from pin
             const separation = minDistance - distance;
             ball.x += nx * separation;
             ball.y += ny * separation;
-            
-            // Enhanced energetic collision physics
+
+            // More realistic collision physics
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            
-            // Enhanced bounce with variation
-            const bounceVariation = 1.0 + (Math.random() * 0.1); // Up to 10% extra energy
-            ball.vx -= 1.5 * dotProduct * nx * bounceVariation;
-            ball.vy -= 1.5 * dotProduct * ny * bounceVariation;
-            
-            // Reduced surface friction for more dynamic movement
-            const surfaceFriction = 0.85 + (Math.random() * 0.04); // Higher friction range 0.85-0.89
-            ball.vx *= surfaceFriction;
-            ball.vy *= 0.88;
-            
-            // Add micro spin effect from collision
-            const spinInfluence = (Math.random() - 0.5) * 0.1;
-            ball.vx += spinInfluence;
+
+            // Natural bounce with slight energy loss
+            const restitution = 0.75 + Math.random() * 0.15; // Natural bounce coefficient
+            ball.vx -= 2.0 * dotProduct * nx * restitution;
+            ball.vy -= 2.0 * dotProduct * ny * restitution;
+
+            // Realistic surface friction
+            const friction = 0.82 + Math.random() * 0.08; // Natural friction variation
+            ball.vx *= friction;
+            ball.vy *= 0.95; // Slight vertical energy loss
+
+            // Natural deflection based on collision angle
+            const deflectionStrength = Math.abs(nx) * 0.15; // Stronger deflection on side hits
+            ball.vx += (Math.random() - 0.5) * deflectionStrength;
           }
         });
 
-        // Keep ball in bounds
+        // Keep ball in bounds with natural wall bounces
         if (ball.x < ball.radius) {
           ball.x = ball.radius;
-          ball.vx *= -0.5;
+          ball.vx = Math.abs(ball.vx) * 0.6; // Natural wall bounce
         }
         if (ball.x > BOARD_WIDTH - ball.radius) {
           ball.x = BOARD_WIDTH - ball.radius;
-          ball.vx *= -0.5;
+          ball.vx = -Math.abs(ball.vx) * 0.6; // Natural wall bounce
         }
 
         // Natural physics - no guidance needed
@@ -314,36 +355,44 @@ export function PlinkoGame() {
         // Ball has reached the bottom - determine final outcome
         // Make sure ball is fully inside a bucket, not just touching
         const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-        
+
         // Clamp ball position to ensure it's within bounds
-        ball.x = Math.max(ball.radius, Math.min(BOARD_WIDTH - ball.radius, ball.x));
-        
+        ball.x = Math.max(
+          ball.radius,
+          Math.min(BOARD_WIDTH - ball.radius, ball.x),
+        );
+
         // Find which bucket the ball center is in
         const bucketIndex = Math.floor(ball.x / bucketWidth);
-        const clampedIndex = Math.max(0, Math.min(OUTCOMES.length - 1, bucketIndex));
-        
+        const clampedIndex = Math.max(
+          0,
+          Math.min(OUTCOMES.length - 1, bucketIndex),
+        );
+
         // Move ball to center of the bucket it landed in
-        const bucketCenter = (clampedIndex * bucketWidth) + (bucketWidth / 2);
+        const bucketCenter = clampedIndex * bucketWidth + bucketWidth / 2;
         ball.x = bucketCenter;
         ball.y = BOARD_HEIGHT - 30; // Position ball inside the bucket
-        
+
         if (!animationComplete) {
           setAnimationComplete(true);
-          
+
           // Trust the physics simulation - use the visual outcome
           const actualOutcome = OUTCOMES[clampedIndex];
           setFinalOutcome(actualOutcome);
-          
+
           // Send the actual physics result to backend for pack assignment
-          console.log(`Frontend physics result: ${actualOutcome} (bucket ${clampedIndex})`);
-          
+          console.log(
+            `Frontend physics result: ${actualOutcome} (bucket ${clampedIndex})`,
+          );
+
           // Call backend with physics result
           playGameMutation.mutate({
             gameType: "plinko",
             betAmount: fixedPrice,
-            plinkoResult: actualOutcome // Send the visual result
+            plinkoResult: actualOutcome, // Send the visual result
           });
-          
+
           setTimeout(() => {
             setShowPackAssigned(true);
           }, 1000);
@@ -353,14 +402,21 @@ export function PlinkoGame() {
       // Draw ball
       ctx.beginPath();
       ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      
+
       // Ball gradient
-      const ballGradient = ctx.createRadialGradient(ball.x - 3, ball.y - 3, 0, ball.x, ball.y, ball.radius);
-      ballGradient.addColorStop(0, '#ffffff');
+      const ballGradient = ctx.createRadialGradient(
+        ball.x - 3,
+        ball.y - 3,
+        0,
+        ball.x,
+        ball.y,
+        ball.radius,
+      );
+      ballGradient.addColorStop(0, "#ffffff");
       ballGradient.addColorStop(1, ball.color);
       ctx.fillStyle = ballGradient;
       ctx.fill();
-      ctx.strokeStyle = '#0ea5e9';
+      ctx.strokeStyle = "#0ea5e9";
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -386,10 +442,10 @@ export function PlinkoGame() {
     setAnimationComplete(false);
     setFinalOutcome(null);
     setLastResult(null);
-    
+
     // Clear the canvas and redraw static board immediately
     drawStaticBoard();
-    
+
     // Start physics simulation immediately - pass fixed price
     startPlinkoAnimation(fixedPrice);
   };
@@ -398,15 +454,15 @@ export function PlinkoGame() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
-    
+
     // Draw background
     const gradient = ctx.createLinearGradient(0, 0, 0, BOARD_HEIGHT);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.1)');
-    gradient.addColorStop(1, 'rgba(147, 51, 234, 0.1)');
+    gradient.addColorStop(0, "rgba(59, 130, 246, 0.1)");
+    gradient.addColorStop(1, "rgba(147, 51, 234, 0.1)");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
@@ -414,12 +470,12 @@ export function PlinkoGame() {
     const outcomePositions = getOutcomePositions();
 
     // Draw pins
-    pins.forEach(pin => {
+    pins.forEach((pin) => {
       ctx.beginPath();
       ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = "#64748b";
       ctx.fill();
-      ctx.strokeStyle = '#94a3b8';
+      ctx.strokeStyle = "#94a3b8";
       ctx.lineWidth = 1;
       ctx.stroke();
     });
@@ -428,26 +484,38 @@ export function PlinkoGame() {
     outcomePositions.forEach((pos, index) => {
       const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
       const bucketX = index * bucketWidth;
-      
-      ctx.fillStyle = pos.outcome === 'Masterball' ? 'rgba(139, 92, 246, 0.2)' :
-                      pos.outcome === 'Ultraball' ? 'rgba(255, 215, 0, 0.2)' :
-                      pos.outcome === 'Greatball' ? 'rgba(59, 130, 246, 0.2)' :
-                      'rgba(148, 163, 184, 0.2)';
+
+      ctx.fillStyle =
+        pos.outcome === "Masterball"
+          ? "rgba(139, 92, 246, 0.2)"
+          : pos.outcome === "Ultraball"
+            ? "rgba(255, 215, 0, 0.2)"
+            : pos.outcome === "Greatball"
+              ? "rgba(59, 130, 246, 0.2)"
+              : "rgba(148, 163, 184, 0.2)";
       ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
-      
-      ctx.strokeStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
-                       pos.outcome === 'Ultraball' ? '#ffd700' :
-                       pos.outcome === 'Greatball' ? '#3b82f6' :
-                       '#94a3b8';
+
+      ctx.strokeStyle =
+        pos.outcome === "Masterball"
+          ? "#8b5cf6"
+          : pos.outcome === "Ultraball"
+            ? "#ffd700"
+            : pos.outcome === "Greatball"
+              ? "#3b82f6"
+              : "#94a3b8";
       ctx.lineWidth = 2;
       ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
 
-      ctx.fillStyle = pos.outcome === 'Masterball' ? '#8b5cf6' :
-                     pos.outcome === 'Ultraball' ? '#ffd700' :
-                     pos.outcome === 'Greatball' ? '#3b82f6' :
-                     '#64748b';
-      ctx.font = 'bold 11px Inter';
-      ctx.textAlign = 'center';
+      ctx.fillStyle =
+        pos.outcome === "Masterball"
+          ? "#8b5cf6"
+          : pos.outcome === "Ultraball"
+            ? "#ffd700"
+            : pos.outcome === "Greatball"
+              ? "#3b82f6"
+              : "#64748b";
+      ctx.font = "bold 11px Inter";
+      ctx.textAlign = "center";
       ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
     });
   };
@@ -469,53 +537,77 @@ export function PlinkoGame() {
         <CardContent className="p-6">
           <div className="text-center mb-6">
             <h3 className="font-gaming font-bold text-xl mb-2">Plinko Board</h3>
-            <p className="text-muted-foreground">Drop your ball through 9 layers of pins!</p>
+            <p className="text-muted-foreground">
+              Drop your ball through 9 layers of pins!
+            </p>
           </div>
-          
+
           <div className="flex justify-center">
             <div className="relative w-full max-w-[600px]">
-              <canvas 
+              <canvas
                 ref={canvasRef}
                 width={BOARD_WIDTH}
                 height={BOARD_HEIGHT}
                 className="border border-border rounded-lg bg-background/50 w-full h-auto max-w-full"
-                style={{ maxWidth: '100%', height: 'auto' }}
+                style={{ maxWidth: "100%", height: "auto" }}
               />
-              
+
               {/* Result Overlay with Pack Design */}
               {animationComplete && finalOutcome && !showPackAssigned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
                   <div className="text-center space-y-4">
-                    <div className={`w-24 h-32 mx-auto rounded-lg overflow-hidden border-2 ${
-                      finalOutcome === 'Masterball' ? 'border-purple-500 shadow-lg shadow-purple-500/50' :
-                      finalOutcome === 'Ultraball' ? 'border-yellow-500 shadow-lg shadow-yellow-500/50' :
-                      finalOutcome === 'Greatball' ? 'border-blue-500 shadow-lg shadow-blue-500/50' :
-                      'border-red-500 shadow-lg shadow-red-500/50'
-                    }`}>
-                      <PackImage packType={finalOutcome.toLowerCase()} size="large" />
+                    <div
+                      className={`w-24 h-32 mx-auto rounded-lg overflow-hidden border-2 ${
+                        finalOutcome === "Masterball"
+                          ? "border-purple-500 shadow-lg shadow-purple-500/50"
+                          : finalOutcome === "Ultraball"
+                            ? "border-yellow-500 shadow-lg shadow-yellow-500/50"
+                            : finalOutcome === "Greatball"
+                              ? "border-blue-500 shadow-lg shadow-blue-500/50"
+                              : "border-red-500 shadow-lg shadow-red-500/50"
+                      }`}
+                    >
+                      <PackImage
+                        packType={finalOutcome.toLowerCase()}
+                        size="large"
+                      />
                     </div>
                     <div className="text-white">
-                      <h4 className="font-bold text-xl">{finalOutcome} Pack!</h4>
-                      <p className="text-sm opacity-80">Ball landed in the {finalOutcome} bucket</p>
+                      <h4 className="font-bold text-xl">
+                        {finalOutcome} Pack!
+                      </h4>
+                      <p className="text-sm opacity-80">
+                        Ball landed in the {finalOutcome} bucket
+                      </p>
                     </div>
                   </div>
                 </div>
               )}
-              
+
               {/* Pack Assignment Overlay with Pack Design */}
               {showPackAssigned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
                   <div className="text-center space-y-6 p-6 bg-background/90 rounded-lg border border-border max-w-sm">
                     <div className="space-y-3">
-                      <div className={`w-20 h-28 mx-auto rounded-lg overflow-hidden border-2 ${
-                        finalOutcome === 'Masterball' ? 'border-purple-500 shadow-lg shadow-purple-500/50' :
-                        finalOutcome === 'Ultraball' ? 'border-yellow-500 shadow-lg shadow-yellow-500/50' :
-                        finalOutcome === 'Greatball' ? 'border-blue-500 shadow-lg shadow-blue-500/50' :
-                        'border-red-500 shadow-lg shadow-red-500/50'
-                      }`}>
-                        <PackImage packType={finalOutcome?.toLowerCase() || 'pokeball'} size="large" />
+                      <div
+                        className={`w-20 h-28 mx-auto rounded-lg overflow-hidden border-2 ${
+                          finalOutcome === "Masterball"
+                            ? "border-purple-500 shadow-lg shadow-purple-500/50"
+                            : finalOutcome === "Ultraball"
+                              ? "border-yellow-500 shadow-lg shadow-yellow-500/50"
+                              : finalOutcome === "Greatball"
+                                ? "border-blue-500 shadow-lg shadow-blue-500/50"
+                                : "border-red-500 shadow-lg shadow-red-500/50"
+                        }`}
+                      >
+                        <PackImage
+                          packType={finalOutcome?.toLowerCase() || "pokeball"}
+                          size="large"
+                        />
                       </div>
-                      <h4 className="font-bold text-xl text-white">Pack Assigned!</h4>
+                      <h4 className="font-bold text-xl text-white">
+                        Pack Assigned!
+                      </h4>
                       <p className="text-green-400 font-medium">
                         {finalOutcome} Pack added to "My Packs"
                       </p>
@@ -550,7 +642,10 @@ export function PlinkoGame() {
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-2 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-center space-x-1">
                 <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400" data-testid="text-game-cost">
+                <span
+                  className="text-sm font-semibold text-blue-600 dark:text-blue-400"
+                  data-testid="text-game-cost"
+                >
                   Cost: {fixedPrice} credits per play
                 </span>
               </div>
