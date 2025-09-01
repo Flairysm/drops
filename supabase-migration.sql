@@ -319,13 +319,11 @@ INSERT INTO cards (name, tier, pack_type, image_url, market_value, stock) VALUES
 ('Black Bolt Cosmic Power', 'SS', 'BNW', 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400', 50.00, 8),
 
 -- SSS Tier Cards (Mythic)
-('Black Bolt Infinity', 'SSS', 'BNW', 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400', 100.00, 3)
-ON CONFLICT (name, tier, pack_type) DO NOTHING;
+('Black Bolt Infinity', 'SSS', 'BNW', 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400', 100.00, 3);
 
 -- Create virtual pack (Black Bolt themed pack)
 INSERT INTO virtual_packs (name, description, image_url, price, card_count) VALUES 
-('Black Bolt Pack', 'Themed pack featuring the Inhuman King Black Bolt. Contains 8 cards with 7 commons and 1 guaranteed hit card (B tier or higher).', 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400', 16.00, 8)
-ON CONFLICT DO NOTHING;
+('Black Bolt Pack', 'Themed pack featuring the Inhuman King Black Bolt. Contains 8 cards with 7 commons and 1 guaranteed hit card (B tier or higher).', 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400', 16.00, 8);
 
 -- Get the Black Bolt pack ID for further configuration
 DO $$
@@ -340,8 +338,7 @@ BEGIN
         -- Assign all Black Bolt cards to the virtual pack
         FOR card_record IN SELECT id FROM cards WHERE pack_type = 'BNW' AND is_active = true LOOP
             INSERT INTO virtual_pack_cards (virtual_pack_id, card_id, weight, is_active) 
-            VALUES (black_bolt_pack_id, card_record.id, 1, true)
-            ON CONFLICT DO NOTHING;
+            VALUES (black_bolt_pack_id, card_record.id, 1, true);
         END LOOP;
         
         -- Set pull rates for Black Bolt pack (7-tier system)
@@ -352,22 +349,17 @@ BEGIN
         (black_bolt_pack_id, 'A', 4),   -- 4% A tier
         (black_bolt_pack_id, 'S', 2),   -- 2% S tier
         (black_bolt_pack_id, 'SS', 1),  -- 1% SS tier
-        (black_bolt_pack_id, 'SSS', 0)  -- 0% SSS tier
-        ON CONFLICT DO NOTHING;
+        (black_bolt_pack_id, 'SSS', 0); -- 0% SSS tier
     END IF;
 END $$;
 
 -- Insert sample admin user (password will need to be hashed in your app)
 INSERT INTO users (username, email, role, credits) VALUES 
-('admin', 'admin@drops.app', 'admin', 1000.00)
-ON CONFLICT (email) DO UPDATE SET 
-    role = EXCLUDED.role,
-    credits = EXCLUDED.credits;
+('admin', 'admin@drops.app', 'admin', 1000.00);
 
 -- Insert sample regular user
 INSERT INTO users (username, email, role, credits) VALUES 
-('player1', 'player1@example.com', 'user', 100.00)
-ON CONFLICT (email) DO NOTHING;
+('player1', 'player1@example.com', 'user', 100.00);
 
 -- =============================================
 -- INDEXES FOR PERFORMANCE
