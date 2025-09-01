@@ -235,19 +235,13 @@ CREATE TABLE IF NOT EXISTS shipping_requests (
 INSERT INTO game_settings (game_type, price) VALUES 
 ('plinko', 20.00),
 ('wheel', 20.00),
-('pack', 10.00)
-ON CONFLICT (game_type) DO UPDATE SET 
-    price = EXCLUDED.price,
-    updated_at = NOW();
+('pack', 10.00);
 
 -- Insert system settings
 INSERT INTO system_settings (setting_key, setting_value, description) VALUES 
 ('maintenance_mode', false, 'Enable/disable maintenance mode'),
 ('new_registrations', true, 'Allow new user registrations'),
-('global_feed_enabled', true, 'Show global activity feed')
-ON CONFLICT (setting_key) DO UPDATE SET 
-    setting_value = EXCLUDED.setting_value,
-    updated_at = NOW();
+('global_feed_enabled', true, 'Show global activity feed');
 
 -- Insert pull rates for Pokemon-themed pack system (7-tier)
 INSERT INTO pull_rates (pack_type, card_tier, probability) VALUES 
@@ -285,10 +279,7 @@ INSERT INTO pull_rates (pack_type, card_tier, probability) VALUES
 ('masterball', 'A', 18),
 ('masterball', 'S', 10),
 ('masterball', 'SS', 2),
-('masterball', 'SSS', 0)
-ON CONFLICT (pack_type, card_tier) DO UPDATE SET 
-    probability = EXCLUDED.probability,
-    updated_at = NOW();
+('masterball', 'SSS', 0);
 
 -- Insert sample cards for the Black Bolt themed collection
 INSERT INTO cards (name, tier, pack_type, image_url, market_value, stock) VALUES 
