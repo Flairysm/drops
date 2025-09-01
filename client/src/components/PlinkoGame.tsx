@@ -31,6 +31,8 @@ interface Ball {
 
 const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 500;
+const MOBILE_BOARD_WIDTH = 350;
+const MOBILE_BOARD_HEIGHT = 400;
 const PIN_RADIUS = 6;
 const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
@@ -530,14 +532,18 @@ export function PlinkoGame() {
     };
   }, []);
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const canvasWidth = isMobile ? MOBILE_BOARD_WIDTH : BOARD_WIDTH;
+  const canvasHeight = isMobile ? MOBILE_BOARD_HEIGHT : BOARD_HEIGHT;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Game Board */}
       <Card className="gaming-card">
-        <CardContent className="p-6">
-          <div className="text-center mb-6">
-            <h3 className="font-gaming font-bold text-xl mb-2">Plinko Board</h3>
-            <p className="text-muted-foreground">
+        <CardContent className="p-3 sm:p-6">
+          <div className="text-center mb-4 sm:mb-6">
+            <h3 className="font-gaming font-bold text-lg sm:text-xl mb-2">Plinko Board</h3>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Drop your ball through 9 layers of pins!
             </p>
           </div>
@@ -546,8 +552,8 @@ export function PlinkoGame() {
             <div className="relative w-full max-w-[600px]">
               <canvas
                 ref={canvasRef}
-                width={BOARD_WIDTH}
-                height={BOARD_HEIGHT}
+                width={canvasWidth}
+                height={canvasHeight}
                 className="border border-border rounded-lg bg-background/50 w-full h-auto max-w-full"
                 style={{ maxWidth: "100%", height: "auto" }}
               />
@@ -637,13 +643,13 @@ export function PlinkoGame() {
 
       {/* Game Controls */}
       <Card className="gaming-card">
-        <CardContent className="p-6">
-          <div className="space-y-4">
+        <CardContent className="p-3 sm:p-6">
+          <div className="space-y-3 sm:space-y-4">
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-2 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-center space-x-1">
-                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
                 <span
-                  className="text-sm font-semibold text-blue-600 dark:text-blue-400"
+                  className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400"
                   data-testid="text-game-cost"
                 >
                   Cost: {fixedPrice} credits per play
@@ -654,7 +660,7 @@ export function PlinkoGame() {
             <Button
               onClick={handlePlay}
               disabled={isPlaying || playGameMutation.isPending}
-              className="w-full bg-gradient-to-r from-primary to-accent hover:glow-effect transition-all text-lg py-6"
+              className="w-full bg-gradient-to-r from-primary to-accent hover:glow-effect transition-all text-sm sm:text-lg py-4 sm:py-6"
               data-testid="button-play-plinko"
             >
               {isPlaying || playGameMutation.isPending ? (
@@ -675,9 +681,9 @@ export function PlinkoGame() {
 
       {/* Pack Tiers Display */}
       <Card className="gaming-card">
-        <CardContent className="p-6">
-          <h4 className="font-semibold mb-4">Pack Tiers</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <CardContent className="p-3 sm:p-6">
+          <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Pack Tiers</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm">
             <div className="text-center space-y-2">
               <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-red-500 shadow-lg shadow-red-500/50">
                 <PackImage packType="pokeball" size="large" />
