@@ -555,9 +555,9 @@ export function PlinkoGame() {
               {/* Result Overlay with Pack Design */}
               {animationComplete && finalOutcome && !showPackAssigned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                  <div className="text-center space-y-4">
+                  <div className="text-center space-y-2 p-3">
                     <div
-                      className={`w-24 h-32 mx-auto rounded-lg overflow-hidden border-2 ${
+                      className={`w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 ${
                         finalOutcome === "Masterball"
                           ? "border-purple-500 shadow-lg shadow-purple-500/50"
                           : finalOutcome === "Ultraball"
@@ -569,14 +569,14 @@ export function PlinkoGame() {
                     >
                       <PackImage
                         packType={finalOutcome.toLowerCase()}
-                        size="large"
+                        size="small"
                       />
                     </div>
                     <div className="text-white">
-                      <h4 className="font-bold text-xl">
+                      <h4 className="font-bold text-lg">
                         {finalOutcome} Pack!
                       </h4>
-                      <p className="text-sm opacity-80">
+                      <p className="text-xs opacity-80">
                         Ball landed in the {finalOutcome} bucket
                       </p>
                     </div>
@@ -587,10 +587,10 @@ export function PlinkoGame() {
               {/* Pack Assignment Overlay with Pack Design */}
               {showPackAssigned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
-                  <div className="text-center space-y-6 p-6 bg-background/90 rounded-lg border border-border max-w-sm">
-                    <div className="space-y-3">
+                  <div className="text-center space-y-4 p-4 bg-background/90 rounded-lg border border-border max-w-xs mx-2">
+                    <div className="space-y-2">
                       <div
-                        className={`w-20 h-28 mx-auto rounded-lg overflow-hidden border-2 ${
+                        className={`w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 ${
                           finalOutcome === "Masterball"
                             ? "border-purple-500 shadow-lg shadow-purple-500/50"
                             : finalOutcome === "Ultraball"
