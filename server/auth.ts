@@ -58,6 +58,7 @@ export function setupAuth(app: Express) {
             });
           }
           session.userId = adminUser.id;
+          console.log('Development mode: Auto-logged in as admin');
         } catch (error) {
           console.error('Auto-login failed:', error);
         }
