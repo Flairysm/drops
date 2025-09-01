@@ -141,15 +141,19 @@ export function PlinkoGame() {
     },
   });
 
-  const getPins = () => {
+  const getPins = (boardWidth = BOARD_WIDTH, boardHeight = BOARD_HEIGHT) => {
     const pins = [];
+
+    // Scale factors for mobile
+    const widthScale = boardWidth / BOARD_WIDTH;
+    const heightScale = boardHeight / BOARD_HEIGHT;
 
     // Exact Stake.us Plinko pyramid layout
     // Row 1: 3 pins, Row 2: 4 pins, ..., Row 8: 10 pins
     const rows = 8;
-    const startY = 140;
-    const rowSpacing = 40; // Vertical spacing between rows
-    const edgePadding = 10; // Distance from board edges for last row
+    const startY = 140 * heightScale;
+    const rowSpacing = 40 * heightScale; // Vertical spacing between rows
+    const edgePadding = 10 * widthScale; // Distance from board edges for last row
 
     for (let row = 0; row < rows; row++) {
       const pinsInRow = row + 3; // Row 0: 3 pins, Row 1: 4 pins, etc.
@@ -157,7 +161,7 @@ export function PlinkoGame() {
 
       // For the last row (10 pins), make it span nearly edge to edge
       if (row === rows - 1) {
-        const availableWidth = BOARD_WIDTH - edgePadding * 2;
+        const availableWidth = boardWidth - edgePadding * 2;
         const pinSpacing = availableWidth / (pinsInRow - 1);
         const startX = edgePadding;
 
@@ -167,11 +171,11 @@ export function PlinkoGame() {
         }
       } else {
         // For other rows, maintain proportional spacing based on last row
-        const lastRowWidth = BOARD_WIDTH - edgePadding * 2;
+        const lastRowWidth = boardWidth - edgePadding * 2;
         const maxPinSpacing = lastRowWidth / 9; // 9 spaces between 10 pins
         const pinSpacing = maxPinSpacing;
         const rowWidth = (pinsInRow - 1) * pinSpacing;
-        const startX = (BOARD_WIDTH - rowWidth) / 2;
+        const startX = (boardWidth - rowWidth) / 2;
 
         for (let pin = 0; pin < pinsInRow; pin++) {
           const x = startX + pin * pinSpacing;
@@ -183,10 +187,10 @@ export function PlinkoGame() {
     return pins;
   };
 
-  const getOutcomePositions = () => {
+  const getOutcomePositions = (boardWidth = BOARD_WIDTH, boardHeight = BOARD_HEIGHT) => {
     const positions = [];
-    const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-    const y = BOARD_HEIGHT - 40;
+    const bucketWidth = boardWidth / OUTCOMES.length;
+    const y = boardHeight - 40 * (boardHeight / BOARD_HEIGHT);
 
     for (let i = 0; i < OUTCOMES.length; i++) {
       positions.push({
@@ -205,42 +209,47 @@ export function PlinkoGame() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const currentWidth = isMobile ? MOBILE_BOARD_WIDTH : BOARD_WIDTH;
+    const currentHeight = isMobile ? MOBILE_BOARD_HEIGHT : BOARD_HEIGHT;
+
     // No predetermined target - let physics determine the outcome naturally
-    const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+    const bucketWidth = currentWidth / OUTCOMES.length;
 
     // Initialize ball to drop randomly between pins 1-2 or 2-3
-    const firstLayerPins = getPins().filter((_, index) => index < 3); // First 3 pins
+    const firstLayerPins = getPins(currentWidth, currentHeight).filter((_, index) => index < 3); // First 3 pins
     const dropChoice = Math.random() < 0.5 ? 0 : 1; // Choose between first two gaps
     const dropX =
       (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
 
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 12, // More natural drop variation
-      y: 20,
+      x: dropX + (Math.random() - 0.5) * 12 * (currentWidth / BOARD_WIDTH), // More natural drop variation
+      y: 20 * (currentHeight / BOARD_HEIGHT),
       vx: (Math.random() - 0.5) * 0.8, // Slightly more horizontal variance
       vy: 0.5, // Small initial downward velocity
-      radius: BALL_RADIUS,
+      radius: BALL_RADIUS * (currentWidth / BOARD_WIDTH),
       color: "#00d4ff",
     };
 
     ballRef.current = ball;
-    const pins = getPins();
-    const outcomePositions = getOutcomePositions();
+    const pins = getPins(currentWidth, currentHeight);
+    const outcomePositions = getOutcomePositions(currentWidth, currentHeight);
 
     const animate = () => {
-      ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+      ctx.clearRect(0, 0, currentWidth, currentHeight);
 
       // Draw background
-      const gradient = ctx.createLinearGradient(0, 0, 0, BOARD_HEIGHT);
+      const gradient = ctx.createLinearGradient(0, 0, 0, currentHeight);
       gradient.addColorStop(0, "rgba(59, 130, 246, 0.1)");
       gradient.addColorStop(1, "rgba(147, 51, 234, 0.1)");
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+      ctx.fillRect(0, 0, currentWidth, currentHeight);
 
       // Draw pins
       pins.forEach((pin) => {
         ctx.beginPath();
-        ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
+        const pinRadius = PIN_RADIUS * (currentWidth / BOARD_WIDTH);
+        ctx.arc(pin.x, pin.y, pinRadius, 0, Math.PI * 2);
         ctx.fillStyle = "#64748b";
         ctx.fill();
         ctx.strokeStyle = "#94a3b8";
@@ -250,8 +259,9 @@ export function PlinkoGame() {
 
       // Draw outcome buckets
       outcomePositions.forEach((pos, index) => {
-        const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+        const bucketWidth = currentWidth / OUTCOMES.length;
         const bucketX = index * bucketWidth;
+        const bucketHeight = currentHeight * 0.15;
 
         // Bucket background
         ctx.fillStyle =
@@ -262,7 +272,7 @@ export function PlinkoGame() {
               : pos.outcome === "Greatball"
                 ? "rgba(59, 130, 246, 0.2)"
                 : "rgba(148, 163, 184, 0.2)";
-        ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+        ctx.fillRect(bucketX, currentHeight - bucketHeight, bucketWidth, bucketHeight);
 
         // Bucket border
         ctx.strokeStyle =
@@ -273,8 +283,8 @@ export function PlinkoGame() {
               : pos.outcome === "Greatball"
                 ? "#3b82f6"
                 : "#94a3b8";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+        ctx.lineWidth = isMobile ? 1 : 2;
+        ctx.strokeRect(bucketX, currentHeight - bucketHeight, bucketWidth, bucketHeight);
 
         // Bucket label - properly centered
         ctx.fillStyle =
@@ -285,13 +295,14 @@ export function PlinkoGame() {
               : pos.outcome === "Greatball"
                 ? "#3b82f6"
                 : "#64748b";
-        ctx.font = "bold 11px Inter";
+        const fontSize = isMobile ? 8 : 11;
+        ctx.font = `bold ${fontSize}px Inter`;
         ctx.textAlign = "center";
-        ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
+        ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, currentHeight - bucketHeight/3);
       });
 
       // Physics for ball
-      if (ball.y < BOARD_HEIGHT - 70) {
+      if (ball.y < currentHeight - (currentHeight * 0.18)) {
         // More realistic gravity (similar to real world)
         ball.vy += 0.25;
 
@@ -311,7 +322,8 @@ export function PlinkoGame() {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const minDistance = ball.radius + PIN_RADIUS;
+          const pinRadius = PIN_RADIUS * (currentWidth / BOARD_WIDTH);
+          const minDistance = ball.radius + pinRadius;
 
           if (distance < minDistance && distance > 0) {
             // Calculate collision normal
@@ -347,8 +359,8 @@ export function PlinkoGame() {
           ball.x = ball.radius;
           ball.vx = Math.abs(ball.vx) * 0.6; // Natural wall bounce
         }
-        if (ball.x > BOARD_WIDTH - ball.radius) {
-          ball.x = BOARD_WIDTH - ball.radius;
+        if (ball.x > currentWidth - ball.radius) {
+          ball.x = currentWidth - ball.radius;
           ball.vx = -Math.abs(ball.vx) * 0.6; // Natural wall bounce
         }
 
@@ -356,12 +368,12 @@ export function PlinkoGame() {
       } else {
         // Ball has reached the bottom - determine final outcome
         // Make sure ball is fully inside a bucket, not just touching
-        const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+        const bucketWidth = currentWidth / OUTCOMES.length;
 
         // Clamp ball position to ensure it's within bounds
         ball.x = Math.max(
           ball.radius,
-          Math.min(BOARD_WIDTH - ball.radius, ball.x),
+          Math.min(currentWidth - ball.radius, ball.x),
         );
 
         // Find which bucket the ball center is in
@@ -374,7 +386,7 @@ export function PlinkoGame() {
         // Move ball to center of the bucket it landed in
         const bucketCenter = clampedIndex * bucketWidth + bucketWidth / 2;
         ball.x = bucketCenter;
-        ball.y = BOARD_HEIGHT - 30; // Position ball inside the bucket
+        ball.y = currentHeight - (currentHeight * 0.08); // Position ball inside the bucket
 
         if (!animationComplete) {
           setAnimationComplete(true);
@@ -459,17 +471,21 @@ export function PlinkoGame() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const currentWidth = isMobile ? MOBILE_BOARD_WIDTH : BOARD_WIDTH;
+    const currentHeight = isMobile ? MOBILE_BOARD_HEIGHT : BOARD_HEIGHT;
+
+    ctx.clearRect(0, 0, currentWidth, currentHeight);
 
     // Draw background
-    const gradient = ctx.createLinearGradient(0, 0, 0, BOARD_HEIGHT);
+    const gradient = ctx.createLinearGradient(0, 0, 0, currentHeight);
     gradient.addColorStop(0, "rgba(59, 130, 246, 0.1)");
     gradient.addColorStop(1, "rgba(147, 51, 234, 0.1)");
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+    ctx.fillRect(0, 0, currentWidth, currentHeight);
 
-    const pins = getPins();
-    const outcomePositions = getOutcomePositions();
+    const pins = getPins(currentWidth, currentHeight);
+    const outcomePositions = getOutcomePositions(currentWidth, currentHeight);
 
     // Draw pins
     pins.forEach((pin) => {
@@ -484,8 +500,9 @@ export function PlinkoGame() {
 
     // Draw outcome buckets
     outcomePositions.forEach((pos, index) => {
-      const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+      const bucketWidth = currentWidth / OUTCOMES.length;
       const bucketX = index * bucketWidth;
+      const bucketHeight = currentHeight * 0.15; // 15% of board height
 
       ctx.fillStyle =
         pos.outcome === "Masterball"
@@ -495,7 +512,7 @@ export function PlinkoGame() {
             : pos.outcome === "Greatball"
               ? "rgba(59, 130, 246, 0.2)"
               : "rgba(148, 163, 184, 0.2)";
-      ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+      ctx.fillRect(bucketX, currentHeight - bucketHeight, bucketWidth, bucketHeight);
 
       ctx.strokeStyle =
         pos.outcome === "Masterball"
@@ -505,8 +522,8 @@ export function PlinkoGame() {
             : pos.outcome === "Greatball"
               ? "#3b82f6"
               : "#94a3b8";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+      ctx.lineWidth = isMobile ? 1 : 2;
+      ctx.strokeRect(bucketX, currentHeight - bucketHeight, bucketWidth, bucketHeight);
 
       ctx.fillStyle =
         pos.outcome === "Masterball"
@@ -516,9 +533,10 @@ export function PlinkoGame() {
             : pos.outcome === "Greatball"
               ? "#3b82f6"
               : "#64748b";
-      ctx.font = "bold 11px Inter";
+      const fontSize = isMobile ? 8 : 11;
+      ctx.font = `bold ${fontSize}px Inter`;
       ctx.textAlign = "center";
-      ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
+      ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, currentHeight - bucketHeight/3);
     });
   };
 
