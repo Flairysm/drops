@@ -144,44 +144,44 @@ export default function Vault() {
       <main className="pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <section className="py-4 sm:py-8">
-            <div className="text-center mb-6 sm:mb-8">
-              <h1 className="font-gaming font-bold text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-3 sm:mb-4">
+          <section className="py-8">
+            <div className="text-center mb-8">
+              <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
                 <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">
                   YOUR VAULT
                 </span>
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base lg:text-lg px-4">
+              <p className="text-muted-foreground text-lg">
                 Manage your card collection • Refund for credits or ship to your door
               </p>
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 md:grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <Card className="gaming-card">
-                <CardContent className="p-2 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary" data-testid="text-total-cards">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-primary" data-testid="text-total-cards">
                     {vaultCards?.length || 0}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">Total Cards</div>
+                  <div className="text-sm text-muted-foreground">Total Cards</div>
                 </CardContent>
               </Card>
 
               <Card className="gaming-card">
-                <CardContent className="p-2 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-accent" data-testid="text-selected-cards">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-accent" data-testid="text-selected-cards">
                     {selectedCards.length}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">Selected</div>
+                  <div className="text-sm text-muted-foreground">Selected</div>
                 </CardContent>
               </Card>
 
               <Card className="gaming-card">
-                <CardContent className="p-2 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-legendary" data-testid="text-refund-value">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-legendary" data-testid="text-refund-value">
                     {calculateRefundValue().toFixed(2)}
                   </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">Refund Value (CR)</div>
+                  <div className="text-sm text-muted-foreground">Refund Value (CR)</div>
                 </CardContent>
               </Card>
 
@@ -189,24 +189,22 @@ export default function Vault() {
             </div>
 
             {/* Controls */}
-            <Card className="gaming-card mb-6 sm:mb-8">
-              <CardContent className="p-3 sm:p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 sm:space-y-4 lg:space-y-0">
+            <Card className="gaming-card mb-8">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                   {/* Filters */}
-                  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                    <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Filter className="w-4 h-4 text-muted-foreground" />
                     {tiers.map((tier) => (
                       <Button
                         key={tier.value}
                         variant={filterTier === tier.value ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilterTier(tier.value)}
-                        className={`text-xs sm:text-sm ${tier.color ? `hover:tier-glow-${tier.color}` : ""}`}
+                        className={tier.color ? `hover:tier-glow-${tier.color}` : ""}
                         data-testid={`filter-${tier.value}`}
                       >
-                        <span className="hidden sm:inline">{tier.label}</span>
-                        <span className="sm:hidden">{tier.value === "all" ? "All" : tier.value}</span>
-                        <span className="ml-1">({tier.count})</span>
+                        {tier.label} ({tier.count})
                       </Button>
                     ))}
                   </div>
@@ -291,8 +289,8 @@ export default function Vault() {
               </Card>
             ) : (
               <div className={viewMode === "grid" 
-                ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4" 
-                : "space-y-3 sm:space-y-4"
+                ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" 
+                : "space-y-4"
               }>
                 {filteredCards.map((userCard) => (
                   <div key={userCard.id} className="relative group">

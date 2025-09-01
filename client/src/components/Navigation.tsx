@@ -60,11 +60,11 @@ export function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/">
-            <div className="flex items-center space-x-2 sm:space-x-3 cursor-pointer" data-testid="link-home">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center glow-effect">
-                <Zap className="text-primary-foreground text-lg sm:text-xl" />
+            <div className="flex items-center space-x-3 cursor-pointer" data-testid="link-home">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center glow-effect">
+                <Zap className="text-primary-foreground text-xl" />
               </div>
-              <span className="font-gaming font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <span className="font-gaming font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Drops
               </span>
             </div>
@@ -98,22 +98,22 @@ export function Navigation() {
             {isAuthenticated ? (
               <>
                 {/* Credits Display */}
-                <div className="gaming-card px-2 sm:px-4 py-1 sm:py-2 rounded-lg" data-testid="display-credits">
-                  <span className="text-xs sm:text-sm text-muted-foreground">Credits:</span>
-                  <span className="font-bold text-accent ml-1 sm:ml-2 text-sm sm:text-base">
+                <div className="gaming-card px-4 py-2 rounded-lg" data-testid="display-credits">
+                  <span className="text-sm text-muted-foreground">Credits:</span>
+                  <span className="font-bold text-accent ml-2">
                     {(userData as any)?.credits || "0.00"}
                   </span>
                 </div>
 
                 {/* User Menu */}
-                <div className="flex items-center space-x-1 sm:space-x-2 gaming-card px-2 sm:px-3 py-1 sm:py-2 rounded-lg">
+                <div className="flex items-center space-x-2 gaming-card px-3 py-2 rounded-lg">
                   <img
                     src={(user as any)?.profileImageUrl || "https://via.placeholder.com/32"}
                     alt="User avatar"
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-primary"
+                    className="w-8 h-8 rounded-full border-2 border-primary"
                     data-testid="img-avatar"
                   />
-                  <span className="text-sm sm:text-base truncate max-w-20 sm:max-w-none" data-testid="text-username">{(user as any)?.username || (userData as any)?.username || "Player"}</span>
+                  <span data-testid="text-username">{(user as any)?.username || (userData as any)?.username || "Player"}</span>
                   <Button
                     variant="ghost"
                     size="sm"

@@ -38,9 +38,9 @@ export function CardDisplay({
         onClick={onClick}
         data-testid={`card-${card.id}`}
       >
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-20 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
               {card.imageUrl ? (
                 <img
                   src={card.imageUrl}
@@ -108,29 +108,27 @@ export function CardDisplay({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-${tierColor}/30 flex items-center justify-center`}>
-                <span className={`text-lg sm:text-2xl font-bold tier-${tierColor}`}>{card.tier}</span>
+              <div className={`w-16 h-16 rounded-full bg-${tierColor}/30 flex items-center justify-center`}>
+                <span className={`text-2xl font-bold tier-${tierColor}`}>{card.tier}</span>
               </div>
             </div>
           )}
           
-          <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
-            <Badge className={`bg-${tierColor}/90 tier-${tierColor} text-white text-xs`}>
+          <div className="absolute top-2 right-2">
+            <Badge className={`bg-${tierColor}/90 tier-${tierColor} text-white`}>
               {card.tier}
             </Badge>
           </div>
           
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 sm:p-3">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
             <div className="text-white">
-              <div className="text-xs sm:text-sm font-semibold truncate" data-testid={`text-card-name-${card.id}`}>
+              <div className="text-sm font-semibold truncate" data-testid={`text-card-name-${card.id}`}>
                 {card.name}
               </div>
               <div className="text-xs text-gray-300">
-                <span className="hidden sm:inline">Credit Value: </span>
-                <span className="sm:hidden">CR: </span>
-                {userCard?.pullValue || card.marketValue}
+                Credit Value: {userCard?.pullValue || card.marketValue} CR
                 {userCard?.quantity && userCard.quantity > 1 && (
-                  <span className="ml-1 sm:ml-2 text-primary font-bold">
+                  <span className="ml-2 text-primary font-bold">
                     {userCard.quantity}x
                   </span>
                 )}

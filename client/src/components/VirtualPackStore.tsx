@@ -71,16 +71,16 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="text-center mb-4 sm:mb-6">
-        <p className="text-muted-foreground text-sm sm:text-base">Rip virtual packs and stand a chance to win top-tier cards</p>
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <p className="text-muted-foreground">Rip virtual packs and stand a chance to win top-tier cards</p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {activePacks.map((pack) => (
           <Card key={pack.id} className="gaming-card">
-            <CardHeader className="text-center p-3 sm:p-6">
+            <CardHeader className="text-center">
               {pack.imageUrl && (
-                <div className="w-full h-24 sm:h-32 mb-3 sm:mb-4 rounded-lg overflow-hidden">
+                <div className="w-full h-32 mb-4 rounded-lg overflow-hidden">
                   <img 
                     src={pack.imageUrl} 
                     alt={pack.name}
@@ -89,16 +89,16 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
                   />
                 </div>
               )}
-              <CardTitle className="font-gaming text-base sm:text-lg lg:text-xl" data-testid={`text-virtual-pack-name-${pack.id}`}>
+              <CardTitle className="font-gaming text-lg sm:text-xl" data-testid={`text-virtual-pack-name-${pack.id}`}>
                 {pack.name}
               </CardTitle>
               {pack.description && (
-                <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-muted-foreground mt-2">
                   {pack.description}
                 </p>
               )}
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0">
+            <CardContent className="space-y-4">
               <div className="flex justify-center space-x-2">
                 <Badge variant="secondary" data-testid={`badge-pack-price-${pack.id}`}>
                   {pack.price} Credits
