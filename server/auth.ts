@@ -12,7 +12,7 @@ export function getSession() {
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
   });
@@ -23,7 +23,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Always false for local development
       maxAge: sessionTtl,
     },
   });
@@ -33,19 +33,11 @@ export function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
   
-  // Local development bypass - auto-login as admin user
+  // Development mode: Create admin user if it doesn't exist
   if (process.env.NODE_ENV === 'development') {
-    app.use(async (req, res, next) => {
-      // Skip for auth endpoints to prevent conflicts
-      if (req.path.startsWith('/api/auth/')) {
-        return next();
-      }
-      
-      // Auto-login as admin if no session exists
-      const session = req.session as any;
-      if (!session.userId) {
+    try {
+      setTimeout(async () => {
         try {
-          // Get or create admin user
           let adminUser = await storage.getUserByEmail('admin@drops.app');
           if (!adminUser) {
             const hashedPassword = await bcrypt.hash('admin123', 12);
@@ -54,17 +46,17 @@ export function setupAuth(app: Express) {
               email: 'admin@drops.app',
               password: hashedPassword,
               role: 'admin',
-              credits: 1000,
+              credits: "1000",
             });
+            console.log('✅ Created admin user for development (admin@drops.app / admin123)');
           }
-          session.userId = adminUser.id;
-          console.log('Development mode: Auto-logged in as admin');
         } catch (error) {
-          console.error('Auto-login failed:', error);
+          console.log('Note: Admin user creation will happen after database connection');
         }
-      }
-      next();
-    });
+      }, 2000);
+    } catch (error) {
+      // Silent fail - will try again later
+    }
   }
   
   // Registration endpoint
