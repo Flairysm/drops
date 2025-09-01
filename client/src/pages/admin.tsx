@@ -533,8 +533,9 @@ export default function Admin() {
     
     // Load current cards in pack
     try {
-      const currentCards = await apiRequest("GET", `/api/admin/virtual-packs/${pack.id}/cards`);
-      const cardIds = currentCards.map((card: any) => card.virtualLibraryCardId);
+      const currentCardsResponse = await apiRequest("GET", `/api/admin/virtual-packs/${pack.id}/cards`);
+      const currentCards = await currentCardsResponse.json();
+      const cardIds = Array.isArray(currentCards) ? currentCards.map((card: any) => card.virtualLibraryCardId) : [];
       setSelectedCards(cardIds);
     } catch (error) {
       console.error("Failed to load current card pool:", error);
@@ -563,7 +564,7 @@ export default function Admin() {
       });
       
       // Force expansion to show updated cards
-      setExpandedPacks(prev => new Set([...prev, editingPack.id]));
+      setExpandedPacks(prev => new Set([...Array.from(prev), editingPack.id]));
       
       queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
       setShowPackCardSelector(false);
@@ -644,10 +645,11 @@ export default function Admin() {
       // Load card pool if not already loaded
       if (!packCardPools[packId]) {
         try {
-          const packCards = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
+          const packCardsResponse = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
+          const packCards = await packCardsResponse.json();
           const cardDetails = await Promise.all(
-            packCards.map(async (pc: any) => {
-              const card = allCards?.find((c: any) => c.packType === 'virtual' && c.name === pc.name);
+            (Array.isArray(packCards) ? packCards : []).map(async (pc: any) => {
+              const card = Array.isArray(allCards) ? allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name) : null;
               return card ? { ...card, weight: pc.weight } : null;
             })
           );
@@ -731,7 +733,7 @@ export default function Admin() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+                    <div className="text-2xl font-bold">{(stats as any)?.totalUsers || 0}</div>
                   </CardContent>
                 </Card>
 
@@ -741,7 +743,7 @@ export default function Admin() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">RM {stats?.totalRevenue || "0.00"}</div>
+                    <div className="text-2xl font-bold">RM {(stats as any)?.totalRevenue || "0.00"}</div>
                   </CardContent>
                 </Card>
 
@@ -751,7 +753,7 @@ export default function Admin() {
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{allCards?.length || 0}</div>
+                    <div className="text-2xl font-bold">{Array.isArray(allCards) ? allCards.length : 0}</div>
                   </CardContent>
                 </Card>
 
@@ -761,7 +763,7 @@ export default function Admin() {
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{virtualPacks?.length || 0}</div>
+                    <div className="text-2xl font-bold">{Array.isArray(virtualPacks) ? virtualPacks.length : 0}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -776,7 +778,7 @@ export default function Admin() {
                 <CardContent>
                   {users ? (
                     <div className="space-y-4">
-                      {users.map((user: User) => (
+                      {Array.isArray(users) ? users.map((user: User) => (
                         <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
                           <div className="flex items-center space-x-4">
                             <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
@@ -830,7 +832,7 @@ export default function Admin() {
                             </Button>
                           </div>
                         </div>
-                      ))}
+                      )) : null}
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -948,7 +950,7 @@ export default function Admin() {
                       <Card className="gaming-card">
                         <CardHeader>
                           <div className="flex items-center justify-between">
-                            <CardTitle>Unified Card Inventory ({allCards?.length || 0} cards)</CardTitle>
+                            <CardTitle>Unified Card Inventory ({Array.isArray(allCards) ? allCards.length : 0} cards)</CardTitle>
                           </div>
                           <div className="mt-3">
                             <Input
@@ -963,11 +965,11 @@ export default function Admin() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-2 max-h-80 overflow-y-auto">
-                            {allCards?.filter((card: any) => {
+                            {(Array.isArray(allCards) ? allCards.filter((card: any) => {
                               const searchTerm = inventorySearch.toLowerCase();
                               return card.name.toLowerCase().includes(searchTerm) || 
                                      card.tier.toLowerCase().includes(searchTerm);
-                            }).map((card: any) => (
+                            }) : []).map((card: any) => (
                               <div key={card.id} className="flex items-center justify-between p-3 rounded border">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
@@ -1097,11 +1099,11 @@ export default function Admin() {
                       {/* Content List */}
                       <Card className="gaming-card">
                         <CardHeader>
-                          <CardTitle>Content Library ({virtualPacks?.length || 0} packs)</CardTitle>
+                          <CardTitle>Content Library ({Array.isArray(virtualPacks) ? virtualPacks.length : 0} packs)</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3 max-h-80 overflow-y-auto">
-                            {virtualPacks?.map((pack: any) => (
+                            {Array.isArray(virtualPacks) ? virtualPacks.map((pack: any) => (
                               <div key={pack.id} className="border rounded">
                                 <div className="flex items-center justify-between p-3">
                                   <div className="flex-1">
@@ -1186,7 +1188,7 @@ export default function Admin() {
                                   </div>
                                 )}
                               </div>
-                            )) || (
+                            )) : (
                               <p className="text-center text-muted-foreground py-8">No content created yet.</p>
                             )}
                           </div>
@@ -1212,7 +1214,7 @@ export default function Admin() {
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {systemSettings?.length ? (
+                    {Array.isArray(systemSettings) && systemSettings.length ? (
                       <div className="space-y-4">
                         {systemSettings.map((setting: any) => (
                           <div key={setting.settingKey} className="flex items-center justify-between p-4 border rounded-lg">
@@ -1270,64 +1272,64 @@ export default function Admin() {
                       <Button
                         variant="outline"
                         onClick={() => handleToggleSystemSetting('maintenance_mode', 
-                          systemSettings?.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue || false)}
+                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue || false : false)}
                         disabled={updateSystemSettingMutation.isPending}
                         className="h-auto p-4 text-left flex flex-col items-start space-y-2"
                         data-testid="button-toggle-maintenance"
                       >
                         <div className="font-medium">Toggle Maintenance Mode</div>
                         <div className="text-sm text-muted-foreground">
-                          {systemSettings?.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue 
+                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue 
                             ? 'Disable maintenance mode' 
-                            : 'Enable maintenance mode'}
+                            : 'Enable maintenance mode' : 'Enable maintenance mode'}
                         </div>
                       </Button>
 
                       <Button
                         variant="outline"
                         onClick={() => handleToggleSystemSetting('new_registrations', 
-                          systemSettings?.find((s: any) => s.settingKey === 'new_registrations')?.settingValue || true)}
+                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'new_registrations')?.settingValue || true : true)}
                         disabled={updateSystemSettingMutation.isPending}
                         className="h-auto p-4 text-left flex flex-col items-start space-y-2"
                         data-testid="button-toggle-registrations"
                       >
                         <div className="font-medium">Toggle New Registrations</div>
                         <div className="text-sm text-muted-foreground">
-                          {systemSettings?.find((s: any) => s.settingKey === 'new_registrations')?.settingValue !== false
+                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'new_registrations')?.settingValue !== false
                             ? 'Disable new user registrations'
-                            : 'Enable new user registrations'}
+                            : 'Enable new user registrations' : 'Enable new user registrations'}
                         </div>
                       </Button>
 
                       <Button
                         variant="outline"
                         onClick={() => handleToggleSystemSetting('pack_openings', 
-                          systemSettings?.find((s: any) => s.settingKey === 'pack_openings')?.settingValue || true)}
+                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'pack_openings')?.settingValue || true : true)}
                         disabled={updateSystemSettingMutation.isPending}
                         className="h-auto p-4 text-left flex flex-col items-start space-y-2"
                         data-testid="button-toggle-pack-openings"
                       >
                         <div className="font-medium">Toggle Pack Openings</div>
                         <div className="text-sm text-muted-foreground">
-                          {systemSettings?.find((s: any) => s.settingKey === 'pack_openings')?.settingValue !== false
+                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'pack_openings')?.settingValue !== false
                             ? 'Disable pack opening feature'
-                            : 'Enable pack opening feature'}
+                            : 'Enable pack opening feature' : 'Enable pack opening feature'}
                         </div>
                       </Button>
 
                       <Button
                         variant="outline"
                         onClick={() => handleToggleSystemSetting('global_feed', 
-                          systemSettings?.find((s: any) => s.settingKey === 'global_feed')?.settingValue || true)}
+                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'global_feed')?.settingValue || true : true)}
                         disabled={updateSystemSettingMutation.isPending}
                         className="h-auto p-4 text-left flex flex-col items-start space-y-2"
                         data-testid="button-toggle-global-feed"
                       >
                         <div className="font-medium">Toggle Global Feed</div>
                         <div className="text-sm text-muted-foreground">
-                          {systemSettings?.find((s: any) => s.settingKey === 'global_feed')?.settingValue !== false
+                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'global_feed')?.settingValue !== false
                             ? 'Hide global activity feed'
-                            : 'Show global activity feed'}
+                            : 'Show global activity feed' : 'Show global activity feed'}
                         </div>
                       </Button>
                     </div>
@@ -1457,7 +1459,7 @@ export default function Admin() {
                 </div>
                 
                 <div className="grid gap-3">
-                  {allCards?.map((card: any) => (
+                  {Array.isArray(allCards) ? allCards.map((card: any) => (
                     <div key={card.id} className="flex items-center space-x-3 p-3 border rounded">
                       <Checkbox
                         checked={selectedCards.includes(card.id)}
@@ -1474,7 +1476,7 @@ export default function Admin() {
                         <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
                       </div>
                     </div>
-                  )) || (
+                  )) : (
                     <p className="text-center text-muted-foreground py-8">No cards available in inventory.</p>
                   )}
                 </div>
@@ -1571,7 +1573,7 @@ export default function Admin() {
               
               <div className="space-y-4">
                 {userTransactions ? (
-                  userTransactions.length > 0 ? (
+                  Array.isArray(userTransactions) && userTransactions.length > 0 ? (
                     <div className="space-y-3">
                       {userTransactions.map((transaction: any) => (
                         <div key={transaction.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
