@@ -34,6 +34,14 @@ const BOARD_HEIGHT = 500;
 const PIN_RADIUS = 6;
 const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
+
+// Enhanced physics constants
+const GRAVITY = 0.4; // More realistic gravity
+const AIR_RESISTANCE = 0.998; // Natural air resistance
+const FRICTION = 0.85; // Surface friction
+const RESTITUTION = 0.7; // Bounce elasticity
+const WIND_VARIANCE = 0.015; // Natural wind effect
+const COLLISION_DAMPING = 0.8; // Energy loss on collision
 const OUTCOMES = [
   "Masterball",
   "Ultraball",
@@ -276,10 +284,10 @@ export function PlinkoGame() {
       (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
 
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 12, // More natural drop variation
-      y: 20,
-      vx: (Math.random() - 0.5) * 0.8, // Slightly more horizontal variance
-      vy: 0.5, // Small initial downward velocity
+      x: dropX + (Math.random() - 0.5) * 8, // More precise drop variation
+      y: 25, // Slightly higher start for better visual
+      vx: (Math.random() - 0.5) * 0.6, // Controlled horizontal variance
+      vy: 0.3, // Gentle initial downward velocity
       radius: BALL_RADIUS,
       color: "#00d4ff",
     };
@@ -298,15 +306,46 @@ export function PlinkoGame() {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
-      // Draw pins
+      // Draw pins with enhanced visual effects
       pins.forEach((pin) => {
+        // Check if ball is near this pin for interaction effect
+        const ball = ballRef.current;
+        const isNearBall = ball && Math.sqrt((ball.x - pin.x) ** 2 + (ball.y - pin.y) ** 2) < 30;
+        
         ctx.beginPath();
         ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = "#64748b";
+        
+        // Enhanced pin gradient
+        const pinGradient = ctx.createRadialGradient(
+          pin.x - 2,
+          pin.y - 2,
+          0,
+          pin.x,
+          pin.y,
+          PIN_RADIUS,
+        );
+        pinGradient.addColorStop(0, isNearBall ? "#94a3b8" : "#64748b");
+        pinGradient.addColorStop(1, isNearBall ? "#475569" : "#475569");
+        
+        ctx.fillStyle = pinGradient;
         ctx.fill();
-        ctx.strokeStyle = "#94a3b8";
-        ctx.lineWidth = 1;
+        
+        // Enhanced border
+        ctx.strokeStyle = isNearBall ? "#cbd5e1" : "#94a3b8";
+        ctx.lineWidth = isNearBall ? 2 : 1;
         ctx.stroke();
+        
+        // Add subtle glow effect when ball is near
+        if (isNearBall) {
+          ctx.shadowColor = "#0ea5e9";
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(pin.x, pin.y, PIN_RADIUS + 2, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(14, 165, 233, 0.3)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
       });
 
       // Draw outcome buckets
@@ -351,23 +390,23 @@ export function PlinkoGame() {
         ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
       });
 
-      // Physics for ball
+      // Enhanced physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // More realistic gravity (similar to real world)
-        ball.vy += 0.18;
+        // Apply realistic gravity
+        ball.vy += GRAVITY;
 
-        // Natural air resistance
-        ball.vx *= 0.995; // Very light horizontal air resistance
-        ball.vy *= 0.998; // Minimal vertical air resistance
+        // Natural air resistance (more realistic)
+        ball.vx *= AIR_RESISTANCE;
+        ball.vy *= AIR_RESISTANCE;
 
         // Apply movement
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Add slight random wind effect for more natural movement
-        ball.vx += (Math.random() - 0.5) * 0.02;
+        // Subtle wind effect for natural movement variation
+        ball.vx += (Math.random() - 0.5) * WIND_VARIANCE;
 
-        // Natural collision detection - let physics handle the bouncing
+        // Enhanced collision detection with realistic physics
         pins.forEach((pin) => {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
@@ -379,40 +418,53 @@ export function PlinkoGame() {
             const nx = dx / distance;
             const ny = dy / distance;
 
-            // Separate ball from pin
+            // Separate ball from pin to prevent sticking
             const separation = minDistance - distance;
             ball.x += nx * separation;
             ball.y += ny * separation;
 
-            // More realistic collision physics
+            // Calculate collision response
             const dotProduct = ball.vx * nx + ball.vy * ny;
+            
+            // Only bounce if moving toward the pin
+            if (dotProduct < 0) {
+              // Realistic bounce with energy loss
+              const bounceStrength = RESTITUTION + (Math.random() - 0.5) * 0.1;
+              ball.vx -= 2 * dotProduct * nx * bounceStrength;
+              ball.vy -= 2 * dotProduct * ny * bounceStrength;
 
-            // Natural bounce with slight energy loss
-            const restitution = 0.75 + Math.random() * 0.15; // Natural bounce coefficient
-            ball.vx -= 1.5 * dotProduct * nx * restitution;
-            ball.vy -= 1.5 * dotProduct * ny * restitution;
+              // Apply surface friction and damping
+              ball.vx *= FRICTION;
+              ball.vy *= COLLISION_DAMPING;
 
-            // Realistic surface friction
-            const friction = 0.82 + Math.random() * 0.08; // Natural friction variation
-            ball.vx *= friction;
-            ball.vy *= 0.95; // Slight vertical energy loss
-
-            // Natural deflection based on collision angle
-            const deflectionStrength = Math.abs(nx) * 0.15; // Stronger deflection on side hits
-            ball.vx += (Math.random() - 0.5) * deflectionStrength;
+              // Natural deflection based on collision angle
+              const deflectionAngle = Math.atan2(ny, nx);
+              const deflectionStrength = Math.abs(Math.sin(deflectionAngle)) * 0.2;
+              ball.vx += Math.cos(deflectionAngle + Math.PI/2) * deflectionStrength;
+            }
           }
         });
 
-        // Keep ball in bounds with natural wall bounces
+        // Enhanced wall collision physics
         if (ball.x < ball.radius) {
           ball.x = ball.radius;
-          ball.vx = Math.abs(ball.vx) * 0.6; // Natural wall bounce
+          ball.vx = Math.abs(ball.vx) * RESTITUTION; // Realistic wall bounce
+          ball.vy *= COLLISION_DAMPING; // Energy loss on wall hit
         }
         if (ball.x > BOARD_WIDTH - ball.radius) {
           ball.x = BOARD_WIDTH - ball.radius;
-          ball.vx = -Math.abs(ball.vx) * 0.6; // Natural wall bounce
+          ball.vx = -Math.abs(ball.vx) * RESTITUTION; // Realistic wall bounce
+          ball.vy *= COLLISION_DAMPING; // Energy loss on wall hit
         }
 
+        // Add momentum-based physics for more natural movement
+        const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+        
+        // Prevent the ball from getting stuck in infinite loops
+        if (speed < 0.1 && ball.y > BOARD_HEIGHT - 200) {
+          ball.vy += GRAVITY * 2; // Force downward movement if too slow
+        }
+        
         // Natural physics - no guidance needed
       } else {
         // Ball has reached the bottom - determine final outcome
@@ -462,26 +514,36 @@ export function PlinkoGame() {
         }
       }
 
-      // Draw ball
+      // Draw ball with enhanced visual effects
       ctx.beginPath();
       ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
 
-      // Ball gradient
+      // Enhanced ball gradient with depth
       const ballGradient = ctx.createRadialGradient(
-        ball.x - 3,
-        ball.y - 3,
+        ball.x - 4,
+        ball.y - 4,
         0,
         ball.x,
         ball.y,
         ball.radius,
       );
       ballGradient.addColorStop(0, "#ffffff");
+      ballGradient.addColorStop(0.3, "#e0f2fe");
+      ballGradient.addColorStop(0.7, "#0288d1");
       ballGradient.addColorStop(1, ball.color);
       ctx.fillStyle = ballGradient;
       ctx.fill();
+      
+      // Enhanced border with shadow effect
       ctx.strokeStyle = "#0ea5e9";
       ctx.lineWidth = 2;
       ctx.stroke();
+      
+      // Add highlight for 3D effect
+      ctx.beginPath();
+      ctx.arc(ball.x - 3, ball.y - 3, ball.radius * 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+      ctx.fill();
 
       if (ball.y < BOARD_HEIGHT - 60) {
         animationRef.current = requestAnimationFrame(animate);
