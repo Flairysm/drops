@@ -36,7 +36,7 @@ const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 
 // Enhanced physics constants
-const GRAVITY = 0.4; // More realistic gravity
+const GRAVITY = 0.5; // Slightly faster gravity for better pacing
 const AIR_RESISTANCE = 0.998; // Natural air resistance
 const FRICTION = 0.85; // Surface friction
 const RESTITUTION = 0.7; // Bounce elasticity
