@@ -8,8 +8,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Serve static assets from client build
-app.use('/assets', express.static(path.resolve(import.meta.dirname, '../dist/public/assets')));
+// Serve attached assets as static files
+app.use('/attached_assets', express.static(path.resolve(import.meta.dirname, '../attached_assets')));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -61,8 +61,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use PORT from environment variable (required for Render)
-  const port = parseInt(process.env.PORT || '3000', 10);
+  // ALWAYS serve the app on the port specified in the environment variable PORT
+  // Other ports are firewalled. Default to 5000 if not specified.
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = parseInt(process.env.PORT || '5000', 10);
   const host = '0.0.0.0'; // Bind to all interfaces for better compatibility
   
   server.listen(port, host, () => {
