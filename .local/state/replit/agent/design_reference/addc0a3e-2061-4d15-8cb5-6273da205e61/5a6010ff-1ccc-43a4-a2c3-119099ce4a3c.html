@@ -1,0 +1,844 @@
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flair TCG Arcade - Premium Card Gaming Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    // Gaming-specific colors
+                    common: "var(--tier-common)",
+                    uncommon: "var(--tier-uncommon)",
+                    rare: "var(--tier-rare)",
+                    superrare: "var(--tier-superrare)",
+                    legendary: "var(--tier-legendary)",
+                },
+                fontFamily: {
+                    gaming: ["Orbitron", "monospace"],
+                    sans: ["Inter", "system-ui", "sans-serif"],
+                },
+                animation: {
+                    'glow-pulse': 'glow-pulse 2s ease-in-out infinite alternate',
+                    'float': 'float 3s ease-in-out infinite',
+                    'card-flip': 'card-flip 0.6s ease-in-out',
+                },
+                keyframes: {
+                    'glow-pulse': {
+                        '0%': { 'box-shadow': '0 0 5px currentColor' },
+                        '100%': { 'box-shadow': '0 0 20px currentColor, 0 0 30px currentColor' }
+                    },
+                    'float': {
+                        '0%, 100%': { transform: 'translateY(0px)' },
+                        '50%': { transform: 'translateY(-10px)' }
+                    },
+                    'card-flip': {
+                        '0%': { transform: 'rotateY(0)' },
+                        '50%': { transform: 'rotateY(90deg)' },
+                        '100%': { transform: 'rotateY(0)' }
+                    }
+                }
+            }
+        }
+    };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --radius: 0.75rem;
+            /* Dark theme (default) */
+            --background: hsl(240 3% 6%);
+            --foreground: hsl(0 0% 98%);
+            --card: hsl(240 4% 9%);
+            --card-foreground: hsl(0 0% 95%);
+            --primary: hsl(194 100% 50%);
+            --primary-foreground: hsl(240 6% 10%);
+            --secondary: hsl(240 4% 15%);
+            --secondary-foreground: hsl(0 0% 98%);
+            --muted: hsl(240 5% 25%);
+            --muted-foreground: hsl(240 4% 65%);
+            --accent: hsl(262 83% 70%);
+            --accent-foreground: hsl(0 0% 98%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(0 0% 98%);
+            --border: hsl(240 6% 20%);
+            --input: hsl(240 4% 15%);
+            --ring: hsl(194 100% 50%);
+            
+            /* Tier colors */
+            --tier-common: hsl(220 13% 69%);
+            --tier-uncommon: hsl(142 76% 56%);
+            --tier-rare: hsl(217 91% 60%);
+            --tier-superrare: hsl(262 83% 70%);
+            --tier-legendary: hsl(45 100% 50%);
+        }
+
+        .light {
+            --background: hsl(0 0% 100%);
+            --foreground: hsl(240 10% 4%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(240 10% 4%);
+            --primary: hsl(194 100% 40%);
+            --primary-foreground: hsl(0 0% 98%);
+            --secondary: hsl(240 5% 96%);
+            --secondary-foreground: hsl(240 6% 10%);
+            --muted: hsl(240 5% 96%);
+            --muted-foreground: hsl(240 4% 46%);
+            --accent: hsl(262 83% 58%);
+            --accent-foreground: hsl(0 0% 98%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(0 0% 98%);
+            --border: hsl(240 6% 90%);
+            --input: hsl(240 6% 90%);
+            --ring: hsl(194 100% 40%);
+        }
+
+        body {
+            background: radial-gradient(ellipse at center, hsl(240 6% 10%) 0%, hsl(240 3% 6%) 100%);
+            min-height: 100vh;
+        }
+
+        .gaming-card {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(139, 92, 246, 0.1));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .tier-glow-common { box-shadow: 0 0 15px rgba(148, 163, 184, 0.5); }
+        .tier-glow-uncommon { box-shadow: 0 0 15px rgba(34, 197, 94, 0.5); }
+        .tier-glow-rare { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+        .tier-glow-superrare { box-shadow: 0 0 15px rgba(139, 92, 246, 0.5); }
+        .tier-glow-legendary { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 15, 0.8);
+        }
+
+        .pulse-glow {
+            animation: glow-pulse 2s ease-in-out infinite alternate;
+        }
+    </style>
+</head>
+
+<body class="bg-background text-foreground font-sans">
+    <!-- @COMPONENT: Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center glow-effect">
+                        <i class="fas fa-bolt text-primary-foreground text-xl"></i>
+                    </div>
+                    <span class="font-gaming font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                        Flair TCG Arcade
+                    </span>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#games" class="hover:text-primary transition-colors">Games</a>
+                    <a href="#vault" class="hover:text-primary transition-colors">Vault</a>
+                    <a href="#feed" class="hover:text-primary transition-colors">Global Feed</a>
+                    
+                    <!-- Credits Display -->
+                    <div class="gaming-card px-4 py-2 rounded-lg">
+                        <span class="text-sm text-muted-foreground">Credits:</span>
+                        <span class="font-bold text-accent ml-2" data-bind="user.credits">245.75</span>
+                    </div>
+
+                    <!-- Theme Toggle -->
+                    <button id="themeToggle" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+                        <i class="fas fa-moon text-lg"></i>
+                    </button>
+
+                    <!-- User Menu -->
+                    <div class="relative group">
+                        <button class="flex items-center space-x-2 gaming-card px-3 py-2 rounded-lg hover:glow-effect transition-all">
+                            <!-- A professional gaming avatar with neon lighting effects -->
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&auto=format&fit=crop&w=32&h=32" 
+                                 alt="User avatar" class="w-8 h-8 rounded-full border-2 border-primary">
+                            <span data-bind="user.username">Player_001</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <!-- @END_COMPONENT: Navigation -->
+
+    <!-- @COMPONENT: MainContent -->
+    <main class="pt-20 pb-12">
+        <!-- Hero Section -->
+        <section class="relative overflow-hidden">
+            <!-- A futuristic gaming setup with neon lighting and TCG cards scattered around -->
+            <div class="absolute inset-0 opacity-30" style="background-image: url('https://images.unsplash.com/photo-1511512578047-dfb367046420?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080'); background-size: cover; background-position: center;"></div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+                <div class="text-center">
+                    <h1 class="font-gaming font-black text-4xl md:text-6xl lg:text-7xl mb-6">
+                        <span class="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">
+                            FLAIR TCG ARCADE
+                        </span>
+                    </h1>
+                    <p class="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+                        Experience the thrill of premium TCG pack opening with transparent odds, 
+                        unlimited vault storage, and exciting minigames.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button class="gaming-card px-8 py-4 rounded-lg font-semibold text-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:glow-effect transition-all transform hover:scale-105">
+                            <i class="fas fa-play mr-2"></i>Start Playing
+                        </button>
+                        <button class="gaming-card px-8 py-4 rounded-lg font-semibold text-lg border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all">
+                            <i class="fas fa-info-circle mr-2"></i>View Odds
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Minigames Section -->
+        <section id="games" class="py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="font-gaming font-bold text-3xl md:text-4xl mb-4">Launch Minigames</h2>
+                    <p class="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        Choose your adventure! Each game offers unique ways to unlock premium cards.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Plinko Game -->
+                    <div class="gaming-card rounded-xl p-6 hover:glow-effect transition-all transform hover:scale-105 group">
+                        <div class="text-center">
+                            <!-- A vibrant plinko board with colorful pegs and ball -->
+                            <div class="w-full h-48 rounded-lg mb-6 overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600 relative">
+                                <img src="https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300" 
+                                     alt="Plinko game board with colorful pegs" class="w-full h-full object-cover opacity-80">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                <div class="absolute bottom-4 left-4 right-4">
+                                    <div class="flex justify-center">
+                                        <span class="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                                            Drop & Win
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 class="font-gaming font-bold text-xl mb-3 text-primary">Plinko Drop</h3>
+                            <p class="text-muted-foreground mb-6">
+                                Drop your credit down the board and watch it bounce to determine your card tier!
+                            </p>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Cost per play:</span>
+                                    <span class="font-semibold text-accent">1.0 Credits</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Max payout:</span>
+                                    <span class="font-semibold text-legendary">SSS Tier</span>
+                                </div>
+                            </div>
+                            <button class="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-lg font-semibold hover:glow-effect transition-all">
+                                <i class="fas fa-play mr-2"></i>Play Plinko
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Wheel Spin Game -->
+                    <div class="gaming-card rounded-xl p-6 hover:glow-effect transition-all transform hover:scale-105 group">
+                        <div class="text-center">
+                            <!-- A colorful spinning wheel with prize segments -->
+                            <div class="w-full h-48 rounded-lg mb-6 overflow-hidden bg-gradient-to-br from-green-600 to-blue-600 relative">
+                                <img src="https://images.unsplash.com/photo-1586899028174-e7098604235b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300" 
+                                     alt="Colorful prize wheel with different segments" class="w-full h-full object-cover opacity-80">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                <div class="absolute bottom-4 left-4 right-4">
+                                    <div class="flex justify-center">
+                                        <span class="bg-uncommon text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                                            Spin to Win
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 class="font-gaming font-bold text-xl mb-3 text-uncommon">Wheel Spin</h3>
+                            <p class="text-muted-foreground mb-6">
+                                Spin the wheel of fortune and let luck decide your card destiny!
+                            </p>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Cost per spin:</span>
+                                    <span class="font-semibold text-accent">2.5 Credits</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Bonus chance:</span>
+                                    <span class="font-semibold text-legendary">2x Multiplier</span>
+                                </div>
+                            </div>
+                            <button class="w-full bg-gradient-to-r from-uncommon to-rare text-primary-foreground py-3 rounded-lg font-semibold hover:glow-effect transition-all">
+                                <i class="fas fa-redo mr-2"></i>Spin Wheel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Virtual Pack Opening -->
+                    <div class="gaming-card rounded-xl p-6 hover:glow-effect transition-all transform hover:scale-105 group">
+                        <div class="text-center">
+                            <!-- A collection of TCG booster packs with holographic effects -->
+                            <div class="w-full h-48 rounded-lg mb-6 overflow-hidden bg-gradient-to-br from-purple-600 to-pink-600 relative">
+                                <img src="https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300" 
+                                     alt="Collectible trading card booster packs" class="w-full h-full object-cover opacity-80">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                <div class="absolute bottom-4 left-4 right-4">
+                                    <div class="flex justify-center">
+                                        <span class="bg-superrare text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                                            BNW Only
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 class="font-gaming font-bold text-xl mb-3 text-superrare">Virtual Pack</h3>
+                            <p class="text-muted-foreground mb-6">
+                                Open authentic Black & White packs with 9 bulk cards + 1 special guaranteed!
+                            </p>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Pack price:</span>
+                                    <span class="font-semibold text-accent">4.99 Credits</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm">Cards per pack:</span>
+                                    <span class="font-semibold text-legendary">10 Total</span>
+                                </div>
+                            </div>
+                            <button class="w-full bg-gradient-to-r from-superrare to-legendary text-primary-foreground py-3 rounded-lg font-semibold hover:glow-effect transition-all">
+                                <i class="fas fa-gift mr-2"></i>Open Pack
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Odds Transparency -->
+                <div class="mt-12 gaming-card rounded-xl p-6">
+                    <div class="text-center mb-6">
+                        <h3 class="font-gaming font-bold text-2xl mb-2">Transparent Odds</h3>
+                        <p class="text-muted-foreground">All probabilities are publicly available and regularly audited</p>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div class="text-center p-4 rounded-lg bg-gradient-to-b from-common/20 to-transparent border border-common">
+                            <div class="tier-glow-common w-12 h-12 rounded-full bg-common/20 mx-auto mb-2 flex items-center justify-center">
+                                <span class="font-bold text-common">C</span>
+                            </div>
+                            <div class="text-sm font-semibold text-common">Common</div>
+                            <div class="text-xs text-muted-foreground">65.0%</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg bg-gradient-to-b from-uncommon/20 to-transparent border border-uncommon">
+                            <div class="tier-glow-uncommon w-12 h-12 rounded-full bg-uncommon/20 mx-auto mb-2 flex items-center justify-center">
+                                <span class="font-bold text-uncommon">UC</span>
+                            </div>
+                            <div class="text-sm font-semibold text-uncommon">Uncommon</div>
+                            <div class="text-xs text-muted-foreground">25.0%</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg bg-gradient-to-b from-rare/20 to-transparent border border-rare">
+                            <div class="tier-glow-rare w-12 h-12 rounded-full bg-rare/20 mx-auto mb-2 flex items-center justify-center">
+                                <span class="font-bold text-rare">R</span>
+                            </div>
+                            <div class="text-sm font-semibold text-rare">Rare</div>
+                            <div class="text-xs text-muted-foreground">8.0%</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg bg-gradient-to-b from-superrare/20 to-transparent border border-superrare">
+                            <div class="tier-glow-superrare w-12 h-12 rounded-full bg-superrare/20 mx-auto mb-2 flex items-center justify-center">
+                                <span class="font-bold text-superrare">SR</span>
+                            </div>
+                            <div class="text-sm font-semibold text-superrare">Super Rare</div>
+                            <div class="text-xs text-muted-foreground">1.8%</div>
+                        </div>
+                        <div class="text-center p-4 rounded-lg bg-gradient-to-b from-legendary/20 to-transparent border border-legendary">
+                            <div class="tier-glow-legendary w-12 h-12 rounded-full bg-legendary/20 mx-auto mb-2 flex items-center justify-center">
+                                <span class="font-bold text-legendary">SSS</span>
+                            </div>
+                            <div class="text-sm font-semibold text-legendary">Legendary</div>
+                            <div class="text-xs text-muted-foreground">0.2%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Global Feed Section -->
+        <section id="feed" class="py-16 bg-gradient-to-b from-background to-secondary/20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="font-gaming font-bold text-3xl md:text-4xl mb-4">Global Feed</h2>
+                    <p class="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        Watch live as players around the world discover amazing cards!
+                    </p>
+                </div>
+
+                <div class="gaming-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-semibold text-lg">Recent Pulls</h3>
+                        <div class="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <div class="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                            <span>Live Feed</span>
+                        </div>
+                    </div>
+
+                    <!-- @MAP: globalFeed.map(pull => ( -->
+                    <div class="space-y-4 max-h-96 overflow-y-auto">
+                        <!-- Sample feed items -->
+                        <div class="flex items-center space-x-4 p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                            <div class="tier-glow-legendary w-16 h-16 rounded-lg bg-gradient-to-br from-legendary/30 to-legendary/10 flex items-center justify-center">
+                                <!-- A rare holographic Pokémon card with golden shine effects -->
+                                <img src="https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?ixlib=rb-4.0.3&auto=format&fit=crop&w=64&h=64" 
+                                     alt="Legendary card pulled" class="w-12 h-12 rounded object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold" data-bind="pull.username">DragonMaster99</span>
+                                    <span class="text-muted-foreground">pulled</span>
+                                    <span class="px-2 py-1 bg-legendary text-primary-foreground rounded text-xs font-bold">SSS</span>
+                                </div>
+                                <div class="text-sm text-muted-foreground" data-bind="pull.cardName">Charizard VMAX (Golden)</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground" data-bind="pull.timestamp">2 min ago</div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                            <div class="tier-glow-superrare w-16 h-16 rounded-lg bg-gradient-to-br from-superrare/30 to-superrare/10 flex items-center justify-center">
+                                <!-- A shiny Pokémon card with purple magical effects -->
+                                <img src="https://images.unsplash.com/photo-1611339555312-e607c8352fd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=64&h=64" 
+                                     alt="Super rare card pulled" class="w-12 h-12 rounded object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold" data-bind="pull.username">CardCollector23</span>
+                                    <span class="text-muted-foreground">pulled</span>
+                                    <span class="px-2 py-1 bg-superrare text-primary-foreground rounded text-xs font-bold">SR</span>
+                                </div>
+                                <div class="text-sm text-muted-foreground" data-bind="pull.cardName">Pikachu V (Shiny)</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground" data-bind="pull.timestamp">5 min ago</div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                            <div class="tier-glow-rare w-16 h-16 rounded-lg bg-gradient-to-br from-rare/30 to-rare/10 flex items-center justify-center">
+                                <!-- A rare Pokémon card with blue energy effects -->
+                                <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?ixlib=rb-4.0.3&auto=format&fit=crop&w=64&h=64" 
+                                     alt="Rare card pulled" class="w-12 h-12 rounded object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold" data-bind="pull.username">NoobTrainer</span>
+                                    <span class="text-muted-foreground">pulled</span>
+                                    <span class="px-2 py-1 bg-rare text-primary-foreground rounded text-xs font-bold">R</span>
+                                </div>
+                                <div class="text-sm text-muted-foreground" data-bind="pull.cardName">Blastoise EX</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground" data-bind="pull.timestamp">8 min ago</div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                            <div class="tier-glow-uncommon w-16 h-16 rounded-lg bg-gradient-to-br from-uncommon/30 to-uncommon/10 flex items-center justify-center">
+                                <!-- An uncommon Pokémon card with green nature effects -->
+                                <img src="https://pixabay.com/get/g6f4a96d904f83414a96446f037a596d33ecbd33d3e63d408c44f5df479c04194185488d1662cdca027bb13fa3acf0290162fe4d2b33da8fb465895581f4701b0_1280.jpg" 
+                                     alt="Uncommon card pulled" class="w-12 h-12 rounded object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold" data-bind="pull.username">PokeFan2024</span>
+                                    <span class="text-muted-foreground">pulled</span>
+                                    <span class="px-2 py-1 bg-uncommon text-primary-foreground rounded text-xs font-bold">UC</span>
+                                </div>
+                                <div class="text-sm text-muted-foreground" data-bind="pull.cardName">Venusaur (Holo)</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground" data-bind="pull.timestamp">12 min ago</div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+
+                    <div class="mt-6 text-center">
+                        <button class="text-primary hover:text-accent transition-colors font-semibold">
+                            Load More <i class="fas fa-chevron-down ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vault Preview Section -->
+        <section id="vault" class="py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="font-gaming font-bold text-3xl md:text-4xl mb-4">Your Vault</h2>
+                    <p class="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        Unlimited storage for all your cards. Refund for credits or ship to your doorstep.
+                    </p>
+                </div>
+
+                <div class="gaming-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="font-semibold text-lg">Card Collection</h3>
+                            <p class="text-sm text-muted-foreground">Total cards: <span data-bind="vault.totalCards">1,247</span></p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:glow-effect transition-all">
+                                <i class="fas fa-undo mr-2"></i>Refund Selected
+                            </button>
+                            <button class="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:glow-effect transition-all">
+                                <i class="fas fa-shipping-fast mr-2"></i>Ship Cards
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <!-- @MAP: vaultCards.map(card => ( -->
+                        <!-- Sample vault cards -->
+                        <div class="relative group cursor-pointer">
+                            <div class="tier-glow-legendary rounded-lg overflow-hidden transform hover:scale-105 transition-transform">
+                                <!-- A holographic Charizard card with golden frame -->
+                                <img src="https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=280" 
+                                     alt="Charizard VMAX Golden card" class="w-full h-32 object-cover">
+                            </div>
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 bg-legendary text-primary-foreground rounded text-xs font-bold">SSS</span>
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                <div class="text-xs text-white font-semibold">Charizard VMAX</div>
+                                <div class="text-xs text-gray-300">Value: 245.00 CR</div>
+                            </div>
+                        </div>
+
+                        <div class="relative group cursor-pointer">
+                            <div class="tier-glow-superrare rounded-lg overflow-hidden transform hover:scale-105 transition-transform">
+                                <!-- A shiny Pikachu card with purple magical effects -->
+                                <img src="https://images.unsplash.com/photo-1611339555312-e607c8352fd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=280" 
+                                     alt="Pikachu V Shiny card" class="w-full h-32 object-cover">
+                            </div>
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 bg-superrare text-primary-foreground rounded text-xs font-bold">SR</span>
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                <div class="text-xs text-white font-semibold">Pikachu V</div>
+                                <div class="text-xs text-gray-300">Value: 35.50 CR</div>
+                            </div>
+                        </div>
+
+                        <div class="relative group cursor-pointer">
+                            <div class="tier-glow-rare rounded-lg overflow-hidden transform hover:scale-105 transition-transform">
+                                <!-- A rare Blastoise card with blue water effects -->
+                                <img src="https://images.unsplash.com/photo-1613771404721-1f92d799e49f?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=280" 
+                                     alt="Blastoise EX card" class="w-full h-32 object-cover">
+                            </div>
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 bg-rare text-primary-foreground rounded text-xs font-bold">R</span>
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                <div class="text-xs text-white font-semibold">Blastoise EX</div>
+                                <div class="text-xs text-gray-300">Value: 12.75 CR</div>
+                            </div>
+                        </div>
+
+                        <div class="relative group cursor-pointer">
+                            <div class="tier-glow-uncommon rounded-lg overflow-hidden transform hover:scale-105 transition-transform">
+                                <!-- An uncommon Venusaur card with green plant effects -->
+                                <img src="https://pixabay.com/get/g2a0c725b3c06b99d3837e4139d5a450c54cb3aeb4917c9bd51896415f244ab5789349c5a3834223e7b1c05a66ae2f0fc78f62a89cd7bb7784738c2bfd51bf649_1280.jpg" 
+                                     alt="Venusaur Holo card" class="w-full h-32 object-cover">
+                            </div>
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 bg-uncommon text-primary-foreground rounded text-xs font-bold">UC</span>
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                <div class="text-xs text-white font-semibold">Venusaur</div>
+                                <div class="text-xs text-gray-300">Value: 4.25 CR</div>
+                            </div>
+                        </div>
+
+                        <div class="relative group cursor-pointer">
+                            <div class="tier-glow-common rounded-lg overflow-hidden transform hover:scale-105 transition-transform">
+                                <!-- A common Pokémon card with basic design -->
+                                <img src="https://pixabay.com/get/g94c639ad41983905ab5dd7a2a353d44f4f3c5c71ba384fa03762042edd8a268a6b735530ec405e9795f03fe3266a9f7d04b581f08c358cf909b29a191a91ae42_1280.jpg" 
+                                     alt="Squirtle common card" class="w-full h-32 object-cover">
+                            </div>
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 bg-common text-primary-foreground rounded text-xs font-bold">C</span>
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                <div class="text-xs text-white font-semibold">Squirtle</div>
+                                <div class="text-xs text-gray-300">Value: 0.01 CR</div>
+                            </div>
+                        </div>
+
+                        <div class="relative group cursor-pointer">
+                            <div class="tier-glow-common rounded-lg overflow-hidden transform hover:scale-105 transition-transform">
+                                <!-- A common Pokémon card with basic design -->
+                                <img src="https://pixabay.com/get/g94c639ad41983905ab5dd7a2a353d44f4f3c5c71ba384fa03762042edd8a268a6b735530ec405e9795f03fe3266a9f7d04b581f08c358cf909b29a191a91ae42_1280.jpg" 
+                                     alt="Charmander common card" class="w-full h-32 object-cover">
+                            </div>
+                            <div class="absolute top-2 right-2">
+                                <span class="px-2 py-1 bg-common text-primary-foreground rounded text-xs font-bold">C</span>
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
+                                <div class="text-xs text-white font-semibold">Charmander</div>
+                                <div class="text-xs text-gray-300">Value: 0.01 CR</div>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+
+                    <div class="mt-6 text-center">
+                        <button class="text-primary hover:text-accent transition-colors font-semibold">
+                            View All Cards <i class="fas fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Credits Purchase Section -->
+        <section class="py-16 bg-gradient-to-b from-background to-secondary/20">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="font-gaming font-bold text-3xl md:text-4xl mb-4">Get Credits</h2>
+                    <p class="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        Purchase credit bundles with bonus rewards or top up with custom amounts.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                    <!-- Credit Bundles -->
+                    <div class="gaming-card rounded-xl p-6 hover:glow-effect transition-all border border-muted">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold mb-2">10 Credits</div>
+                            <div class="text-3xl font-gaming font-black text-primary mb-4">RM 10</div>
+                            <div class="text-sm text-muted-foreground mb-6">No bonus</div>
+                            <button class="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-lg font-semibold hover:glow-effect transition-all">
+                                Purchase
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="gaming-card rounded-xl p-6 hover:glow-effect transition-all border-2 border-accent relative">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                            <span class="bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm font-bold">Popular</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold mb-2">50 + 5 Credits</div>
+                            <div class="text-3xl font-gaming font-black text-accent mb-4">RM 50</div>
+                            <div class="text-sm text-accent mb-6">10% Bonus!</div>
+                            <button class="w-full bg-gradient-to-r from-accent to-superrare text-accent-foreground py-3 rounded-lg font-semibold hover:glow-effect transition-all">
+                                Purchase
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="gaming-card rounded-xl p-6 hover:glow-effect transition-all border border-legendary">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold mb-2">100 + 20 Credits</div>
+                            <div class="text-3xl font-gaming font-black text-legendary mb-4">RM 100</div>
+                            <div class="text-sm text-legendary mb-6">20% Bonus!</div>
+                            <button class="w-full bg-gradient-to-r from-legendary to-primary text-primary-foreground py-3 rounded-lg font-semibold hover:glow-effect transition-all">
+                                Purchase
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Top-up -->
+                <div class="gaming-card rounded-xl p-6">
+                    <h3 class="font-semibold text-lg mb-4 text-center">Custom Top-up</h3>
+                    <div class="max-w-md mx-auto">
+                        <div class="flex space-x-4">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium mb-2">Amount (RM)</label>
+                                <input type="number" min="1" step="0.01" placeholder="25.00" 
+                                       class="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground">
+                            </div>
+                            <div class="flex items-end">
+                                <button class="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:glow-effect transition-all">
+                                    Top Up
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-muted-foreground mt-2 text-center">1 RM = 1 Credit • Credits never expire</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- @END_COMPONENT: MainContent -->
+
+    <!-- @COMPONENT: AuthModal -->
+    <div id="authModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="gaming-card rounded-xl p-8 w-full max-w-md">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full mx-auto mb-4 flex items-center justify-center glow-effect">
+                        <i class="fas fa-bolt text-primary-foreground text-2xl"></i>
+                    </div>
+                    <h2 class="font-gaming font-bold text-2xl">Join Flair TCG</h2>
+                    <p class="text-muted-foreground">Create your account to start your collection</p>
+                </div>
+
+                <form class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Email</label>
+                        <input type="email" required 
+                               class="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+                               placeholder="your@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Password</label>
+                        <input type="password" required minlength="8" 
+                               class="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+                               placeholder="8+ chars, letters + numbers">
+                        <p class="text-xs text-muted-foreground mt-1">Must include letters and numbers</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Username</label>
+                        <input type="text" required 
+                               class="w-full px-4 py-3 bg-input border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+                               placeholder="Choose your display name">
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground py-3 rounded-lg font-semibold hover:glow-effect transition-all">
+                        Create Account
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-muted-foreground">
+                        Already have an account? 
+                        <button class="text-primary hover:text-accent transition-colors font-semibold">Sign In</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AuthModal -->
+
+    <!-- @COMPONENT: NotificationToast -->
+    <div id="notifications" class="fixed top-20 right-4 z-40 space-y-2">
+        <!-- Sample notification -->
+        <div class="gaming-card rounded-lg p-4 max-w-sm transform translate-x-full transition-transform" 
+             style="transform: translateX(0);">
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-gift text-primary-foreground text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="font-semibold text-sm">Welcome Bonus!</div>
+                    <div class="text-xs text-muted-foreground">You received 1 free Lucky Draw entry</div>
+                </div>
+                <button class="text-muted-foreground hover:text-foreground">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: NotificationToast -->
+
+    <!-- Footer -->
+    <footer class="bg-secondary/20 border-t border-border py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-3 mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center glow-effect">
+                        <i class="fas fa-bolt text-primary-foreground text-xl"></i>
+                    </div>
+                    <span class="font-gaming font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                        Flair TCG Arcade
+                    </span>
+                </div>
+                <p class="text-muted-foreground mb-4">Premium TCG pack opening experience with transparent odds</p>
+                <div class="flex justify-center space-x-6 text-sm text-muted-foreground">
+                    <a href="#" class="hover:text-primary transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-primary transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-primary transition-colors">Support</a>
+                    <a href="#" class="hover:text-primary transition-colors">Odds Transparency</a>
+                </div>
+                <div class="mt-6 text-xs text-muted-foreground">
+                    © 2024 Flair TCG Arcade. All rights reserved. • Play responsibly.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function() {
+            // Theme toggle functionality
+            const themeToggle = document.getElementById('themeToggle');
+            const html = document.documentElement;
+            
+            // TODO: Implement proper theme persistence
+            themeToggle.addEventListener('click', function() {
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    html.classList.add('light');
+                    this.innerHTML = '<i class="fas fa-sun text-lg"></i>';
+                } else {
+                    html.classList.remove('light');
+                    html.classList.add('dark');
+                    this.innerHTML = '<i class="fas fa-moon text-lg"></i>';
+                }
+            });
+
+            // TODO: Implement proper authentication system
+            // TODO: Implement game logic for Plinko, Wheel Spin, and Pack Opening
+            // TODO: Implement real-time global feed updates
+            // TODO: Implement vault management with refund/shipping functionality
+            // TODO: Implement credit purchase and payment processing
+            // TODO: Implement notification system
+            // TODO: Implement admin dashboard functionality
+            // TODO: Implement crash recovery and data persistence
+        })();
+    </script>
+</body>
+</html>

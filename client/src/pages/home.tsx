@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigation } from "@/components/Navigation";
+import { NavigationFooter } from "@/components/NavigationFooter";
 import { GlobalFeed } from "@/components/GlobalFeed";
 import { CreditPurchase } from "@/components/CreditPurchase";
 import { RecentPullsCarousel } from "@/components/RecentPullsCarousel";
@@ -267,6 +268,9 @@ export default function Home() {
 
         </div>
       </main>
+      
+      {/* Navigation Footer */}
+      <NavigationFooter />
       
       {/* Footer */}
       <footer className="bg-secondary/20 border-t border-border py-12">

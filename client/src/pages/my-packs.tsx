@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Navigation } from "@/components/Navigation";
+import { NavigationFooter } from "@/components/NavigationFooter";
 import { PackOpeningAnimation } from "@/components/PackOpeningAnimation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -470,6 +471,9 @@ export default function MyPacks() {
           </div>
         </div>
       </div>
+      {/* Navigation Footer */}
+      <NavigationFooter />
+      
       {/* Pack Opening Animation */}
       {showAnimation && packOpenData && (
         <PackOpeningAnimation

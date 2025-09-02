@@ -95,6 +95,21 @@ export function PlinkoGame() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch user credits
+  const { data: userCredits, isLoading: isCreditsLoading } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/auth/user");
+      return response.json();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnReconnect: false,
+    staleTime: 30000,
+    gcTime: 60000,
+  });
+
   // Fetch fixed price for Plinko
   const { data: gameSettings } = useQuery({
     queryKey: ["/api/games/plinko/settings"],
@@ -110,6 +125,54 @@ export function PlinkoGame() {
       setFixedPrice(String(gameSettings.price));
     }
   }, [gameSettings]);
+
+  // Credit deduction mutation for Plinko
+  const deductCreditsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/credits/deduct", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          amount: fixedPrice,
+          reason: "plinko_game",
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to deduct credits");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Credits deducted successfully, start the game
+      setIsPlaying(true);
+      setAnimationComplete(false);
+      setFinalOutcome(null);
+      setLastResult(null);
+
+      // Clear the canvas and redraw static board immediately
+      drawStaticBoard();
+
+      // Start physics simulation immediately - pass fixed price
+      startPlinkoAnimation(fixedPrice);
+      
+      // Invalidate user credits query
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: (error: any) => {
+      console.error('Credit deduction error:', error);
+      toast({
+        title: "Failed to Start Game",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
 
   const playGameMutation = useMutation({
     mutationFn: async (data: {
@@ -438,16 +501,22 @@ export function PlinkoGame() {
       return;
     }
 
-    setIsPlaying(true);
-    setAnimationComplete(false);
-    setFinalOutcome(null);
-    setLastResult(null);
+    // Check if user has enough credits
+    const creditBalance = userCredits && typeof userCredits === 'object' && 'credits' in userCredits
+      ? Number((userCredits as any).credits)
+      : 0;
+    
+    if (creditBalance < parseFloat(fixedPrice)) {
+      toast({
+        title: "Insufficient Credits",
+        description: `You need ${fixedPrice} credits to play. You have ${creditBalance.toFixed(2)} credits.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Clear the canvas and redraw static board immediately
-    drawStaticBoard();
-
-    // Start physics simulation immediately - pass fixed price
-    startPlinkoAnimation(fixedPrice);
+    // Deduct credits and start game
+    deductCreditsMutation.mutate();
   };
 
   const drawStaticBoard = () => {
@@ -639,6 +708,19 @@ export function PlinkoGame() {
       <Card className="gaming-card">
         <CardContent className="p-6">
           <div className="space-y-4">
+            {/* Credit Balance Display */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg p-2 border border-green-200 dark:border-green-700">
+              <div className="flex items-center justify-center space-x-1">
+                <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <span
+                  className="text-sm font-semibold text-green-600 dark:text-green-400"
+                  data-testid="text-credit-balance"
+                >
+                  Your Credits: {isCreditsLoading ? "Loading..." : (userCredits && typeof userCredits === 'object' && 'credits' in userCredits ? Number((userCredits as any).credits).toFixed(2) : "0.00")}
+                </span>
+              </div>
+            </div>
+
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-2 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-center space-x-1">
                 <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -653,7 +735,7 @@ export function PlinkoGame() {
 
             <Button
               onClick={handlePlay}
-              disabled={isPlaying || playGameMutation.isPending}
+              disabled={isPlaying || playGameMutation.isPending || deductCreditsMutation.isPending}
               className="w-full bg-gradient-to-r from-primary to-accent hover:glow-effect transition-all text-lg py-6"
               data-testid="button-play-plinko"
             >
@@ -661,6 +743,11 @@ export function PlinkoGame() {
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                   Ball Dropping...
+                </>
+              ) : deductCreditsMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Starting Game...
                 </>
               ) : (
                 <>

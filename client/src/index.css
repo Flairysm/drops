@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 :root {
   /* Base colors */
   --background: hsl(240, 3%, 6%);

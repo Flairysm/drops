@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { RotateCcw, Coins } from "lucide-react";
 import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756651828049.png';
@@ -61,6 +61,21 @@ export function WheelGame() {
   const [showPackDialog, setShowPackDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch user credits
+  const { data: userCredits, isLoading: isCreditsLoading } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/auth/user");
+      return response.json();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnReconnect: false,
+    staleTime: 30000,
+    gcTime: 60000,
+  });
 
   const wheelSegments = [
     { tier: "pokeball", color: "red", label: "Poké Ball", odds: "61%", slices: 22 },
@@ -128,6 +143,84 @@ export function WheelGame() {
 
   const wheelSlices = generateWheelSlices();
 
+  // Credit deduction mutation for Wheel
+  const deductCreditsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/credits/deduct", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          amount: betAmount,
+          reason: "wheel_game",
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to deduct credits");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Credits deducted successfully, start spinning
+      setIsSpinning(true);
+      setLastResult(null);
+      setShowPackDialog(false);
+      
+      // Generate random final rotation (multiple spins + random final position)
+      const spins = 5 + Math.random() * 3; // 5-8 full rotations
+      const finalAngle = Math.random() * 360; // Random final position
+      const finalRotation = rotation + (spins * 360) + finalAngle;
+      
+      setRotation(finalRotation);
+      
+      // After animation completes, determine what the needle landed on
+      setTimeout(() => {
+        // The needle is fixed at top (0°) pointing down into the wheel
+        // We need to find what slice is at the top after rotation
+        const wheelFinalPosition = (finalRotation % 360 + 360) % 360;
+        
+        // Since the wheel rotated, we need to find what slice is now at position 0° (top)
+        // This means we need to look at the original slice positions offset by the wheel rotation
+        const needlePointsAt = (360 - wheelFinalPosition) % 360;
+        
+        // Find which slice the needle is pointing to
+        const targetSlice = wheelSlices.find(slice => {
+          // Handle wrap-around cases
+          if (slice.startAngle <= slice.endAngle) {
+            return needlePointsAt >= slice.startAngle && needlePointsAt < slice.endAngle;
+          } else {
+            // Case where slice crosses 0° boundary
+            return needlePointsAt >= slice.startAngle || needlePointsAt < slice.endAngle;
+          }
+        }) || wheelSlices[0]; // fallback to first slice
+        
+        const wheelResult = targetSlice.tier;
+        
+        playGameMutation.mutate({
+          gameType: "wheel",
+          betAmount: betAmount,
+          wheelResult: wheelResult,
+        });
+      }, 3500); // Wait for animation to complete
+      
+      // Invalidate user credits query
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: (error: any) => {
+      console.error('Credit deduction error:', error);
+      toast({
+        title: "Failed to Start Game",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
   const playGameMutation = useMutation({
     mutationFn: async (data: { gameType: string; betAmount: string; wheelResult?: string }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
@@ -173,47 +266,22 @@ export function WheelGame() {
       return;
     }
 
-    // Start spinning animation
-    setIsSpinning(true);
-    setLastResult(null);
-    setShowPackDialog(false);
+    // Check if user has enough credits
+    const creditBalance = userCredits && typeof userCredits === 'object' && 'credits' in userCredits
+      ? Number((userCredits as any).credits)
+      : 0;
     
-    // Generate random final rotation (multiple spins + random final position)
-    const spins = 5 + Math.random() * 3; // 5-8 full rotations
-    const finalAngle = Math.random() * 360; // Random final position
-    const finalRotation = rotation + (spins * 360) + finalAngle;
-    
-    setRotation(finalRotation);
-    
-    // After animation completes, determine what the needle landed on
-    setTimeout(() => {
-      // The needle is fixed at top (0°) pointing down into the wheel
-      // We need to find what slice is at the top after rotation
-      const wheelFinalPosition = (finalRotation % 360 + 360) % 360;
-      
-      // Since the wheel rotated, we need to find what slice is now at position 0° (top)
-      // This means we need to look at the original slice positions offset by the wheel rotation
-      const needlePointsAt = (360 - wheelFinalPosition) % 360;
-      
-      // Find which slice the needle is pointing to
-      const targetSlice = wheelSlices.find(slice => {
-        // Handle wrap-around cases
-        if (slice.startAngle <= slice.endAngle) {
-          return needlePointsAt >= slice.startAngle && needlePointsAt < slice.endAngle;
-        } else {
-          // Case where slice crosses 0° boundary
-          return needlePointsAt >= slice.startAngle || needlePointsAt < slice.endAngle;
-        }
-      }) || wheelSlices[0]; // fallback to first slice
-      
-      const wheelResult = targetSlice.tier;
-      
-      playGameMutation.mutate({
-        gameType: "wheel",
-        betAmount: betAmount,
-        wheelResult: wheelResult,
+    if (creditBalance < bet) {
+      toast({
+        title: "Insufficient Credits",
+        description: `You need ${bet} credits to play. You have ${creditBalance.toFixed(2)} credits.`,
+        variant: "destructive",
       });
-    }, 3500); // Wait for animation to complete
+      return;
+    }
+
+    // Deduct credits and start spinning
+    deductCreditsMutation.mutate();
   };
 
   return (
@@ -316,9 +384,22 @@ export function WheelGame() {
       {/* Game Controls */}
       <Card className="gaming-card">
         <CardContent className="p-6">
+          {/* Credit Balance Display */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg p-3 border border-green-200 dark:border-green-700 mb-4">
+            <div className="flex items-center justify-center space-x-1">
+              <Coins className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <span
+                className="text-sm font-semibold text-green-600 dark:text-green-400"
+                data-testid="text-credit-balance"
+              >
+                Your Credits: {isCreditsLoading ? "Loading..." : (userCredits && typeof userCredits === 'object' && 'credits' in userCredits ? Number((userCredits as any).credits).toFixed(2) : "0.00")}
+              </span>
+            </div>
+          </div>
+
           <Button
             onClick={handleSpin}
-            disabled={isSpinning || playGameMutation.isPending}
+            disabled={isSpinning || playGameMutation.isPending || deductCreditsMutation.isPending}
             className="w-full bg-gradient-to-r from-uncommon to-rare hover:glow-effect transition-all text-lg py-6"
             data-testid="button-spin-wheel"
           >
@@ -326,6 +407,11 @@ export function WheelGame() {
               <>
                 <RotateCcw className="w-5 h-5 mr-2 animate-spin" />
                 Spinning...
+              </>
+            ) : deductCreditsMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Starting Game...
               </>
             ) : (
               <>

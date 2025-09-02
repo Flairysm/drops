@@ -182,6 +182,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Minesweeper game endpoint
+  app.post('/api/games/minesweeper', isAuthenticated, async (req: any, res) => {
+    console.log('Minesweeper endpoint called with:', { body: req.body, userId: req.user.id });
+    try {
+      const userId = req.user.id;
+      const { greensFound, won } = req.body;
+
+      // Validate input
+      if (typeof greensFound !== 'number' || greensFound < 0 || greensFound > 4) {
+        return res.status(400).json({ message: "Invalid greens found count" });
+      }
+
+      if (typeof won !== 'boolean') {
+        return res.status(400).json({ message: "Invalid win status" });
+      }
+
+      // Determine pack tier based on greens found
+      let packTier: string;
+      if (greensFound === 0) packTier = "pokeball";
+      else if (greensFound === 1) packTier = "pokeball";
+      else if (greensFound === 2) packTier = "greatball";
+      else if (greensFound === 3) packTier = "ultraball";
+      else if (greensFound === 4) packTier = "masterball";
+      else packTier = "pokeball";
+
+      // Get the pack by type
+      const packs = await storage.getPacks();
+      let pack = packs.find(p => p.type === packTier);
+      if (!pack) {
+        // If pack doesn't exist, use a default pack or return error
+        console.log(`Pack type ${packTier} not found, available types:`, packs.map(p => p.type));
+        return res.status(500).json({ message: `Pack type ${packTier} not available` });
+      }
+
+      // Award pack to user
+      await storage.addUserPack({
+        userId,
+        packId: pack.id,
+        tier: packTier,
+        earnedFrom: 'minesweeper',
+        isOpened: false,
+      });
+
+      // Create transaction record
+      await storage.addTransaction({
+        userId,
+        type: 'game_play',
+        amount: "0", // No additional cost since credits were already deducted
+        description: `Minesweeper game completed - ${greensFound} greens found`,
+      });
+
+      // Create game session
+      await storage.createGameSession({
+        userId,
+        gameType: 'minesweeper',
+        gameData: { greensFound, won, timestamp: Date.now() },
+        status: 'completed',
+      });
+
+      // Prepare response message
+      let message: string;
+      if (won) {
+        message = `Congratulations! You found all ${greensFound} green cards and won a ${packTier.charAt(0).toUpperCase() + packTier.slice(1)} pack!`;
+      } else {
+        message = `Game over! You found ${greensFound} green cards and earned a ${packTier.charAt(0).toUpperCase() + packTier.slice(1)} pack!`;
+      }
+
+      res.json({
+        success: true,
+        won,
+        greensFound,
+        packTier,
+        message,
+        currentRound: 1,
+      });
+
+    } catch (error) {
+      console.error("Error in Minesweeper game:", error);
+      res.status(500).json({ message: "Minesweeper game error occurred" });
+    }
+  });
+
   // Vault routes
   app.get('/api/vault', isAuthenticated, async (req: any, res) => {
     try {
@@ -275,6 +357,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error purchasing credits:", error);
       res.status(500).json({ message: "Failed to purchase credits" });
+    }
+  });
+
+  // Credit deduction endpoint
+  app.post('/api/credits/deduct', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { amount, reason } = req.body;
+
+      const deductAmount = parseFloat(amount);
+      if (isNaN(deductAmount) || deductAmount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      const canDeduct = await storage.deductUserCredits(userId, deductAmount.toFixed(2));
+      
+      if (!canDeduct) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+
+      await storage.addTransaction({
+        userId,
+        type: 'deduction',
+        amount: (-deductAmount).toFixed(2),
+        description: `Credit deduction - ${reason}`,
+      });
+
+      res.json({ success: true, creditsDeducted: deductAmount });
+    } catch (error) {
+      console.error("Error deducting credits:", error);
+      res.status(500).json({ message: "Failed to deduct credits" });
     }
   });
 

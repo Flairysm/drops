@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
+import { NavigationFooter } from "@/components/NavigationFooter";
 import { CardDisplay } from "@/components/CardDisplay";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -289,7 +290,7 @@ export default function Vault() {
               </Card>
             ) : (
               <div className={viewMode === "grid" 
-                ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" 
+                ? "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-2" 
                 : "space-y-4"
               }>
                 {filteredCards.map((userCard) => (
@@ -317,6 +318,9 @@ export default function Vault() {
           </section>
         </div>
       </main>
+      
+      {/* Navigation Footer */}
+      <NavigationFooter />
     </div>
   );
 }
