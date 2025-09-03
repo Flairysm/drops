@@ -43,17 +43,29 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const baseUrl = getApiBaseUrl();
-    const fullUrl = baseUrl + "/" + queryKey.join("/");
+    // Fix double slash issue by properly joining URL parts
+    const path = queryKey.join("/").replace(/^\/+/, ""); // Remove leading slashes
+    const fullUrl = `${baseUrl}/${path}`;
+    
+    console.log('🔍 Fetching:', fullUrl); // Debug logging
+    
     const res = await fetch(fullUrl, {
       credentials: "include",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      console.log('🔒 401 Unauthorized - returning null');
       return null;
     }
 
-    await throwIfResNotOk(res);
-    return await res.json();
+    if (!res.ok) {
+      console.log('❌ Response not ok:', res.status, res.statusText);
+      throw new Error(`${res.status}: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    console.log('✅ Response data:', data);
+    return data;
   };
 
 export const queryClient = new QueryClient({
