@@ -140,6 +140,13 @@ export function PlinkoGame() {
   const deductCreditsMutation = useMutation({
     mutationFn: async () => {
       console.log("Deducting credits for Plinko:", fixedPrice);
+      
+      // Prevent double deduction by checking if already playing
+      if (isPlaying) {
+        console.log("Game already in progress, skipping credit deduction");
+        return { success: true, alreadyPlaying: true };
+      }
+      
       const response = await fetch("/api/credits/deduct", {
         method: "POST",
         headers: {
@@ -159,7 +166,15 @@ export function PlinkoGame() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      // Only proceed if this is a new game (not already playing)
+      if (result.alreadyPlaying) {
+        console.log("Game already in progress, not starting new one");
+        return;
+      }
+      
+      console.log("Credits deducted successfully, starting Plinko game");
+      
       // Credits deducted successfully, start the game
       setIsPlaying(true);
       setAnimationComplete(false);
@@ -172,7 +187,7 @@ export function PlinkoGame() {
       // Start physics simulation immediately - pass fixed price
       startPlinkoAnimation(fixedPrice);
       
-      // Invalidate user credits query
+      // Invalidate user credits query only once
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
     onError: (error: any) => {
@@ -521,12 +536,9 @@ export function PlinkoGame() {
             `Frontend physics result: ${actualOutcome} (bucket ${clampedIndex})`,
           );
 
-          // Call backend with physics result
-          playGameMutation.mutate({
-            gameType: "plinko",
-            betAmount: fixedPrice,
-            plinkoResult: actualOutcome, // Send the visual result
-          });
+          // For Plinko, we don't need to call playGameMutation since credits are already deducted
+          // Just show the result directly
+          console.log("Plinko game completed with result:", actualOutcome);
 
           setTimeout(() => {
             setShowPackAssigned(true);
@@ -575,6 +587,12 @@ export function PlinkoGame() {
 
   const handlePlay = () => {
     console.log("Plinko play button clicked. Fixed price:", fixedPrice, "Game settings:", gameSettings);
+    
+    // Prevent multiple clicks while game is starting
+    if (isPlaying || deductCreditsMutation.isPending) {
+      console.log("Game already in progress or starting, ignoring click");
+      return;
+    }
     
     if (!fixedPrice || parseFloat(fixedPrice) <= 0) {
       toast({
