@@ -17,4 +17,20 @@ export const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
+// Test database connection
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
+
+// Test connection on startup
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Error connecting to database:', err);
+    process.exit(-1);
+  }
+  console.log('✅ Database connected successfully');
+  release();
+});
+
 export const db = drizzle(pool, { schema });
