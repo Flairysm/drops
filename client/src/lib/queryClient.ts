@@ -11,7 +11,7 @@ async function throwIfResNotOk(res: Response) {
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
     // In production, use Railway backend
-    return 'https://your-railway-app-name.railway.app';
+    return 'https://drops-backend-production-b145.up.railway.app';
   }
   // In development, use local backend
   return '';
