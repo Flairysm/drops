@@ -12,6 +12,16 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Disable caching globally for the entire app
+app.use((req, res, next) => {
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  next();
+});
+
 // Configure CORS to allow requests from Vercel frontend
 app.use(cors({
   origin: [
