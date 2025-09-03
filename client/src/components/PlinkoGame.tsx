@@ -35,13 +35,10 @@ const PIN_RADIUS = 6;
 const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 
-// Enhanced physics constants
-const GRAVITY = 0.42; // Natural gravity
-const AIR_RESISTANCE = 0.999; // Minimal air resistance for realism
-const FRICTION = 0.88; // Natural surface friction
-const RESTITUTION = 0.72; // Realistic bounce elasticity
-const WIND_VARIANCE = 0.008; // Very subtle wind for natural variation
-const COLLISION_DAMPING = 0.82; // Natural energy loss on collision
+// Simple, natural physics constants
+const GRAVITY = 0.4; // Simple gravity
+const FRICTION = 0.9; // Light friction
+const RESTITUTION = 0.7; // Natural bounce
 const OUTCOMES = [
   "Masterball",
   "Ultraball",
@@ -302,10 +299,10 @@ export function PlinkoGame() {
       (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
 
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 8, // More precise drop variation
-      y: 25, // Slightly higher start for better visual
-      vx: (Math.random() - 0.5) * 0.6, // Controlled horizontal variance
-      vy: 0.3, // Gentle initial downward velocity
+      x: dropX + (Math.random() - 0.5) * 4, // Minimal drop variation
+      y: 20, // Simple start position
+      vx: (Math.random() - 0.5) * 0.2, // Very small horizontal variance
+      vy: 0, // Start with no vertical velocity
       radius: BALL_RADIUS,
       color: "#00d4ff",
     };
@@ -408,23 +405,16 @@ export function PlinkoGame() {
         ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
       });
 
-      // Enhanced physics for ball
+      // Simple, natural physics for ball
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Apply realistic gravity
+        // Apply simple gravity
         ball.vy += GRAVITY;
-
-        // Natural air resistance (more realistic)
-        ball.vx *= AIR_RESISTANCE;
-        ball.vy *= AIR_RESISTANCE;
 
         // Apply movement
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Subtle wind effect for natural movement variation
-        ball.vx += (Math.random() - 0.5) * WIND_VARIANCE;
-
-        // Enhanced collision detection with realistic physics
+        // Simple collision detection with natural physics
         pins.forEach((pin) => {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
@@ -436,71 +426,39 @@ export function PlinkoGame() {
             const nx = dx / distance;
             const ny = dy / distance;
 
-            // Separate ball from pin to prevent sticking
+            // Separate ball from pin
             const separation = minDistance - distance;
             ball.x += nx * separation;
             ball.y += ny * separation;
 
-            // Calculate collision response
+            // Simple bounce physics
             const dotProduct = ball.vx * nx + ball.vy * ny;
             
-            // Only bounce if moving toward the pin
             if (dotProduct < 0) {
-              // Realistic bounce with natural energy transfer
-              const bounceStrength = RESTITUTION + (Math.random() - 0.5) * 0.08;
-              ball.vx -= 2 * dotProduct * nx * bounceStrength;
-              ball.vy -= 2 * dotProduct * ny * bounceStrength;
+              // Basic bounce
+              ball.vx -= 2 * dotProduct * nx * RESTITUTION;
+              ball.vy -= 2 * dotProduct * ny * RESTITUTION;
 
-              // Apply natural surface friction and damping
+              // Apply friction
               ball.vx *= FRICTION;
-              ball.vy *= COLLISION_DAMPING;
-
-              // Natural deflection based on collision angle
-              const deflectionAngle = Math.atan2(ny, nx);
-              const deflectionStrength = Math.abs(Math.sin(deflectionAngle)) * 0.15;
-              ball.vx += Math.cos(deflectionAngle + Math.PI/2) * deflectionStrength;
+              ball.vy *= FRICTION;
             }
           }
         });
 
-        // Additional collision check to prevent pin overlap
-        pins.forEach((pin) => {
-          const dx = ball.x - pin.x;
-          const dy = ball.y - pin.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const minDistance = ball.radius + PIN_RADIUS + 2; // Extra buffer
-
-          if (distance < minDistance) {
-            // Force separation with stronger correction
-            const nx = dx / distance;
-            const ny = dy / distance;
-            const correction = minDistance - distance;
-            ball.x += nx * correction;
-            ball.y += ny * correction;
-          }
-        });
-
-        // Enhanced wall collision physics
+        // Simple wall collision physics
         if (ball.x < ball.radius) {
           ball.x = ball.radius;
-          ball.vx = Math.abs(ball.vx) * RESTITUTION; // Realistic wall bounce
-          ball.vy *= COLLISION_DAMPING; // Energy loss on wall hit
+          ball.vx = Math.abs(ball.vx) * RESTITUTION;
+          ball.vy *= FRICTION;
         }
         if (ball.x > BOARD_WIDTH - ball.radius) {
           ball.x = BOARD_WIDTH - ball.radius;
-          ball.vx = -Math.abs(ball.vx) * RESTITUTION; // Realistic wall bounce
-          ball.vy *= COLLISION_DAMPING; // Energy loss on wall hit
+          ball.vx = -Math.abs(ball.vx) * RESTITUTION;
+          ball.vy *= FRICTION;
         }
 
-        // Add momentum-based physics for more natural movement
-        const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-        
-        // Prevent the ball from getting stuck in infinite loops
-        if (speed < 0.1 && ball.y > BOARD_HEIGHT - 200) {
-          ball.vy += GRAVITY * 2; // Force downward movement if too slow
-        }
-        
-        // Natural physics - no guidance needed
+        // Simple physics - no artificial forces
       } else {
         // Ball has reached the bottom - determine final outcome
         // Make sure ball is fully inside a bucket, not just touching
