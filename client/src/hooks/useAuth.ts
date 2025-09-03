@@ -13,10 +13,14 @@ export function useAuth() {
     gcTime: 60000, // 1 minute
   });
 
+  // If we get a 401, we're not authenticated, so stop loading
+  const isActuallyLoading = isLoading && !error;
+  const isAuthenticated = !!user && !error;
+
   return {
     user,
-    isLoading,
-    isAuthenticated: !!user && !error,
+    isLoading: isActuallyLoading,
+    isAuthenticated,
     isAdmin: !!user && (user as any).role === 'admin',
   };
 }
