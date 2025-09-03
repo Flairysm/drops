@@ -7,7 +7,7 @@ export function useAuth() {
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // Changed from true to prevent race conditions
+    refetchOnMount: true, // Changed back to true to ensure user data is fetched
     refetchOnReconnect: false,
     staleTime: 0, // Force fresh data every time
     gcTime: 0, // No caching

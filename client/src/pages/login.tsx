@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ type LoginData = z.infer<typeof loginSchema>;
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
@@ -32,16 +33,31 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
-      return await apiRequest("POST", "/api/auth/login", data);
+      console.log('🔐 Attempting login with:', data.email);
+      const response = await apiRequest("POST", "/api/auth/login", data);
+      console.log('🔐 Login response:', response);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log('🔐 Login mutation success:', response);
       toast({
         title: "Welcome back!",
         description: "You've been logged in successfully.",
       });
-      setLocation("/");
+      
+      // Force a refetch of user data and clear any cached data
+      console.log('🔐 Clearing query cache and refetching user data...');
+      queryClient.clear();
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Small delay to ensure cache is cleared before redirect
+      setTimeout(() => {
+        console.log('🔐 Redirecting to home page...');
+        setLocation("/");
+      }, 100);
     },
     onError: (error: any) => {
+      console.error('❌ Login mutation error:', error);
       toast({
         title: "Login Failed",
         description: error.message || "Something went wrong. Please try again.",
