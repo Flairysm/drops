@@ -16,6 +16,15 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
+  console.log('🔐 Setting up session middleware with:', {
+    store: 'PostgreSQL',
+    ttl: sessionTtl,
+    tableName: "sessions",
+    secure: false,
+    httpOnly: true
+  });
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -23,8 +32,9 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Always false for local development
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
       maxAge: sessionTtl,
+      sameSite: 'lax', // Add sameSite for better security
     },
   });
 }
@@ -151,6 +161,12 @@ export function setupAuth(app: Express) {
 
       // Log them in by setting session
       (req.session as any).userId = user.id;
+      
+      console.log('🔐 Login successful - Session set:', {
+        userId: user.id,
+        sessionId: req.sessionID,
+        sessionData: req.session
+      });
 
       res.json({ 
         message: "Login successful", 

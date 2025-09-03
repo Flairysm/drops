@@ -12,6 +12,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// IMPORTANT: Session middleware must be set up BEFORE CORS
+// This will be done in registerRoutes via setupAuth()
+
 // Disable caching globally for the entire app - NUCLEAR OPTION
 app.use((req, res, next) => {
   // Remove any existing cache headers
@@ -33,6 +36,7 @@ app.use((req, res, next) => {
 });
 
 // Configure CORS to allow requests from Vercel frontend
+// NOTE: CORS must come AFTER session middleware (which is set up in registerRoutes)
 app.use(cors({
   origin: [
     'https://dropss.vercel.app',

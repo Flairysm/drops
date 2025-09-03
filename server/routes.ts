@@ -16,7 +16,8 @@ import {
 // Map tier to pack type for Plinko
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
+  // CRITICAL: Session middleware must be set up BEFORE CORS
+  // This ensures cookies are properly handled
   setupAuth(app);
 
   // Health check endpoint
