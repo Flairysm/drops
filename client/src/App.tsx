@@ -20,6 +20,7 @@ import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 // Trigger new Vercel deployment with updated Vite config
+// Force redeploy to pick up latest fixes
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
