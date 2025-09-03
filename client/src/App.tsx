@@ -19,6 +19,7 @@ import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
+// Trigger new Vercel deployment with updated Vite config
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
