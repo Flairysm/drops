@@ -48,13 +48,23 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Disable caching for all API routes
+// Disable caching for all API routes - MORE AGGRESSIVE
 app.use('/api', (req, res, next) => {
+  // Remove any existing cache headers
+  res.removeHeader('ETag');
+  res.removeHeader('Last-Modified');
+  
+  // Set aggressive cache-busting headers
   res.set({
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Cache-Control': 'no-cache, no-store, must-revalidate, private, max-age=0',
     'Pragma': 'no-cache',
-    'Expires': '0'
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
   });
+  
+  // Add random timestamp to prevent any caching
+  res.set('X-Cache-Buster', Date.now().toString());
+  
   next();
 });
 
