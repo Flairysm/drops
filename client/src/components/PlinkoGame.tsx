@@ -36,12 +36,12 @@ const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 
 // Enhanced physics constants
-const GRAVITY = 0.5; // Slightly faster gravity for better pacing
-const AIR_RESISTANCE = 0.998; // Natural air resistance
-const FRICTION = 0.85; // Surface friction
-const RESTITUTION = 0.7; // Bounce elasticity
-const WIND_VARIANCE = 0.015; // Natural wind effect
-const COLLISION_DAMPING = 0.8; // Energy loss on collision
+const GRAVITY = 0.42; // Natural gravity
+const AIR_RESISTANCE = 0.999; // Minimal air resistance for realism
+const FRICTION = 0.88; // Natural surface friction
+const RESTITUTION = 0.72; // Realistic bounce elasticity
+const WIND_VARIANCE = 0.008; // Very subtle wind for natural variation
+const COLLISION_DAMPING = 0.82; // Natural energy loss on collision
 const OUTCOMES = [
   "Masterball",
   "Ultraball",
@@ -130,13 +130,16 @@ export function PlinkoGame() {
       gameSettings !== null &&
       "price" in gameSettings
     ) {
-      setFixedPrice(String(gameSettings.price));
+      const price = String(gameSettings.price);
+      console.log("Plinko fixed price:", price, "(user input ignored:", fixedPrice, ")");
+      setFixedPrice(price);
     }
   }, [gameSettings]);
 
   // Credit deduction mutation for Plinko
   const deductCreditsMutation = useMutation({
     mutationFn: async () => {
+      console.log("Deducting credits for Plinko:", fixedPrice);
       const response = await fetch("/api/credits/deduct", {
         method: "POST",
         headers: {
@@ -428,20 +431,37 @@ export function PlinkoGame() {
             
             // Only bounce if moving toward the pin
             if (dotProduct < 0) {
-              // Realistic bounce with energy loss
-              const bounceStrength = RESTITUTION + (Math.random() - 0.5) * 0.1;
+              // Realistic bounce with natural energy transfer
+              const bounceStrength = RESTITUTION + (Math.random() - 0.5) * 0.08;
               ball.vx -= 2 * dotProduct * nx * bounceStrength;
               ball.vy -= 2 * dotProduct * ny * bounceStrength;
 
-              // Apply surface friction and damping
+              // Apply natural surface friction and damping
               ball.vx *= FRICTION;
               ball.vy *= COLLISION_DAMPING;
 
               // Natural deflection based on collision angle
               const deflectionAngle = Math.atan2(ny, nx);
-              const deflectionStrength = Math.abs(Math.sin(deflectionAngle)) * 0.2;
+              const deflectionStrength = Math.abs(Math.sin(deflectionAngle)) * 0.15;
               ball.vx += Math.cos(deflectionAngle + Math.PI/2) * deflectionStrength;
             }
+          }
+        });
+
+        // Additional collision check to prevent pin overlap
+        pins.forEach((pin) => {
+          const dx = ball.x - pin.x;
+          const dy = ball.y - pin.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const minDistance = ball.radius + PIN_RADIUS + 2; // Extra buffer
+
+          if (distance < minDistance) {
+            // Force separation with stronger correction
+            const nx = dx / distance;
+            const ny = dy / distance;
+            const correction = minDistance - distance;
+            ball.x += nx * correction;
+            ball.y += ny * correction;
           }
         });
 
@@ -554,6 +574,8 @@ export function PlinkoGame() {
   };
 
   const handlePlay = () => {
+    console.log("Plinko play button clicked. Fixed price:", fixedPrice, "Game settings:", gameSettings);
+    
     if (!fixedPrice || parseFloat(fixedPrice) <= 0) {
       toast({
         title: "Pricing Error",
@@ -567,6 +589,8 @@ export function PlinkoGame() {
     const creditBalance = userCredits && typeof userCredits === 'object' && 'credits' in userCredits
       ? Number((userCredits as any).credits)
       : 0;
+    
+    console.log("User credit balance:", creditBalance, "Required:", fixedPrice);
     
     if (creditBalance < parseFloat(fixedPrice)) {
       toast({
