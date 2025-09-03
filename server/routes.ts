@@ -31,6 +31,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
+      // Disable caching for user data to prevent 304 responses
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
       const user = req.user; // User is now attached directly by custom middleware
       res.json(user);
     } catch (error) {
@@ -42,6 +49,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game settings routes
   app.get('/api/games/:gameType/settings', async (req, res) => {
     try {
+      // Disable caching for game settings
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
       const { gameType } = req.params;
       const settings = await storage.getGameSetting(gameType);
       if (!settings) {
