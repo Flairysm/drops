@@ -7,12 +7,25 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get the base URL for API calls
+const getApiBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    // In production, use Railway backend
+    return 'https://your-railway-app-name.railway.app';
+  }
+  // In development, use local backend
+  return '';
+};
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const baseUrl = getApiBaseUrl();
+  const fullUrl = baseUrl + url;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +42,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const baseUrl = getApiBaseUrl();
+    const fullUrl = baseUrl + "/" + queryKey.join("/");
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 
