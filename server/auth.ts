@@ -28,13 +28,16 @@ export function getSession() {
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: false,
+    resave: true, // Changed to true to ensure session persistence
     saveUninitialized: false,
+    name: 'drops.sid', // Give session a specific name
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
       maxAge: sessionTtl,
       sameSite: 'lax', // Add sameSite for better security
+      path: '/', // Ensure cookie is available for all paths
+      domain: undefined, // Let browser set domain automatically
     },
   });
 }
@@ -174,6 +177,12 @@ export function setupAuth(app: Express) {
           console.error('❌ Error saving session:', err);
         } else {
           console.log('✅ Session saved successfully');
+          console.log('🔐 Session cookie should be set:', {
+            sessionId: req.sessionID,
+            cookieName: 'drops.sid',
+            cookieValue: req.sessionID,
+            maxAge: req.session.cookie.maxAge
+          });
         }
       });
 

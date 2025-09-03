@@ -25,12 +25,16 @@ export async function apiRequest(
   const baseUrl = getApiBaseUrl();
   const fullUrl = baseUrl + url;
   
+  console.log('🔐 API Request:', { method, url: fullUrl, credentials: 'include' });
+  
   const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  console.log('🔐 API Response:', { status: res.status, cookies: res.headers.get('set-cookie') });
 
   await throwIfResNotOk(res);
   return res;
