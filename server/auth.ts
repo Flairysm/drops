@@ -168,6 +168,15 @@ export function setupAuth(app: Express) {
         sessionData: req.session
       });
 
+      // Save session to ensure it's persisted
+      req.session.save((err) => {
+        if (err) {
+          console.error('❌ Error saving session:', err);
+        } else {
+          console.log('✅ Session saved successfully');
+        }
+      });
+
       res.json({ 
         message: "Login successful", 
         user: { 
@@ -195,18 +204,28 @@ export function setupAuth(app: Express) {
 
 // Authentication middleware
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  console.log('🔐 isAuthenticated middleware called:', {
+    sessionId: req.sessionID,
+    sessionData: req.session,
+    userId: (req.session as any)?.userId,
+    cookies: req.headers.cookie
+  });
+  
   const userId = (req.session as any)?.userId;
   
   if (!userId) {
+    console.log('❌ No userId in session - returning 401');
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   // Attach user to request
   const user = await storage.getUser(userId);
   if (!user) {
+    console.log('❌ User not found in database - returning 401');
     return res.status(401).json({ message: "User not found" });
   }
 
+  console.log('✅ User authenticated successfully:', { userId, username: user.username });
   (req as any).user = user;
   next();
 };
