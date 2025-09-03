@@ -36,9 +36,9 @@ const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 
 // Real Plinko board physics constants
-const GRAVITY = 0.4; // Natural falling speed
-const FRICTION = 0.92; // Light friction for clean movement
-const RESTITUTION = 0.75; // Natural bounce elasticity
+const GRAVITY = 0.25; // Natural falling speed
+const FRICTION = 0.925; // Light friction for clean movement
+const RESTITUTION = 0.725; // Natural bounce elasticity
 const OUTCOMES = [
   "Masterball",
   "Ultraball",
