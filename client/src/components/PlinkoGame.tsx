@@ -35,11 +35,10 @@ const PIN_RADIUS = 6;
 const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 
-// Stake.us-style physics constants for fair, natural feel
-const GRAVITY = 0.35; // Slightly slower for better anticipation
-const FRICTION = 0.95; // Very light friction for natural movement
-const RESTITUTION = 0.8; // Higher bounce for more dramatic pin hits
-const PIN_INFLUENCE = 0.3; // How much pins affect ball direction
+// Real Plinko board physics constants
+const GRAVITY = 0.4; // Natural falling speed
+const FRICTION = 0.92; // Light friction for clean movement
+const RESTITUTION = 0.75; // Natural bounce elasticity
 const OUTCOMES = [
   "Masterball",
   "Ultraball",
@@ -300,10 +299,10 @@ export function PlinkoGame() {
       (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
 
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 6, // Natural drop variation
-      y: 15, // Start position like Stake.us
-      vx: (Math.random() - 0.5) * 0.4, // Natural horizontal variance
-      vy: 0.1, // Tiny initial downward velocity
+      x: dropX + (Math.random() - 0.5) * 3, // Small, predictable drop variation
+      y: 20, // Standard start position
+      vx: (Math.random() - 0.5) * 0.15, // Minimal horizontal variance
+      vy: 0, // Start with no vertical velocity
       radius: BALL_RADIUS,
       color: "#00d4ff",
     };
@@ -432,47 +431,36 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
 
-            // Enhanced bounce physics with pin influence
+            // Real Plinko board bounce physics
             const dotProduct = ball.vx * nx + ball.vy * ny;
             
             if (dotProduct < 0) {
-              // Calculate bounce with pin influence
-              const bounceStrength = RESTITUTION + (Math.random() - 0.5) * 0.1;
-              ball.vx -= 2 * dotProduct * nx * bounceStrength;
-              ball.vy -= 2 * dotProduct * ny * bounceStrength;
+              // Clean, predictable bounce
+              ball.vx -= 2 * dotProduct * nx * RESTITUTION;
+              ball.vy -= 2 * dotProduct * ny * RESTITUTION;
 
-              // Apply natural friction
+              // Apply friction for natural energy loss
               ball.vx *= FRICTION;
               ball.vy *= FRICTION;
-
-              // Add subtle pin influence for more natural movement
-              const influenceX = (Math.random() - 0.5) * PIN_INFLUENCE;
-              const influenceY = (Math.random() - 0.5) * PIN_INFLUENCE * 0.5;
-              ball.vx += influenceX;
-              ball.vy += influenceY;
             }
           }
         });
 
-        // Natural wall collision physics
+        // Clean wall collision physics
         if (ball.x < ball.radius) {
           ball.x = ball.radius;
           ball.vx = Math.abs(ball.vx) * RESTITUTION;
           ball.vy *= FRICTION;
-          // Add slight randomness to wall bounces
-          ball.vx += (Math.random() - 0.5) * 0.1;
         }
         if (ball.x > BOARD_WIDTH - ball.radius) {
           ball.x = BOARD_WIDTH - ball.radius;
           ball.vx = -Math.abs(ball.vx) * RESTITUTION;
           ball.vy *= FRICTION;
-          // Add slight randomness to wall bounces
-          ball.vx += (Math.random() - 0.5) * 0.1;
         }
 
-        // Add subtle air resistance for more natural movement
-        ball.vx *= 0.999;
-        ball.vy *= 0.999;
+        // Light air resistance for natural movement
+        ball.vx *= 0.998;
+        ball.vy *= 0.998;
 
         // Simple physics - no artificial forces
       } else {
