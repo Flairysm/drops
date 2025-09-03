@@ -12,13 +12,23 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Disable caching globally for the entire app
+// Disable caching globally for the entire app - NUCLEAR OPTION
 app.use((req, res, next) => {
+  // Remove any existing cache headers
+  res.removeHeader('ETag');
+  res.removeHeader('Last-Modified');
+  
+  // Set aggressive cache-busting headers
   res.set({
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Cache-Control': 'no-cache, no-store, must-revalidate, private',
     'Pragma': 'no-cache',
-    'Expires': '0'
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
   });
+  
+  // Add random timestamp to prevent any caching
+  res.set('X-Cache-Buster', Date.now().toString());
+  
   next();
 });
 
