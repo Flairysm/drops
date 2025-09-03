@@ -2,10 +2,10 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Moon, Sun, Zap, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export function Navigation() {
@@ -15,6 +15,7 @@ export function Navigation() {
   const [, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -108,7 +109,7 @@ export function Navigation() {
                 {/* User Menu */}
                 <div className="flex items-center space-x-2 gaming-card px-3 py-2 rounded-lg">
                   <img
-                    src={(user as any)?.profileImageUrl || "https://via.placeholder.com/32"}
+                    src={(user as any)?.profileImageUrl || "/default-avatar.png"}
                     alt="User avatar"
                     className="w-8 h-8 rounded-full border-2 border-primary"
                     data-testid="img-avatar"
