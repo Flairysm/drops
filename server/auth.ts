@@ -9,35 +9,28 @@ const SALT_ROUNDS = 12;
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
   
+  // TEMPORARY: Use memory store to test if PostgreSQL store is the issue
   console.log('🔐 Setting up session middleware with:', {
-    store: 'PostgreSQL',
+    store: 'Memory (temporary)',
     ttl: sessionTtl,
-    tableName: "sessions",
     secure: false,
     httpOnly: true
   });
   
   return session({
     secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
-    resave: true, // Changed to true to ensure session persistence
+    // store: sessionStore, // Commented out PostgreSQL store temporarily
+    resave: true,
     saveUninitialized: false,
-    name: 'drops.sid', // Give session a specific name
+    name: 'drops.sid',
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+      secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
-      sameSite: 'lax', // Add sameSite for better security
-      path: '/', // Ensure cookie is available for all paths
-      domain: undefined, // Let browser set domain automatically
+      sameSite: 'lax',
+      path: '/',
+      domain: undefined,
     },
   });
 }
@@ -182,6 +175,13 @@ export function setupAuth(app: Express) {
             cookieName: 'drops.sid',
             cookieValue: req.sessionID,
             maxAge: req.session.cookie.maxAge
+          });
+          
+          // Debug: Check if session is actually in store
+          console.log('🔐 Current session data:', {
+            sessionId: req.sessionID,
+            userId: (req.session as any).userId,
+            sessionExists: !!req.session
           });
         }
       });
