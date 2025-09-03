@@ -28,6 +28,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Disable caching for all API routes
+app.use('/api', (req, res, next) => {
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  next();
+});
+
 // Serve attached assets as static files
 app.use('/attached_assets', express.static(path.resolve(__dirname, '../attached_assets')));
 
