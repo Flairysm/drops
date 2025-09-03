@@ -9,11 +9,11 @@ export function useAuth() {
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     refetchOnReconnect: false,
-    staleTime: 30000, // 30 seconds
-    gcTime: 60000, // 1 minute
+    staleTime: 0, // Force fresh data every time
+    gcTime: 0, // No caching
   });
 
-  // If we get a 401, we're not authenticated, so stop loading
+  // If we get a 401 or 304, we're not authenticated, so stop loading
   const isActuallyLoading = isLoading && !error;
   const isAuthenticated = !!user && !error;
 
