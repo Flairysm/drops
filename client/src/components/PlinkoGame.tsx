@@ -35,10 +35,11 @@ const PIN_RADIUS = 6;
 const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
 
-// Simple, natural physics constants
-const GRAVITY = 0.4; // Simple gravity
-const FRICTION = 0.9; // Light friction
-const RESTITUTION = 0.7; // Natural bounce
+// Stake.us-style physics constants for fair, natural feel
+const GRAVITY = 0.35; // Slightly slower for better anticipation
+const FRICTION = 0.95; // Very light friction for natural movement
+const RESTITUTION = 0.8; // Higher bounce for more dramatic pin hits
+const PIN_INFLUENCE = 0.3; // How much pins affect ball direction
 const OUTCOMES = [
   "Masterball",
   "Ultraball",
@@ -299,10 +300,10 @@ export function PlinkoGame() {
       (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
 
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 4, // Minimal drop variation
-      y: 20, // Simple start position
-      vx: (Math.random() - 0.5) * 0.2, // Very small horizontal variance
-      vy: 0, // Start with no vertical velocity
+      x: dropX + (Math.random() - 0.5) * 6, // Natural drop variation
+      y: 15, // Start position like Stake.us
+      vx: (Math.random() - 0.5) * 0.4, // Natural horizontal variance
+      vy: 0.1, // Tiny initial downward velocity
       radius: BALL_RADIUS,
       color: "#00d4ff",
     };
@@ -405,16 +406,16 @@ export function PlinkoGame() {
         ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
       });
 
-      // Simple, natural physics for ball
+      // Stake.us-style physics for fair, natural feel
       if (ball.y < BOARD_HEIGHT - 70) {
-        // Apply simple gravity
+        // Apply gravity
         ball.vy += GRAVITY;
 
         // Apply movement
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Simple collision detection with natural physics
+        // Enhanced collision detection with natural pin influence
         pins.forEach((pin) => {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
@@ -431,32 +432,47 @@ export function PlinkoGame() {
             ball.x += nx * separation;
             ball.y += ny * separation;
 
-            // Simple bounce physics
+            // Enhanced bounce physics with pin influence
             const dotProduct = ball.vx * nx + ball.vy * ny;
             
             if (dotProduct < 0) {
-              // Basic bounce
-              ball.vx -= 2 * dotProduct * nx * RESTITUTION;
-              ball.vy -= 2 * dotProduct * ny * RESTITUTION;
+              // Calculate bounce with pin influence
+              const bounceStrength = RESTITUTION + (Math.random() - 0.5) * 0.1;
+              ball.vx -= 2 * dotProduct * nx * bounceStrength;
+              ball.vy -= 2 * dotProduct * ny * bounceStrength;
 
-              // Apply friction
+              // Apply natural friction
               ball.vx *= FRICTION;
               ball.vy *= FRICTION;
+
+              // Add subtle pin influence for more natural movement
+              const influenceX = (Math.random() - 0.5) * PIN_INFLUENCE;
+              const influenceY = (Math.random() - 0.5) * PIN_INFLUENCE * 0.5;
+              ball.vx += influenceX;
+              ball.vy += influenceY;
             }
           }
         });
 
-        // Simple wall collision physics
+        // Natural wall collision physics
         if (ball.x < ball.radius) {
           ball.x = ball.radius;
           ball.vx = Math.abs(ball.vx) * RESTITUTION;
           ball.vy *= FRICTION;
+          // Add slight randomness to wall bounces
+          ball.vx += (Math.random() - 0.5) * 0.1;
         }
         if (ball.x > BOARD_WIDTH - ball.radius) {
           ball.x = BOARD_WIDTH - ball.radius;
           ball.vx = -Math.abs(ball.vx) * RESTITUTION;
           ball.vy *= FRICTION;
+          // Add slight randomness to wall bounces
+          ball.vx += (Math.random() - 0.5) * 0.1;
         }
+
+        // Add subtle air resistance for more natural movement
+        ball.vx *= 0.999;
+        ball.vy *= 0.999;
 
         // Simple physics - no artificial forces
       } else {
