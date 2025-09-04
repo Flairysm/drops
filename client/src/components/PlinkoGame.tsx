@@ -285,16 +285,16 @@ export function PlinkoGame() {
     // No predetermined target - let physics determine the outcome naturally
     const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
 
-    // Initialize ball to drop randomly between pins 1-2 or 2-3
+    // Initialize ball to drop more towards the center
     const firstLayerPins = getPins().filter((_, index) => index < 3); // First 3 pins
-    const dropChoice = Math.random() < 0.5 ? 0 : 1; // Choose between first two gaps
+    const centerGap = 1; // Always drop between pins 2-3 (center gap)
     const dropX =
-      (firstLayerPins[dropChoice].x + firstLayerPins[dropChoice + 1].x) / 2; // Drop between chosen pins
+      (firstLayerPins[centerGap].x + firstLayerPins[centerGap + 1].x) / 2; // Drop between center pins
 
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 3, // Small, predictable drop variation
+      x: dropX + (Math.random() - 0.5) * 2, // Smaller drop variation for more center focus
       y: 20, // Standard start position
-      vx: (Math.random() - 0.5) * 0.15, // Minimal horizontal variance
+      vx: (Math.random() - 0.5) * 0.08, // Reduced horizontal variance for center bias
       vy: 0, // Start with no vertical velocity
       radius: BALL_RADIUS,
       color: "#00d4ff",
@@ -455,7 +455,10 @@ export function PlinkoGame() {
         ball.vx *= 0.998;
         ball.vy *= 0.998;
 
-        // Simple physics - no artificial forces
+        // Subtle centering force to favor middle pins
+        const centerX = BOARD_WIDTH / 2;
+        const centerForce = (centerX - ball.x) * 0.0008; // Very gentle pull towards center
+        ball.vx += centerForce;
       } else {
         // Ball has reached the bottom - determine final outcome
         // Make sure ball is fully inside a bucket, not just touching
