@@ -299,6 +299,11 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                         src={hitCard.imageUrl}
                         alt={hitCard.name}
                         className="w-32 h-44 mx-auto rounded-xl object-cover"
+                        onError={(e) => {
+                          // Fallback to default image if the imageUrl fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/card-images/random-common-card.png";
+                        }}
                       />
                     ) : (
                       <div className="w-32 h-44 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl flex items-center justify-center">
