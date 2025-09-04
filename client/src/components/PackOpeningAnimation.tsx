@@ -226,13 +226,18 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                             src={card.imageUrl}
                             alt={card.name}
                             className="w-12 h-16 mx-auto rounded object-cover mb-2"
+                            onError={(e) => {
+                              // Fallback to default image if the imageUrl fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.src = "/card-images/random-common-card.png";
+                            }}
                           />
                         ) : (
-                          <div className="w-12 h-16 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded flex items-center justify-center mb-2">
-                            <span className="text-xs text-white font-bold">
-                              {card.name?.charAt(0) || '?'}
-                            </span>
-                          </div>
+                          <img
+                            src="/card-images/random-common-card.png"
+                            alt={card.name}
+                            className="w-12 h-16 mx-auto rounded object-cover mb-2"
+                          />
                         )}
                         <p className="text-xs font-medium truncate">{card.name}</p>
                       </div>

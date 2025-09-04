@@ -164,11 +164,19 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                         alt={pull.card.name}
                         className="w-full h-full object-cover rounded-lg"
                         loading="lazy"
+                        onError={(e) => {
+                          // Fallback to default image if the imageUrl fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/card-images/random-common-card.png";
+                        }}
                       />
                     ) : (
-                      <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                      </div>
+                      <img 
+                        src="/card-images/random-common-card.png" 
+                        alt={pull.card.name}
+                        className="w-full h-full object-cover rounded-lg"
+                        loading="lazy"
+                      />
                     )}
                   </div>
 

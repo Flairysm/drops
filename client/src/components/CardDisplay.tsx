@@ -46,11 +46,18 @@ export function CardDisplay({
                   src={card.imageUrl}
                   alt={card.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to default image if the imageUrl fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/card-images/random-common-card.png";
+                  }}
                 />
               ) : (
-                <div className={`w-8 h-8 rounded-full bg-${tierColor}/20 flex items-center justify-center`}>
-                  <span className={`font-bold tier-${tierColor}`}>{card.tier}</span>
-                </div>
+                <img
+                  src="/card-images/random-common-card.png"
+                  alt={card.name}
+                  className="w-full h-full object-cover"
+                />
               )}
             </div>
             
@@ -105,13 +112,18 @@ export function CardDisplay({
               src={card.imageUrl}
               alt={card.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback to default image if the imageUrl fails to load
+                const target = e.target as HTMLImageElement;
+                target.src = "/card-images/random-common-card.png";
+              }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className={`w-16 h-16 rounded-full bg-${tierColor}/30 flex items-center justify-center`}>
-                <span className={`text-2xl font-bold tier-${tierColor}`}>{card.tier}</span>
-              </div>
-            </div>
+            <img
+              src="/card-images/random-common-card.png"
+              alt={card.name}
+              className="w-full h-full object-cover"
+            />
           )}
           
           <div className="absolute top-2 right-2">
