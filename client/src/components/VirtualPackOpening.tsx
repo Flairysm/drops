@@ -90,11 +90,10 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       try {
         setLoadingCards(true);
         console.log("🔍 Loading pack cards for packId:", packId);
-        console.log("📚 All cards available:", allCards?.length || 0);
+        console.log("📚 All cards available:", Array.isArray(allCards) ? allCards.length : 0);
         const response = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         const packCardsData = await response.json();
         console.log("📦 Pack cards response:", packCardsData);
-        
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
           const cardDetails = packCardsData.map((pc: any) => {
             // Match by cardId
@@ -631,18 +630,6 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
-          <div className="flex justify-center">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex items-center space-x-2"
-              data-testid="button-cancel-purchase"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Cancel</span>
-            </Button>
-          </div>
         </div>
 
         {/* Floating Open Pack Button */}
