@@ -128,7 +128,7 @@ export default function Home() {
             <div>
               <h1 className="font-gaming font-bold text-xl sm:text-3xl mb-2">
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Hey {userData?.firstName || "Player"}! 👋
+                  Hey {userData?.username || userData?.firstName || "Player"}! 👋
                 </span>
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base">Time to win some cards</p>
