@@ -70,6 +70,9 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
     );
   }
 
+  // Find Black Bolt pack for floating button
+  const blackBoltPack = activePacks.find(pack => pack.name.toLowerCase().includes('black bolt'));
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -129,6 +132,21 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
         ))}
       </div>
       
+      {/* Floating Black Bolt Pack Button */}
+      {blackBoltPack && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+          <Button
+            onClick={() => handlePurchase(blackBoltPack)}
+            disabled={!user || parseFloat(user.credits || '0') < parseFloat(blackBoltPack.price)}
+            size="lg"
+            className="bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white shadow-2xl hover:shadow-purple-500/25 px-6 py-3 rounded-full font-semibold text-lg animate-pulse"
+            data-testid="button-floating-black-bolt-pack"
+          >
+            <Package className="w-5 h-5 mr-2" />
+            Open Black Bolt Pack Now
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
