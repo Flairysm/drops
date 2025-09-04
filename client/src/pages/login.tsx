@@ -40,6 +40,13 @@ export default function Login() {
     },
     onSuccess: (response) => {
       console.log('🔐 Login mutation success:', response);
+      
+      // Store JWT token in localStorage if provided
+      if (response.token) {
+        localStorage.setItem('authToken', response.token);
+        console.log('🔐 JWT token stored in localStorage');
+      }
+      
       toast({
         title: "Welcome back!",
         description: "You've been logged in successfully.",

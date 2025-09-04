@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, isAdmin } from "./auth";
+import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin } from "./auth";
 import { z } from "zod";
 import { 
   insertCardSchema, 
@@ -30,7 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticatedCombined, async (req: any, res) => {
     try {
       // Disable caching for user data to prevent 304 responses
       res.set({

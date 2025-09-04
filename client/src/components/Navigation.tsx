@@ -27,6 +27,10 @@ export function Navigation() {
       return await apiRequest("POST", "/api/auth/logout");
     },
     onSuccess: () => {
+      // Clear JWT token from localStorage
+      localStorage.removeItem('authToken');
+      console.log('🔐 JWT token cleared from localStorage');
+      
       queryClient.clear(); // Clear all cached data
       toast({
         title: "Logged out",

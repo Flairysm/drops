@@ -2,11 +2,14 @@ import bcrypt from 'bcrypt';
 import session from 'express-session';
 import type { Express, RequestHandler } from 'express';
 import connectPg from 'connect-pg-simple';
+import jwt from 'jsonwebtoken';
 import { storage } from './storage';
 import { registrationSchema, loginSchema } from '@shared/schema';
 
 const SALT_ROUNDS = 12;
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret-key';
+const JWT_EXPIRES_IN = '7d'; // 7 days
 
 export function getSession() {
   // TEMPORARY: Use memory store to test if PostgreSQL store is the issue
@@ -157,10 +160,22 @@ export function setupAuth(app: Express) {
       // Log them in by setting session
       (req.session as any).userId = user.id;
       
+      // Generate JWT token as backup authentication method
+      const token = jwt.sign(
+        { 
+          userId: user.id, 
+          username: user.username, 
+          email: user.email 
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      
       console.log('🔐 Login successful - Session set:', {
         userId: user.id,
         sessionId: req.sessionID,
-        sessionData: req.session
+        sessionData: req.session,
+        jwtToken: token.substring(0, 20) + '...' // Log first 20 chars for debugging
       });
 
       // Save session to ensure it's persisted
@@ -202,7 +217,9 @@ export function setupAuth(app: Express) {
           email: user.email 
         },
         // Add session ID to response for debugging
-        sessionId: req.sessionID
+        sessionId: req.sessionID,
+        // Add JWT token for frontend to store
+        token: token
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -221,9 +238,45 @@ export function setupAuth(app: Express) {
   });
 }
 
-// Authentication middleware
+// JWT Authentication middleware
+export const isAuthenticatedJWT: RequestHandler = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  
+  console.log('🔐 JWT Authentication middleware called:', {
+    hasAuthHeader: !!authHeader,
+    hasToken: !!token,
+    tokenPreview: token ? token.substring(0, 20) + '...' : null
+  });
+  
+  if (!token) {
+    console.log('❌ No JWT token provided - returning 401');
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    console.log('✅ JWT token verified:', { userId: decoded.userId, username: decoded.username });
+    
+    // Attach user to request
+    const user = await storage.getUser(decoded.userId);
+    if (!user) {
+      console.log('❌ User not found in database - returning 401');
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    console.log('✅ User authenticated successfully via JWT:', { userId: user.id, username: user.username });
+    (req as any).user = user;
+    next();
+  } catch (error) {
+    console.log('❌ JWT token verification failed:', error);
+    return res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+// Session Authentication middleware (original)
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  console.log('🔐 isAuthenticated middleware called:', {
+  console.log('🔐 Session Authentication middleware called:', {
     sessionId: req.sessionID,
     sessionData: req.session,
     userId: (req.session as any)?.userId,
@@ -247,9 +300,45 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return res.status(401).json({ message: "User not found" });
   }
 
-  console.log('✅ User authenticated successfully:', { userId, username: user.username });
+  console.log('✅ User authenticated successfully via session:', { userId, username: user.username });
   (req as any).user = user;
   next();
+};
+
+// Combined Authentication middleware (tries JWT first, then session)
+export const isAuthenticatedCombined: RequestHandler = async (req, res, next) => {
+  // Try JWT first
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      console.log('✅ JWT authentication successful:', { userId: decoded.userId, username: decoded.username });
+      
+      const user = await storage.getUser(decoded.userId);
+      if (user) {
+        (req as any).user = user;
+        return next();
+      }
+    } catch (error) {
+      console.log('❌ JWT authentication failed, trying session:', error);
+    }
+  }
+  
+  // Fall back to session authentication
+  const userId = (req.session as any)?.userId;
+  if (userId) {
+    const user = await storage.getUser(userId);
+    if (user) {
+      console.log('✅ Session authentication successful:', { userId, username: user.username });
+      (req as any).user = user;
+      return next();
+    }
+  }
+  
+  console.log('❌ Both JWT and session authentication failed - returning 401');
+  return res.status(401).json({ message: "Unauthorized" });
 };
 
 // Admin middleware

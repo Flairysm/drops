@@ -25,11 +25,24 @@ export async function apiRequest(
   const baseUrl = getApiBaseUrl();
   const fullUrl = baseUrl + url;
   
-  console.log('🔐 API Request:', { method, url: fullUrl, credentials: 'include' });
+  // Get JWT token from localStorage
+  const token = localStorage.getItem('authToken');
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Add Authorization header if token exists
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  console.log('🔐 API Request:', { method, url: fullUrl, credentials: 'include', hasToken: !!token });
   
   const res = await fetch(fullUrl, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -51,10 +64,20 @@ export const getQueryFn: <T>(options: {
     const path = queryKey.join("/").replace(/^\/+/, ""); // Remove leading slashes
     const fullUrl = `${baseUrl}/${path}`;
     
-    console.log('🔍 Fetching:', fullUrl); // Debug logging
+    // Get JWT token from localStorage
+    const token = localStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    console.log('🔍 Fetching:', fullUrl, { hasToken: !!token }); // Debug logging
     
     const res = await fetch(fullUrl, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
