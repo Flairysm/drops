@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
+import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { Bomb, Leaf, Package, RotateCcw, X } from "lucide-react";
 
 // Import pack images
@@ -109,16 +109,9 @@ export function MinesweeperGame() {
   // Start game mutation (deducts credits)
   const startGameMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/credits/deduct", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          amount: MINESWEEPER_COST,
-          reason: "minesweeper_game",
-        }),
+      const response = await apiRequest("POST", "/api/credits/deduct", {
+        amount: MINESWEEPER_COST,
+        reason: "minesweeper_game",
       });
       
       if (!response.ok) {
@@ -126,7 +119,7 @@ export function MinesweeperGame() {
         throw new Error(error.message || "Failed to deduct credits");
       }
       
-      return response.json();
+      return await response.json();
     },
     onSuccess: () => {
       // Credits deducted successfully, game can start
@@ -151,16 +144,9 @@ export function MinesweeperGame() {
   // Play game mutation
   const playGameMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/games/minesweeper", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          greensFound: gameState.greensFound,
-          won: gameState.gameWon,
-        }),
+      const response = await apiRequest("POST", "/api/games/minesweeper", {
+        greensFound: gameState.greensFound,
+        won: gameState.gameWon,
       });
       
       if (!response.ok) {
@@ -168,7 +154,7 @@ export function MinesweeperGame() {
         throw new Error(error.message || "Failed to play game");
       }
       
-      return response.json();
+      return await response.json();
     },
     onSuccess: (data) => {
       console.log('Minesweeper API response:', data);

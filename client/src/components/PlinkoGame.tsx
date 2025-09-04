@@ -144,16 +144,9 @@ export function PlinkoGame() {
         return { success: true, alreadyPlaying: true };
       }
       
-      const response = await fetch("/api/credits/deduct", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          amount: fixedPrice,
-          reason: "plinko_game",
-        }),
+      const response = await apiRequest("POST", "/api/credits/deduct", {
+        amount: fixedPrice,
+        reason: "plinko_game",
       });
       
       if (!response.ok) {
@@ -161,7 +154,7 @@ export function PlinkoGame() {
         throw new Error(error.message || "Failed to deduct credits");
       }
       
-      return response.json();
+      return await response.json();
     },
     onSuccess: (result) => {
       // Only proceed if this is a new game (not already playing)

@@ -146,16 +146,9 @@ export function WheelGame() {
   // Credit deduction mutation for Wheel
   const deductCreditsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/credits/deduct", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          amount: betAmount,
-          reason: "wheel_game",
-        }),
+      const response = await apiRequest("POST", "/api/credits/deduct", {
+        amount: betAmount,
+        reason: "wheel_game",
       });
       
       if (!response.ok) {
@@ -163,7 +156,7 @@ export function WheelGame() {
         throw new Error(error.message || "Failed to deduct credits");
       }
       
-      return response.json();
+      return await response.json();
     },
     onSuccess: () => {
       // Credits deducted successfully, start spinning
