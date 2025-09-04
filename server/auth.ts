@@ -26,7 +26,7 @@ export function getSession() {
     name: 'drops.sid',
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // TEMPORARILY DISABLE SECURE COOKIES TO TEST
       maxAge: sessionTtl,
       sameSite: 'lax',
       path: '/',
@@ -186,6 +186,15 @@ export function setupAuth(app: Express) {
         }
       });
 
+      // Set cookie manually to ensure it's sent
+      res.cookie('drops.sid', req.sessionID, {
+        httpOnly: true,
+        secure: false, // TEMPORARILY DISABLE SECURE COOKIES
+        maxAge: sessionTtl,
+        sameSite: 'lax',
+        path: '/',
+      });
+
       res.json({ 
         message: "Login successful", 
         user: { 
@@ -217,7 +226,10 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     sessionId: req.sessionID,
     sessionData: req.session,
     userId: (req.session as any)?.userId,
-    cookies: req.headers.cookie
+    cookies: req.headers.cookie,
+    userAgent: req.headers['user-agent'],
+    origin: req.headers.origin,
+    referer: req.headers.referer
   });
   
   const userId = (req.session as any)?.userId;
