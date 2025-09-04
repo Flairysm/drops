@@ -6,14 +6,13 @@ import { storage } from './storage';
 import { registrationSchema, loginSchema } from '@shared/schema';
 
 const SALT_ROUNDS = 12;
+const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  
   // TEMPORARY: Use memory store to test if PostgreSQL store is the issue
   console.log('🔐 Setting up session middleware with:', {
     store: 'Memory (temporary)',
-    ttl: sessionTtl,
+    ttl: SESSION_TTL,
     secure: false,
     httpOnly: true
   });
@@ -27,7 +26,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: false, // TEMPORARILY DISABLE SECURE COOKIES TO TEST
-      maxAge: sessionTtl,
+      maxAge: SESSION_TTL,
       sameSite: 'lax',
       path: '/',
       domain: undefined,
@@ -190,7 +189,7 @@ export function setupAuth(app: Express) {
       res.cookie('drops.sid', req.sessionID, {
         httpOnly: true,
         secure: false, // TEMPORARILY DISABLE SECURE COOKIES
-        maxAge: sessionTtl,
+        maxAge: SESSION_TTL,
         sameSite: 'lax',
         path: '/',
       });
