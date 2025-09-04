@@ -341,7 +341,7 @@ export const isAuthenticatedCombined: RequestHandler = async (req, res, next) =>
   return res.status(401).json({ message: "Unauthorized" });
 };
 
-// Admin middleware
+// Admin middleware (session-based)
 export const isAdmin: RequestHandler = async (req, res, next) => {
   const userId = (req.session as any)?.userId;
   
@@ -361,4 +361,44 @@ export const isAdmin: RequestHandler = async (req, res, next) => {
 
   (req as any).user = user;
   next();
+};
+
+// Combined Admin middleware (JWT + session with admin role check)
+export const isAdminCombined: RequestHandler = async (req, res, next) => {
+  // Try JWT first
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      console.log('✅ JWT authentication successful for admin:', { userId: decoded.userId, username: decoded.username });
+      
+      const user = await storage.getUser(decoded.userId);
+      if (user && user.role === 'admin') {
+        (req as any).user = user;
+        return next();
+      } else if (user && user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+    } catch (error) {
+      console.log('❌ JWT authentication failed for admin, trying session:', error);
+    }
+  }
+  
+  // Fall back to session authentication
+  const userId = (req.session as any)?.userId;
+  if (userId) {
+    const user = await storage.getUser(userId);
+    if (user && user.role === 'admin') {
+      console.log('✅ Session authentication successful for admin:', { userId, username: user.username });
+      (req as any).user = user;
+      return next();
+    } else if (user && user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+  }
+  
+  console.log('❌ Both JWT and session authentication failed for admin - returning 401');
+  return res.status(401).json({ message: "Unauthorized" });
 };

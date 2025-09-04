@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin } from "./auth";
+import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin, isAdminCombined } from "./auth";
 import { z } from "zod";
 import { 
   insertCardSchema, 
@@ -441,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/stats', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/stats', isAdminCombined, async (req: any, res) => {
     try {
       // Basic admin check (in real app, check user role)
       const stats = await storage.getSystemStats();
@@ -452,7 +452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/users', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/users', isAdminCombined, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -462,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/cards', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/cards', isAdminCombined, async (req: any, res) => {
     try {
       const cards = await storage.getCards();
       res.json(cards);
@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/cards', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/cards', isAdminCombined, async (req: any, res) => {
     try {
       const cardData = insertCardSchema.parse(req.body);
       const card = await storage.createCard(cardData);
@@ -483,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/cards/:id', isAdmin, async (req: any, res) => {
+  app.patch('/api/admin/cards/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const cardData = insertCardSchema.partial().parse(req.body);
@@ -495,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/cards/:id/stock', isAdmin, async (req: any, res) => {
+  app.patch('/api/admin/cards/:id/stock', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { stock } = req.body;
@@ -512,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/cards/:id', isAdmin, async (req: any, res) => {
+  app.delete('/api/admin/cards/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteCard(id);
@@ -524,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pull rate management routes
-  app.get('/api/admin/pull-rates', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/pull-rates', isAdminCombined, async (req: any, res) => {
     try {
       const pullRates = await storage.getAllPullRates();
       res.json(pullRates);
@@ -534,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/pull-rates/:packType', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/pull-rates/:packType', isAdminCombined, async (req: any, res) => {
     try {
       const { packType } = req.params;
       const pullRates = await storage.getPackPullRates(packType);
@@ -545,7 +545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/pull-rates/:packType', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/pull-rates/:packType', isAdminCombined, async (req: any, res) => {
     try {
       const { packType } = req.params;
       const { rates } = req.body;
@@ -581,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Virtual library admin routes (separate card pool from mystery packs)
-  app.get('/api/admin/virtual-library', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/virtual-library', isAdminCombined, async (req: any, res) => {
     try {
       const virtualLibraryCards = await storage.getVirtualLibraryCards();
       res.json(virtualLibraryCards);
@@ -591,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/virtual-library', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/virtual-library', isAdminCombined, async (req: any, res) => {
     try {
       const cardData = insertVirtualLibrarySchema.parse(req.body);
       const virtualLibraryCard = await storage.createVirtualLibraryCard(cardData);
@@ -602,7 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/virtual-library/:id', isAdmin, async (req: any, res) => {
+  app.patch('/api/admin/virtual-library/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const cardData = insertVirtualLibrarySchema.partial().parse(req.body);
@@ -614,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/virtual-library/:id', isAdmin, async (req: any, res) => {
+  app.delete('/api/admin/virtual-library/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteVirtualLibraryCard(id);
@@ -626,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Virtual pack admin routes
-  app.get('/api/admin/virtual-packs', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/virtual-packs', isAdminCombined, async (req: any, res) => {
     try {
       const virtualPacks = await storage.getVirtualPacks();
       console.log(`Fetching virtual packs: found ${virtualPacks.length} active packs`);
@@ -637,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/virtual-packs', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/virtual-packs', isAdminCombined, async (req: any, res) => {
     try {
       const packData = insertVirtualPackSchema.parse(req.body);
       const virtualPack = await storage.createVirtualPack(packData);
@@ -648,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/virtual-packs/:id', isAdmin, async (req: any, res) => {
+  app.patch('/api/admin/virtual-packs/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const packData = insertVirtualPackSchema.partial().parse(req.body);
@@ -660,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/virtual-packs/:id', isAdmin, async (req: any, res) => {
+  app.delete('/api/admin/virtual-packs/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       console.log(`Deleting virtual pack: ${id}`);
@@ -673,7 +673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/virtual-packs/:id/cards', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/virtual-packs/:id/cards', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const packCards = await storage.getVirtualPackCards(id);
@@ -684,7 +684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/virtual-packs/:id/cards', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/virtual-packs/:id/cards', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { cardIds, weights } = req.body;
@@ -706,7 +706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User management routes
-  app.post('/api/admin/users/:id/ban', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/users/:id/ban', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.banUser(id);
@@ -717,7 +717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/users/:id/credits', isAdmin, async (req: any, res) => {
+  app.patch('/api/admin/users/:id/credits', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { credits } = req.body;
@@ -735,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/users/:id/transactions', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/users/:id/transactions', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const transactions = await storage.getUserTransactions(id);
@@ -760,7 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Virtual pack pull rate routes
-  app.get('/api/admin/virtual-packs/:id/pull-rates', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/virtual-packs/:id/pull-rates', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const pullRates = await storage.getVirtualPackPullRates(id);
@@ -771,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/virtual-packs/:id/pull-rates', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/virtual-packs/:id/pull-rates', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { rates } = req.body;
@@ -797,7 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin system settings routes
-  app.get('/api/admin/system-settings', isAdmin, async (req: any, res) => {
+  app.get('/api/admin/system-settings', isAdminCombined, async (req: any, res) => {
     try {
       const settings = await storage.getAllSystemSettings();
       res.json(settings);
@@ -807,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/system-settings/:settingKey', isAdmin, async (req: any, res) => {
+  app.post('/api/admin/system-settings/:settingKey', isAdminCombined, async (req: any, res) => {
     try {
       const { settingKey } = req.params;
       const { settingValue } = req.body;
