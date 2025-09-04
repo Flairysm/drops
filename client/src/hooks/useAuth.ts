@@ -13,14 +13,9 @@ export function useAuth() {
     gcTime: 0, // No caching
   });
 
-  // Debug logging
-  console.log('🔍 useAuth state:', { user, isLoading, error });
-
   // If we get a 401 or any error, we're not authenticated, so stop loading
   const isActuallyLoading = isLoading && !error && !user;
   const isAuthenticated = !!user && !error;
-
-  console.log('🔍 useAuth computed:', { isActuallyLoading, isAuthenticated });
 
   return {
     user,

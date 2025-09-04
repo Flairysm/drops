@@ -45,7 +45,6 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  console.log('🔐 API Response:', { status: res.status, cookies: res.headers.get('set-cookie') });
 
   await throwIfResNotOk(res);
   return res;
@@ -77,17 +76,14 @@ export const getQueryFn: <T>(options: {
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      console.log('🔒 401 Unauthorized - returning null');
       return null;
     }
 
     if (!res.ok) {
-      console.log('❌ Response not ok:', res.status, res.statusText);
       throw new Error(`${res.status}: ${res.statusText}`);
     }
 
     const data = await res.json();
-    console.log('✅ Response data:', data);
     return data;
   };
 
