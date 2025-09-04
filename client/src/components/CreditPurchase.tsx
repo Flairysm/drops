@@ -25,7 +25,7 @@ export function CreditPurchase() {
   const purchaseMutation = useMutation({
     mutationFn: async (data: { amount: string; bundleType?: string }) => {
       const response = await apiRequest("POST", "/api/credits/purchase", data);
-      return response.json() as Promise<PurchaseResult>;
+      return await response.json() as PurchaseResult;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });

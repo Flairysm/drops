@@ -224,7 +224,7 @@ export function WheelGame() {
   const playGameMutation = useMutation({
     mutationFn: async (data: { gameType: string; betAmount: string; wheelResult?: string }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
-      return response.json() as Promise<GameResult>;
+      return await response.json() as GameResult;
     },
     onSuccess: (result) => {
       // Server result received, show popup immediately (animation is already complete)

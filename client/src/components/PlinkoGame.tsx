@@ -204,7 +204,7 @@ export function PlinkoGame() {
       plinkoResult?: string;
     }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
-      return response.json() as Promise<GameResult>;
+      return await response.json() as GameResult;
     },
     onSuccess: (result) => {
       setLastResult(result);

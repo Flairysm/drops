@@ -40,7 +40,7 @@ export function PackOpening({ packs }: PackOpeningProps) {
   const playGameMutation = useMutation({
     mutationFn: async (data: { gameType: string; betAmount: string }) => {
       const response = await apiRequest("POST", "/api/games/play", data);
-      return response.json() as Promise<GameResult>;
+      return await response.json() as GameResult;
     },
     onSuccess: (result) => {
       // Start opening animation
