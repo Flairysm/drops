@@ -140,6 +140,10 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
+  // Disabled toast notifications to prevent annoying popups
+  // Uncomment the code below to re-enable toast notifications
+  
+  /*
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -165,6 +169,14 @@ function toast({ ...props }: Toast) {
     id: id,
     dismiss,
     update,
+  }
+  */
+  
+  // Return empty object to prevent errors
+  return {
+    id: "disabled",
+    dismiss: () => {},
+    update: () => {},
   }
 }
 
