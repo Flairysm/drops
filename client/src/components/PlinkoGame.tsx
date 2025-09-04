@@ -205,8 +205,12 @@ export function PlinkoGame() {
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
 
-      // This mutation is no longer needed for Plinko - physics handles everything
-      console.log("Plinko mutation result (not used):", result);
+      console.log("Plinko pack assignment successful:", result);
+      
+      // Show pack assignment after successful API call
+      setTimeout(() => {
+        setShowPackAssigned(true);
+      }, 1000);
     },
     onError: (error: Error) => {
       toast({
@@ -494,13 +498,12 @@ export function PlinkoGame() {
             `Frontend physics result: ${actualOutcome} (bucket ${clampedIndex})`,
           );
 
-          // For Plinko, we don't need to call playGameMutation since credits are already deducted
-          // Just show the result directly
-          console.log("Plinko game completed with result:", actualOutcome);
-
-          setTimeout(() => {
-            setShowPackAssigned(true);
-          }, 1000);
+          // Send the result to backend for pack assignment
+          playGameMutation.mutate({
+            gameType: 'plinko',
+            betAmount: fixedPrice.toString(),
+            plinkoResult: actualOutcome,
+          });
         }
       }
 
