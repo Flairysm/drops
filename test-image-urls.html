@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Black Bolt Card Image URLs</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .card { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .card img { max-width: 200px; max-height: 300px; margin: 10px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Black Bolt Card Image URL Test</h1>
+    
+    <div class="card">
+        <h3>Black Bolt Portrait (D Tier)</h3>
+        <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=600&fit=crop&crop=face" 
+             alt="Black Bolt Portrait" 
+             onload="this.nextElementSibling.textContent='✅ Loaded successfully'"
+             onerror="this.nextElementSibling.textContent='❌ Failed to load'">
+        <div class="error"></div>
+    </div>
+    
+    <div class="card">
+        <h3>Inhuman Symbol (D Tier)</h3>
+        <img src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop" 
+             alt="Inhuman Symbol" 
+             onload="this.nextElementSibling.textContent='✅ Loaded successfully'"
+             onerror="this.nextElementSibling.textContent='❌ Failed to load'">
+        <div class="error"></div>
+    </div>
+    
+    <div class="card">
+        <h3>Attilan Cityscape (D Tier)</h3>
+        <img src="https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=400&h=600&fit=crop" 
+             alt="Attilan Cityscape" 
+             onload="this.nextElementSibling.textContent='✅ Loaded successfully'"
+             onerror="this.nextElementSibling.textContent='❌ Failed to load'">
+        <div class="error"></div>
+    </div>
+    
+    <div class="card">
+        <h3>Royal Chamber (D Tier)</h3>
+        <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=600&fit=crop" 
+             alt="Royal Chamber" 
+             onload="this.nextElementSibling.textContent='✅ Loaded successfully'"
+             onerror="this.nextElementSibling.textContent='❌ Failed to load'">
+        <div class="error"></div>
+    </div>
+    
+    <div class="card">
+        <h3>Fallback Image Test</h3>
+        <img src="/card-images/random-common-card.png" 
+             alt="Fallback Image" 
+             onload="this.nextElementSibling.textContent='✅ Fallback loaded successfully'"
+             onerror="this.nextElementSibling.textContent='❌ Fallback failed to load'">
+        <div class="error"></div>
+    </div>
+    
+    <script>
+        // Test if images are accessible
+        const testUrls = [
+            'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=600&fit=crop&crop=face',
+            'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=600&fit=crop',
+            'https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=400&h=600&fit=crop',
+            'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=600&fit=crop'
+        ];
+        
+        testUrls.forEach((url, index) => {
+            fetch(url, { mode: 'no-cors' })
+                .then(() => console.log(`URL ${index + 1} accessible`))
+                .catch(() => console.log(`URL ${index + 1} not accessible`));
+        });
+    </script>
+</body>
+</html>
