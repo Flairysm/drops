@@ -17,6 +17,9 @@ export function useAuth() {
   const isActuallyLoading = isLoading && !error && !user;
   const isAuthenticated = !!user && !error;
 
+  // Debug logging
+  console.log('🔍 useAuth state:', { user, isLoading, error, isAuthenticated });
+
   return {
     user,
     isLoading: isActuallyLoading,

@@ -36,6 +36,9 @@ export async function apiRequest(
   // Add Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('🔐 API Request with JWT:', { method, url: fullUrl, hasToken: true });
+  } else {
+    console.log('🔐 API Request without JWT:', { method, url: fullUrl, hasToken: false });
   }
   
   const res = await fetch(fullUrl, {
@@ -68,6 +71,9 @@ export const getQueryFn: <T>(options: {
     // Add Authorization header if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔍 Query with JWT:', { url: fullUrl, hasToken: true });
+    } else {
+      console.log('🔍 Query without JWT:', { url: fullUrl, hasToken: false });
     }
     
     const res = await fetch(fullUrl, {
