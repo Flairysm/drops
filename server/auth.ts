@@ -201,7 +201,9 @@ export function setupAuth(app: Express) {
           id: user.id, 
           username: user.username, 
           email: user.email 
-        } 
+        },
+        // Add session ID to response for debugging
+        sessionId: req.sessionID
       });
     } catch (error) {
       console.error("Login error:", error);
