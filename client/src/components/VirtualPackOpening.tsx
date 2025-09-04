@@ -420,6 +420,11 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                           src={card.imageUrl}
                           alt={card.name}
                           className="w-full flex-1 object-cover rounded-md"
+                          onError={(e) => {
+                            // Fallback to default image if the imageUrl fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/card-images/random-common-card.png";
+                          }}
                         />
                       ) : (
                         <div className={`w-full flex-1 rounded-md bg-gradient-to-br from-${tierColors[(card.tier) as keyof typeof tierColors]}-400 to-${tierColors[(card.tier) as keyof typeof tierColors]}-600 flex items-center justify-center`}>
