@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
+import { NavigationFooter } from "@/components/NavigationFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -551,6 +552,7 @@ export function MinesweeperGame() {
           </Card>
         </div>
       </main>
+      <NavigationFooter />
     </div>
   );
 }

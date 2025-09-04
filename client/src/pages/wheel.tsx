@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
+import { NavigationFooter } from "@/components/NavigationFooter";
 import { WheelGame } from "@/components/WheelGame";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,7 @@ export default function Wheel() {
           </Card>
         </div>
       </main>
+      <NavigationFooter />
     </div>
   );
 }
