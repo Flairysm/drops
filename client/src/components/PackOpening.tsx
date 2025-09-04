@@ -50,8 +50,8 @@ export function PackOpening({ packs }: PackOpeningProps) {
         setAnimationPhase("opened");
         setLastResult(result);
         
-        queryClient.invalidateQueries(["/api/auth/user"]);
-        queryClient.invalidateQueries(["/api/vault"]);
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
         
         const tierNames = {
           C: "Common",
