@@ -36,9 +36,12 @@ export async function apiRequest(
   // Add Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('🔐 JWT Token found:', token.substring(0, 20) + '...');
+  } else {
+    console.log('🔐 No JWT token found in localStorage');
   }
   
-  console.log('🔐 API Request:', { method, url: fullUrl, credentials: 'include', hasToken: !!token });
+  console.log('🔐 API Request:', { method, url: fullUrl, credentials: 'include', hasToken: !!token, headers });
   
   const res = await fetch(fullUrl, {
     method,
@@ -71,9 +74,12 @@ export const getQueryFn: <T>(options: {
     // Add Authorization header if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔍 JWT Token found for query:', token.substring(0, 20) + '...');
+    } else {
+      console.log('🔍 No JWT token found for query');
     }
     
-    console.log('🔍 Fetching:', fullUrl, { hasToken: !!token }); // Debug logging
+    console.log('🔍 Fetching:', fullUrl, { hasToken: !!token, headers }); // Debug logging
     
     const res = await fetch(fullUrl, {
       credentials: "include",

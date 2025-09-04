@@ -44,7 +44,10 @@ export default function Login() {
       // Store JWT token in localStorage if provided
       if (response.token) {
         localStorage.setItem('authToken', response.token);
-        console.log('🔐 JWT token stored in localStorage');
+        console.log('🔐 JWT token stored in localStorage:', response.token.substring(0, 20) + '...');
+        console.log('🔐 Full token length:', response.token.length);
+      } else {
+        console.log('🔐 No token in login response:', response);
       }
       
       toast({
