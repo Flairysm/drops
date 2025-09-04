@@ -89,18 +89,25 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
       
       try {
         setLoadingCards(true);
+        console.log("🔍 Loading pack cards for packId:", packId);
+        console.log("📚 All cards available:", allCards?.length || 0);
         const response = await apiRequest("GET", `/api/virtual-packs/${packId}/cards`);
         const packCardsData = await response.json();
+        console.log("📦 Pack cards response:", packCardsData);
         
         if (Array.isArray(packCardsData) && Array.isArray(allCards)) {
           const cardDetails = packCardsData.map((pc: any) => {
             // Match by cardId
             const card = allCards.find((c: any) => c.id === pc.cardId);
+            console.log(`🔗 Matching card ${pc.cardId}:`, card ? "Found" : "Not found");
             return card ? { ...card, weight: pc.weight } : null;
           }).filter(Boolean);
           
+          console.log("✅ Processed card details:", cardDetails);
+          console.log("📊 Total cards found:", cardDetails.length);
           setPackCards(cardDetails);
         } else {
+          console.log("❌ Missing data - packCardsData:", Array.isArray(packCardsData), "allCards:", Array.isArray(allCards));
           setPackCards([]);
         }
       } catch (error) {
