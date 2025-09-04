@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Game routes
-  app.post('/api/games/play', isAuthenticated, async (req: any, res) => {
+  app.post('/api/games/play', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { gameType, betAmount, plinkoResult, wheelResult } = req.body;
@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Minesweeper game endpoint
-  app.post('/api/games/minesweeper', isAuthenticated, async (req: any, res) => {
+  app.post('/api/games/minesweeper', isAuthenticatedCombined, async (req: any, res) => {
     console.log('Minesweeper endpoint called with:', { body: req.body, userId: req.user.id });
     try {
       const userId = req.user.id;
@@ -289,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Vault routes
-  app.get('/api/vault', isAuthenticated, async (req: any, res) => {
+  app.get('/api/vault', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const userCards = await storage.getUserCards(userId);
@@ -300,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/vault/refund', isAuthenticated, async (req: any, res) => {
+  app.post('/api/vault/refund', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { cardIds } = req.body;
@@ -340,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credits routes
-  app.post('/api/credits/purchase', isAuthenticated, async (req: any, res) => {
+  app.post('/api/credits/purchase', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { amount, bundleType } = req.body;
@@ -385,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credit deduction endpoint
-  app.post('/api/credits/deduct', isAuthenticated, async (req: any, res) => {
+  app.post('/api/credits/deduct', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { amount, reason } = req.body;
@@ -416,7 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Shipping routes
-  app.post('/api/shipping/request', isAuthenticated, async (req: any, res) => {
+  app.post('/api/shipping/request', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const requestData = insertShippingRequestSchema.parse({
@@ -850,7 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Notifications routes
-  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+  app.get('/api/notifications', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const notifications = await storage.getUserNotifications(userId);
@@ -861,7 +861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/notifications/:id/read', isAuthenticated, async (req, res) => {
+  app.patch('/api/notifications/:id/read', isAuthenticatedCombined, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.markNotificationRead(id);
@@ -873,7 +873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pack routes
-  app.get('/api/packs', isAuthenticated, async (req: any, res) => {
+  app.get('/api/packs', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const userPacks = await storage.getUserPacks(userId);
@@ -895,7 +895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/virtual-packs/:id/open', isAuthenticated, async (req: any, res) => {
+  app.post('/api/virtual-packs/:id/open', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { id } = req.params;
@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/packs/open/:packId', isAuthenticated, async (req: any, res) => {
+  app.post('/api/packs/open/:packId', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { packId } = req.params;
