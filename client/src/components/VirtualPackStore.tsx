@@ -100,6 +100,18 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
                   {pack.description}
                 </p>
               )}
+              
+              {/* Open Pack Button - Moved to top */}
+              <Button
+                onClick={() => handlePurchase(pack)}
+                disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
+                size="sm"
+                className="w-full bg-gradient-to-r from-primary to-accent sm:text-base text-sm sm:py-2 py-1.5 mt-4"
+                data-testid={`button-purchase-virtual-pack-${pack.id}`}
+              >
+                <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Open Pack Now
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-center space-x-2">
@@ -110,17 +122,6 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
                   8 Cards
                 </Badge>
               </div>
-
-              <Button
-                onClick={() => handlePurchase(pack)}
-                disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
-                size="sm"
-                className="w-full bg-gradient-to-r from-primary to-accent sm:text-base text-sm sm:py-2 py-1.5"
-                data-testid={`button-purchase-virtual-pack-${pack.id}`}
-              >
-                <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Open Pack
-              </Button>
 
               {user && parseFloat(user.credits || '0') < parseFloat(pack.price) && (
                 <p className="text-xs text-destructive text-center">

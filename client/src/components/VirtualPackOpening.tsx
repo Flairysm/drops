@@ -589,6 +589,11 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
                                       src={card.imageUrl} 
                                       alt={card.name}
                                       className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        // Fallback to default image if the imageUrl fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = "/card-images/random-common-card.png";
+                                      }}
                                     />
                                   ) : (
                                     <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center">
