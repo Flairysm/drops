@@ -365,7 +365,10 @@ export class DatabaseStorage implements IStorage {
   async getVirtualPackPullRates(virtualPackId: string): Promise<VirtualPackPullRate[]> {
     return await db.select()
       .from(virtualPackPullRates)
-      .where(eq(virtualPackPullRates.virtualPackId, virtualPackId));
+      .where(and(
+        eq(virtualPackPullRates.virtualPackId, virtualPackId),
+        eq(virtualPackPullRates.isActive, true)
+      ));
   }
 
   async setVirtualPackPullRates(virtualPackId: string, rates: { cardTier: string; probability: number }[], updatedBy?: string): Promise<void> {
@@ -398,7 +401,10 @@ export class DatabaseStorage implements IStorage {
       // Get virtual pack pull rates (tier-based probabilities)
       const pullRates = await tx.select()
         .from(virtualPackPullRates)
-        .where(eq(virtualPackPullRates.virtualPackId, virtualPackId));
+        .where(and(
+          eq(virtualPackPullRates.virtualPackId, virtualPackId),
+          eq(virtualPackPullRates.isActive, true)
+        ));
 
       if (pullRates.length === 0) {
         throw new Error('No pull rates configured for this virtual pack');
