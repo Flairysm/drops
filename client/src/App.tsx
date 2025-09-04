@@ -20,7 +20,7 @@ import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
-function Router() {
+function RouterComponent() {
   const { isAuthenticated, isLoading } = useAuth();
   
   // Debug logging
@@ -97,7 +97,9 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <Router>
+            <RouterComponent />
+          </Router>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
