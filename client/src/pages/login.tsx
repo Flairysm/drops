@@ -36,7 +36,9 @@ export default function Login() {
       console.log('🔐 Attempting login with:', data.email);
       const response = await apiRequest("POST", "/api/auth/login", data);
       console.log('🔐 Login response:', response);
-      return response;
+      const responseData = await response.json();
+      console.log('🔐 Login response data:', responseData);
+      return responseData;
     },
     onSuccess: (response) => {
       console.log('🔐 Login mutation success:', response);
