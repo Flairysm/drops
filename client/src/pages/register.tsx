@@ -37,12 +37,17 @@ export default function Register() {
 
   const handleSubmit = async (data: RegistrationData) => {
     try {
+      console.log('🚀 Starting registration for:', data.email);
+      
       const { data: signUpData, error } = await signUp(data.email, data.password, {
         username: data.username,
         phoneNumber: data.phoneNumber
       });
 
+      console.log('📧 Registration result:', { signUpData, error });
+
       if (error) {
+        console.error('❌ Registration error:', error);
         toast({
           title: "Registration Failed",
           description: error.message || "Something went wrong. Please try again.",
@@ -53,24 +58,35 @@ export default function Register() {
 
       // Check if email verification is required
       if (signUpData.user && !signUpData.user.email_confirmed_at) {
+        console.log('📧 Email verification required, redirecting to email-sent');
         // Store the email for the email sent page
         localStorage.setItem('pendingVerificationEmail', data.email);
         
-        // Redirect immediately to email sent page
-        setLocation("/email-sent");
+        // Add a small delay to ensure the redirect happens
+        setTimeout(() => {
+          console.log('🚀 Redirecting to /email-sent');
+          setLocation("/email-sent");
+        }, 100);
       } else if (signUpData.user && signUpData.user.email_confirmed_at) {
+        console.log('✅ Email already verified, redirecting to home');
         // Email already verified, redirect to home
         toast({
           title: "Account Created!",
           description: "Welcome to Drops!",
         });
-        setLocation("/");
+        setTimeout(() => {
+          setLocation("/");
+        }, 100);
       } else {
+        console.log('🔄 Fallback: redirecting to email-sent');
         // Fallback
         localStorage.setItem('pendingVerificationEmail', data.email);
-        setLocation("/email-sent");
+        setTimeout(() => {
+          setLocation("/email-sent");
+        }, 100);
       }
     } catch (error: any) {
+      console.error('💥 Registration exception:', error);
       toast({
         title: "Registration Failed",
         description: error.message || "Something went wrong. Please try again.",

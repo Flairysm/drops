@@ -23,10 +23,10 @@ import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function RouterComponent() {
-  const { isAuthenticated, loading } = useSupabaseAuth();
+  const { isAuthenticated, loading, user } = useSupabaseAuth();
   
   // Debug logging
-  console.log('🔍 Router state:', { isAuthenticated, loading });
+  console.log('🔍 Router state:', { isAuthenticated, loading, user: user?.email, emailConfirmed: user?.email_confirmed_at });
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);
