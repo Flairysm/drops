@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { CreditCard, Coins, Zap, Star, Lock } from "lucide-react";
 import { Link } from "wouter";
 
@@ -20,7 +20,7 @@ export function CreditPurchase() {
   const [customAmount, setCustomAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useSupabaseAuth();
 
   const purchaseMutation = useMutation({
     mutationFn: async (data: { amount: string; bundleType?: string }) => {
