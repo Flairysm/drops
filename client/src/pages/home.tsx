@@ -58,7 +58,7 @@ export default function Home() {
         </div>
         
         {/* Hero Section - Futuristic Digital Artwork */}
-        <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        <section className="relative min-h-screen flex items-center overflow-hidden">
             {/* Hero Background Image */}
             <div 
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -67,42 +67,46 @@ export default function Home() {
                 backgroundAttachment: 'fixed'
               }}
             >
-              {/* Dark overlay for text readability */}
-              <div className="absolute inset-0 bg-black/40"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/40"></div>
+              {/* Enhanced dark overlay for better text readability */}
+              <div className="absolute inset-0 bg-black/50"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-black/60"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40"></div>
             </div>
             
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 w-full">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center min-h-[80vh]">
                 {/* Content */}
-                <div className="text-center lg:text-left">
+                <div className="text-center lg:text-left space-y-8 lg:space-y-10">
                   {/* Main Title */}
-                  <h1 className="font-gaming font-black text-5xl md:text-7xl lg:text-8xl mb-6 text-white drop-shadow-2xl">
-                    Drops
-                  </h1>
+                  <div className="space-y-4">
+                    <h1 className="font-gaming font-black text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] text-white drop-shadow-2xl leading-[0.9] tracking-tight">
+                      Drops
+                    </h1>
+                    <div className="w-24 h-1 bg-gradient-to-r from-accent to-primary mx-auto lg:mx-0 rounded-full"></div>
+                  </div>
                   
                   {/* Subtitle */}
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight drop-shadow-xl">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight drop-shadow-xl max-w-4xl">
                     Experience TCG collecting in a new way
                   </h2>
                   
                   {/* Description */}
-                  <p className="text-lg md:text-xl text-gray-200 mb-6 leading-relaxed max-w-2xl drop-shadow-lg">
+                  <p className="text-xl sm:text-2xl md:text-3xl text-gray-100 leading-relaxed max-w-3xl font-light">
                     Play TCG themed minigames, open premium packs and collect rare cards
                   </p>
                   
                   {/* Free Credits Offer */}
-                  <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-accent/20 to-primary/20 border border-accent/30 rounded-full px-6 py-3 mb-8 backdrop-blur-sm">
-                    <Star className="w-5 h-5 text-accent" />
-                    <span className="text-lg font-semibold text-accent tracking-wide">Sign up now and get 30 credit free</span>
+                  <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-accent/25 to-primary/25 border-2 border-accent/40 rounded-2xl px-8 py-4 backdrop-blur-md shadow-2xl">
+                    <Star className="w-6 h-6 text-accent animate-pulse" />
+                    <span className="text-xl font-bold text-accent tracking-wide">Sign up now and get 30 credit free</span>
                   </div>
                   
                   {/* CTA Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                  <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start pt-4">
                     <Link href="/register">
                       <Button
                         size="lg"
-                        className="bg-gradient-to-r from-accent to-primary hover:from-accent/90 hover:to-primary/90 text-white border-0 rounded-lg px-8 py-4 text-lg font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 backdrop-blur-sm w-full sm:w-auto"
+                        className="bg-gradient-to-r from-accent to-primary hover:from-accent/90 hover:to-primary/90 text-white border-0 rounded-2xl px-12 py-6 text-xl font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 backdrop-blur-sm w-full sm:w-auto transform hover:scale-105 hover:-translate-y-1"
                       >
                         Create Account
                       </Button>
@@ -111,7 +115,7 @@ export default function Home() {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="bg-transparent border-2 border-white/30 hover:border-white/50 text-white hover:bg-white/10 rounded-lg px-8 py-4 text-lg font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 backdrop-blur-sm w-full sm:w-auto"
+                        className="bg-transparent border-2 border-white/40 hover:border-white/60 text-white hover:bg-white/10 rounded-2xl px-12 py-6 text-xl font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 backdrop-blur-sm w-full sm:w-auto transform hover:scale-105 hover:-translate-y-1"
                       >
                         Login
                       </Button>
@@ -119,19 +123,51 @@ export default function Home() {
                   </div>
                 </div>
                 
+                {/* Right side visual element */}
+                <div className="hidden lg:flex items-center justify-center">
+                  <div className="relative">
+                    {/* Floating card elements */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl blur-3xl scale-150"></div>
+                    <div className="relative bg-gradient-to-br from-primary/10 to-accent/10 backdrop-blur-md border border-primary/30 rounded-3xl p-12 shadow-2xl">
+                      <div className="text-center space-y-6">
+                        <div className="w-24 h-24 bg-gradient-to-br from-accent/30 to-primary/30 rounded-2xl flex items-center justify-center mx-auto backdrop-blur-sm border border-accent/40">
+                          <Package className="w-12 h-12 text-accent" />
+                        </div>
+                        <h3 className="text-3xl font-bold text-white drop-shadow-lg">
+                          Premium Experience
+                        </h3>
+                        <p className="text-gray-200 text-lg leading-relaxed drop-shadow-md">
+                          Join thousands of collectors in the ultimate digital TCG adventure
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
           
         
-      {/* Simple Footer */}
-      <footer className="bg-secondary/20 border-t border-border py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-muted-foreground">
-              &copy; 2025 Drops. Built for collectors, by collectors.
-            </p>
+      {/* Enhanced Footer */}
+      <footer className="bg-gradient-to-b from-black/80 to-black border-t border-white/10 py-16">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="text-center space-y-6">
+            <div className="space-y-4">
+              <h3 className="font-gaming font-bold text-2xl sm:text-3xl">
+                <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                  DROPS
+                </span>
+              </h3>
+              <p className="text-gray-300 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
+                The ultimate digital TCG experience with transparent odds and exciting minigames
+              </p>
+            </div>
+            <div className="pt-6 border-t border-white/10">
+              <p className="text-gray-400 text-sm sm:text-base">
+                &copy; 2025 Drops. Built for collectors, by collectors.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
@@ -174,98 +210,100 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="pt-20 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Credits Header */}
-          <div className="flex items-center justify-between mb-6 sm:mb-8">
-            <div>
-              <h1 className="font-gaming font-bold text-xl sm:text-3xl mb-2">
+      <main className="pt-24 pb-16">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          {/* Enhanced Credits Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 sm:mb-16 space-y-6 sm:space-y-0">
+            <div className="space-y-3">
+              <h1 className="font-gaming font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl">
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   Hey {userData?.username || userData?.firstName || "Player"}! 👋
                 </span>
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">Time to win some cards</p>
+              <p className="text-muted-foreground text-lg sm:text-xl md:text-2xl font-light">Time to win some cards</p>
             </div>
-            <Card className="gaming-card">
-              <CardContent className="p-2 sm:p-4 flex items-center space-x-2 sm:space-x-3">
-                <Coins className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-500" />
+            <Card className="gaming-card border-2 border-yellow-200/20 bg-gradient-to-br from-yellow-50/10 to-yellow-100/5">
+              <CardContent className="p-6 sm:p-8 flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Coins className="w-6 h-6 text-white" />
+                </div>
                 <div className="text-right">
-                  <div className="text-lg sm:text-2xl font-bold text-yellow-500" data-testid="text-user-credits">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-500" data-testid="text-user-credits">
                     {userData?.credits || "0"}
                   </div>
-                  <div className="text-xs text-muted-foreground">Credits</div>
+                  <div className="text-sm sm:text-base text-muted-foreground font-medium">Credits</div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Games Collection - FIRST PRIORITY */}
-          <section className="mb-12">
-            <div className="flex items-center justify-between mb-6 sm:mb-8">
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
-                  <Gamepad2 className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+          {/* Enhanced Games Collection - FIRST PRIORITY */}
+          <section className="mb-16 sm:mb-20">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 sm:mb-16 space-y-6 sm:space-y-0">
+              <div className="flex items-center space-x-4 sm:space-x-6">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-xl">
+                  <Gamepad2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <div>
-                  <h2 className="font-gaming font-bold text-xl sm:text-3xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <div className="space-y-2">
+                  <h2 className="font-gaming font-bold text-3xl sm:text-4xl md:text-5xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                     Quick Play
                   </h2>
-                  <p className="text-muted-foreground text-sm sm:text-base">Choose your adventure and win amazing cards</p>
+                  <p className="text-muted-foreground text-lg sm:text-xl md:text-2xl font-light">Choose your adventure and win amazing cards</p>
                 </div>
               </div>
-              <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 dark:from-orange-900 dark:to-red-900 dark:text-orange-200 px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium">
+              <Badge variant="secondary" className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 dark:from-orange-900 dark:to-red-900 dark:text-orange-200 px-6 py-3 text-base sm:text-lg font-bold shadow-lg">
                 🔥 All Games Available
               </Badge>
             </div>
 
             {/* Enhanced grid layout for all 3 games */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 mb-12 sm:mb-16">
               {games.map((game, index) => (
-                <Card key={index} className="gaming-card hover:glow-effect transition-all duration-300 transform hover:scale-[1.05] hover:-translate-y-2 group border-2 hover:border-primary/50 relative overflow-hidden">
+                <Card key={index} className="gaming-card hover:glow-effect transition-all duration-300 transform hover:scale-[1.05] hover:-translate-y-3 group border-2 hover:border-primary/50 relative overflow-hidden shadow-2xl">
                   {/* Popular badge for featured games */}
                   {game.popular && (
-                    <div className="absolute top-4 right-4 z-10">
-                      <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-lg">
-                        <Star className="w-3 h-3 mr-1" />
+                    <div className="absolute top-6 right-6 z-10">
+                      <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-xl px-4 py-2 text-sm font-bold">
+                        <Star className="w-4 h-4 mr-2" />
                         Popular
                       </Badge>
                     </div>
                   )}
                   
                   {/* Animated background gradient */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-5 group-hover:opacity-15 transition-opacity duration-300`}></div>
                   
-                  <CardContent className="p-4 sm:p-6 relative">
-                    <div className="text-center mb-4 sm:mb-6">
-                      <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-2xl sm:rounded-3xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300 mb-4 group-hover:scale-110`}>
+                  <CardContent className="p-8 sm:p-10 relative">
+                    <div className="text-center mb-8">
+                      <div className={`w-20 h-20 sm:w-28 sm:h-28 mx-auto rounded-3xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-2xl group-hover:shadow-3xl transition-all duration-300 mb-6 group-hover:scale-110`}>
                         {game.icon}
                       </div>
-                      <h3 className="font-gaming font-bold text-lg sm:text-2xl mb-2 group-hover:text-primary transition-colors">
+                      <h3 className="font-gaming font-bold text-2xl sm:text-3xl mb-4 group-hover:text-primary transition-colors">
                         {game.name}
                       </h3>
-                      <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-4">
+                      <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-6 font-light">
                         {game.description}
                       </p>
                     </div>
                     
-                    <div className="space-y-2 sm:space-y-4">
+                    <div className="space-y-6">
                       <div className="flex items-center justify-center">
                         <Badge 
                           variant="outline" 
-                          className={`text-sm sm:text-lg px-2 sm:px-4 py-1 sm:py-2 font-bold border-2 bg-gradient-to-r ${game.color} text-white border-transparent group-hover:shadow-lg transition-all`}
+                          className={`text-base sm:text-xl px-6 py-3 font-bold border-2 bg-gradient-to-r ${game.color} text-white border-transparent group-hover:shadow-xl transition-all rounded-xl`}
                         >
-                          <Coins className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                          <Coins className="w-5 h-5 mr-3" />
                           {game.cost} Credits
                         </Badge>
                       </div>
                       
                       <Link href={game.route} className="block">
                         <Button 
-                          size="default"
-                          className={`w-full bg-gradient-to-r ${game.color} hover:glow-effect transition-all duration-300 text-sm sm:text-lg py-2 sm:py-3 font-bold shadow-lg hover:shadow-xl transform hover:scale-105`}
+                          size="lg"
+                          className={`w-full bg-gradient-to-r ${game.color} hover:glow-effect transition-all duration-300 text-lg sm:text-xl py-4 sm:py-5 font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 rounded-xl`}
                           data-testid={`button-play-${game.name.toLowerCase().replace(/\s+/g, '-')}`}
                         >
-                          <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                          <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-3" />
                           {game.name === "Black Bolt" ? "Open Packs" : "Play Now"}
                         </Button>
                       </Link>
@@ -276,39 +314,42 @@ export default function Home() {
             </div>
 
             {/* Enhanced call-to-action */}
-            <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-legendary/10 rounded-xl sm:rounded-2xl p-4 sm:p-8 text-center border border-primary/20">
-              <div className="mb-3 sm:mb-4">
-                <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 mx-auto text-primary mb-2 sm:mb-3" />
-                <h3 className="font-gaming font-bold text-lg sm:text-2xl mb-2">Ready for More Action?</h3>
-                <p className="text-muted-foreground text-sm sm:text-lg">
+            <div className="bg-gradient-to-r from-primary/15 via-accent/10 to-legendary/15 rounded-3xl p-8 sm:p-12 text-center border-2 border-primary/30 shadow-2xl">
+              <div className="mb-8">
+                <TrendingUp className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-primary mb-6" />
+                <h3 className="font-gaming font-bold text-2xl sm:text-3xl md:text-4xl mb-4">Ready for More Action?</h3>
+                <p className="text-muted-foreground text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-light">
                   Explore additional game modes and special events in our games lobby
                 </p>
               </div>
               <Link href="/play">
                 <Button 
-                  size="default" 
+                  size="lg" 
                   variant="outline"
-                  className="text-sm sm:text-lg px-6 sm:px-10 py-2 sm:py-4 border-2 border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-105 font-bold"
+                  className="text-lg sm:text-xl px-10 sm:px-12 py-4 sm:py-5 border-2 border-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-105 font-bold rounded-xl shadow-xl"
                   data-testid="button-view-all-games"
                 >
-                  <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                  <Gamepad2 className="w-5 h-5 sm:w-6 sm:h-6 mr-3" />
                   Explore Games Lobby
                 </Button>
               </Link>
             </div>
           </section>
 
-          {/* Get More Credits - SECOND PRIORITY */}
-          <section className="mb-12">
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-6">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Coins className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
+          {/* Enhanced Get More Credits - SECOND PRIORITY */}
+          <section className="mb-16 sm:mb-20">
+            <div className="flex items-center space-x-4 sm:space-x-6 mb-8 sm:mb-12">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-xl">
+                <Coins className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h2 className="font-gaming font-bold text-xl sm:text-3xl">Get More Credits</h2>
+              <div className="space-y-2">
+                <h2 className="font-gaming font-bold text-3xl sm:text-4xl md:text-5xl bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">Get More Credits</h2>
+                <p className="text-muted-foreground text-lg sm:text-xl font-light">Purchase credits to keep playing and winning</p>
+              </div>
             </div>
             
-            <Card className="gaming-card border-2 border-green-200 dark:border-green-700">
-              <CardContent className="p-4 sm:p-8">
+            <Card className="gaming-card border-2 border-green-200/30 dark:border-green-700/30 bg-gradient-to-br from-green-50/5 to-emerald-50/5 shadow-2xl">
+              <CardContent className="p-8 sm:p-12">
                 <CreditPurchase />
               </CardContent>
             </Card>
@@ -320,13 +361,25 @@ export default function Home() {
       {/* Navigation Footer */}
       <NavigationFooter />
       
-      {/* Footer */}
-      <footer className="bg-secondary/20 border-t border-border py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-muted-foreground">
-              &copy; 2025 Drops. Built for collectors, by collectors.
-            </p>
+      {/* Enhanced Footer */}
+      <footer className="bg-gradient-to-b from-black/80 to-black border-t border-white/10 py-16">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="text-center space-y-6">
+            <div className="space-y-4">
+              <h3 className="font-gaming font-bold text-2xl sm:text-3xl">
+                <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                  DROPS
+                </span>
+              </h3>
+              <p className="text-gray-300 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
+                The ultimate digital TCG experience with transparent odds and exciting minigames
+              </p>
+            </div>
+            <div className="pt-6 border-t border-white/10">
+              <p className="text-gray-400 text-sm sm:text-base">
+                &copy; 2025 Drops. Built for collectors, by collectors.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
