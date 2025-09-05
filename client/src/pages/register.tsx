@@ -16,7 +16,7 @@ const registrationSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be at most 20 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().min(1, "Phone number is required"),
 });
 
 type RegistrationData = z.infer<typeof registrationSchema>;
@@ -39,12 +39,13 @@ export default function Register() {
     mutationFn: async (data: RegistrationData) => {
       return await apiRequest("POST", "/api/auth/register", data);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
-        title: "Welcome to Drops!",
-        description: "Your account has been created successfully. You've been given 50 credits to get started!",
+        title: "Account Created!",
+        description: "Please check your email to verify your account before logging in.",
       });
-      setLocation("/");
+      // Redirect to a verification page or show verification instructions
+      setLocation("/verify-email");
     },
     onError: (error: any) => {
       toast({
@@ -115,7 +116,7 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phoneNumber" className="text-gray-200">Phone Number (Optional)</Label>
+              <Label htmlFor="phoneNumber" className="text-gray-200">Phone Number</Label>
               <Input
                 id="phoneNumber"
                 type="tel"
@@ -123,6 +124,7 @@ export default function Register() {
                 {...form.register("phoneNumber")}
                 className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
                 placeholder="+60 12-345 6789"
+                required
               />
               {form.formState.errors.phoneNumber && (
                 <p className="text-red-400 text-sm">{form.formState.errors.phoneNumber.message}</p>

@@ -96,8 +96,8 @@ export default function Home() {
                   </p>
                   
                   {/* Free Credits Offer */}
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
-                    Sign up now and get 30 credits free
+                  <div className="text-xl sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+                    30 FREE CREDITS FOR NEW USERS
                   </div>
                   
                   {/* CTA Buttons */}

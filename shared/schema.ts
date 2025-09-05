@@ -41,8 +41,18 @@ export const users = pgTable("users", {
   totalSpent: decimal("total_spent", { precision: 10, scale: 2 }).default("0.00"),
   isBanned: boolean("is_banned").default(false),
   isSuspended: boolean("is_suspended").default(false),
+  isEmailVerified: boolean("is_email_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email verification tokens table
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email").notNull(),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Card definitions
@@ -336,13 +346,23 @@ export const registrationSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be at most 20 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().min(1, "Phone number is required"),
 });
 
 // Login schema
 export const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
+});
+
+// Email verification schemas
+export const emailVerificationSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+export const verifyEmailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  token: z.string().min(1, "Verification token is required"),
 });
 
 export const insertCardSchema = createInsertSchema(cards).omit({
