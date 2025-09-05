@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { storage } from './storage';
 import { registrationSchema, loginSchema, emailVerificationSchema, verifyEmailSchema } from '@shared/schema';
+import { emailService } from './emailService';
 
 const SALT_ROUNDS = 12;
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -114,8 +115,16 @@ export function setupAuth(app: Express) {
         expiresAt,
       });
 
-      // TODO: Send actual email here
-      // For now, we'll just log the token for development
+      // Send verification email
+      try {
+        await emailService.sendVerificationEmail(email, token);
+        console.log(`✅ Verification email sent to ${email}`);
+      } catch (error) {
+        console.error(`❌ Failed to send verification email to ${email}:`, error);
+        // Don't fail registration if email sending fails
+      }
+      
+      // Also log for development
       console.log(`📧 Email verification token for ${email}: ${token}`);
       console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${token}&email=${encodeURIComponent(email)}`);
 
@@ -288,8 +297,16 @@ export function setupAuth(app: Express) {
         expiresAt,
       });
 
-      // TODO: Send actual email here
-      // For now, we'll just log the token for development
+      // Send verification email
+      try {
+        await emailService.sendVerificationEmail(email, token);
+        console.log(`✅ Verification email sent to ${email}`);
+      } catch (error) {
+        console.error(`❌ Failed to send verification email to ${email}:`, error);
+        // Don't fail registration if email sending fails
+      }
+      
+      // Also log for development
       console.log(`📧 Email verification token for ${email}: ${token}`);
       console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${token}&email=${encodeURIComponent(email)}`);
 
