@@ -40,12 +40,18 @@ export default function Register() {
       return await apiRequest("POST", "/api/auth/register", data);
     },
     onSuccess: (data: any) => {
+      // Store email in localStorage for verification page
+      if (data.user?.email) {
+        localStorage.setItem('pendingVerificationEmail', data.user.email);
+      }
+      
       toast({
         title: "Account Created!",
         description: "Please check your email to verify your account before logging in.",
       });
-      // Redirect to a verification page or show verification instructions
-      setLocation("/verify-email");
+      
+      // Redirect to verification page with email parameter
+      setLocation(`/verify-email?email=${encodeURIComponent(data.user?.email || '')}`);
     },
     onError: (error: any) => {
       toast({

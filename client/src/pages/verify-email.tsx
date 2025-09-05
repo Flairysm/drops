@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -12,9 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Mail, CheckCircle } from "lucide-react";
 
-// Email verification schema
+// Email verification schema - only token required
 const emailVerificationSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
   token: z.string().min(1, "Verification token is required"),
 });
 
@@ -24,20 +23,42 @@ export default function VerifyEmail() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isVerified, setIsVerified] = useState(false);
+  const [email, setEmail] = useState<string>("");
   
   const form = useForm<EmailVerificationData>({
     resolver: zodResolver(emailVerificationSchema),
     defaultValues: {
-      email: "",
       token: "",
     },
   });
 
+  // Get email from URL parameters or localStorage
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+    const emailFromStorage = localStorage.getItem('pendingVerificationEmail');
+    
+    if (emailFromUrl) {
+      setEmail(emailFromUrl);
+    } else if (emailFromStorage) {
+      setEmail(emailFromStorage);
+    }
+  }, []);
+
   const verifyMutation = useMutation({
     mutationFn: async (data: EmailVerificationData) => {
-      return await apiRequest("POST", "/api/auth/verify-email", data);
+      if (!email) {
+        throw new Error("Email not found. Please try registering again.");
+      }
+      return await apiRequest("POST", "/api/auth/verify-email", {
+        email,
+        token: data.token,
+      });
     },
     onSuccess: () => {
+      // Clean up localStorage
+      localStorage.removeItem('pendingVerificationEmail');
+      
       toast({
         title: "Email Verified!",
         description: "Your email has been verified successfully. You can now log in.",
@@ -57,8 +78,11 @@ export default function VerifyEmail() {
   });
 
   const resendMutation = useMutation({
-    mutationFn: async (data: { email: string }) => {
-      return await apiRequest("POST", "/api/auth/send-verification", data);
+    mutationFn: async () => {
+      if (!email) {
+        throw new Error("Email not found. Please try registering again.");
+      }
+      return await apiRequest("POST", "/api/auth/send-verification", { email });
     },
     onSuccess: () => {
       toast({
@@ -80,10 +104,7 @@ export default function VerifyEmail() {
   };
 
   const onResendEmail = () => {
-    const email = form.getValues("email");
-    if (email) {
-      resendMutation.mutate({ email });
-    }
+    resendMutation.mutate();
   };
 
   if (isVerified) {
@@ -113,34 +134,28 @@ export default function VerifyEmail() {
           </div>
           <CardTitle className="text-3xl font-gaming text-blue-400">Verify Your Email</CardTitle>
           <CardDescription className="text-gray-300">
-            Enter your email and verification token to complete registration
+            {email ? `Enter the verification code sent to ${email}` : "Enter your verification code to complete registration"}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {!email && (
+            <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+              <p className="text-yellow-300 text-sm">
+                Email not found. Please try registering again or check the verification link in your email.
+              </p>
+            </div>
+          )}
+          
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-200">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                data-testid="input-email"
-                {...form.register("email")}
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
-                placeholder="your@email.com"
-              />
-              {form.formState.errors.email && (
-                <p className="text-red-400 text-sm">{form.formState.errors.email.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="token" className="text-gray-200">Verification Token</Label>
+              <Label htmlFor="token" className="text-gray-200">Verification Code</Label>
               <Input
                 id="token"
                 data-testid="input-token"
                 {...form.register("token")}
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
-                placeholder="Enter verification token from email"
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 text-center text-lg tracking-widest"
+                placeholder="Enter 6-digit code"
+                maxLength={32}
               />
               {form.formState.errors.token && (
                 <p className="text-red-400 text-sm">{form.formState.errors.token.message}</p>
