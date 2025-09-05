@@ -9,7 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export function Navigation() {
-  const { user, isAuthenticated } = useSupabaseAuth();
+  const { user, isAuthenticated, signOut } = useSupabaseAuth();
   // TODO: Implement admin check with Supabase
   const isAdmin = false;
   const { theme, toggleTheme } = useTheme();
@@ -24,33 +24,35 @@ export function Navigation() {
     enabled: isAuthenticated,
   });
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/auth/logout");
-    },
-    onSuccess: () => {
-      // Clear JWT token from localStorage
-      localStorage.removeItem('authToken');
-      console.log('🔐 JWT token cleared from localStorage');
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut();
       
-      queryClient.clear(); // Clear all cached data
+      if (error) {
+        toast({
+          title: "Logout failed",
+          description: error.message || "Something went wrong.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Clear any cached data
+      queryClient.clear();
+      localStorage.removeItem('pendingVerificationEmail');
+      
       toast({
         title: "Logged out",
         description: "You've been logged out successfully.",
       });
       setLocation("/");
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
       toast({
         title: "Logout failed",
         description: error.message || "Something went wrong.",
         variant: "destructive",
       });
-    },
-  });
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
+    }
   };
 
   const navItems = [
@@ -108,7 +110,7 @@ export function Navigation() {
                 <div className="gaming-card px-4 py-2 rounded-lg" data-testid="display-credits">
                   <span className="text-sm text-muted-foreground">Credits:</span>
                   <span className="font-bold text-accent ml-2">
-                    {(userData as any)?.credits || "0.00"}
+                    {user?.user_metadata?.credits || (userData as any)?.credits || "0.00"}
                   </span>
                 </div>
 
@@ -120,15 +122,14 @@ export function Navigation() {
                     className="w-8 h-8 rounded-full border-2 border-primary"
                     data-testid="img-avatar"
                   />
-                  <span data-testid="text-username">{(user as any)?.username || (userData as any)?.username || "Player"}</span>
+                  <span data-testid="text-username">{user?.user_metadata?.username || (user as any)?.username || (userData as any)?.username || "Player"}</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleLogout}
-                    disabled={logoutMutation.isPending}
                     data-testid="button-logout"
                   >
-                    {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                    Logout
                   </Button>
                 </div>
               </>
@@ -191,7 +192,7 @@ export function Navigation() {
                 <div className="gaming-card px-4 py-2 rounded-lg">
                   <span className="text-sm text-muted-foreground">Credits:</span>
                   <span className="font-bold text-accent ml-2">
-                    {(userData as any)?.credits || "0.00"}
+                    {user?.user_metadata?.credits || (userData as any)?.credits || "0.00"}
                   </span>
                 </div>
               )}
@@ -211,10 +212,9 @@ export function Navigation() {
                     variant="ghost"
                     size="sm"
                     onClick={handleLogout}
-                    disabled={logoutMutation.isPending}
                     data-testid="button-mobile-logout"
                   >
-                    {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                    Logout
                   </Button>
                 ) : (
                   <div className="space-x-2">
