@@ -2,9 +2,9 @@
 
 Please save your futuristic digital artwork image as:
 
-**Filename:** `futuristic-cards-hero.jpg`
+**Filename:** `futuristic-cards-hero.png`
 
-**Location:** `/client/public/assets/hero/futuristic-cards-hero.jpg`
+**Location:** `/client/public/assets/hero/futuristic-cards-hero.png`
 
 ## Image Specifications:
 - **Format:** JPG or PNG
