@@ -63,34 +63,43 @@ export default function Home() {
         </div>
         
         <main className="pt-20 relative z-10">
-          {/* Hero Section - Gaming Style */}
-          <section className="relative min-h-[80vh] flex items-center">
-            {/* Background with gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-legendary/20"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent"></div>
+          {/* Hero Section - Futuristic Digital Artwork */}
+          <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+            {/* Hero Background Image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: "url('/assets/hero/futuristic-cards-hero.jpg')",
+                backgroundAttachment: 'fixed'
+              }}
+            >
+              {/* Dark overlay for text readability */}
+              <div className="absolute inset-0 bg-black/40"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/40"></div>
+            </div>
             
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 {/* Content */}
                 <div className="text-center lg:text-left">
                   {/* Featured Badge */}
-                  <div className="inline-flex items-center space-x-2 bg-accent/20 border border-accent/30 rounded-full px-4 py-2 mb-6">
+                  <div className="inline-flex items-center space-x-2 bg-accent/20 border border-accent/30 rounded-full px-4 py-2 mb-6 backdrop-blur-sm">
                     <Star className="w-4 h-4 text-accent" />
                     <span className="text-sm font-semibold text-accent tracking-wide">FEATURED</span>
                   </div>
                   
                   {/* Main Title */}
-                  <h1 className="font-gaming font-black text-4xl md:text-6xl lg:text-7xl mb-6 text-white">
+                  <h1 className="font-gaming font-black text-4xl md:text-6xl lg:text-7xl mb-6 text-white drop-shadow-2xl">
                     OUR GAMES
                   </h1>
                   
                   {/* Event Title */}
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight">
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight drop-shadow-xl">
                     DROPS TCG SHOWDOWN - THE CARDS AWAIT
                   </h2>
                   
                   {/* Description */}
-                  <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed max-w-2xl">
+                  <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed max-w-2xl drop-shadow-lg">
                     Play exciting minigames, open premium packs, collect rare cards, or just chill with the TCG community. 
                     Experience transparent odds and unlimited vault storage.
                   </p>
@@ -99,7 +108,7 @@ export default function Home() {
                   <Link href="/login">
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-accent to-primary hover:from-accent/90 hover:to-primary/90 text-white border-0 rounded-lg px-8 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
+                      className="bg-gradient-to-r from-accent to-primary hover:from-accent/90 hover:to-primary/90 text-white border-0 rounded-lg px-8 py-4 text-lg font-semibold shadow-2xl hover:shadow-3xl transition-all duration-300 backdrop-blur-sm"
                       data-testid="button-more-info"
                     >
                       More Info
@@ -107,15 +116,22 @@ export default function Home() {
                   </Link>
                 </div>
                 
-                {/* Hero Image/Visual */}
+                {/* Right side - Additional content or visual elements */}
                 <div className="relative">
-                  <div className="bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl p-8 backdrop-blur-sm border border-primary/30 shadow-2xl">
-                    <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl flex items-center justify-center">
-                      {/* Placeholder for hero image */}
+                  {/* Floating cards effect */}
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl backdrop-blur-sm border border-primary/20 shadow-2xl"></div>
+                    <div className="relative p-8">
                       <div className="text-center">
-                        <Package className="w-32 h-32 text-primary/50 mx-auto mb-4" />
-                        <p className="text-muted-foreground text-lg">Hero Image Placeholder</p>
-                        <p className="text-sm text-muted-foreground/70">Add your hero image here</p>
+                        <div className="w-24 h-24 bg-gradient-to-br from-accent/20 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm border border-accent/30">
+                          <Package className="w-12 h-12 text-accent" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">
+                          Premium Pack Opening
+                        </h3>
+                        <p className="text-gray-300 leading-relaxed drop-shadow-md">
+                          Experience the thrill of opening premium TCG packs with stunning visual effects and transparent odds.
+                        </p>
                       </div>
                     </div>
                   </div>
