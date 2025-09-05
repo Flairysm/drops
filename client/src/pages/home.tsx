@@ -96,16 +96,8 @@ export default function Home() {
                   </p>
                   
                   {/* Free Credits Offer */}
-                  <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 border-2 border-yellow-400/40 rounded-2xl p-6 backdrop-blur-md shadow-2xl">
-                    <div className="flex items-center justify-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                        <Star className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-400">30 FREE CREDITS</div>
-                        <div className="text-lg text-yellow-300">Sign up now to claim</div>
-                      </div>
-                    </div>
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+                    Sign up now and get 30 credits free
                   </div>
                   
                   {/* CTA Buttons */}
