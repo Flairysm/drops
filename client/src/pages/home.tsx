@@ -3,6 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
 import { GlobalFeed } from "@/components/GlobalFeed";
 import { CreditPurchase } from "@/components/CreditPurchase";
+import { PokeballCarousel } from "@/components/PokeballCarousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +66,10 @@ export default function Home() {
         <main className="pt-20 relative z-10">
           {/* Hero Section */}
           <section className="py-32 relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            {/* 3D Pokéball Carousel Background */}
+            <PokeballCarousel className="absolute inset-0 opacity-20" />
+            
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
               {/* Premium Badge */}
               <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-sm border border-primary/30 rounded-full px-6 py-3 mb-8 shadow-lg">
                 <Star className="w-5 h-5 text-primary animate-spin" style={{ animationDuration: '3s' }} />
