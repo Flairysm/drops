@@ -121,6 +121,7 @@ export function setupAuth(app: Express) {
         console.log(`✅ Verification email sent to ${email}`);
       } catch (error) {
         console.error(`❌ Failed to send verification email to ${email}:`, error);
+        console.error(`❌ Email sending failed, but registration continues...`);
         // Don't fail registration if email sending fails
       }
       
@@ -303,6 +304,7 @@ export function setupAuth(app: Express) {
         console.log(`✅ Verification email sent to ${email}`);
       } catch (error) {
         console.error(`❌ Failed to send verification email to ${email}:`, error);
+        console.error(`❌ Email sending failed, but registration continues...`);
         // Don't fail registration if email sending fails
       }
       

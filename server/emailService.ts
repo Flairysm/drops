@@ -1,8 +1,23 @@
 import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 
 // Initialize SendGrid
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
+
+// Initialize Nodemailer for Yahoo/Outlook
+let nodemailerTransporter: any = null;
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  nodemailerTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
 }
 
 export interface EmailOptions {
@@ -28,7 +43,7 @@ export class EmailService {
   }
 
   public async sendEmail(options: EmailOptions): Promise<void> {
-    if (!this.isConfigured) {
+    if (!this.isConfigured && !nodemailerTransporter) {
       console.log('📧 Email service not configured. Logging email instead:');
       console.log('To:', options.to);
       console.log('Subject:', options.subject);
@@ -36,6 +51,26 @@ export class EmailService {
       return;
     }
 
+    // Choose email provider based on recipient domain
+    const emailDomain = options.to.split('@')[1]?.toLowerCase();
+    const isYahooOrOutlook = ['yahoo.com', 'yahoo.co.uk', 'ymail.com', 'rocketmail.com', 'outlook.com', 'hotmail.com', 'live.com'].includes(emailDomain);
+
+    if (isYahooOrOutlook && nodemailerTransporter) {
+      // Use Nodemailer for Yahoo/Outlook
+      await this.sendWithNodemailer(options);
+    } else if (this.isConfigured) {
+      // Use SendGrid for Gmail and others
+      await this.sendWithSendGrid(options);
+    } else {
+      // Fallback to logging
+      console.log('📧 Email service not configured. Logging email instead:');
+      console.log('To:', options.to);
+      console.log('Subject:', options.subject);
+      console.log('HTML:', options.html);
+    }
+  }
+
+  private async sendWithSendGrid(options: EmailOptions): Promise<void> {
     try {
       const msg = {
         to: options.to,
@@ -46,9 +81,33 @@ export class EmailService {
       };
 
       await sgMail.send(msg);
-      console.log('✅ Email sent successfully to:', options.to);
+      console.log('✅ Email sent via SendGrid to:', options.to);
+    } catch (error: any) {
+      console.error('❌ SendGrid failed:', error.response?.body || error.message);
+      // Fallback to Nodemailer if available
+      if (nodemailerTransporter) {
+        console.log('🔄 Falling back to SMTP...');
+        await this.sendWithNodemailer(options);
+      } else {
+        throw new Error('Failed to send email');
+      }
+    }
+  }
+
+  private async sendWithNodemailer(options: EmailOptions): Promise<void> {
+    try {
+      const mailOptions = {
+        from: process.env.FROM_EMAIL || 'noreply@drops.com',
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text || options.html.replace(/<[^>]*>/g, ''),
+      };
+
+      await nodemailerTransporter.sendMail(mailOptions);
+      console.log('✅ Email sent via SMTP to:', options.to);
     } catch (error) {
-      console.error('❌ Failed to send email:', error);
+      console.error('❌ SMTP failed:', error);
       throw new Error('Failed to send email');
     }
   }
