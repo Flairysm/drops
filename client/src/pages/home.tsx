@@ -19,11 +19,6 @@ export default function Home() {
     enabled: isAuthenticated,
   }) as { data: User | undefined };
 
-  const { data: stats } = useQuery({
-    queryKey: ["/api/admin/stats"],
-    enabled: isAuthenticated,
-  });
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -50,21 +45,20 @@ export default function Home() {
             {[...Array(20)].map((_, i) => (
               <div
                 key={i}
-                className="absolute w-1 h-1 bg-primary/30 rounded-full animate-pulse"
+                className="absolute w-2 h-2 bg-accent/30 rounded-full animate-luxury-float"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
                   animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 2}s`
+                  animationDuration: `${3 + Math.random() * 4}s`
                 }}
               ></div>
             ))}
           </div>
         </div>
         
-        <main className="pt-20 relative z-10">
-          {/* Hero Section - Futuristic Digital Artwork */}
-          <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        {/* Hero Section - Futuristic Digital Artwork */}
+        <section className="relative min-h-[90vh] flex items-center overflow-hidden">
             {/* Hero Background Image */}
             <div 
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -129,243 +123,23 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Featured Games Section - Gaming Style */}
-          <section className="py-20 bg-background">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              {/* Section Header */}
-              <div className="flex items-center justify-between mb-12">
-                <h2 className="font-gaming font-black text-4xl md:text-5xl text-white">
-                  FEATURED
-                </h2>
-                <div className="flex items-center space-x-2 bg-secondary/50 rounded-lg px-4 py-2">
-                  <button className="text-white hover:text-accent transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <span className="text-white font-semibold px-3">August</span>
-                  <button className="text-white hover:text-accent transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              
-              {/* Featured Games Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {/* Plinko Tournament */}
-                <div className="relative group cursor-pointer">
-                  <div className="bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl overflow-hidden border border-primary/30 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center relative">
-                      <Zap className="w-16 h-16 text-primary/70" />
-                      <div className="absolute top-4 left-4 bg-primary/20 rounded-lg px-3 py-1">
-                        <span className="text-primary font-bold text-sm">PLINKO</span>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="text-sm text-accent font-semibold mb-2">Aug 05</div>
-                      <h3 className="text-xl font-bold text-white mb-3">
-                        Plinko Tournament - $2,000 Prize Pool
-                      </h3>
-                      <p className="text-gray-300 text-sm leading-relaxed">
-                        Drop balls and watch them bounce to win different tier packs. 
-                        The ultimate test of luck and strategy in our biggest Plinko tournament yet.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Wheel Spin Event */}
-                <div className="relative group cursor-pointer">
-                  <div className="bg-gradient-to-br from-accent/20 to-legendary/20 rounded-2xl overflow-hidden border border-accent/30 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="aspect-video bg-gradient-to-br from-accent/10 to-legendary/10 flex items-center justify-center relative">
-                      <RotateCcw className="w-16 h-16 text-accent/70" />
-                      <div className="absolute top-4 left-4 bg-accent/20 rounded-lg px-3 py-1">
-                        <span className="text-accent font-bold text-sm">WHEEL</span>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="text-sm text-legendary font-semibold mb-2">Aug 12</div>
-                      <h3 className="text-xl font-bold text-white mb-3">
-                        Wheel Spin Championship - Credits & Packs
-                      </h3>
-                      <p className="text-gray-300 text-sm leading-relaxed">
-                        Spin the wheel and land on different rewards and packs. 
-                        Daily tournaments with guaranteed rewards for all participants.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Minesweeper Challenge */}
-                <div className="relative group cursor-pointer">
-                  <div className="bg-gradient-to-br from-legendary/20 to-primary/20 rounded-2xl overflow-hidden border border-legendary/30 shadow-xl hover:shadow-2xl transition-all duration-300">
-                    <div className="aspect-video bg-gradient-to-br from-legendary/10 to-primary/10 flex items-center justify-center relative">
-                      <Gamepad2 className="w-16 h-16 text-legendary/70" />
-                      <div className="absolute top-4 left-4 bg-legendary/20 rounded-lg px-3 py-1">
-                        <span className="text-legendary font-bold text-sm">MINES</span>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="text-sm text-primary font-semibold mb-2">Aug 19</div>
-                      <h3 className="text-xl font-bold text-white mb-3">
-                        Minesweeper Challenge - High-Tier Packs
-                      </h3>
-                      <p className="text-gray-300 text-sm leading-relaxed">
-                        Test your skills and avoid mines to win amazing rewards. 
-                        Skill-based gameplay with the highest tier pack rewards.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
           
-          {/* Why Choose Drops Section */}
-          <section className="py-20">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-16">
-                <h2 className="font-gaming font-bold text-4xl md:text-5xl mb-6">
-                  <span className="bg-gradient-to-r from-accent to-legendary bg-clip-text text-transparent">
-                    Why Choose Drops?
-                  </span>
-                </h2>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                  Experience the most advanced digital TCG platform with cutting-edge features
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {/* Feature 1 */}
-                <Card className="gaming-card p-8 text-center group hover:scale-105 transition-all duration-300">
-                  <CardContent className="p-0">
-                    <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                      <Package className="w-10 h-10 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-2xl mb-4">Transparent Odds</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Every pack opening shows real-time odds. No hidden mechanics, just pure transparency and fairness.
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                {/* Feature 2 */}
-                <Card className="gaming-card p-8 text-center group hover:scale-105 transition-all duration-300">
-                  <CardContent className="p-0">
-                    <div className="w-20 h-20 bg-gradient-to-br from-accent/20 to-legendary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                      <Coins className="w-10 h-10 text-accent" />
-                    </div>
-                    <h3 className="font-semibold text-2xl mb-4">Unlimited Vault</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Store unlimited cards in your personal vault. Never lose a single card again with our secure storage.
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                {/* Feature 3 */}
-                <Card className="gaming-card p-8 text-center group hover:scale-105 transition-all duration-300">
-                  <CardContent className="p-0">
-                    <div className="w-20 h-20 bg-gradient-to-br from-legendary/20 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                      <TrendingUp className="w-10 h-10 text-legendary" />
-                    </div>
-                    <h3 className="font-semibold text-2xl mb-4">Fair Economy</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Balanced credit system with fair pricing. Earn credits through gameplay and smart decisions.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </section>
         
-        {/* Footer */}
-        <footer className="bg-gradient-to-b from-secondary/20 to-background border-t border-border py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-              {/* Brand Section */}
-              <div className="lg:col-span-1">
-                <h3 className="font-gaming font-bold text-2xl mb-4">
-                  <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    DROPS
-                  </span>
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  The ultimate digital TCG experience with transparent odds and exciting minigames.
-                </p>
-                {/* Social Media Links */}
-                <div className="flex space-x-4">
-                  <a href="#" className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary/20 transition-colors">
-                    <span className="text-primary font-bold">T</span>
-                  </a>
-                  <a href="#" className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary/20 transition-colors">
-                    <span className="text-primary font-bold">D</span>
-                  </a>
-                  <a href="#" className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary/20 transition-colors">
-                    <span className="text-primary font-bold">I</span>
-                  </a>
-                  <a href="#" className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary/20 transition-colors">
-                    <span className="text-primary font-bold">Y</span>
-                  </a>
-                </div>
-              </div>
-              
-              {/* Quick Links */}
-              <div>
-                <h4 className="font-semibold text-lg mb-4">Quick Links</h4>
-                <ul className="space-y-3">
-                  <li><Link href="/login" className="text-muted-foreground hover:text-primary transition-colors">Sign In</Link></li>
-                  <li><Link href="/register" className="text-muted-foreground hover:text-primary transition-colors">Create Account</Link></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">How to Play</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Game Rules</a></li>
-                </ul>
-              </div>
-              
-              {/* Games */}
-              <div>
-                <h4 className="font-semibold text-lg mb-4">Games</h4>
-                <ul className="space-y-3">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Plinko</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Wheel Spin</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Minesweeper</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Pack Opening</a></li>
-                </ul>
-              </div>
-              
-              {/* Support */}
-              <div>
-                <h4 className="font-semibold text-lg mb-4">Support</h4>
-                <ul className="space-y-3">
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Help Center</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Contact Us</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Bug Reports</a></li>
-                  <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Feature Requests</a></li>
-                </ul>
-              </div>
-            </div>
-            
-            {/* Bottom Section */}
-            <div className="border-t border-border pt-8">
-              <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                <div className="text-muted-foreground text-sm">
-                  © 2024 Drops. All rights reserved.
-                </div>
-                <div className="flex space-x-6 text-sm">
-                  <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a>
-                  <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a>
-                  <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Cookie Policy</a>
-                  <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Refund Policy</a>
-                </div>
-              </div>
-            </div>
+      {/* Simple Footer */}
+      <footer className="bg-secondary/20 border-t border-border py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-muted-foreground">
+              &copy; 2025 Drops. Built for collectors, by collectors.
+            </p>
           </div>
-        </footer>
-      </main>
+        </div>
+      </footer>
     </div>
     );
   }
 
+  // Authenticated user home page
   const games = [
     {
       name: "Plinko Drop",
@@ -424,7 +198,6 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
-
 
           {/* Games Collection - FIRST PRIORITY */}
           <section className="mb-12">
