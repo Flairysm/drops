@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import EmailSent from "@/pages/email-sent";
 import VerifyEmail from "@/pages/verify-email";
 import Play from "@/pages/games";
 import Plinko from "@/pages/plinko";
@@ -74,6 +75,7 @@ function RouterComponent() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/email-sent" component={EmailSent} />
       <Route path="/verify-email" component={VerifyEmail} />
       {isAuthenticated && (
         <>
