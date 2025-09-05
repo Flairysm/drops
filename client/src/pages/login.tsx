@@ -35,6 +35,18 @@ export default function Login() {
       const { error } = await signIn(data.email, data.password);
 
       if (error) {
+        // Check if it's an email verification error
+        if (error.message?.includes("email not confirmed") || error.message?.includes("Email not confirmed")) {
+          toast({
+            title: "Email Not Verified",
+            description: "Please check your email and click the verification link before logging in.",
+            variant: "destructive",
+          });
+          // Redirect to verification page
+          setLocation("/verify-email");
+          return;
+        }
+        
         toast({
           title: "Login Failed",
           description: error.message || "Invalid email or password.",

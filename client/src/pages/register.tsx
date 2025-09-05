@@ -56,8 +56,8 @@ export default function Register() {
         description: "Please check your email to verify your account before logging in.",
       });
       
-      // Redirect to login page
-      setLocation("/login");
+      // Redirect to verification page
+      setLocation("/verify-email");
     } catch (error: any) {
       toast({
         title: "Registration Failed",
