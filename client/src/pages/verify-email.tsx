@@ -12,9 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Mail, CheckCircle } from "lucide-react";
 
-// Email verification schema - only token required
+// Email verification schema - only OTP required
 const emailVerificationSchema = z.object({
-  token: z.string().min(1, "Verification token is required"),
+  token: z.string().length(6, "Verification code must be 6 digits").regex(/^\d{6}$/, "Verification code must contain only numbers"),
 });
 
 type EmailVerificationData = z.infer<typeof emailVerificationSchema>;
@@ -24,6 +24,7 @@ export default function VerifyEmail() {
   const { toast } = useToast();
   const [isVerified, setIsVerified] = useState(false);
   const [email, setEmail] = useState<string>("");
+  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes in seconds
   
   const form = useForm<EmailVerificationData>({
     resolver: zodResolver(emailVerificationSchema),
@@ -44,6 +45,28 @@ export default function VerifyEmail() {
       setEmail(emailFromStorage);
     }
   }, []);
+
+  // Auto-format OTP input
+  const handleOTPChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length <= 6) {
+      form.setValue('token', value);
+    }
+  };
+
+  // Countdown timer
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const verifyMutation = useMutation({
     mutationFn: async (data: EmailVerificationData) => {
@@ -85,6 +108,7 @@ export default function VerifyEmail() {
       return await apiRequest("POST", "/api/auth/send-verification", { email });
     },
     onSuccess: () => {
+      setTimeLeft(15 * 60); // Reset timer to 15 minutes
       toast({
         title: "Verification Email Sent",
         description: "A new verification email has been sent to your email address.",
@@ -134,7 +158,7 @@ export default function VerifyEmail() {
           </div>
           <CardTitle className="text-3xl font-gaming text-blue-400">Verify Your Email</CardTitle>
           <CardDescription className="text-gray-300">
-            {email ? `Enter the verification code sent to ${email}` : "Enter your verification code to complete registration"}
+            {email ? `Enter the 6-digit code sent to ${email}` : "Enter your 6-digit verification code to complete registration"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,22 +177,39 @@ export default function VerifyEmail() {
                 id="token"
                 data-testid="input-token"
                 {...form.register("token")}
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 text-center text-lg tracking-widest"
-                placeholder="Enter 6-digit code"
-                maxLength={32}
+                onChange={handleOTPChange}
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 text-center text-2xl tracking-[0.5em] font-mono"
+                placeholder="000000"
+                maxLength={6}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="one-time-code"
               />
               {form.formState.errors.token && (
                 <p className="text-red-400 text-sm">{form.formState.errors.token.message}</p>
               )}
+              
+              {/* Countdown Timer */}
+              <div className="text-center">
+                {timeLeft > 0 ? (
+                  <p className="text-sm text-gray-400">
+                    Code expires in <span className="text-yellow-400 font-mono">{formatTime(timeLeft)}</span>
+                  </p>
+                ) : (
+                  <p className="text-sm text-red-400">
+                    Code expired. Please request a new one.
+                  </p>
+                )}
+              </div>
             </div>
 
             <Button
               type="submit"
               data-testid="button-verify"
-              disabled={verifyMutation.isPending}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+              disabled={verifyMutation.isPending || timeLeft <= 0}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {verifyMutation.isPending ? "Verifying..." : "Verify Email"}
+              {verifyMutation.isPending ? "Verifying..." : timeLeft <= 0 ? "Code Expired" : "Verify Email"}
             </Button>
           </form>
 

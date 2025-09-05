@@ -104,20 +104,20 @@ export function setupAuth(app: Express) {
         phoneNumber,
       });
 
-      // Generate verification token
-      const token = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-      // Store verification token
+      // Store verification OTP
       await storage.createEmailVerificationToken({
         email,
-        token,
+        token: otp,
         expiresAt,
       });
 
       // Send verification email
       try {
-        await emailService.sendVerificationEmail(email, token);
+        await emailService.sendVerificationEmail(email, otp);
         console.log(`✅ Verification email sent to ${email}`);
       } catch (error) {
         console.error(`❌ Failed to send verification email to ${email}:`, error);
@@ -125,8 +125,8 @@ export function setupAuth(app: Express) {
       }
       
       // Also log for development
-      console.log(`📧 Email verification token for ${email}: ${token}`);
-      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${token}&email=${encodeURIComponent(email)}`);
+      console.log(`📧 Email verification OTP for ${email}: ${otp}`);
+      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${otp}&email=${encodeURIComponent(email)}`);
 
       res.json({ 
         message: "Registration successful. Please check your email to verify your account.", 
@@ -135,8 +135,8 @@ export function setupAuth(app: Express) {
           username: user.username, 
           email: user.email 
         },
-        // In development, include the token for testing
-        ...(process.env.NODE_ENV === 'development' && { verificationToken: token })
+        // In development, include the OTP for testing
+        ...(process.env.NODE_ENV === 'development' && { verificationToken: otp })
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -286,20 +286,20 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already verified" });
       }
 
-      // Generate verification token
-      const token = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-      // Store verification token
+      // Store verification OTP
       await storage.createEmailVerificationToken({
         email,
-        token,
+        token: otp,
         expiresAt,
       });
 
       // Send verification email
       try {
-        await emailService.sendVerificationEmail(email, token);
+        await emailService.sendVerificationEmail(email, otp);
         console.log(`✅ Verification email sent to ${email}`);
       } catch (error) {
         console.error(`❌ Failed to send verification email to ${email}:`, error);
@@ -307,13 +307,13 @@ export function setupAuth(app: Express) {
       }
       
       // Also log for development
-      console.log(`📧 Email verification token for ${email}: ${token}`);
-      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${token}&email=${encodeURIComponent(email)}`);
+      console.log(`📧 Email verification OTP for ${email}: ${otp}`);
+      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${otp}&email=${encodeURIComponent(email)}`);
 
       res.json({ 
         message: "Verification email sent",
-        // In development, include the token for testing
-        ...(process.env.NODE_ENV === 'development' && { token })
+        // In development, include the OTP for testing
+        ...(process.env.NODE_ENV === 'development' && { token: otp })
       });
     } catch (error) {
       console.error("Send verification error:", error);

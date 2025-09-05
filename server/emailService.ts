@@ -53,8 +53,8 @@ export class EmailService {
     }
   }
 
-  public async sendVerificationEmail(email: string, token: string): Promise<void> {
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email?email=${encodeURIComponent(email)}&token=${token}`;
+  public async sendVerificationEmail(email: string, otp: string): Promise<void> {
+    const verificationUrl = `${process.env.CLIENT_URL}/verify-email?email=${encodeURIComponent(email)}&token=${otp}`;
     
     const html = `
       <!DOCTYPE html>
@@ -84,7 +84,7 @@ export class EmailService {
               <p>Thank you for signing up for Drops! To complete your registration and start playing TCG minigames, please verify your email address.</p>
               
               <p><strong>Your verification code:</strong></p>
-              <div class="code">${token}</div>
+              <div class="code">${otp}</div>
               
               <p>Or click the button below to verify automatically:</p>
               <a href="${verificationUrl}" class="button">Verify Email Address</a>
@@ -97,7 +97,7 @@ export class EmailService {
                 <li>🏆 Build your ultimate card collection</li>
               </ul>
               
-              <p><em>This verification link will expire in 24 hours.</em></p>
+              <p><em>This verification code will expire in 15 minutes.</em></p>
             </div>
             <div class="footer">
               <p>If you didn't create an account with Drops, you can safely ignore this email.</p>
