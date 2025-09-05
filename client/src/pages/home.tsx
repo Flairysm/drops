@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
 import { GlobalFeed } from "@/components/GlobalFeed";
@@ -12,14 +12,12 @@ import { Link } from "wouter";
 import type { User } from "@shared/schema";
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading, user } = useSupabaseAuth();
 
-  const { data: userData } = useQuery({
-    queryKey: ["/api/auth/user"],
-    enabled: isAuthenticated,
-  }) as { data: User | undefined };
+  // Get user data from Supabase auth
+  const userData = user;
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -192,7 +190,7 @@ export default function Home() {
             <div className="space-y-3">
               <h1 className="font-gaming font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl">
                 <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Hey {userData?.username || userData?.firstName || "Player"}! 👋
+                  Hey {userData?.user_metadata?.username || userData?.email?.split('@')[0] || "Player"}! 👋
                 </span>
               </h1>
               <p className="text-muted-foreground text-lg sm:text-xl md:text-2xl font-light">Time to win some cards</p>
@@ -204,7 +202,7 @@ export default function Home() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-500" data-testid="text-user-credits">
-                    {userData?.credits || "0"}
+                    {userData?.user_metadata?.credits || "0"}
                   </div>
                   <div className="text-sm sm:text-base text-muted-foreground font-medium">Credits</div>
                 </div>

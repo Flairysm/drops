@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -231,7 +231,9 @@ const CardGalleryContent = ({ packId }: { packId: string }) => {
 
 export default function Admin() {
   const { toast } = useToast();
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { isAuthenticated, loading } = useSupabaseAuth();
+  // TODO: Implement admin check with Supabase
+  const isAdmin = false;
   const queryClient = useQueryClient();
   const [inventorySection, setInventorySection] = useState<"inventory" | "content">("inventory");
   const [editingCard, setEditingCard] = useState<any>(null);
@@ -667,7 +669,7 @@ export default function Admin() {
     setExpandedPacks(newExpanded);
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
