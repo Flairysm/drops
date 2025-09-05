@@ -60,6 +60,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
             transform: 'rotateY(0deg) translateZ(200px)',
           }}
         >
+          <div className="pack-side"></div>
           <img 
             src="/assets/packs/masterball-pack.png" 
             alt="Master Ball Pack"
@@ -71,6 +72,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
               target.parentElement!.innerHTML = '<div class="pack-fallback masterball-fallback">M</div>';
             }}
           />
+          <div className="pack-top-edge"></div>
           <div className="pack-glow masterball-glow"></div>
         </div>
 
@@ -81,6 +83,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
             transform: 'rotateY(90deg) translateZ(200px)',
           }}
         >
+          <div className="pack-side"></div>
           <img 
             src="/assets/packs/ultraball-pack.png" 
             alt="Ultra Ball Pack"
@@ -91,6 +94,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
               target.parentElement!.innerHTML = '<div class="pack-fallback ultraball-fallback">U</div>';
             }}
           />
+          <div className="pack-top-edge"></div>
           <div className="pack-glow ultraball-glow"></div>
         </div>
 
@@ -101,6 +105,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
             transform: 'rotateY(180deg) translateZ(200px)',
           }}
         >
+          <div className="pack-side"></div>
           <img 
             src="/assets/packs/greatball-pack.png" 
             alt="Great Ball Pack"
@@ -111,6 +116,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
               target.parentElement!.innerHTML = '<div class="pack-fallback greatball-fallback">G</div>';
             }}
           />
+          <div className="pack-top-edge"></div>
           <div className="pack-glow greatball-glow"></div>
         </div>
 
@@ -121,6 +127,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
             transform: 'rotateY(270deg) translateZ(200px)',
           }}
         >
+          <div className="pack-side"></div>
           <img 
             src="/assets/packs/pokeball-pack.png" 
             alt="Poké Ball Pack"
@@ -131,6 +138,7 @@ export function PokeballCarousel({ className = "" }: PackCarouselProps) {
               target.parentElement!.innerHTML = '<div class="pack-fallback pokeball-fallback">P</div>';
             }}
           />
+          <div className="pack-top-edge"></div>
           <div className="pack-glow pokeball-glow"></div>
         </div>
       </div>

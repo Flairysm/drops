@@ -330,14 +330,69 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    box-shadow: 
+      0 15px 35px rgba(0, 0, 0, 0.4),
+      0 5px 15px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Add 3D thickness effect */
+  .pack::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: inherit;
+    border-radius: 12px;
+    transform: translateZ(-8px);
+    box-shadow: 
+      0 8px 25px rgba(0, 0, 0, 0.3),
+      0 3px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+  }
+
+  .pack::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: inherit;
+    border-radius: 12px;
+    transform: translateZ(-16px);
+    box-shadow: 
+      0 5px 15px rgba(0, 0, 0, 0.2),
+      0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 0;
   }
 
   .pack:hover .pack-image {
-    transform: scale(1.05);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    transform: scale(1.05) translateZ(5px);
+    box-shadow: 
+      0 20px 45px rgba(0, 0, 0, 0.5),
+      0 8px 20px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .pack:hover::before {
+    transform: translateZ(-5px);
+    box-shadow: 
+      0 12px 30px rgba(0, 0, 0, 0.4),
+      0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .pack:hover::after {
+    transform: translateZ(-10px);
+    box-shadow: 
+      0 8px 20px rgba(0, 0, 0, 0.3),
+      0 3px 8px rgba(0, 0, 0, 0.2);
   }
 
   .pack-glow {
@@ -350,6 +405,32 @@
     border-radius: 50%;
     pointer-events: none;
     animation: pack-glow 3s ease-in-out infinite alternate;
+    z-index: -1;
+  }
+
+  /* Add side thickness for more realistic 3D effect */
+  .pack .pack-side {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.1) 100%);
+    border-radius: 12px;
+    transform: translateZ(-4px);
+    z-index: 1;
+  }
+
+  /* Add top edge highlight */
+  .pack .pack-top-edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    border-radius: 12px 12px 0 0;
+    z-index: 3;
   }
 
   .masterball-glow {
