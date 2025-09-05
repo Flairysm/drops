@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-interface PokeballCarouselProps {
+interface PackCarouselProps {
   className?: string;
 }
 
-export function PokeballCarousel({ className = "" }: PokeballCarouselProps) {
+export function PokeballCarousel({ className = "" }: PackCarouselProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,86 +43,95 @@ export function PokeballCarousel({ className = "" }: PokeballCarouselProps) {
   }, []);
 
   return (
-    <div className={`pokeball-carousel-container ${className}`}>
+    <div className={`pack-carousel-container ${className}`}>
       <div 
         ref={containerRef}
-        className="pokeball-carousel"
+        className="pack-carousel"
         style={{
           transformStyle: 'preserve-3d',
           perspective: '1000px',
           transition: 'transform 0.1s ease-out'
         }}
       >
-        {/* Master Ball */}
+        {/* Master Ball Pack */}
         <div 
-          className="pokeball masterball"
+          className="pack masterball-pack"
           style={{
             transform: 'rotateY(0deg) translateZ(200px)',
-            background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%)',
-            boxShadow: '0 0 30px rgba(139, 92, 246, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2)'
           }}
         >
-          <div className="pokeball-top">
-            <div className="pokeball-button" style={{ background: 'linear-gradient(135deg, #F59E0B, #FCD34D)' }}></div>
-          </div>
-          <div className="pokeball-bottom" style={{ background: 'linear-gradient(135deg, #1F2937, #374151)' }}>
-            <div className="pokeball-center-ring" style={{ background: 'linear-gradient(135deg, #8B5CF6, #A855F7)' }}></div>
-          </div>
-          <div className="pokeball-glow" style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)' }}></div>
+          <img 
+            src="/assets/packs/masterball-pack.png" 
+            alt="Master Ball Pack"
+            className="pack-image"
+            onError={(e) => {
+              // Fallback to a placeholder if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement!.innerHTML = '<div class="pack-fallback masterball-fallback">M</div>';
+            }}
+          />
+          <div className="pack-glow masterball-glow"></div>
         </div>
 
-        {/* Ultra Ball */}
+        {/* Ultra Ball Pack */}
         <div 
-          className="pokeball ultraball"
+          className="pack ultraball-pack"
           style={{
             transform: 'rotateY(90deg) translateZ(200px)',
-            background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
-            boxShadow: '0 0 30px rgba(59, 130, 246, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2)'
           }}
         >
-          <div className="pokeball-top">
-            <div className="pokeball-button" style={{ background: 'linear-gradient(135deg, #F59E0B, #FCD34D)' }}></div>
-          </div>
-          <div className="pokeball-bottom" style={{ background: 'linear-gradient(135deg, #1F2937, #374151)' }}>
-            <div className="pokeball-center-ring" style={{ background: 'linear-gradient(135deg, #1E40AF, #3B82F6)' }}></div>
-          </div>
-          <div className="pokeball-glow" style={{ background: 'radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)' }}></div>
+          <img 
+            src="/assets/packs/ultraball-pack.png" 
+            alt="Ultra Ball Pack"
+            className="pack-image"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement!.innerHTML = '<div class="pack-fallback ultraball-fallback">U</div>';
+            }}
+          />
+          <div className="pack-glow ultraball-glow"></div>
         </div>
 
-        {/* Great Ball */}
+        {/* Great Ball Pack */}
         <div 
-          className="pokeball greatball"
+          className="pack greatball-pack"
           style={{
             transform: 'rotateY(180deg) translateZ(200px)',
-            background: 'linear-gradient(135deg, #DC2626 0%, #EF4444 50%, #F87171 100%)',
-            boxShadow: '0 0 30px rgba(239, 68, 68, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2)'
           }}
         >
-          <div className="pokeball-top">
-            <div className="pokeball-button" style={{ background: 'linear-gradient(135deg, #F59E0B, #FCD34D)' }}></div>
-          </div>
-          <div className="pokeball-bottom" style={{ background: 'linear-gradient(135deg, #1F2937, #374151)' }}>
-            <div className="pokeball-center-ring" style={{ background: 'linear-gradient(135deg, #DC2626, #EF4444)' }}></div>
-          </div>
-          <div className="pokeball-glow" style={{ background: 'radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%)' }}></div>
+          <img 
+            src="/assets/packs/greatball-pack.png" 
+            alt="Great Ball Pack"
+            className="pack-image"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement!.innerHTML = '<div class="pack-fallback greatball-fallback">G</div>';
+            }}
+          />
+          <div className="pack-glow greatball-glow"></div>
         </div>
 
-        {/* Poké Ball */}
+        {/* Poké Ball Pack */}
         <div 
-          className="pokeball pokeball-classic"
+          className="pack pokeball-pack"
           style={{
             transform: 'rotateY(270deg) translateZ(200px)',
-            background: 'linear-gradient(135deg, #EF4444 0%, #F87171 50%, #FCA5A5 100%)',
-            boxShadow: '0 0 30px rgba(239, 68, 68, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2)'
           }}
         >
-          <div className="pokeball-top">
-            <div className="pokeball-button" style={{ background: 'linear-gradient(135deg, #F59E0B, #FCD34D)' }}></div>
-          </div>
-          <div className="pokeball-bottom" style={{ background: 'linear-gradient(135deg, #1F2937, #374151)' }}>
-            <div className="pokeball-center-ring" style={{ background: 'linear-gradient(135deg, #EF4444, #F87171)' }}></div>
-          </div>
-          <div className="pokeball-glow" style={{ background: 'radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%)' }}></div>
+          <img 
+            src="/assets/packs/pokeball-pack.png" 
+            alt="Poké Ball Pack"
+            className="pack-image"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              target.parentElement!.innerHTML = '<div class="pack-fallback pokeball-fallback">P</div>';
+            }}
+          />
+          <div className="pack-glow pokeball-glow"></div>
         </div>
       </div>
     </div>
