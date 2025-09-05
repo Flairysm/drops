@@ -3,7 +3,6 @@ import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
 import { GlobalFeed } from "@/components/GlobalFeed";
 import { CreditPurchase } from "@/components/CreditPurchase";
-import { PokeballCarousel } from "@/components/PokeballCarousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,90 +64,212 @@ export default function Home() {
         
         <main className="pt-20 relative z-10">
           {/* Hero Section */}
-          <section className="py-32 relative">
-            {/* 3D Pokéball Carousel Background */}
-            <PokeballCarousel className="absolute inset-0 opacity-20" />
-            
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-              {/* Premium Badge */}
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-sm border border-primary/30 rounded-full px-6 py-3 mb-8 shadow-lg">
-                <Star className="w-5 h-5 text-primary animate-spin" style={{ animationDuration: '3s' }} />
-                <span className="text-sm font-semibold text-primary tracking-wide">PREMIUM TCG EXPERIENCE</span>
-                <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
-              </div>
-              
-              {/* Main Title with Luxury Effects */}
-              <div className="relative mb-8">
-                <h1 className="font-gaming font-black text-5xl md:text-7xl lg:text-8xl mb-4 relative">
-                  <span className="bg-gradient-to-r from-primary via-accent via-legendary to-primary bg-clip-text text-transparent animate-gradient-x">
-                    DROPS
-                  </span>
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent blur-sm opacity-50 animate-pulse"></div>
-                </h1>
-                
-                {/* Subtitle with elegant styling */}
-                <div className="relative">
-                  <p className="text-2xl md:text-3xl lg:text-4xl text-muted-foreground/80 font-light tracking-wide mb-4">
+          <section className="py-20 relative">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                {/* Hero Content */}
+                <div className="text-center lg:text-left">
+                  {/* Premium Badge */}
+                  <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-sm border border-primary/30 rounded-full px-6 py-3 mb-8 shadow-lg">
+                    <Star className="w-5 h-5 text-primary animate-spin" style={{ animationDuration: '3s' }} />
+                    <span className="text-sm font-semibold text-primary tracking-wide">PREMIUM TCG EXPERIENCE</span>
+                    <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                  </div>
+                  
+                  {/* Main Title */}
+                  <h1 className="font-gaming font-black text-4xl md:text-6xl lg:text-7xl mb-6">
+                    <span className="bg-gradient-to-r from-primary via-accent via-legendary to-primary bg-clip-text text-transparent animate-gradient-x">
+                      DROPS
+                    </span>
+                  </h1>
+                  
+                  {/* Subtitle */}
+                  <p className="text-xl md:text-2xl text-muted-foreground/80 font-light tracking-wide mb-6">
                     Where Legends Are Born
                   </p>
-                  <div className="w-24 h-1 bg-gradient-to-r from-primary to-accent mx-auto rounded-full"></div>
+                  
+                  {/* Description */}
+                  <p className="text-lg text-muted-foreground/90 mb-8 leading-relaxed">
+                    Experience the ultimate thrill of premium TCG pack opening with transparent odds, 
+                    unlimited vault storage, and exciting minigames.
+                  </p>
+                  
+                  {/* CTA Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <Link href="/register">
+                      <Button
+                        size="lg"
+                        className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transform hover:scale-105 transition-all duration-300 shadow-xl px-8 py-4 text-lg font-semibold"
+                        data-testid="button-register"
+                      >
+                        <Play className="mr-3 h-5 w-5" />
+                        Create Account
+                      </Button>
+                    </Link>
+                    
+                    <Link href="/login">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="border-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground px-8 py-4 text-lg font-semibold transition-all duration-300"
+                        data-testid="button-login"
+                      >
+                        Sign In
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                
+                {/* Hero Image */}
+                <div className="relative">
+                  <div className="bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl p-8 backdrop-blur-sm border border-primary/30 shadow-2xl">
+                    <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl flex items-center justify-center">
+                      {/* Placeholder for hero image */}
+                      <div className="text-center">
+                        <Package className="w-24 h-24 text-primary/50 mx-auto mb-4" />
+                        <p className="text-muted-foreground">Hero Image Placeholder</p>
+                        <p className="text-sm text-muted-foreground/70">Add your hero image here</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              {/* Description with luxury typography */}
-              <div className="max-w-4xl mx-auto mb-12">
-                <p className="text-xl md:text-2xl text-muted-foreground/90 mb-6 leading-relaxed font-light">
-                  Experience the ultimate thrill of premium TCG pack opening with 
-                  <span className="text-primary font-semibold"> transparent odds</span>, 
-                  <span className="text-accent font-semibold"> unlimited vault storage</span>, and 
-                  <span className="text-legendary font-semibold"> exciting minigames</span>.
-                </p>
-                
-                <p className="text-lg text-muted-foreground/80 font-medium">
-                  Join thousands of collectors in the most prestigious digital TCG experience
+            </div>
+          </section>
+          
+          {/* Features Section */}
+          <section className="py-20 bg-gradient-to-b from-background to-secondary/10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="font-gaming font-bold text-3xl md:text-4xl mb-4">
+                  <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    Why Choose Drops?
+                  </span>
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                  Experience the most advanced digital TCG platform with cutting-edge features
                 </p>
               </div>
               
-              {/* Luxury CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-                <Link href="/register">
-                  <Button
-                    size="lg"
-                    className="group relative bg-gradient-to-r from-primary via-accent to-legendary hover:from-primary/90 hover:via-accent/90 hover:to-legendary/90 transform hover:scale-105 transition-all duration-300 shadow-2xl border-2 border-primary/30 px-8 py-4 text-lg font-semibold"
-                    data-testid="button-register"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-30 group-hover:opacity-50 transition-opacity"></div>
-                    <Play className="mr-3 h-5 w-5 group-hover:animate-pulse" />
-                    <span className="relative z-10">Create Premium Account</span>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-ping"></div>
-                  </Button>
-                </Link>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* Feature 1 */}
+                <Card className="gaming-card p-6 text-center">
+                  <CardContent className="p-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Package className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-xl mb-3">Transparent Odds</h3>
+                    <p className="text-muted-foreground">
+                      Every pack opening shows real-time odds. No hidden mechanics, just pure transparency.
+                    </p>
+                  </CardContent>
+                </Card>
                 
-                <Link href="/login">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="group border-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground backdrop-blur-sm bg-primary/5 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:shadow-xl"
-                    data-testid="button-login"
-                  >
-                    <span className="group-hover:animate-pulse">Sign In</span>
-                  </Button>
-                </Link>
+                {/* Feature 2 */}
+                <Card className="gaming-card p-6 text-center">
+                  <CardContent className="p-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-accent/20 to-legendary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Gamepad2 className="w-8 h-8 text-accent" />
+                    </div>
+                    <h3 className="font-semibold text-xl mb-3">Exciting Minigames</h3>
+                    <p className="text-muted-foreground">
+                      Play Plinko, Wheel, and Minesweeper to earn packs. Skill meets luck in every game.
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                {/* Feature 3 */}
+                <Card className="gaming-card p-6 text-center">
+                  <CardContent className="p-0">
+                    <div className="w-16 h-16 bg-gradient-to-br from-legendary/20 to-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Coins className="w-8 h-8 text-legendary" />
+                    </div>
+                    <h3 className="font-semibold text-xl mb-3">Unlimited Vault</h3>
+                    <p className="text-muted-foreground">
+                      Store unlimited cards in your personal vault. Never lose a single card again.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </section>
+          
+          {/* How It Works Section */}
+          <section className="py-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="font-gaming font-bold text-3xl md:text-4xl mb-4">
+                  <span className="bg-gradient-to-r from-accent to-legendary bg-clip-text text-transparent">
+                    How It Works
+                  </span>
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                  Get started in minutes and begin your TCG journey
+                </p>
               </div>
               
-              {/* Luxury Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                <div className="bg-gradient-to-br from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 rounded-2xl p-6 shadow-lg">
-                  <div className="text-3xl font-bold text-primary mb-2">10K+</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Step 1 */}
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
+                    1
+                  </div>
+                  <h3 className="font-semibold text-xl mb-3">Create Account</h3>
+                  <p className="text-muted-foreground">
+                    Sign up for free and get your starter credits to begin collecting.
+                  </p>
+                </div>
+                
+                {/* Step 2 */}
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-accent to-legendary rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
+                    2
+                  </div>
+                  <h3 className="font-semibold text-xl mb-3">Play Games</h3>
+                  <p className="text-muted-foreground">
+                    Use your credits to play minigames and earn different tier packs.
+                  </p>
+                </div>
+                
+                {/* Step 3 */}
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-legendary to-primary rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
+                    3
+                  </div>
+                  <h3 className="font-semibold text-xl mb-3">Open Packs</h3>
+                  <p className="text-muted-foreground">
+                    Open your earned packs to discover amazing cards for your collection.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+          {/* Stats Section */}
+          <section className="py-20 bg-gradient-to-b from-secondary/10 to-background">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="font-gaming font-bold text-3xl md:text-4xl mb-4">
+                  <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">
+                    Join the Community
+                  </span>
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                  Thousands of collectors trust Drops for their TCG experience
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-gradient-to-br from-primary/10 to-accent/10 backdrop-blur-sm border border-primary/20 rounded-2xl p-8 text-center shadow-lg">
+                  <div className="text-4xl font-bold text-primary mb-2">10K+</div>
                   <div className="text-muted-foreground font-medium">Active Collectors</div>
                 </div>
-                <div className="bg-gradient-to-br from-accent/10 to-legendary/10 backdrop-blur-sm border border-accent/20 rounded-2xl p-6 shadow-lg">
-                  <div className="text-3xl font-bold text-accent mb-2">1M+</div>
+                <div className="bg-gradient-to-br from-accent/10 to-legendary/10 backdrop-blur-sm border border-accent/20 rounded-2xl p-8 text-center shadow-lg">
+                  <div className="text-4xl font-bold text-accent mb-2">1M+</div>
                   <div className="text-muted-foreground font-medium">Cards Opened</div>
                 </div>
-                <div className="bg-gradient-to-br from-legendary/10 to-primary/10 backdrop-blur-sm border border-legendary/20 rounded-2xl p-6 shadow-lg">
-                  <div className="text-3xl font-bold text-legendary mb-2">99.9%</div>
+                <div className="bg-gradient-to-br from-legendary/10 to-primary/10 backdrop-blur-sm border border-legendary/20 rounded-2xl p-8 text-center shadow-lg">
+                  <div className="text-4xl font-bold text-legendary mb-2">99.9%</div>
                   <div className="text-muted-foreground font-medium">Uptime</div>
                 </div>
               </div>
