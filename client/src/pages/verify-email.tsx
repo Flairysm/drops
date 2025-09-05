@@ -86,22 +86,25 @@ export default function VerifyEmail() {
             <Mail className="h-8 w-8 text-blue-400" />
           </div>
           <CardTitle className="text-2xl font-gaming text-blue-400">
-            Verify Your Email
+            📧 Check Your Email
           </CardTitle>
           <CardDescription className="text-gray-300">
-            We've sent a verification link to
+            We've sent a verification link to:
           </CardDescription>
-          <p className="text-blue-400 font-medium">{user?.email || pendingEmail}</p>
+          <p className="text-blue-400 font-medium text-lg">{user?.email || pendingEmail}</p>
+          <p className="text-gray-400 text-sm mt-2">
+            Click the link in the email to activate your account
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-gray-300">
-                <p className="font-medium mb-1">Check your email inbox</p>
+                <p className="font-medium mb-1">📬 Check your email inbox</p>
                 <p>Click the verification link in the email to activate your account.</p>
-                <p className="mt-2 text-xs text-gray-400">
-                  Don't see the email? Check your spam folder.
+                <p className="mt-2 text-xs text-yellow-400 font-medium">
+                  ⚠️ Don't see the email? Check your spam/junk folder!
                 </p>
               </div>
             </div>

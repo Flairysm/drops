@@ -54,15 +54,18 @@ export default function Register() {
       // Check if email verification is required
       if (signUpData.user && !signUpData.user.email_confirmed_at) {
         toast({
-          title: "Account Created!",
-          description: "Please check your email to verify your account before logging in.",
+          title: "📧 Verification Email Sent!",
+          description: `We've sent a verification link to ${data.email}. Please check your inbox (and spam folder) and click the link to activate your account.`,
+          duration: 8000, // Show for 8 seconds
         });
         
         // Store the email for the verification page
         localStorage.setItem('pendingVerificationEmail', data.email);
         
-        // Redirect to verification page
-        setLocation("/verify-email");
+        // Redirect to verification page after a short delay
+        setTimeout(() => {
+          setLocation("/verify-email");
+        }, 2000);
       } else if (signUpData.user && signUpData.user.email_confirmed_at) {
         // Email already verified, redirect to home
         toast({
@@ -73,10 +76,13 @@ export default function Register() {
       } else {
         // Fallback
         toast({
-          title: "Account Created!",
-          description: "Please check your email to verify your account.",
+          title: "📧 Verification Email Sent!",
+          description: `We've sent a verification link to ${data.email}. Please check your inbox and click the link to activate your account.`,
+          duration: 8000,
         });
-        setLocation("/verify-email");
+        setTimeout(() => {
+          setLocation("/verify-email");
+        }, 2000);
       }
     } catch (error: any) {
       toast({

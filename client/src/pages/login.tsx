@@ -38,10 +38,13 @@ export default function Login() {
         // Check if it's an email verification error
         if (error.message?.includes("email not confirmed") || error.message?.includes("Email not confirmed")) {
           toast({
-            title: "Email Not Verified",
-            description: "Please check your email and click the verification link before logging in.",
+            title: "📧 Email Not Verified",
+            description: "Please check your email inbox (and spam folder) and click the verification link before logging in.",
             variant: "destructive",
+            duration: 6000,
           });
+          // Store the email for the verification page
+          localStorage.setItem('pendingVerificationEmail', data.email);
           // Redirect to verification page
           setLocation("/verify-email");
           return;
