@@ -3,7 +3,6 @@ import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
 import { GlobalFeed } from "@/components/GlobalFeed";
 import { CreditPurchase } from "@/components/CreditPurchase";
-import { RecentPullsCarousel } from "@/components/RecentPullsCarousel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,15 +61,32 @@ export default function Home() {
               <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Create an account to start earning cards and playing games!
               </p>
+              
+              {/* Login/Create Account Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/register">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-primary to-accent hover:glow-effect transform hover:scale-105 transition-all"
+                    data-testid="button-register"
+                  >
+                    <Play className="mr-2 h-4 w-4" />
+                    Create Account
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    data-testid="button-login"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
             </div>
           </section>
-        
-        {/* Recent Pulls for non-authenticated users */}
-        <section className="py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <RecentPullsCarousel limit={10} />
-          </div>
-        </section>
         
         {/* Footer */}
         <footer className="bg-secondary/20 border-t border-border py-12">
