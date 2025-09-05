@@ -12,28 +12,37 @@ export default function VerifyEmail() {
   const { user, signOut } = useSupabaseAuth();
   const [isResending, setIsResending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+
+  // Get pending email from localStorage
+  useEffect(() => {
+    const storedEmail = localStorage.getItem('pendingVerificationEmail');
+    if (storedEmail) {
+      setPendingEmail(storedEmail);
+    }
+  }, []);
 
   // Check if user is authenticated and email is not verified
   useEffect(() => {
     if (user && user.email_confirmed_at) {
       // Email is already verified, redirect to home
+      localStorage.removeItem('pendingVerificationEmail');
       setLocation("/");
-    } else if (!user) {
-      // No user, redirect to login
+    } else if (user && !user.email_confirmed_at) {
+      // User exists but email not verified, stay on this page
+      setPendingEmail(user.email || null);
+    } else if (!user && !pendingEmail) {
+      // No user and no pending email, redirect to login
       setLocation("/login");
     }
-  }, [user, setLocation]);
+  }, [user, pendingEmail, setLocation]);
 
   const handleResendVerification = async () => {
-    if (!user) return;
-    
     setIsResending(true);
     try {
-      // Supabase handles resending verification emails automatically
-      // when you call signUp again with the same email
-      const { error } = await signOut();
-      if (error) {
-        throw error;
+      if (user) {
+        // User is logged in but not verified, sign out first
+        await signOut();
       }
       
       setEmailSent(true);
@@ -61,7 +70,7 @@ export default function VerifyEmail() {
     setLocation("/login");
   };
 
-  if (!user) {
+  if (!user && !pendingEmail) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -82,7 +91,7 @@ export default function VerifyEmail() {
           <CardDescription className="text-gray-300">
             We've sent a verification link to
           </CardDescription>
-          <p className="text-blue-400 font-medium">{user.email}</p>
+          <p className="text-blue-400 font-medium">{user?.email || pendingEmail}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">

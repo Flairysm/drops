@@ -37,7 +37,7 @@ export default function Register() {
 
   const handleSubmit = async (data: RegistrationData) => {
     try {
-      const { error } = await signUp(data.email, data.password, {
+      const { data: signUpData, error } = await signUp(data.email, data.password, {
         username: data.username,
         phoneNumber: data.phoneNumber
       });
@@ -51,13 +51,33 @@ export default function Register() {
         return;
       }
 
-      toast({
-        title: "Account Created!",
-        description: "Please check your email to verify your account before logging in.",
-      });
-      
-      // Redirect to verification page
-      setLocation("/verify-email");
+      // Check if email verification is required
+      if (signUpData.user && !signUpData.user.email_confirmed_at) {
+        toast({
+          title: "Account Created!",
+          description: "Please check your email to verify your account before logging in.",
+        });
+        
+        // Store the email for the verification page
+        localStorage.setItem('pendingVerificationEmail', data.email);
+        
+        // Redirect to verification page
+        setLocation("/verify-email");
+      } else if (signUpData.user && signUpData.user.email_confirmed_at) {
+        // Email already verified, redirect to home
+        toast({
+          title: "Account Created!",
+          description: "Welcome to Drops!",
+        });
+        setLocation("/");
+      } else {
+        // Fallback
+        toast({
+          title: "Account Created!",
+          description: "Please check your email to verify your account.",
+        });
+        setLocation("/verify-email");
+      }
     } catch (error: any) {
       toast({
         title: "Registration Failed",
