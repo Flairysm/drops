@@ -4,12 +4,11 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
-import VerifyEmail from "@/pages/verify-email";
 import Play from "@/pages/games";
 import Plinko from "@/pages/plinko";
 import Wheel from "@/pages/wheel";
@@ -22,26 +21,26 @@ import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function RouterComponent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading } = useSupabaseAuth();
   
   // Debug logging
-  console.log('🔍 Router state:', { isAuthenticated, isLoading });
+  console.log('🔍 Router state:', { isAuthenticated, loading });
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (isLoading) {
+      if (loading) {
         setLoadingTimeout(true);
       }
     }, 10000); // 10 second timeout
 
     return () => clearTimeout(timer);
-  }, [isLoading]);
+  }, [loading]);
 
   // Show loading spinner only if actually loading and no timeout
-  if (isLoading && !loadingTimeout) {
+  if (loading && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -74,7 +73,6 @@ function RouterComponent() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      <Route path="/verify-email" component={VerifyEmail} />
       {isAuthenticated && (
         <>
           <Route path="/play" component={Play} />

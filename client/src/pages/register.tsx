@@ -2,14 +2,13 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 // Registration schema
 const registrationSchema = z.object({
@@ -24,6 +23,7 @@ type RegistrationData = z.infer<typeof registrationSchema>;
 export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { signUp, loading } = useSupabaseAuth();
   
   const form = useForm<RegistrationData>({
     resolver: zodResolver(registrationSchema),
@@ -35,35 +35,40 @@ export default function Register() {
     },
   });
 
-  const registerMutation = useMutation({
-    mutationFn: async (data: RegistrationData) => {
-      return await apiRequest("POST", "/api/auth/register", data);
-    },
-    onSuccess: (data: any) => {
-      // Store email in localStorage for verification page
-      if (data.user?.email) {
-        localStorage.setItem('pendingVerificationEmail', data.user.email);
+  const handleSubmit = async (data: RegistrationData) => {
+    try {
+      const { error } = await signUp(data.email, data.password, {
+        username: data.username,
+        phoneNumber: data.phoneNumber
+      });
+
+      if (error) {
+        toast({
+          title: "Registration Failed",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
-      
+
       toast({
         title: "Account Created!",
         description: "Please check your email to verify your account before logging in.",
       });
       
-      // Redirect to verification page with email parameter
-      setLocation(`/verify-email?email=${encodeURIComponent(data.user?.email || '')}`);
-    },
-    onError: (error: any) => {
+      // Redirect to login page
+      setLocation("/login");
+    } catch (error: any) {
       toast({
         title: "Registration Failed",
         description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
   const onSubmit = (data: RegistrationData) => {
-    registerMutation.mutate(data);
+    handleSubmit(data);
   };
 
   return (
@@ -140,10 +145,10 @@ export default function Register() {
             <Button
               type="submit"
               data-testid="button-register"
-              disabled={registerMutation.isPending}
+              disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
             >
-              {registerMutation.isPending ? "Creating Account..." : "Create Account"}
+              {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 
