@@ -67,10 +67,10 @@ export default function Home() {
                 backgroundAttachment: 'fixed'
               }}
             >
-              {/* Enhanced dark overlay for better text readability */}
-              <div className="absolute inset-0 bg-black/50"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-black/60"></div>
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40"></div>
+              {/* Lighter overlay to show more background */}
+              <div className="absolute inset-0 bg-black/30"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-black/40"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/30"></div>
             </div>
             
             <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 w-full">
@@ -96,9 +96,16 @@ export default function Home() {
                   </p>
                   
                   {/* Free Credits Offer */}
-                  <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-accent/25 to-primary/25 border-2 border-accent/40 rounded-2xl px-8 py-4 backdrop-blur-md shadow-2xl">
-                    <Star className="w-6 h-6 text-accent animate-pulse" />
-                    <span className="text-xl font-bold text-accent tracking-wide">Sign up now and get 30 credit free</span>
+                  <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 border-2 border-yellow-400/40 rounded-2xl p-6 backdrop-blur-md shadow-2xl">
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                        <Star className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-400">30 FREE CREDITS</div>
+                        <div className="text-lg text-yellow-300">Sign up now to claim</div>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* CTA Buttons */}
@@ -147,30 +154,6 @@ export default function Home() {
             </div>
           </section>
 
-          
-        
-      {/* Enhanced Footer */}
-      <footer className="bg-gradient-to-b from-black/80 to-black border-t border-white/10 py-16">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="text-center space-y-6">
-            <div className="space-y-4">
-              <h3 className="font-gaming font-bold text-2xl sm:text-3xl">
-                <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-                  DROPS
-                </span>
-              </h3>
-              <p className="text-gray-300 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-                The ultimate digital TCG experience with transparent odds and exciting minigames
-              </p>
-            </div>
-            <div className="pt-6 border-t border-white/10">
-              <p className="text-gray-400 text-sm sm:text-base">
-                &copy; 2025 Drops. Built for collectors, by collectors.
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
     );
   }
@@ -360,29 +343,6 @@ export default function Home() {
       
       {/* Navigation Footer */}
       <NavigationFooter />
-      
-      {/* Enhanced Footer */}
-      <footer className="bg-gradient-to-b from-black/80 to-black border-t border-white/10 py-16">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="text-center space-y-6">
-            <div className="space-y-4">
-              <h3 className="font-gaming font-bold text-2xl sm:text-3xl">
-                <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-                  DROPS
-                </span>
-              </h3>
-              <p className="text-gray-300 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
-                The ultimate digital TCG experience with transparent odds and exciting minigames
-              </p>
-            </div>
-            <div className="pt-6 border-t border-white/10">
-              <p className="text-gray-400 text-sm sm:text-base">
-                &copy; 2025 Drops. Built for collectors, by collectors.
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
