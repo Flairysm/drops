@@ -11,10 +11,7 @@ import { Package2, Sparkles, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Import pack images
-import masterballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png';
-import ultraballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png';
-import greatballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png';
-import pokeballPack from '@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png';
+import classicPack from '/assets/classic-image.png';
 
 interface UserPack {
   id: string;
@@ -168,18 +165,8 @@ export default function MyPacks() {
   // Pokemon pack images component
   const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
     const getPackImage = (type: string) => {
-      switch (type.toLowerCase()) {
-        case 'masterball':
-          return masterballPack;
-        case 'ultraball':
-          return ultraballPack;
-        case 'greatball':
-          return greatballPack;
-        case 'pokeball':
-          return pokeballPack;
-        default:
-          return pokeballPack;
-      }
+      // Use classic pack image for all pack types
+      return classicPack;
     };
     
     const imageSize = size === 'small' ? 'w-16 h-20' : 'w-48 h-60';

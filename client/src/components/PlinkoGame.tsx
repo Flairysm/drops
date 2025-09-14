@@ -5,10 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Play, Package, DollarSign } from "lucide-react";
-import masterballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_21_42 PM_1756567318737.png";
-import ultraballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_21_45 PM_1756567324980.png";
-import greatballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_22_18 PM_1756567342025.png";
-import pokeballPack from "@assets/ChatGPT Image Aug 30, 2025, 11_22_50 PM_1756567373572.png";
+import classicPack from "/assets/classic-image.png";
 
 interface GameResult {
   success: boolean;
@@ -59,18 +56,8 @@ const PackImage = ({
   size?: "small" | "large";
 }) => {
   const getPackImage = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "masterball":
-        return masterballPack;
-      case "ultraball":
-        return ultraballPack;
-      case "greatball":
-        return greatballPack;
-      case "pokeball":
-        return pokeballPack;
-      default:
-        return pokeballPack;
-    }
+    // Use classic pack image for all pack types
+    return classicPack;
   };
 
   const imageSize = size === "small" ? "w-8 h-10" : "w-16 h-20";
