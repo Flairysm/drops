@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package2, Sparkles, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
 
 // Import pack images
 import classicPack from '/assets/classic-image.png';
@@ -201,262 +202,410 @@ export default function MyPacks() {
   const noPacks = !userPacks || (userPacks as any[]).length === 0;
 
   return (
-    <>
+    <div className="min-h-screen relative overflow-hidden">
       <Navigation />
-      <div className="min-h-screen pt-20 pb-20 px-4">
+
+      {/* Futuristic Card Hero Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        {/* Main background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('data:image/svg+xml;base64,${btoa(`
+              <svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#1e1b4b" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#312e81" stop-opacity="1"/>
+                  </radialGradient>
+                  <linearGradient id="card1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8"/>
+                    <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.6"/>
+                  </linearGradient>
+                  <linearGradient id="card2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ec4899" stop-opacity="0.9"/>
+                    <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.8"/>
+                  </linearGradient>
+                  <linearGradient id="card3" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.7"/>
+                    <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.9"/>
+                  </linearGradient>
+                </defs>
+                <rect width="1920" height="1080" fill="url(#bg)"/>
+                
+                {/* Floating Cards */}
+                <g opacity="0.6">
+                  <rect x="200" y="150" width="120" height="180" rx="12" fill="url(#card1)" transform="rotate(-15 260 240)"/>
+                  <rect x="1600" y="200" width="120" height="180" rx="12" fill="url(#card2)" transform="rotate(20 1660 290)"/>
+                  <rect x="100" y="600" width="120" height="180" rx="12" fill="url(#card3)" transform="rotate(-25 160 690)"/>
+                  <rect x="1700" y="650" width="120" height="180" rx="12" fill="url(#card1)" transform="rotate(30 1760 740)"/>
+                  <rect x="400" y="400" width="100" height="150" rx="10" fill="url(#card2)" transform="rotate(45 450 475)"/>
+                  <rect x="1400" y="500" width="100" height="150" rx="10" fill="url(#card3)" transform="rotate(-35 1450 575)"/>
+                </g>
+                
+                {/* Grid Pattern */}
+                <defs>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#22D3EE" stroke-width="0.5" opacity="0.1"/>
+                  </pattern>
+                </defs>
+                <rect width="1920" height="1080" fill="url(#grid)"/>
+                
+                {/* Floating Particles */}
+                <g opacity="0.4">
+                  <circle cx="300" cy="200" r="2" fill="#22D3EE"/>
+                  <circle cx="800" cy="300" r="1.5" fill="#7C3AED"/>
+                  <circle cx="1200" cy="150" r="2.5" fill="#22D3EE"/>
+                  <circle cx="1600" cy="400" r="1" fill="#7C3AED"/>
+                  <circle cx="200" cy="800" r="2" fill="#22D3EE"/>
+                  <circle cx="600" cy="700" r="1.5" fill="#7C3AED"/>
+                  <circle cx="1000" cy="900" r="2" fill="#22D3EE"/>
+                  <circle cx="1400" cy="750" r="1" fill="#7C3AED"/>
+                </g>
+              </svg>
+            `)}')`
+          }}
+        />
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
+        {/* Additional floating particles */}
+        <div className="absolute inset-0">
+          {[...Array(50)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-cyan-400/60 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0, 1, 0],
+              }}
+              transition={{
+                duration: Math.random() * 3 + 2,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="min-h-screen pt-24 pb-24 px-6 sm:px-8 lg:px-10 relative z-10">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
-          <div className="text-center space-y-4">
+          <motion.div 
+            className="text-center space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             <div className="flex items-center justify-center gap-3">
-              <Gift className="h-8 w-8 text-primary" />
-              <h1 className="text-4xl font-gaming font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                My Packs
+              <Gift className="h-8 w-8 text-[#22D3EE]" />
+              <h1 className="text-4xl sm:text-5xl font-bold">
+                <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
+                  My Packs
+                </span>
               </h1>
             </div>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-[#E5E7EB] max-w-2xl mx-auto">
               Open your earned packs to discover amazing cards! Higher tier packs have better odds for rare cards.
             </p>
             {!noPacks && (
-              <div className="flex justify-center mt-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{(userPacks as any[] || []).length}</p>
-                  <p className="text-sm text-muted-foreground">Total Packs</p>
+              <div className="flex justify-center mt-6">
+                <div className="text-center bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl px-6 py-4">
+                  <p className="text-2xl font-bold text-[#22D3EE]">{(userPacks as any[] || []).length}</p>
+                  <p className="text-sm text-[#9CA3AF]">Total Packs</p>
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
 
           {noPacks ? (
             /* No Packs State */
-            (<div className="text-center py-16">
-              <div className="gaming-card max-w-md mx-auto p-8 rounded-xl">
+            <motion.div 
+              className="text-center py-16"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl max-w-md mx-auto p-8 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
                 <PackImage packType="pokeball" size="large" />
-                <h3 className="text-xl font-semibold mb-2 mt-6">No Packs Yet</h3>
-                <p className="text-muted-foreground mb-6">Play Minigames to earn Mystery Packs</p>
-                <Button asChild className="gaming-gradient">
+                <h3 className="text-xl font-bold text-[#E5E7EB] mb-2 mt-6">No Packs Yet</h3>
+                <p className="text-[#9CA3AF] mb-6">Play Minigames to earn Mystery Packs</p>
+                <Button asChild className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] shadow-[0_0_15px_rgba(124,58,237,0.4)]">
                   <a href="/play" data-testid="button-play">
                     <Sparkles className="mr-2 h-4 w-4" />
                     Play
                   </a>
                 </Button>
               </div>
-            </div>)
+            </motion.div>
           ) : (
             /* 4 Pack Types Inline */
-            (<div className="flex justify-center items-start gap-16 flex-wrap py-8">
-              {packTiers.map((tier) => {
+            <motion.div 
+              className="flex justify-center items-start gap-16 flex-wrap py-8"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {packTiers.map((tier, index) => {
                 const packs = groupedPacks[tier] || [];
                 const packDisplay = getPackTypeDisplay(tier);
                 
                 return (
-                  <div key={tier} className="text-center">
-                    <h3 className={`text-xl font-gaming font-bold mb-4 ${packDisplay.textColor}`}>
-                      {packDisplay.name}
-                    </h3>
-                    <div className="mb-6">
-                      <PackImage packType={tier} size="large" />
-                    </div>
-                    
-                    {packs.length > 0 && (
-                      <div className="space-y-3">
-                        <Badge className={`${packDisplay.textColor} text-sm px-3 py-1`} variant="outline">
-                          {packs.length} available
-                        </Badge>
-                        
-                        <div className="space-y-2">
-                          <Button 
-                            onClick={() => handleOpenPack(tier)}
-                            disabled={openingPack !== null}
-                            className={`w-full bg-gradient-to-r ${packDisplay.color} text-white hover:opacity-90 transition-opacity`}
-                            data-testid={`button-open-pack-${tier}`}
-                            size="sm"
-                          >
-                            {openingPack ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Opening...
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <Package2 className="h-3 w-3" />
-                                Open Pack
-                              </div>
-                            )}
-                          </Button>
+                  <motion.div 
+                    key={tier} 
+                    className="text-center"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <div className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+                      <h3 className="text-xl font-bold mb-4 text-[#E5E7EB]">
+                        {packDisplay.name}
+                      </h3>
+                      <div className="mb-6">
+                        <PackImage packType={tier} size="large" />
+                      </div>
+                      
+                      {packs.length > 0 && (
+                        <div className="space-y-3">
+                          <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0 text-sm px-3 py-1">
+                            {packs.length} available
+                          </Badge>
+                          
+                          <div className="space-y-2">
+                            <Button 
+                              onClick={() => handleOpenPack(tier)}
+                              disabled={openingPack !== null}
+                              className="w-full bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] shadow-[0_0_15px_rgba(124,58,237,0.4)] text-white hover:opacity-90 transition-opacity"
+                              data-testid={`button-open-pack-${tier}`}
+                              size="sm"
+                            >
+                              {openingPack ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  Opening...
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Package2 className="h-3 w-3" />
+                                  Open Pack
+                                </div>
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    
-                    {packs.length === 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm text-muted-foreground">No packs available</p>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                      
+                      {packs.length === 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm text-[#9CA3AF]">No packs available</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
                 );
               })}
-            </div>)
+            </motion.div>
           )}
 
         </div>
 
         {/* Pack Odds Section */}
-        <div className="max-w-4xl mx-auto mt-16 mb-8">
+        <motion.div 
+          className="max-w-4xl mx-auto mt-16 mb-8"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-gaming font-bold mb-2">Pack Odds</h2>
-            <p className="text-muted-foreground">Probability of pulling each tier from different pack types</p>
+            <h2 className="text-2xl font-bold mb-2">
+              <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
+                Pack Odds
+              </span>
+            </h2>
+            <p className="text-[#9CA3AF]">Probability of pulling each tier from different pack types</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Pokeball Pack */}
-            <div className="gaming-card p-6 rounded-xl">
+            <motion.div 
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="text-center mb-4">
                 <div className="flex justify-center mb-3">
                   <PackImage packType="pokeball" size="large" />
                 </div>
-                <h3 className="font-bold text-lg text-red-600">Pokeball Pack</h3>
+                <h3 className="font-bold text-lg text-[#E5E7EB]">Pokeball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">84.8%</span>
+                  <span className="text-[#10b981]">C Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">84.8%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-blue-600">B Tier:</span>
-                  <span className="font-semibold">7.0%</span>
+                  <span className="text-[#3b82f6]">B Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">7.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-purple-600">A Tier:</span>
-                  <span className="font-semibold">5.2%</span>
+                  <span className="text-[#8b5cf6]">A Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">5.2%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S Tier:</span>
-                  <span className="font-semibold">2.8%</span>
+                  <span className="text-[#f59e0b]">S Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">2.8%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-pink-600">SS Tier:</span>
-                  <span className="font-semibold">0.15%</span>
+                  <span className="text-[#ec4899]">SS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">0.15%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-red-600">SSS Tier:</span>
-                  <span className="font-semibold">0.05%</span>
+                  <span className="text-[#ef4444]">SSS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">0.05%</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Greatball Pack */}
-            <div className="gaming-card p-6 rounded-xl">
+            <motion.div 
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="text-center mb-4">
                 <div className="flex justify-center mb-3">
                   <PackImage packType="greatball" size="large" />
                 </div>
-                <h3 className="font-bold text-lg text-blue-600">Great Ball Pack</h3>
+                <h3 className="font-bold text-lg text-[#E5E7EB]">Great Ball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">50.0%</span>
+                  <span className="text-[#10b981]">C Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">50.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-blue-600">B Tier:</span>
-                  <span className="font-semibold">22.0%</span>
+                  <span className="text-[#3b82f6]">B Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">22.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-purple-600">A Tier:</span>
-                  <span className="font-semibold">15.0%</span>
+                  <span className="text-[#8b5cf6]">A Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">15.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S Tier:</span>
-                  <span className="font-semibold">9.0%</span>
+                  <span className="text-[#f59e0b]">S Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">9.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-pink-600">SS Tier:</span>
-                  <span className="font-semibold">3.0%</span>
+                  <span className="text-[#ec4899]">SS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">3.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-red-600">SSS Tier:</span>
-                  <span className="font-semibold">1.0%</span>
+                  <span className="text-[#ef4444]">SSS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">1.0%</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Ultraball Pack */}
-            <div className="gaming-card p-6 rounded-xl">
+            <motion.div 
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="text-center mb-4">
                 <div className="flex justify-center mb-3">
                   <PackImage packType="ultraball" size="large" />
                 </div>
-                <h3 className="font-bold text-lg text-yellow-600">Ultra Ball Pack</h3>
+                <h3 className="font-bold text-lg text-[#E5E7EB]">Ultra Ball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">20.0%</span>
+                  <span className="text-[#10b981]">C Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">20.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-blue-600">B Tier:</span>
-                  <span className="font-semibold">32.5%</span>
+                  <span className="text-[#3b82f6]">B Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">32.5%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-purple-600">A Tier:</span>
-                  <span className="font-semibold">27.0%</span>
+                  <span className="text-[#8b5cf6]">A Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">27.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S Tier:</span>
-                  <span className="font-semibold">12.0%</span>
+                  <span className="text-[#f59e0b]">S Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">12.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-pink-600">SS Tier:</span>
-                  <span className="font-semibold">6.0%</span>
+                  <span className="text-[#ec4899]">SS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">6.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-red-600">SSS Tier:</span>
-                  <span className="font-semibold">2.5%</span>
+                  <span className="text-[#ef4444]">SSS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">2.5%</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Masterball Pack */}
-            <div className="gaming-card p-6 rounded-xl">
+            <motion.div 
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              whileHover={{ scale: 1.02 }}
+            >
               <div className="text-center mb-4">
                 <div className="flex justify-center mb-3">
                   <PackImage packType="masterball" size="large" />
                 </div>
-                <h3 className="font-bold text-lg text-purple-600">Master Ball Pack</h3>
+                <h3 className="font-bold text-lg text-[#E5E7EB]">Master Ball Pack</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">D Tier:</span>
-                  <span className="font-semibold">0.0%</span>
+                  <span className="text-[#6b7280]">D Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">0.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-green-600">C Tier:</span>
-                  <span className="font-semibold">0.0%</span>
+                  <span className="text-[#10b981]">C Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">0.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-blue-600">B Tier:</span>
-                  <span className="font-semibold">39.0%</span>
+                  <span className="text-[#3b82f6]">B Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">39.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-purple-600">A Tier:</span>
-                  <span className="font-semibold">34.0%</span>
+                  <span className="text-[#8b5cf6]">A Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">34.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-yellow-600">S Tier:</span>
-                  <span className="font-semibold">15.0%</span>
+                  <span className="text-[#f59e0b]">S Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">15.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-pink-600">SS Tier:</span>
-                  <span className="font-semibold">8.0%</span>
+                  <span className="text-[#ec4899]">SS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">8.0%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-red-600">SSS Tier:</span>
-                  <span className="font-semibold">4.0%</span>
+                  <span className="text-[#ef4444]">SSS Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">4.0%</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
       {/* Navigation Footer */}
       <NavigationFooter />
@@ -470,6 +619,6 @@ export default function MyPacks() {
           packType={packOpenData.packCards?.[packOpenData.hitCardPosition]?.tier ? getPackTypeDisplay(packOpenData.packCards[packOpenData.hitCardPosition].tier).name : 'Unknown Pack'}
         />
       )}
-    </>
+    </div>
   );
 }
