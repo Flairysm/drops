@@ -98,18 +98,6 @@ CREATE TABLE IF NOT EXISTS expansions (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create virtual_packs table
-CREATE TABLE IF NOT EXISTS virtual_packs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    image_url VARCHAR,
-    price DECIMAL(10, 2) NOT NULL,
-    card_count INTEGER DEFAULT 10 NOT NULL,
-    expansion_id UUID REFERENCES expansions(id),
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT NOW()
-);
 
 -- Create special_packs table
 CREATE TABLE IF NOT EXISTS special_packs (
@@ -158,15 +146,6 @@ CREATE TABLE IF NOT EXISTS card_pool_items (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create virtual_pack_cards table
-CREATE TABLE IF NOT EXISTS virtual_pack_cards (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    virtual_pack_id UUID REFERENCES virtual_packs(id),
-    card_id UUID REFERENCES cards(id),
-    weight INTEGER DEFAULT 1 NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT NOW()
-);
 
 -- Create game_settings table
 CREATE TABLE IF NOT EXISTS game_settings (
@@ -199,16 +178,6 @@ CREATE TABLE IF NOT EXISTS pull_rates (
     updated_by VARCHAR REFERENCES users(id)
 );
 
--- Create virtual_pack_pull_rates table
-CREATE TABLE IF NOT EXISTS virtual_pack_pull_rates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    virtual_pack_id UUID REFERENCES virtual_packs(id),
-    card_tier VARCHAR(20) NOT NULL,
-    probability INTEGER NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    updated_at TIMESTAMP DEFAULT NOW(),
-    updated_by VARCHAR REFERENCES users(id)
-);
 
 -- Create user_cards table
 CREATE TABLE IF NOT EXISTS user_cards (

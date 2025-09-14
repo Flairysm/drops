@@ -2,22 +2,15 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
-import { VirtualPackStore } from "@/components/VirtualPackStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function ThemedPacks() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
 
-  const { data: virtualPacks } = useQuery({
-    queryKey: ["/api/virtual-packs"],
-    enabled: isAuthenticated,
-  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -66,13 +59,21 @@ export default function ThemedPacks() {
             </p>
           </section>
 
-          {/* Game */}
+          {/* Coming Soon */}
           <Card className="gaming-card max-w-6xl mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="font-gaming text-2xl">Themed Pack Store</CardTitle>
             </CardHeader>
-            <CardContent>
-              <VirtualPackStore virtualPacks={(virtualPacks as any) || []} />
+            <CardContent className="text-center py-12">
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-muted-foreground">Coming Soon</h3>
+                <p className="text-muted-foreground">
+                  Themed packs are currently under development. Check back soon for exciting new pack types!
+                </p>
+                <Badge variant="outline" className="text-sm">
+                  In Development
+                </Badge>
+              </div>
             </CardContent>
           </Card>
         </div>

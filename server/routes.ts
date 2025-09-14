@@ -7,8 +7,6 @@ import {
   insertCardSchema, 
   insertPackSchema,
   insertVirtualLibrarySchema,
-  insertVirtualPackSchema,
-  insertVirtualPackCardSchema,
   insertShippingRequestSchema,
   type GameResult 
 } from "@shared/schema";
@@ -625,85 +623,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Virtual pack admin routes
-  app.get('/api/admin/virtual-packs', isAdminCombined, async (req: any, res) => {
-    try {
-      const virtualPacks = await storage.getVirtualPacks();
-      console.log(`Fetching virtual packs: found ${virtualPacks.length} active packs`);
-      res.json(virtualPacks);
-    } catch (error) {
-      console.error("Error fetching virtual packs:", error);
-      res.status(500).json({ message: "Failed to fetch virtual packs" });
-    }
-  });
-
-  app.post('/api/admin/virtual-packs', isAdminCombined, async (req: any, res) => {
-    try {
-      const packData = insertVirtualPackSchema.parse(req.body);
-      const virtualPack = await storage.createVirtualPack(packData);
-      res.json(virtualPack);
-    } catch (error) {
-      console.error("Error creating virtual pack:", error);
-      res.status(500).json({ message: "Failed to create virtual pack" });
-    }
-  });
-
-  app.patch('/api/admin/virtual-packs/:id', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const packData = insertVirtualPackSchema.partial().parse(req.body);
-      const virtualPack = await storage.updateVirtualPack(id, packData);
-      res.json(virtualPack);
-    } catch (error) {
-      console.error("Error updating virtual pack:", error);
-      res.status(500).json({ message: "Failed to update virtual pack" });
-    }
-  });
-
-  app.delete('/api/admin/virtual-packs/:id', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      console.log(`Deleting virtual pack: ${id}`);
-      await storage.deleteVirtualPack(id);
-      console.log(`Virtual pack ${id} marked as inactive`);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting virtual pack:", error);
-      res.status(500).json({ message: "Failed to delete virtual pack" });
-    }
-  });
-
-  app.get('/api/admin/virtual-packs/:id/cards', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const packCards = await storage.getVirtualPackCards(id);
-      res.json(packCards);
-    } catch (error) {
-      console.error("Error fetching virtual pack cards:", error);
-      res.status(500).json({ message: "Failed to fetch virtual pack cards" });
-    }
-  });
-
-  app.post('/api/admin/virtual-packs/:id/cards', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const { cardIds, weights } = req.body;
-      
-      if (!Array.isArray(cardIds) || !Array.isArray(weights)) {
-        return res.status(400).json({ message: "cardIds and weights must be arrays" });
-      }
-      
-      if (cardIds.length !== weights.length) {
-        return res.status(400).json({ message: "cardIds and weights arrays must have same length" });
-      }
-      
-      await storage.setVirtualPackCards(id, cardIds, weights);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error setting virtual pack cards:", error);
-      res.status(500).json({ message: "Failed to set virtual pack cards" });
-    }
-  });
 
   // User management routes
   app.post('/api/admin/users/:id/ban', isAdminCombined, async (req: any, res) => {
@@ -746,55 +665,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public route for users to view pack cards
-  app.get('/api/virtual-packs/:id/cards', async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const packCards = await storage.getVirtualPackCards(id);
-      console.log("Returning pack cards for pack", id, ":", packCards);
-      res.json(packCards);
-    } catch (error) {
-      console.error("Error fetching virtual pack cards:", error);
-      res.status(500).json({ message: "Failed to fetch virtual pack cards" });
-    }
-  });
-
-  // Virtual pack pull rate routes
-  app.get('/api/admin/virtual-packs/:id/pull-rates', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const pullRates = await storage.getVirtualPackPullRates(id);
-      res.json(pullRates);
-    } catch (error) {
-      console.error("Error fetching virtual pack pull rates:", error);
-      res.status(500).json({ message: "Failed to fetch virtual pack pull rates" });
-    }
-  });
-
-  app.post('/api/admin/virtual-packs/:id/pull-rates', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const { rates } = req.body;
-      
-      if (!Array.isArray(rates)) {
-        return res.status(400).json({ message: "rates must be an array" });
-      }
-      
-      // Validate rates format
-      for (const rate of rates) {
-        if (!rate.cardTier || typeof rate.probability !== 'number') {
-          return res.status(400).json({ message: "Each rate must have cardTier and probability" });
-        }
-      }
-      
-      const userId = req.user.id;
-      await storage.setVirtualPackPullRates(id, rates, userId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error setting virtual pack pull rates:", error);
-      res.status(500).json({ message: "Failed to set virtual pack pull rates" });
-    }
-  });
 
   // Admin system settings routes
   app.get('/api/admin/system-settings', isAdminCombined, async (req: any, res) => {
@@ -884,50 +754,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Virtual pack routes
-  app.get('/api/virtual-packs', async (req, res) => {
-    try {
-      const virtualPacks = await storage.getActiveVirtualPacks();
-      res.json(virtualPacks);
-    } catch (error) {
-      console.error("Error fetching virtual packs:", error);
-      res.status(500).json({ message: "Failed to fetch virtual packs" });
-    }
-  });
-
-  app.post('/api/virtual-packs/:id/open', isAuthenticatedCombined, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { id } = req.params;
-
-      const result = await storage.openVirtualPack(id, userId);
-      
-      // Ensure market values are properly formatted
-      const formattedResult = {
-        ...result,
-        cards: result.cards.map(userCard => ({
-          id: userCard.card.id,
-          name: userCard.card.name,
-          tier: userCard.card.tier,
-          imageUrl: userCard.card.imageUrl,
-          marketValue: userCard.card.marketValue ? userCard.card.marketValue.toString() : "0.00",
-          packType: userCard.card.packType || 'virtual'
-        }))
-      };
-      
-      res.json({ 
-        success: true,
-        ...formattedResult
-      });
-    } catch (error) {
-      console.error("Error opening virtual pack:", error);
-      if (error instanceof Error) {
-        res.status(400).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Failed to open virtual pack" });
-      }
-    }
-  });
 
   app.post('/api/packs/open/:packId', isAuthenticatedCombined, async (req: any, res) => {
     try {

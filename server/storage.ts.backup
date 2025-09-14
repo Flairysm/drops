@@ -4,6 +4,9 @@ import {
   packs,
   packOdds,
   virtualLibrary,
+  virtualPacks,
+  virtualPackCards,
+  virtualPackPullRates,
   userCards,
   userPacks,
   globalFeed,
@@ -293,6 +296,244 @@ export class DatabaseStorage implements IStorage {
 
 
 
+  // Vault operations
+  async getUserCards(userId: string): Promise<UserCardWithCard[]> {
+    return await db.transaction(async (tx) => {
+      // Get virtual pack info
+      const [virtualPack] = await tx.select().from(virtualPacks).where(eq(virtualPacks.id, virtualPackId));
+      if (!virtualPack) {
+        throw new Error('Virtual pack not found');
+      }
+
+      // Get virtual pack pull rates (tier-based probabilities)
+      const pullRates = await tx.select()
+        .from(virtualPackPullRates)
+        .where(and(
+          eq(virtualPackPullRates.virtualPackId, virtualPackId),
+          eq(virtualPackPullRates.isActive, true)
+        ));
+
+      if (pullRates.length === 0) {
+        throw new Error('No pull rates configured for this virtual pack');
+      }
+
+      // Get pack-specific cards assigned through manage content
+      const packCards = await tx
+        .select({
+          card: cards,
+          weight: virtualPackCards.weight,
+        })
+        .from(virtualPackCards)
+        .innerJoin(cards, eq(virtualPackCards.cardId, cards.id))
+        .where(and(
+          eq(virtualPackCards.virtualPackId, virtualPackId),
+          eq(virtualPackCards.isActive, true),
+          eq(cards.isActive, true)
+        ));
+
+      if (packCards.length === 0) {
+        throw new Error('No cards assigned to this virtual pack. Please use Manage Content to assign cards.');
+      }
+
+      // Group pack-specific cards by tier
+      const cardsByTier = packCards.reduce((acc, packCard) => {
+        const card = packCard.card;
+        if (card.tier) {
+          if (!acc[card.tier]) acc[card.tier] = [];
+          acc[card.tier].push(card);
+        }
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      // Deduct credits
+      const creditCost = parseFloat(virtualPack.price);
+      const user = await tx.select().from(users).where(eq(users.id, userId));
+      if (!user[0] || parseFloat(user[0].credits || '0') < creditCost) {
+        throw new Error('Insufficient credits');
+      }
+
+      await tx.update(users).set({
+        credits: sql`${users.credits} - ${creditCost}`,
+        totalSpent: sql`${users.totalSpent} + ${creditCost}`,
+      }).where(eq(users.id, userId));
+
+      // Generate cards using tier-based probabilities
+      const pulledCards: UserCardWithCard[] = [];
+      
+      // First, add 7 guaranteed D-tier "Random Commons" cards
+      const dTierCards = cardsByTier['D'] || [];
+      if (dTierCards.length > 0) {
+        for (let i = 0; i < 7; i++) {
+          const randomCard = dTierCards[Math.floor(Math.random() * dTierCards.length)];
+          if (randomCard) {
+            // Check if user already has this card (non-refunded)
+            const existingCard = await tx.select().from(userCards)
+              .where(and(
+                eq(userCards.userId, userId), 
+                eq(userCards.cardId, randomCard.id),
+                eq(userCards.isRefunded, false)
+              ));
+            
+            let newUserCard;
+            if (existingCard.length > 0) {
+              // Update existing card quantity
+              [newUserCard] = await tx.update(userCards)
+                .set({ quantity: sql`${userCards.quantity} + 1` })
+                .where(and(
+                  eq(userCards.userId, userId), 
+                  eq(userCards.cardId, randomCard.id),
+                  eq(userCards.isRefunded, false)
+                ))
+                .returning();
+            } else {
+              // Insert new card
+              [newUserCard] = await tx.insert(userCards).values({
+                userId,
+                cardId: randomCard.id,
+                pullValue: randomCard.marketValue,
+                quantity: 1,
+              }).returning();
+            }
+
+            // Decrease card stock when added to vault
+            await tx
+              .update(virtualLibrary)
+              .set({ stock: sql`${virtualLibrary.stock} - 1` })
+              .where(eq(virtualLibrary.id, randomCard.id));
+
+            pulledCards.push({
+              ...newUserCard,
+              card: randomCard,
+            });
+          }
+        }
+      }
+
+      // Then, generate 1 hit card based on pull rates
+      const selectedTier = this.selectTierByProbability(pullRates);
+      const tierCards = cardsByTier[selectedTier];
+      
+      if (tierCards && tierCards.length > 0) {
+        const randomCard = tierCards[Math.floor(Math.random() * tierCards.length)];
+        if (randomCard) {
+          // Check if user already has this card (non-refunded)
+          const existingCard = await tx.select().from(userCards)
+            .where(and(
+              eq(userCards.userId, userId), 
+              eq(userCards.cardId, randomCard.id),
+              eq(userCards.isRefunded, false)
+            ));
+          
+          let newUserCard;
+          if (existingCard.length > 0) {
+            // Update existing card quantity
+            [newUserCard] = await tx.update(userCards)
+              .set({ quantity: sql`${userCards.quantity} + 1` })
+              .where(and(
+                eq(userCards.userId, userId), 
+                eq(userCards.cardId, randomCard.id),
+                eq(userCards.isRefunded, false)
+              ))
+              .returning();
+          } else {
+            // Insert new card
+            [newUserCard] = await tx.insert(userCards).values({
+              userId,
+              cardId: randomCard.id,
+              pullValue: randomCard.marketValue,
+              quantity: 1,
+            }).returning();
+          }
+
+          // Decrease card stock when added to vault
+          await tx
+            .update(cards)
+            .set({ stock: sql`${cards.stock} - 1` })
+            .where(eq(cards.id, randomCard.id));
+
+          pulledCards.push({
+            ...newUserCard,
+            card: randomCard,
+          });
+
+          // Add to global feed for rare pulls (A tier and above)
+          if (['A', 'S', 'SS', 'SSS'].includes(selectedTier)) {
+            await tx.insert(globalFeed).values({
+              userId,
+              cardId: randomCard.id,
+              tier: selectedTier,
+              gameType: 'virtual-pack',
+            });
+          }
+        }
+      }
+
+      // Add transaction record
+      await tx.insert(transactions).values({
+        userId,
+        type: 'debit',
+        amount: virtualPack.price,
+        description: `Opened virtual pack: ${virtualPack.name}`,
+      });
+
+      return {
+        cards: pulledCards,
+        packName: virtualPack.name,
+      };
+    });
+  }
+
+  private selectCardByWeight(weightedCards: { card: Card | null; weight: number }[]): { card: Card; weight: number } | null {
+    const validCards = weightedCards.filter(item => item.card !== null) as { card: Card; weight: number }[];
+    if (validCards.length === 0) return null;
+
+    const totalWeight = validCards.reduce((sum, item) => sum + item.weight, 0);
+    const random = Math.random() * totalWeight;
+    
+    let currentWeight = 0;
+    for (const item of validCards) {
+      currentWeight += item.weight;
+      if (random <= currentWeight) {
+        return item;
+      }
+    }
+    
+    return validCards[validCards.length - 1];
+  }
+
+  private selectVirtualCardByWeight(weightedCards: { card: VirtualLibraryCard | null; weight: number }[]): { card: VirtualLibraryCard; weight: number } | null {
+    const validCards = weightedCards.filter(item => item.card !== null) as { card: VirtualLibraryCard; weight: number }[];
+    if (validCards.length === 0) return null;
+
+    const totalWeight = validCards.reduce((sum, item) => sum + item.weight, 0);
+    const random = Math.random() * totalWeight;
+    
+    let currentWeight = 0;
+    for (const item of validCards) {
+      currentWeight += item.weight;
+      if (random <= currentWeight) {
+        return item;
+      }
+    }
+    
+    return validCards[validCards.length - 1];
+  }
+
+  private selectTierByProbability(pullRates: VirtualPackPullRate[]): string {
+    const totalProbability = pullRates.reduce((sum, rate) => sum + rate.probability, 0);
+    const random = Math.random() * totalProbability;
+    
+    let currentProbability = 0;
+    for (const rate of pullRates) {
+      currentProbability += rate.probability;
+      if (random <= currentProbability) {
+        return rate.cardTier;
+      }
+    }
+    
+    // Fallback to D tier if something goes wrong
+    return 'D';
+  }
 
   // Vault operations
   async getUserCards(userId: string): Promise<UserCardWithCard[]> {

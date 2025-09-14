@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
@@ -6,48 +6,11 @@ import { NavigationFooter } from "@/components/NavigationFooter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { CreditCard, Package, Circle, RotateCcw } from "lucide-react";
-import { VirtualPackOpening } from "@/components/VirtualPackOpening";
-import { apiRequest } from "@/lib/queryClient";
-import type { VirtualPack, User } from "@shared/schema";
+import { Package, Circle, RotateCcw } from "lucide-react";
 
 export default function Play() {
   const { toast } = useToast();
-  const { user, isAuthenticated, isLoading } = useAuth() as { user: User | null; isLoading: boolean; isAuthenticated: boolean };
-  const queryClient = useQueryClient();
-  const [openingPack, setOpeningPack] = useState<VirtualPack | null>(null);
-
-  const { data: virtualPacks } = useQuery({
-    queryKey: ["/api/virtual-packs"],
-    enabled: isAuthenticated,
-  });
-
-  const handlePurchase = (pack: VirtualPack) => {
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to purchase packs",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const userCredits = parseFloat(user.credits || '0');
-    const packPrice = parseFloat(pack.price);
-    if (userCredits < packPrice) {
-      toast({
-        title: "Insufficient Credits",
-        description: `You need ${packPrice} credits but only have ${userCredits.toFixed(2)}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Show the opening interface instead of redirecting to store
-    setOpeningPack(pack);
-  };
+  const { isAuthenticated, isLoading } = useAuth();
 
 
   // Redirect if not authenticated
@@ -74,24 +37,7 @@ export default function Play() {
     );
   }
 
-  // Show opening interface if a pack is selected
-  if (openingPack) {
-    return (
-      <VirtualPackOpening 
-        packId={openingPack.id}
-        packName={openingPack.name}
-        onClose={() => setOpeningPack(null)}
-      />
-    );
-  }
 
-  const tierData = [
-    { tier: "C", name: "Common", color: "common", odds: "65.0%" },
-    { tier: "UC", name: "Uncommon", color: "uncommon", odds: "25.0%" },
-    { tier: "R", name: "Rare", color: "rare", odds: "8.0%" },
-    { tier: "SR", name: "Super Rare", color: "superrare", odds: "1.8%" },
-    { tier: "SSS", name: "Legendary", color: "legendary", odds: "0.2%" },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -281,86 +227,6 @@ export default function Play() {
               </div>
             </section>
             
-            {/* Themed Packs Section */}
-            <section>
-              <h2 className="font-gaming text-3xl text-center mb-6">
-                <span className="bg-gradient-to-r from-legendary to-primary bg-clip-text text-transparent">Themed Packs</span>
-              </h2>
-              <div className="text-center mb-8">
-                <h3 className="font-gaming mb-2 text-[26px]">
-                  <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">CLASSIC PACKS</span>
-                </h3>
-                <p className="text-muted-foreground max-w-2xl mx-auto">Experience Rip and Ship in a whole new way with virtual packs</p>
-              </div>
-              
-              {virtualPacks && Array.isArray(virtualPacks) && virtualPacks.length > 0 ? (
-                <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-6xl mx-auto">
-                  {virtualPacks.filter((pack: any) => pack.isActive).map((pack: any) => (
-                    <Card key={pack.id} className="gaming-card hover:scale-105 transition-transform cursor-pointer flex-shrink-0 w-80" data-testid={`card-themed-pack-${pack.id}`}>
-                      <CardHeader className="text-center">
-                        {pack.imageUrl && (
-                          <div className="w-full h-32 mb-4 rounded-lg overflow-hidden">
-                            <img 
-                              src={pack.imageUrl} 
-                              alt={pack.name}
-                              className="w-full h-full object-cover"
-                              data-testid={`img-themed-pack-${pack.id}`}
-                            />
-                          </div>
-                        )}
-                        <CardTitle className="font-gaming text-xl" data-testid={`text-themed-pack-name-${pack.id}`}>
-                          {pack.name}
-                        </CardTitle>
-                        {pack.description && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            {pack.description}
-                          </p>
-                        )}
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="text-center space-y-2">
-                          <div className="bg-gradient-to-r from-primary/20 to-accent/20 rounded-lg p-3 border border-primary/30">
-                            <div className="text-2xl font-bold text-primary">
-                              {pack.price} Credits
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              8 Cards per pack
-                            </div>
-                          </div>
-                          <div className="flex justify-center space-x-2">
-                            <Badge className="bg-accent text-primary-foreground">7 Commons + 1 Chance Card</Badge>
-                          </div>
-                        </div>
-                        
-                        <Button
-                          onClick={() => handlePurchase(pack)}
-                          disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
-                          className="w-full bg-gradient-to-r from-primary to-accent"
-                          data-testid={`button-open-themed-pack-${pack.id}`}
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Open Pack
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 max-w-md mx-auto">
-                  <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Themed Packs Available</h3>
-                  <p className="text-muted-foreground">
-                    Check back later for exclusive themed pack collections!
-                  </p>
-                </div>
-              )}
-              
-              {/* Scroll Hint for Themed Packs */}
-              <div className="text-center mt-4 text-sm text-muted-foreground">
-                <span className="hidden md:inline">← Scroll to see more packs →</span>
-                <span className="md:hidden">← Swipe to see more packs →</span>
-              </div>
-            </section>
           </div>
 
 
