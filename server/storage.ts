@@ -17,7 +17,6 @@ import {
   gameSettings,
   systemSettings,
   pullRates,
-  emailVerificationTokens,
   type User,
   type UpsertUser,
   type Card,
@@ -66,12 +65,6 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
-  updateUserEmailVerification(email: string, isVerified: boolean): Promise<void>;
-  
-  // Email verification operations
-  createEmailVerificationToken(token: { email: string; token: string; expiresAt: Date }): Promise<void>;
-  getEmailVerificationToken(token: string): Promise<{ email: string; token: string; expiresAt: Date } | undefined>;
-  deleteEmailVerificationToken(token: string): Promise<void>;
   
   // Card operations
   getCards(packType?: string): Promise<Card[]>;
@@ -230,35 +223,6 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
-  }
-
-  async updateUserEmailVerification(email: string, isVerified: boolean): Promise<void> {
-    await db
-      .update(users)
-      .set({ 
-        isEmailVerified: isVerified,
-        updatedAt: new Date()
-      })
-      .where(eq(users.email, email));
-  }
-
-  // Email verification operations
-  async createEmailVerificationToken(token: { email: string; token: string; expiresAt: Date }): Promise<void> {
-    await db.insert(emailVerificationTokens).values(token);
-  }
-
-  async getEmailVerificationToken(token: string): Promise<{ email: string; token: string; expiresAt: Date } | undefined> {
-    const [verificationToken] = await db
-      .select()
-      .from(emailVerificationTokens)
-      .where(eq(emailVerificationTokens.token, token));
-    return verificationToken;
-  }
-
-  async deleteEmailVerificationToken(token: string): Promise<void> {
-    await db
-      .delete(emailVerificationTokens)
-      .where(eq(emailVerificationTokens.token, token));
   }
 
   // Card operations

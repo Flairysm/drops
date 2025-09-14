@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
@@ -15,7 +15,7 @@ import type { VirtualPack, User } from "@shared/schema";
 
 export default function Play() {
   const { toast } = useToast();
-  const { user, isAuthenticated, loading } = useSupabaseAuth();
+  const { user, isAuthenticated, isLoading } = useAuth() as { user: User | null; isLoading: boolean; isAuthenticated: boolean };
   const queryClient = useQueryClient();
   const [openingPack, setOpeningPack] = useState<VirtualPack | null>(null);
 
@@ -34,7 +34,7 @@ export default function Play() {
       return;
     }
 
-    const userCredits = parseFloat(user?.user_metadata?.credits || '0');
+    const userCredits = parseFloat(user.credits || '0');
     const packPrice = parseFloat(pack.price);
     if (userCredits < packPrice) {
       toast({
@@ -52,7 +52,7 @@ export default function Play() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
@@ -63,10 +63,10 @@ export default function Play() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, loading, toast]);
+  }, [isAuthenticated, isLoading, toast]);
 
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -334,7 +334,7 @@ export default function Play() {
                         
                         <Button
                           onClick={() => handlePurchase(pack)}
-                          disabled={!user || parseFloat(user?.user_metadata?.credits || '0') < parseFloat(pack.price)}
+                          disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
                           className="w-full bg-gradient-to-r from-primary to-accent"
                           data-testid={`button-open-themed-pack-${pack.id}`}
                         >

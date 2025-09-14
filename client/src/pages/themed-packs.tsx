@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { VirtualPackStore } from "@/components/VirtualPackStore";
@@ -12,7 +12,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function ThemedPacks() {
   const { toast } = useToast();
-  const { isAuthenticated, loading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   const { data: virtualPacks } = useQuery({
     queryKey: ["/api/virtual-packs"],
@@ -21,7 +21,7 @@ export default function ThemedPacks() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
@@ -32,9 +32,9 @@ export default function ThemedPacks() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, loading, toast]);
+  }, [isAuthenticated, isLoading, toast]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>

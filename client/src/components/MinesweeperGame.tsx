@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
@@ -68,7 +68,7 @@ const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'sma
 };
 
 export function MinesweeperGame() {
-  const { isAuthenticated } = useSupabaseAuth();
+  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [gameState, setGameState] = useState<GameState>({

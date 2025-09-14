@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
@@ -16,7 +16,7 @@ import type { UserCardWithCard } from "@shared/schema";
 
 export default function Vault() {
   const { toast } = useToast();
-  const { isAuthenticated, loading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [filterTier, setFilterTier] = useState<string>("all");
@@ -24,7 +24,7 @@ export default function Vault() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
@@ -35,7 +35,7 @@ export default function Vault() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, loading, toast]);
+  }, [isAuthenticated, isLoading, toast]);
 
   const { data: vaultCards, isLoading: vaultLoading } = useQuery<UserCardWithCard[]>({
     queryKey: ["/api/vault"],
@@ -75,7 +75,7 @@ export default function Vault() {
     },
   });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>

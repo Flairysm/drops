@@ -2,20 +2,21 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { apiRequest } from "@/lib/queryClient";
 
 // Registration schema
 const registrationSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be at most 20 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  phoneNumber: z.string().min(1, "Phone number is required"),
+  phoneNumber: z.string().optional(),
 });
 
 type RegistrationData = z.infer<typeof registrationSchema>;
@@ -23,7 +24,6 @@ type RegistrationData = z.infer<typeof registrationSchema>;
 export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { signUp, loading } = useSupabaseAuth();
   
   const form = useForm<RegistrationData>({
     resolver: zodResolver(registrationSchema),
@@ -35,68 +35,28 @@ export default function Register() {
     },
   });
 
-  const handleSubmit = async (data: RegistrationData) => {
-    try {
-      console.log('🚀 Starting registration for:', data.email);
-      
-      const { data: signUpData, error } = await signUp(data.email, data.password, {
-        username: data.username,
-        phoneNumber: data.phoneNumber
+  const registerMutation = useMutation({
+    mutationFn: async (data: RegistrationData) => {
+      return await apiRequest("POST", "/api/auth/register", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Welcome to Drops!",
+        description: "Your account has been created successfully. You've been given 50 credits to get started!",
       });
-
-      console.log('📧 Registration result:', { signUpData, error });
-
-      if (error) {
-        console.error('❌ Registration error:', error);
-        toast({
-          title: "Registration Failed",
-          description: error.message || "Something went wrong. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if email verification is required
-      if (signUpData.user && !signUpData.user.email_confirmed_at) {
-        console.log('📧 Email verification required, redirecting to email-sent');
-        // Store the email for the email sent page
-        localStorage.setItem('pendingVerificationEmail', data.email);
-        
-        // Add a small delay to ensure the redirect happens
-        setTimeout(() => {
-          console.log('🚀 Redirecting to /email-sent');
-          setLocation("/email-sent");
-        }, 100);
-      } else if (signUpData.user && signUpData.user.email_confirmed_at) {
-        console.log('✅ Email already verified, redirecting to home');
-        // Email already verified, redirect to home
-        toast({
-          title: "Account Created!",
-          description: "Welcome to Drops!",
-        });
-        setTimeout(() => {
-          setLocation("/");
-        }, 100);
-      } else {
-        console.log('🔄 Fallback: redirecting to email-sent');
-        // Fallback
-        localStorage.setItem('pendingVerificationEmail', data.email);
-        setTimeout(() => {
-          setLocation("/email-sent");
-        }, 100);
-      }
-    } catch (error: any) {
-      console.error('💥 Registration exception:', error);
+      setLocation("/home");
+    },
+    onError: (error: any) => {
       toast({
         title: "Registration Failed",
         description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
   const onSubmit = (data: RegistrationData) => {
-    handleSubmit(data);
+    registerMutation.mutate(data);
   };
 
   return (
@@ -155,7 +115,7 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phoneNumber" className="text-gray-200">Phone Number</Label>
+              <Label htmlFor="phoneNumber" className="text-gray-200">Phone Number (Optional)</Label>
               <Input
                 id="phoneNumber"
                 type="tel"
@@ -163,7 +123,6 @@ export default function Register() {
                 {...form.register("phoneNumber")}
                 className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
                 placeholder="+60 12-345 6789"
-                required
               />
               {form.formState.errors.phoneNumber && (
                 <p className="text-red-400 text-sm">{form.formState.errors.phoneNumber.message}</p>
@@ -173,10 +132,10 @@ export default function Register() {
             <Button
               type="submit"
               data-testid="button-register"
-              disabled={loading}
+              disabled={registerMutation.isPending}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {registerMutation.isPending ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 

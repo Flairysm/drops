@@ -1,13 +1,14 @@
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { apiRequest } from "@/lib/queryClient";
 
 // Login schema
 const loginSchema = z.object({
@@ -20,7 +21,7 @@ type LoginData = z.infer<typeof loginSchema>;
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { signIn, loading } = useSupabaseAuth();
+  const queryClient = useQueryClient();
   
   const form = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
@@ -30,60 +31,63 @@ export default function Login() {
     },
   });
 
-  const handleSubmit = async (data: LoginData) => {
-    try {
-      const { error } = await signIn(data.email, data.password);
-
-      if (error) {
-        // Check if it's an email verification error
-        if (error.message?.includes("email not confirmed") || error.message?.includes("Email not confirmed")) {
-          // Store the email for the email sent page
-          localStorage.setItem('pendingVerificationEmail', data.email);
-          // Redirect to email sent page
-          setLocation("/email-sent");
-          return;
-        }
-        
-        toast({
-          title: "Login Failed",
-          description: error.message || "Invalid email or password.",
-          variant: "destructive",
-        });
-        return;
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginData) => {
+      console.log('🔐 Attempting login with:', data.email);
+      const response = await apiRequest("POST", "/api/auth/login", data);
+      console.log('🔐 Login response:', response);
+      const responseData = await response.json();
+      console.log('🔐 Login response data:', responseData);
+      return responseData;
+    },
+    onSuccess: (response) => {
+      console.log('🔐 Login mutation success:', response);
+      
+      // Store JWT token in localStorage if provided
+      if (response.token) {
+        localStorage.setItem('authToken', response.token);
+        console.log('🔐 JWT token stored:', response.token.substring(0, 20) + '...');
+      } else {
+        console.log('❌ No JWT token in response:', response);
       }
-
+      
       toast({
-        title: "Login Successful!",
-        description: "Welcome back!",
+        title: "Welcome back!",
+        description: "You've been logged in successfully.",
       });
       
-      // Redirect to home page
-      setLocation("/");
-    } catch (error: any) {
+      // Force a refetch of user data and clear any cached data
+      console.log('🔐 Clearing query cache and refetching user data...');
+      queryClient.clear();
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Small delay to ensure cache is cleared before redirect
+      setTimeout(() => {
+        console.log('🔐 Redirecting to home page...');
+        setLocation("/home");
+      }, 100);
+    },
+    onError: (error: any) => {
+      console.error('❌ Login mutation error:', error);
       toast({
         title: "Login Failed",
         description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
   const onSubmit = (data: LoginData) => {
-    handleSubmit(data);
+    loginMutation.mutate(data);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
       <Card className="w-full max-w-md bg-gray-900/80 border-blue-500/30 shadow-2xl">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
           <CardTitle className="text-3xl font-gaming text-blue-400">Welcome Back</CardTitle>
           <CardDescription className="text-gray-300">
-            Sign in to your Drops account
+            Sign in to continue your card collection
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -121,17 +125,21 @@ export default function Login() {
             <Button
               type="submit"
               data-testid="button-login"
-              disabled={loading}
+              disabled={loginMutation.isPending}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {loginMutation.isPending ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-gray-300">
               Don't have an account?{" "}
-              <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium">
+              <Link 
+                href="/register" 
+                className="text-blue-400 hover:text-blue-300 underline"
+                data-testid="link-register"
+              >
                 Create one here
               </Link>
             </p>

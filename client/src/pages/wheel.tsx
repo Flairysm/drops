@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
@@ -11,11 +11,11 @@ import { ArrowLeft } from "lucide-react";
 
 export default function Wheel() {
   const { toast } = useToast();
-  const { isAuthenticated, loading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
@@ -26,9 +26,9 @@ export default function Wheel() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, loading, toast]);
+  }, [isAuthenticated, isLoading, toast]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>

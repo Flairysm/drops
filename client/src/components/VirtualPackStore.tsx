@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -15,7 +15,7 @@ interface VirtualPackStoreProps {
 }
 
 export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
-  const { user } = useSupabaseAuth();
+  const { user } = useAuth() as { user: User | null; isLoading: boolean; isAuthenticated: boolean };
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [openingPack, setOpeningPack] = useState<VirtualPack | null>(null);
@@ -30,7 +30,7 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
       return;
     }
 
-    const userCredits = parseFloat(user?.user_metadata?.credits || '0');
+    const userCredits = parseFloat(user.credits || '0');
     const packPrice = parseFloat(pack.price);
     if (userCredits < packPrice) {
       toast({
@@ -104,7 +104,7 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
               {/* Open Pack Button - Moved to top */}
               <Button
                 onClick={() => handlePurchase(pack)}
-                disabled={!user || parseFloat(user?.user_metadata?.credits || '0') < parseFloat(pack.price)}
+                disabled={!user || parseFloat(user.credits || '0') < parseFloat(pack.price)}
                 size="sm"
                 className="w-full bg-gradient-to-r from-primary to-accent sm:text-base text-sm sm:py-2 py-1.5 mt-4"
                 data-testid={`button-purchase-virtual-pack-${pack.id}`}
@@ -123,9 +123,9 @@ export function VirtualPackStore({ virtualPacks }: VirtualPackStoreProps) {
                 </Badge>
               </div>
 
-              {user && parseFloat(user?.user_metadata?.credits || '0') < parseFloat(pack.price) && (
+              {user && parseFloat(user.credits || '0') < parseFloat(pack.price) && (
                 <p className="text-xs text-destructive text-center">
-                  Need {(parseFloat(pack.price) - parseFloat(user?.user_metadata?.credits || '0')).toFixed(2)} more credits
+                  Need {(parseFloat(pack.price) - parseFloat(user.credits || '0')).toFixed(2)} more credits
                 </p>
               )}
             </CardContent>

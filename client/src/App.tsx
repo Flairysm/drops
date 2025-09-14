@@ -4,13 +4,12 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import Home from "@/pages/home";
+import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
-import EmailSent from "@/pages/email-sent";
-import VerifyEmail from "@/pages/verify-email";
 import Play from "@/pages/games";
 import Plinko from "@/pages/plinko";
 import Wheel from "@/pages/wheel";
@@ -20,29 +19,30 @@ import ThemedPacks from "@/pages/themed-packs";
 import MyPacks from "@/pages/my-packs";
 import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
+import Reload from "@/pages/reload";
 import NotFound from "@/pages/not-found";
 
 function RouterComponent() {
-  const { isAuthenticated, loading, user } = useSupabaseAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
   // Debug logging
-  console.log('🔍 Router state:', { isAuthenticated, loading, user: user?.email, emailConfirmed: user?.email_confirmed_at });
+  console.log('🔍 Router state:', { isAuthenticated, isLoading });
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (loading) {
+      if (isLoading) {
         setLoadingTimeout(true);
       }
     }, 10000); // 10 second timeout
 
     return () => clearTimeout(timer);
-  }, [loading]);
+  }, [isLoading]);
 
   // Show loading spinner only if actually loading and no timeout
-  if (loading && !loadingTimeout) {
+  if (isLoading && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -72,11 +72,10 @@ function RouterComponent() {
 
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={Landing} />
+      <Route path="/home" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      <Route path="/email-sent" component={EmailSent} />
-      <Route path="/verify-email" component={VerifyEmail} />
       {isAuthenticated && (
         <>
           <Route path="/play" component={Play} />
@@ -87,6 +86,7 @@ function RouterComponent() {
           <Route path="/play/themed-packs" component={ThemedPacks} />
           <Route path="/my-packs" component={MyPacks} />
           <Route path="/vault" component={Vault} />
+          <Route path="/reload" component={Reload} />
           <Route path="/admin" component={Admin} />
         </>
       )}

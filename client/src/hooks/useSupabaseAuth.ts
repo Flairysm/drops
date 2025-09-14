@@ -1,66 +1,33 @@
-import { useState, useEffect } from 'react'
-import { User, Session } from '@supabase/supabase-js'
-import { supabase, auth } from '@/lib/supabase'
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
-export function useSupabaseAuth() {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+}
+
+export const useSupabaseAuth = () => {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    loading: true,
+  });
 
   useEffect(() => {
-    // Get initial session
-    auth.getSession().then(({ session }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const signUp = async (email: string, password: string, userData?: { username?: string; phoneNumber?: string }) => {
-    setLoading(true)
-    const { data, error } = await auth.signUp(email, password, userData)
-    setLoading(false)
-    return { data, error }
-  }
-
-  const signIn = async (email: string, password: string) => {
-    setLoading(true)
-    const { data, error } = await auth.signIn(email, password)
-    setLoading(false)
-    return { data, error }
-  }
-
-  const signOut = async () => {
-    setLoading(true)
-    const { error } = await auth.signOut()
-    setLoading(false)
-    return { error }
-  }
-
-  const resetPassword = async (email: string) => {
-    setLoading(true)
-    const { data, error } = await auth.resetPassword(email)
-    setLoading(false)
-    return { data, error }
-  }
+    // For development, skip Supabase auth and set loading to false immediately
+    console.log('🔍 useSupabaseAuth: Skipping auth for development');
+    setAuthState({
+      user: null,
+      isAuthenticated: false,
+      loading: false,
+    });
+  }, []);
 
   return {
-    user,
-    session,
-    loading,
-    signUp,
-    signIn,
-    signOut,
-    resetPassword,
-    isAuthenticated: !!user
-  }
-}
+    user: authState.user,
+    isAuthenticated: authState.isAuthenticated,
+    loading: authState.loading,
+  };
+};

@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 import { CreditCard, Coins, Zap, Star, Lock } from "lucide-react";
 import { Link } from "wouter";
 
@@ -21,31 +20,15 @@ export function CreditPurchase() {
   const [customAmount, setCustomAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useSupabaseAuth();
+  const { isAuthenticated } = useAuth();
 
   const purchaseMutation = useMutation({
     mutationFn: async (data: { amount: string; bundleType?: string }) => {
-      if (!user) throw new Error("User not authenticated");
-      
-      const creditsToAdd = parseFloat(data.amount);
-      const currentCredits = user.user_metadata?.credits || 0;
-      const newCredits = currentCredits + creditsToAdd;
-      
-      // Update user metadata in Supabase
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          ...user.user_metadata,
-          credits: newCredits
-        }
-      });
-      
-      if (error) throw error;
-      
-      return { success: true, creditsAdded: creditsToAdd };
+      const response = await apiRequest("POST", "/api/credits/purchase", data);
+      return await response.json() as PurchaseResult;
     },
     onSuccess: (result) => {
-      // Refresh the page to update the user data
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Credits Added!",
         description: `Successfully added ${result.creditsAdded.toFixed(2)} credits to your account`,

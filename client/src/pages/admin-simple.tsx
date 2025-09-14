@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,13 +46,13 @@ type VirtualPackFormData = z.infer<typeof virtualPackSchema>;
 
 export default function AdminSimple() {
   const { toast } = useToast();
-  const { isAuthenticated, loading } = useSupabaseAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [selectedPackType, setSelectedPackType] = useState<string>("");
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       toast({
         title: "Unauthorized",
         description: "You are logged out. Logging in again...",
@@ -63,7 +63,7 @@ export default function AdminSimple() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, loading, toast]);
+  }, [isAuthenticated, isLoading, toast]);
 
   // Forms
   const cardForm = useForm<CardFormData>({
@@ -184,7 +184,7 @@ export default function AdminSimple() {
     createVirtualPackMutation.mutate(data);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>

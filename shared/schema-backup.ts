@@ -41,8 +41,18 @@ export const users = pgTable("users", {
   totalSpent: decimal("total_spent", { precision: 10, scale: 2 }).default("0.00"),
   isBanned: boolean("is_banned").default(false),
   isSuspended: boolean("is_suspended").default(false),
+  isEmailVerified: boolean("is_email_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email verification tokens table
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email").notNull(),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Card definitions
@@ -90,6 +100,17 @@ export const virtualLibrary = pgTable("virtual_library", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Expansions (e.g., Scarlet/Violet, Sword/Shield)
+export const expansions = pgTable("expansions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(), // "Scarlet & Violet", "Sword & Shield"
+  description: text("description"),
+  imageUrl: varchar("image_url"),
+  releaseDate: timestamp("release_date"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Virtual themed pack definitions (separate from mystery tier packs)
 export const virtualPacks = pgTable("virtual_packs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -98,6 +119,54 @@ export const virtualPacks = pgTable("virtual_packs", {
   imageUrl: varchar("image_url"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   cardCount: integer("card_count").default(10).notNull(), // Number of cards per pack
+  expansionId: uuid("expansion_id").references(() => expansions.id), // Link to expansion
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Special pack definitions (e.g., "Guaranteed Slab", "Gengar Lair")
+export const specialPacks = pgTable("special_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(), // "Guaranteed Slab", "Gengar Lair"
+  description: text("description"),
+  imageUrl: varchar("image_url"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  guarantee: varchar("guarantee", { length: 255 }), // "Guaranteed S+ Tier Card"
+  totalPacks: integer("total_packs").notNull().default(10000), // Total number of packs available
+  prizePool: jsonb("prize_pool").notNull().default('[]'), // JSON array of prizes with odds
+  odds: jsonb("odds").notNull().default('{}'), // JSON object with odds for each prize
+  pulledStatus: jsonb("pulled_status").notNull().default('{}'), // JSON object tracking which prizes have been pulled
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Special pack cards - cards that can be pulled from special packs
+export const specialPackCards = pgTable("special_pack_cards", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  specialPackId: uuid("special_pack_id").references(() => specialPacks.id),
+  cardId: uuid("card_id").references(() => cards.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Card pools - separate pools for mystery tiered packs (not linked to inventory)
+export const cardPools = pgTable("card_pools", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(), // "Mystery Tier Pool", "Special Event Pool"
+  description: text("description"),
+  tier: varchar("tier", { length: 10 }).notNull(), // D, C, B, A, S, SS, SSS
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Card pool items - cards in each pool (not linked to inventory)
+export const cardPoolItems = pgTable("card_pool_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cardPoolId: uuid("card_pool_id").references(() => cardPools.id),
+  name: varchar("name", { length: 255 }).notNull(), // Card name
+  tier: varchar("tier", { length: 10 }).notNull(), // D, C, B, A, S, SS, SSS
+  imageUrl: varchar("image_url"),
+  marketValue: decimal("market_value", { precision: 10, scale: 2 }).notNull(),
+  weight: integer("weight").default(1).notNull(), // Relative probability weight
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -115,7 +184,7 @@ export const virtualPackCards = pgTable("virtual_pack_cards", {
 // Game settings for configurable prices and options
 export const gameSettings = pgTable("game_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
-  gameType: varchar("game_type", { length: 50 }).notNull().unique(), // 'plinko', 'wheel', 'pack'
+  gameType: varchar("game_type", { length: 50 }).notNull().unique(), // 'wheel', 'pack'
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   isActive: boolean("is_active").default(true),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -171,8 +240,8 @@ export const userPacks = pgTable("user_packs", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: varchar("user_id").references(() => users.id),
   packId: uuid("pack_id").references(() => packs.id),
-  tier: varchar("tier", { length: 10 }).notNull(), // The tier earned from Plinko
-  earnedFrom: varchar("earned_from", { length: 50 }).notNull(), // plinko, wheel, etc.
+  tier: varchar("tier", { length: 10 }).notNull(), // The tier earned from games
+  earnedFrom: varchar("earned_from", { length: 50 }).notNull(), // wheel, etc.
   isOpened: boolean("is_opened").default(false),
   earnedAt: timestamp("earned_at").defaultNow(),
   openedAt: timestamp("opened_at"),
@@ -184,7 +253,7 @@ export const globalFeed = pgTable("global_feed", {
   userId: varchar("user_id").references(() => users.id),
   cardId: uuid("card_id").references(() => cards.id),
   tier: varchar("tier", { length: 10 }).notNull(),
-  gameType: varchar("game_type", { length: 50 }).notNull(), // plinko, wheel, pack
+  gameType: varchar("game_type", { length: 50 }).notNull(), // wheel, pack
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -297,13 +366,47 @@ export const packOddsRelations = relations(packOdds, ({ one }) => ({
   }),
 }));
 
+export const expansionsRelations = relations(expansions, ({ many }) => ({
+  virtualPacks: many(virtualPacks),
+}));
+
+export const cardPoolsRelations = relations(cardPools, ({ many }) => ({
+  cardPoolItems: many(cardPoolItems),
+}));
+
+export const cardPoolItemsRelations = relations(cardPoolItems, ({ one }) => ({
+  cardPool: one(cardPools, {
+    fields: [cardPoolItems.cardPoolId],
+    references: [cardPools.id],
+  }),
+}));
+
 export const virtualLibraryRelations = relations(virtualLibrary, ({ many }) => ({
   virtualPackCards: many(virtualPackCards),
 }));
 
-export const virtualPacksRelations = relations(virtualPacks, ({ many }) => ({
+export const virtualPacksRelations = relations(virtualPacks, ({ one, many }) => ({
+  expansion: one(expansions, {
+    fields: [virtualPacks.expansionId],
+    references: [expansions.id],
+  }),
   virtualPackCards: many(virtualPackCards),
   virtualPackPullRates: many(virtualPackPullRates),
+}));
+
+export const specialPacksRelations = relations(specialPacks, ({ many }) => ({
+  specialPackCards: many(specialPackCards),
+}));
+
+export const specialPackCardsRelations = relations(specialPackCards, ({ one }) => ({
+  specialPack: one(specialPacks, {
+    fields: [specialPackCards.specialPackId],
+    references: [specialPacks.id],
+  }),
+  card: one(cards, {
+    fields: [specialPackCards.cardId],
+    references: [cards.id],
+  }),
 }));
 
 export const virtualPackCardsRelations = relations(virtualPackCards, ({ one }) => ({
@@ -336,13 +439,23 @@ export const registrationSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be at most 20 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string().min(1, "Phone number is required"),
 });
 
 // Login schema
 export const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
+});
+
+// Email verification schemas
+export const emailVerificationSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+export const verifyEmailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  token: z.string().min(1, "Verification token is required"),
 });
 
 export const insertCardSchema = createInsertSchema(cards).omit({
@@ -417,6 +530,31 @@ export const insertVirtualPackPullRateSchema = createInsertSchema(virtualPackPul
   updatedAt: true,
 });
 
+export const insertExpansionSchema = createInsertSchema(expansions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSpecialPackSchema = createInsertSchema(specialPacks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSpecialPackCardSchema = createInsertSchema(specialPackCards).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCardPoolSchema = createInsertSchema(cardPools).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCardPoolItemSchema = createInsertSchema(cardPoolItems).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertVirtualLibrarySchema = createInsertSchema(virtualLibrary).omit({
   id: true,
   createdAt: true,
@@ -428,9 +566,14 @@ export type User = typeof users.$inferSelect;
 export type Card = typeof cards.$inferSelect;
 export type Pack = typeof packs.$inferSelect;
 export type PackOdds = typeof packOdds.$inferSelect;
+export type Expansion = typeof expansions.$inferSelect;
+export type CardPool = typeof cardPools.$inferSelect;
+export type CardPoolItem = typeof cardPoolItems.$inferSelect;
 export type VirtualPack = typeof virtualPacks.$inferSelect;
 export type VirtualPackCard = typeof virtualPackCards.$inferSelect;
 export type VirtualPackPullRate = typeof virtualPackPullRates.$inferSelect;
+export type SpecialPack = typeof specialPacks.$inferSelect;
+export type SpecialPackCard = typeof specialPackCards.$inferSelect;
 export type VirtualLibraryCard = typeof virtualLibrary.$inferSelect;
 export type UserCard = typeof userCards.$inferSelect;
 export type UserPack = typeof userPacks.$inferSelect;
@@ -443,9 +586,14 @@ export type PullRate = typeof pullRates.$inferSelect;
 
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type InsertPack = z.infer<typeof insertPackSchema>;
+export type InsertExpansion = z.infer<typeof insertExpansionSchema>;
+export type InsertCardPool = z.infer<typeof insertCardPoolSchema>;
+export type InsertCardPoolItem = z.infer<typeof insertCardPoolItemSchema>;
 export type InsertVirtualPack = z.infer<typeof insertVirtualPackSchema>;
 export type InsertVirtualPackCard = z.infer<typeof insertVirtualPackCardSchema>;
 export type InsertVirtualPackPullRate = z.infer<typeof insertVirtualPackPullRateSchema>;
+export type InsertSpecialPack = z.infer<typeof insertSpecialPackSchema>;
+export type InsertSpecialPackCard = z.infer<typeof insertSpecialPackCardSchema>;
 export type InsertVirtualLibraryCard = z.infer<typeof insertVirtualLibrarySchema>;
 export type InsertUserCard = z.infer<typeof insertUserCardSchema>;
 export type InsertUserPack = z.infer<typeof insertUserPackSchema>;
@@ -454,6 +602,23 @@ export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type InsertShippingRequest = z.infer<typeof insertShippingRequestSchema>;
 
+// Special pack prize pool types
+export interface PrizeItem {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  tier: string;
+  quantity: number; // How many of this prize exist
+  odds: number; // 1 in X chance (e.g., 10000 for 1 in 10000)
+  isPulled: boolean;
+}
+
+export interface PrizePool {
+  prizes: PrizeItem[];
+  totalPacks: number;
+  remainingPacks: number;
+}
+
 // Game settings types
 export type GameSetting = typeof gameSettings.$inferSelect;
 export type InsertGameSetting = typeof gameSettings.$inferInsert;
@@ -461,6 +626,7 @@ export type InsertGameSetting = typeof gameSettings.$inferInsert;
 // System settings types
 export type SystemSetting = typeof systemSettings.$inferSelect;
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+
 
 // Extended types for API responses
 export type UserCardWithCard = UserCard & { card: Card };

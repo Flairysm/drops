@@ -35,19 +35,38 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configure CORS to allow requests from Vercel frontend
+// Configure CORS to allow requests from all origins for development
 // NOTE: CORS must come AFTER session middleware (which is set up in registerRoutes)
 app.use(cors({
-  origin: [
-    'https://dropss.vercel.app',
-    'https://dropss-cpqc83t8f-bryants-projects-322ba146.vercel.app',
-    'http://localhost:5173', // For local development
-    'http://localhost:3000'  // For local development
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all localhost variations
+    if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0')) {
+      return callback(null, true);
+    }
+    
+    // Allow specific production domains
+    const allowedOrigins = [
+      'https://dropss.vercel.app',
+      'https://dropss-cpqc83t8f-bryants-projects-322ba146.vercel.app'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // For development, allow any origin
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  // Add these to ensure cookies work properly
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Set-Cookie'],
   preflightContinue: false,
   optionsSuccessStatus: 204
@@ -78,6 +97,12 @@ app.use('/api', (req, res, next) => {
 
 // Serve attached assets as static files
 app.use('/attached_assets', express.static(path.resolve(__dirname, '../attached_assets')));
+
+// Debug middleware to log all requests and CORS headers
+app.use((req, res, next) => {
+  console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.get('Origin') || 'none'}`);
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

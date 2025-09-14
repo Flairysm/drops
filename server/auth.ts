@@ -3,9 +3,8 @@ import session from 'express-session';
 import type { Express, RequestHandler } from 'express';
 import connectPg from 'connect-pg-simple';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import { storage } from './storage';
-import { registrationSchema, loginSchema, emailVerificationSchema, verifyEmailSchema } from '@shared/schema';
+import { registrationSchema, loginSchema } from '@shared/schema';
 
 const SALT_ROUNDS = 12;
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -103,34 +102,16 @@ export function setupAuth(app: Express) {
         phoneNumber,
       });
 
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-      // Store verification OTP
-      await storage.createEmailVerificationToken({
-        email,
-        token: otp,
-        expiresAt,
-      });
-
-      // Email verification is now handled by Supabase
-      console.log(`📧 Email verification OTP for ${email}: ${otp}`);
-      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${otp}&email=${encodeURIComponent(email)}`);
-      
-      // Also log for development
-      console.log(`📧 Email verification OTP for ${email}: ${otp}`);
-      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${otp}&email=${encodeURIComponent(email)}`);
+      // Log them in by setting session
+      (req.session as any).userId = user.id;
 
       res.json({ 
-        message: "Registration successful. Please check your email to verify your account.", 
+        message: "Registration successful", 
         user: { 
           id: user.id, 
           username: user.username, 
           email: user.email 
-        },
-        // In development, include the OTP for testing
-        ...(process.env.NODE_ENV === 'development' && { verificationToken: otp })
+        } 
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -254,102 +235,6 @@ export function setupAuth(app: Express) {
       }
       res.json({ message: "Logout successful" });
     });
-  });
-
-  // Send email verification endpoint
-  app.post('/api/auth/send-verification', async (req, res) => {
-    try {
-      const result = emailVerificationSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "Validation failed", 
-          errors: result.error.flatten().fieldErrors 
-        });
-      }
-
-      const { email } = result.data;
-
-      // Check if user exists
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Check if already verified
-      if (user.isEmailVerified) {
-        return res.status(400).json({ message: "Email already verified" });
-      }
-
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-      // Store verification OTP
-      await storage.createEmailVerificationToken({
-        email,
-        token: otp,
-        expiresAt,
-      });
-
-      // Email verification is now handled by Supabase
-      console.log(`📧 Email verification OTP for ${email}: ${otp}`);
-      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${otp}&email=${encodeURIComponent(email)}`);
-      
-      // Also log for development
-      console.log(`📧 Email verification OTP for ${email}: ${otp}`);
-      console.log(`🔗 Verification URL: ${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${otp}&email=${encodeURIComponent(email)}`);
-
-      res.json({ 
-        message: "Verification email sent",
-        // In development, include the OTP for testing
-        ...(process.env.NODE_ENV === 'development' && { token: otp })
-      });
-    } catch (error) {
-      console.error("Send verification error:", error);
-      res.status(500).json({ message: "Failed to send verification email" });
-    }
-  });
-
-  // Verify email endpoint
-  app.post('/api/auth/verify-email', async (req, res) => {
-    try {
-      const result = verifyEmailSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "Validation failed", 
-          errors: result.error.flatten().fieldErrors 
-        });
-      }
-
-      const { email, token } = result.data;
-
-      // Verify token
-      const verificationToken = await storage.getEmailVerificationToken(token);
-      if (!verificationToken) {
-        return res.status(400).json({ message: "Invalid verification token" });
-      }
-
-      // Check if token is expired
-      if (new Date() > verificationToken.expiresAt) {
-        return res.status(400).json({ message: "Verification token expired" });
-      }
-
-      // Check if email matches
-      if (verificationToken.email !== email) {
-        return res.status(400).json({ message: "Email mismatch" });
-      }
-
-      // Update user as verified
-      await storage.updateUserEmailVerification(email, true);
-
-      // Delete the used token
-      await storage.deleteEmailVerificationToken(token);
-
-      res.json({ message: "Email verified successfully" });
-    } catch (error) {
-      console.error("Verify email error:", error);
-      res.status(500).json({ message: "Email verification failed" });
-    }
   });
 }
 

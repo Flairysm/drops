@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Package, Sparkles, Star, Coins, Eye, ShoppingCart, ArrowLeft } from "lucide-react";
@@ -61,7 +61,7 @@ export function VirtualPackOpening({ packId, packName, onClose }: VirtualPackOpe
   const queryClient = useQueryClient();
 
   // Get auth status first
-  const { user: currentUser, isAuthenticated } = useSupabaseAuth();
+  const { user: currentUser, isAuthenticated } = useAuth() as { user: any; isAuthenticated: boolean; };
 
   // Get user data for credits display
   const { data: user } = useQuery({
