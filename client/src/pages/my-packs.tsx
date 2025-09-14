@@ -185,7 +185,7 @@ export default function MyPacks() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pt-20 pb-8 px-4">
+      <div className="min-h-screen pt-20 pb-20 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -203,7 +203,7 @@ export default function MyPacks() {
   return (
     <>
       <Navigation />
-      <div className="min-h-screen pt-20 pb-8 px-4">
+      <div className="min-h-screen pt-20 pb-20 px-4">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">

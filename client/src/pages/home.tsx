@@ -359,7 +359,7 @@ export default function Home() {
         </div>
       </div>
       
-      <main className="pt-20 relative z-10">
+      <main className="pt-20 pb-20 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
          {/* Welcome Section */}
@@ -421,7 +421,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.3 }}
           >
             <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] shadow-[0_0_20px_rgba(124,58,237,0.1)] overflow-hidden">
-              <div className="relative h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80">
+              <div className="relative w-full aspect-[1200/620] max-w-[1200px] mx-auto">
                 {/* Background Image */}
                 <div 
                   className="absolute inset-0 bg-cover bg-center bg-no-repeat"

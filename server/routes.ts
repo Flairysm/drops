@@ -413,6 +413,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User credit update endpoint for reload page
+  app.post('/api/user/update-credits', isAuthenticatedCombined, async (req: any, res) => {
+    console.log('🔥 /api/user/update-credits endpoint hit!');
+    console.log('Request body:', req.body);
+    console.log('User:', req.user);
+    
+    try {
+      const userId = req.user.id;
+      const { credits } = req.body;
+
+      console.log('Processing credits:', credits);
+
+      const creditAmount = parseFloat(credits);
+      if (isNaN(creditAmount) || creditAmount <= 0) {
+        console.log('Invalid credit amount:', credits);
+        return res.status(400).json({ message: "Invalid credit amount" });
+      }
+
+      console.log('Adding credits to user:', userId, 'amount:', creditAmount);
+
+      // Add credits to user account
+      await storage.updateUserCredits(userId, creditAmount.toFixed(2));
+      
+      // Add transaction record
+      await storage.addTransaction({
+        userId,
+        type: 'purchase',
+        amount: creditAmount.toFixed(2),
+        description: `Credit reload - ${creditAmount} credits`,
+      });
+
+      // Add notification
+      await storage.addNotification({
+        userId,
+        type: 'purchase',
+        title: 'Credits Added',
+        message: `Added ${creditAmount} credits to your account`,
+      });
+
+      console.log('Successfully added credits:', creditAmount);
+      res.json({ success: true, creditsAdded: creditAmount });
+    } catch (error) {
+      console.error("Error updating user credits:", error);
+      res.status(500).json({ message: "Failed to update credits" });
+    }
+  });
+
   // Shipping routes
   app.post('/api/shipping/request', isAuthenticatedCombined, async (req: any, res) => {
     try {
