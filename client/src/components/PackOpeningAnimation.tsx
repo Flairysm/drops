@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Star, Gift } from "lucide-react";
-import hitCardImage from "@assets/ChatGPT Image Aug 31, 2025, 11_19_51 AM_1756610395060.png";
+import hitCardImage from "/assets/classic-image.png";
 
 interface PackCard {
   id: string;
