@@ -1,5 +1,5 @@
-import { MinesweeperGame } from "@/components/MinesweeperGame";
+import { FindPikachuGame } from "@/components/FindPikachuGame";
 
 export default function MinesweeperPage() {
-  return <MinesweeperGame />;
+  return <FindPikachuGame />;
 }

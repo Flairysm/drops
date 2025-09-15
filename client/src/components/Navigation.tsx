@@ -68,7 +68,7 @@ export function Navigation() {
   };
 
   const navItems = [
-    { path: "/", label: "Home" },
+    { path: "home", label: "Home" },
     { path: "/play", label: "Play" },
     { path: "/my-packs", label: "My Packs" },
     { path: "/vault", label: "Vault" },

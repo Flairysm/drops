@@ -14,8 +14,6 @@ import Play from "@/pages/games";
 import Plinko from "@/pages/plinko";
 import Wheel from "@/pages/wheel";
 import Minesweeper from "@/pages/minesweeper";
-import MysteryPacks from "@/pages/mystery-packs";
-import ThemedPacks from "@/pages/themed-packs";
 import MyPacks from "@/pages/my-packs";
 import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
@@ -82,8 +80,6 @@ function RouterComponent() {
           <Route path="/play/plinko" component={Plinko} />
           <Route path="/play/wheel" component={Wheel} />
           <Route path="/play/minesweeper" component={Minesweeper} />
-          <Route path="/play/mystery-packs" component={MysteryPacks} />
-          <Route path="/play/themed-packs" component={ThemedPacks} />
           <Route path="/my-packs" component={MyPacks} />
           <Route path="/vault" component={Vault} />
           <Route path="/reload" component={Reload} />

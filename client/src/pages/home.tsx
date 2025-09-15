@@ -486,21 +486,19 @@ export default function Home() {
             {/* Game Carousel */}
             <div className="relative">
               <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide">
-                {/* Classic Packs */}
+                {/* Plinko Game */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="flex-shrink-0"
                 >
-                  <Link href="/mystery-packs">
+                  <Link href="/play/plinko">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
                       <CardContent className="p-0 h-full">
-                        {/* Classic Pack Image */}
-                        <img 
-                          src="/assets/classic-image.png" 
-                          alt="Classic Packs" 
-                          className="w-full h-full object-cover rounded-2xl"
-                        />
+                        {/* Plinko Game Image */}
+                        <div className="w-full h-full bg-gradient-to-br from-[#3b82f6] to-[#7C3AED] rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.4)]">
+                          <span className="text-white text-sm font-bold">🎯</span>
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>
@@ -524,18 +522,18 @@ export default function Home() {
                   </Link>
                 </motion.div>
 
-                {/* Special Packs */}
+                {/* Wheel Game */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="flex-shrink-0"
                 >
-                  <Link href="/themed-packs">
+                  <Link href="/play/wheel">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
                       <CardContent className="p-0 h-full">
-                        {/* Game Image Placeholder */}
-                        <div className="w-full h-full bg-gradient-to-br from-[#A855F7] to-[#7C3AED] rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(168,85,247,0.4)]">
-                          <span className="text-white text-sm font-bold">✨</span>
+                        {/* Wheel Game Image */}
+                        <div className="w-full h-full bg-gradient-to-br from-[#f59e0b] to-[#ef4444] rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(245,158,11,0.4)]">
+                          <span className="text-white text-sm font-bold">🎰</span>
                         </div>
                       </CardContent>
                     </Card>

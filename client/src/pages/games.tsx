@@ -1,13 +1,88 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Package, Circle, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
+
+// Game data structure
+const gameData = {
+  popular: [
+    {
+      id: "plinko",
+      name: "Plinko Drop",
+      description: "Drop, Bounce, Win!",
+      cost: 20,
+      image: "/assets/classic-image.png",
+      route: "/play/plinko",
+      badge: "Most Popular",
+      badgeColor: "from-[#f59e0b] to-[#ef4444]"
+    }
+  ],
+  minigames: [
+    {
+      id: "minesweeper",
+      name: "Minesweeper",
+      description: "Find the Greens, Avoid the Bombs!",
+      cost: 20,
+      image: "/assets/minesweeper-image.png",
+      route: "/play/minesweeper"
+    },
+    {
+      id: "plinko",
+      name: "Plinko Drop",
+      description: "Drop, Bounce, Win!",
+      cost: 20,
+      image: "/assets/classic-image.png",
+      route: "/play/plinko"
+    },
+    {
+      id: "wheel",
+      name: "Wheel Spin",
+      description: "Spin and Win!",
+      cost: 20,
+      gradient: "from-[#f59e0b] to-[#ef4444]",
+      emoji: "🎯",
+      route: "/play/wheel"
+    }
+  ],
+  specialPacks: [
+    {
+      id: "coming-soon-1",
+      name: "Coming Soon",
+      description: "New pack types coming soon!",
+      cost: 0,
+      gradient: "from-[#A855F7] to-[#7C3AED]",
+      emoji: "✨",
+      route: "#",
+      comingSoon: true
+    }
+  ],
+  classicPacks: [
+    {
+      id: "slabs",
+      name: "Slabs Collection",
+      description: "Premium graded cards in protective cases",
+      cost: 0,
+      gradient: "from-[#7c3aed] to-[#22d3ee]",
+      emoji: "👑",
+      route: "/play/slabs",
+      comingSoon: true
+    },
+    {
+      id: "vintage",
+      name: "Vintage Collection",
+      description: "Rare vintage cards from classic sets",
+      cost: 0,
+      gradient: "from-[#f59e0b] to-[#ef4444]",
+      emoji: "⚡",
+      route: "/play/vintage",
+      comingSoon: true
+    }
+  ]
+};
 
 export default function Play() {
   const { toast } = useToast();
@@ -29,7 +104,6 @@ export default function Play() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -37,6 +111,69 @@ export default function Play() {
       </div>
     );
   }
+
+  // Game Card Component
+  const GameCard = ({ game, isLarge = false, delay = 0 }: { game: any, isLarge?: boolean, delay?: number }) => {
+    const cardSize = isLarge ? "w-72 h-64" : "w-56 h-48";
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`${cardSize} flex-shrink-0`}
+      >
+        <Card 
+          className={`rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] overflow-hidden ${game.comingSoon ? 'opacity-50' : ''}`}
+          onClick={() => game.comingSoon ? null : window.location.href = game.route}
+        >
+          <CardContent className="p-0 h-full relative">
+            {/* Game Image or Gradient Background */}
+            {game.image ? (
+              <img 
+                src={game.image} 
+                alt={game.name} 
+                className="w-full h-full object-cover rounded-2xl"
+              />
+            ) : (
+              <div className={`w-full h-full bg-gradient-to-br ${game.gradient} rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(124,58,237,0.4)]`}>
+                <span className="text-white text-3xl">{game.emoji}</span>
+              </div>
+            )}
+            
+            {/* Overlay with game info */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 rounded-b-2xl">
+              <div className="text-white">
+                <h3 className="font-bold text-base mb-1">{game.name}</h3>
+                <p className="text-xs text-gray-300 mb-2">{game.description}</p>
+                
+                {/* Badge */}
+                {game.badge && (
+                  <Badge className={`bg-gradient-to-r ${game.badgeColor} text-white border-0 mb-1 text-xs`}>
+                    {game.badge}
+                  </Badge>
+                )}
+                
+                {/* Cost and Status */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs">
+                    <span className="text-[#22D3EE] font-bold">
+                      {game.cost > 0 ? `${game.cost} Credits` : 'Coming Soon'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {game.comingSoon ? 'Stay tuned' : 'Per play'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  };
 
 
 
@@ -131,185 +268,70 @@ export default function Play() {
         </div>
       </div>
 
-      <main className="pt-24 pb-24 relative z-10">
+      <main className="pt-16 pb-16 relative z-10">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
           {/* Header */}
           <motion.section 
-            className="py-12 text-center mb-12"
+            className="py-6 text-center mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl sm:text-5xl font-bold mb-6">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4">
               <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
                 ARCADE
               </span>
             </h1>
-            <p className="text-lg text-[#E5E7EB] max-w-3xl mx-auto">
+            <p className="text-base text-[#E5E7EB] max-w-3xl mx-auto">
               Discover our catalogue of games and stand a chance to win top-tier cards
             </p>
           </motion.section>
 
           {/* Game Categories */}
           <div className="space-y-8">
-            {/* Minigames Section */}
+            {/* Popular Section */}
             <motion.section
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <h2 className="text-3xl font-bold text-center mb-8">
-                <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
-                  Minigames
-                </span>
-              </h2>
-              <div className="flex overflow-x-auto scrollbar-hide gap-6 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer flex-shrink-0 w-80 bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 shadow-[0_0_30px_rgba(0,0,0,0.3)]" data-testid="card-plinko">
-                  <CardHeader className="text-center p-6">
-                    <div className="w-full h-32 mb-4 rounded-lg bg-gradient-to-br from-[#3b82f6]/20 to-[#7C3AED]/20 relative flex items-center justify-center border border-[#3b82f6]/30">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#3b82f6] to-[#7C3AED] flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.4)]">
-                        <Circle className="h-8 w-8 text-white" />
-                      </div>
-                    </div>
-                    <CardTitle className="text-xl font-bold text-[#E5E7EB]">Plinko Drop</CardTitle>
-                    <p className="text-sm text-[#9CA3AF] mt-2">
-                      Drop, Bounce, Win!
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4 p-6">
-                    <div className="text-center space-y-2">
-                      <div className="bg-gradient-to-r from-[#7C3AED]/20 to-[#22D3EE]/20 rounded-lg p-3 border border-[#7C3AED]/30">
-                        <div className="text-2xl font-bold text-[#22D3EE]">
-                          20 Credits
-                        </div>
-                        <div className="text-sm text-[#9CA3AF]">
-                          Per play
-                        </div>
-                      </div>
-                      <div className="flex justify-center">
-                        <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0">
-                          Win Mystery Packs
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      onClick={() => window.location.href = '/play/plinko'}
-                      className="w-full bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] shadow-[0_0_15px_rgba(124,58,237,0.4)]"
-                      data-testid="button-play-plinko"
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      Play Plinko
-                    </Button>
-                  </CardContent>
-                </Card>
-                </motion.div>
+              <div className="flex items-center mb-6">
+                {/* Neon Strip */}
+                <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
                 
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer flex-shrink-0 w-80 bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 shadow-[0_0_30px_rgba(0,0,0,0.3)]" data-testid="card-wheel">
-                  <CardHeader className="text-center p-6">
-                    <div className="w-full h-32 mb-4 rounded-lg bg-gradient-to-br from-[#f59e0b]/20 to-[#ef4444]/20 relative flex items-center justify-center border border-[#f59e0b]/30">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#ef4444] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.4)]">
-                        <RotateCcw className="h-8 w-8 text-white" />
-                      </div>
-                    </div>
-                    <CardTitle className="text-xl font-bold text-[#E5E7EB]">Wheel Spin</CardTitle>
-                    <p className="text-sm text-[#9CA3AF] mt-2">
-                      Spin and Win!
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4 p-6">
-                    <div className="text-center space-y-2">
-                      <div className="bg-gradient-to-r from-[#7C3AED]/20 to-[#22D3EE]/20 rounded-lg p-3 border border-[#7C3AED]/30">
-                        <div className="text-2xl font-bold text-[#22D3EE]">20 Credits</div>
-                        <div className="text-sm text-[#9CA3AF]">
-                          Per spin
-                        </div>
-                      </div>
-                      <div className="flex justify-center">
-                        <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0">
-                          Win Mystery Packs
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      onClick={() => window.location.href = '/play/wheel'}
-                      className="w-full bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] shadow-[0_0_15px_rgba(124,58,237,0.4)]"
-                      data-testid="button-play-wheel"
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      Play Wheel
-                    </Button>
-                  </CardContent>
-                </Card>
-                </motion.div>
-                
-                {/* Minesweeper Game */}
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.5 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer flex-shrink-0 w-80 bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 shadow-[0_0_30px_rgba(0,0,0,0.3)]" data-testid="card-minesweeper">
-                  <CardHeader className="text-center p-6">
-                    <div className="w-full h-32 mb-4 rounded-lg bg-gradient-to-br from-[#10b981]/20 to-[#059669]/20 relative flex items-center justify-center border border-[#10b981]/30">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#10b981] to-[#059669] flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-                        <Package className="h-8 w-8 text-white" />
-                      </div>
-                    </div>
-                    <CardTitle className="text-xl font-bold text-[#E5E7EB]">Minesweeper</CardTitle>
-                    <p className="text-sm text-[#9CA3AF] mt-2">
-                      Find the Greens, Avoid the Bombs!
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4 p-6">
-                    <div className="text-center space-y-2">
-                      <div className="bg-gradient-to-r from-[#7C3AED]/20 to-[#22D3EE]/20 rounded-lg p-3 border border-[#7C3AED]/30">
-                        <div className="text-2xl font-bold text-[#22D3EE]">
-                          20 Credits
-                        </div>
-                        <div className="text-sm text-[#9CA3AF]">
-                          Per game
-                        </div>
-                      </div>
-                      <div className="flex justify-center">
-                        <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0">
-                          Win Mystery Packs
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      onClick={() => window.location.href = '/play/minesweeper'}
-                      className="w-full bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] shadow-[0_0_15px_rgba(124,58,237,0.4)]"
-                      data-testid="button-play-minesweeper"
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      Play Minesweeper
-                    </Button>
-                  </CardContent>
-                </Card>
-                </motion.div>
+                {/* Popular Title */}
+                <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Popular</h2>
               </div>
-              
-              {/* Scroll Hint */}
-              <div className="text-center mt-6 text-sm text-[#9CA3AF]">
+              <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
+                {gameData.popular.map((game, index) => (
+                  <GameCard key={game.id} game={game} isLarge={true} delay={0.3 + index * 0.1} />
+                ))}
+              </div>
+              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
+                <span className="hidden md:inline">← Scroll to see more →</span>
+                <span className="md:hidden">← Swipe to see more →</span>
+              </div>
+            </motion.section>
+
+            {/* Minigames Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              <div className="flex items-center mb-6">
+                {/* Neon Strip */}
+                <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
+                
+                {/* Minigames Title */}
+                <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Minigames</h2>
+              </div>
+              <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
+                {gameData.minigames.map((game, index) => (
+                  <GameCard key={game.id} game={game} delay={0.5 + index * 0.1} />
+                ))}
+              </div>
+              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
                 <span className="hidden md:inline">← Scroll to see more games →</span>
                 <span className="md:hidden">← Swipe to see more games →</span>
               </div>
@@ -321,66 +343,48 @@ export default function Play() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              <h2 className="text-3xl font-bold text-center mb-8">
-                <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
-                  Special Packs
-                </span>
-              </h2>
-              <div className="flex overflow-x-auto scrollbar-hide gap-6 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.7 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer opacity-50 flex-shrink-0 w-80 bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 shadow-[0_0_30px_rgba(0,0,0,0.3)]" data-testid="card-slabs">
-                    <CardHeader className="text-center p-6">
-                      <CardTitle className="text-xl font-bold text-[#E5E7EB]">Slabs Collection</CardTitle>
-                      <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0">Coming Soon</Badge>
-                    </CardHeader>
-                    <CardContent className="text-center p-6">
-                      <p className="text-[#9CA3AF] mb-4">Premium graded cards in protective cases.</p>
-                      <button className="bg-[#374151] text-[#9CA3AF] px-4 py-2 rounded-md w-full" disabled data-testid="button-slabs-disabled">
-                        Coming Soon
-                      </button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+              <div className="flex items-center mb-6">
+                {/* Neon Strip */}
+                <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
                 
-                <motion.div
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.8 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Card className="gaming-card hover:scale-105 transition-transform cursor-pointer opacity-50 flex-shrink-0 w-80 bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 shadow-[0_0_30px_rgba(0,0,0,0.3)]" data-testid="card-vintages">
-                    <CardHeader className="text-center p-6">
-                      <CardTitle className="text-xl font-bold text-[#E5E7EB]">Vintage Collection</CardTitle>
-                      <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0">Coming Soon</Badge>
-                    </CardHeader>
-                    <CardContent className="text-center p-6">
-                      <p className="text-[#9CA3AF] mb-4">Rare vintage cards from classic sets.</p>
-                      <button className="bg-[#374151] text-[#9CA3AF] px-4 py-2 rounded-md w-full" disabled data-testid="button-vintages-disabled">
-                        Coming Soon
-                      </button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                {/* Special Packs Title */}
+                <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Special Packs</h2>
               </div>
-              
-              {/* Scroll Hint for Special Packs */}
-              <div className="text-center mt-6 text-sm text-[#9CA3AF]">
+              <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
+                {gameData.specialPacks.map((game, index) => (
+                  <GameCard key={game.id} game={game} delay={0.7 + index * 0.1} />
+                ))}
+              </div>
+              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
                 <span className="hidden md:inline">← Scroll to see more packs →</span>
                 <span className="md:hidden">← Swipe to see more packs →</span>
               </div>
             </motion.section>
-            
+
+            {/* Classic Packs Section */}
+            <motion.section
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+            >
+              <div className="flex items-center mb-6">
+                {/* Neon Strip */}
+                <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
+                
+                {/* Classic Packs Title */}
+                <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Classic Packs</h2>
+              </div>
+              <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
+                {gameData.classicPacks.map((game, index) => (
+                  <GameCard key={game.id} game={game} delay={0.9 + index * 0.1} />
+                ))}
+              </div>
+              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
+                <span className="hidden md:inline">← Scroll to see more →</span>
+                <span className="md:hidden">← Swipe to see more →</span>
+              </div>
+            </motion.section>
           </div>
-
-
-
         </div>
       </main>
       <NavigationFooter />
