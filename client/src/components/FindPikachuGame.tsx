@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { RotateCcw, X, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Import pack images
 import classicPack from "/assets/classic-image.png";
@@ -42,8 +43,20 @@ const FIND_PIKACHU_COST = 300; // 300 credits per game (RM 15)
 // Pack Image component
 const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
   const getPackImage = (type: string) => {
-    // Use classic pack image for all pack types
-    return classicPack;
+    switch (type.toLowerCase()) {
+      case 'pokeball':
+        return "/assets/pokeball.png";
+      case 'greatball':
+        return "/assets/greatball.png";
+      case 'ultraball':
+        return "/assets/ultraball.png";
+      case 'masterball':
+        return "/assets/masterball.png";
+      case 'luxury':
+        return "/assets/masterball.png"; // Use masterball for luxury pack as requested
+      default:
+        return "/assets/pokeball.png";
+    }
   };
 
   const sizeClasses = size === 'large' ? 'w-24 h-24' : 'w-16 h-16';
@@ -53,6 +66,10 @@ const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'sma
       src={getPackImage(packType)}
       alt={`${packType} Pack`}
       className={`${sizeClasses} object-contain rounded-lg shadow-lg`}
+      onError={(e) => {
+        console.error('Image failed to load:', getPackImage(packType));
+        e.currentTarget.src = "/assets/pokeball.png"; // Fallback to pokeball
+      }}
     />
   );
 };
@@ -76,6 +93,8 @@ export function FindPikachuGame() {
   });
 
   const [gameStarted, setGameStarted] = useState(false);
+  const [showShuffleAnimation, setShowShuffleAnimation] = useState(false);
+  const [cardsReady, setCardsReady] = useState(false);
 
   // Fetch user credits
   const { data: userCredits, isLoading: isCreditsLoading } = useQuery({
@@ -112,14 +131,23 @@ export function FindPikachuGame() {
       return await response.json();
     },
     onSuccess: () => {
-      // Credits deducted successfully, game can start
+      // Credits deducted successfully, start shuffle animation
       setGameStarted(true);
+      setShowShuffleAnimation(true);
+      setCardsReady(false);
+      
       toast({
         title: "Game Started!",
         description: `${FIND_PIKACHU_COST} credits deducted. Find the Pikachus!`,
       });
       // Invalidate user credits query
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // After shuffle animation, allow card interaction
+      setTimeout(() => {
+        setShowShuffleAnimation(false);
+        setCardsReady(true);
+      }, 2000); // 2 second shuffle animation
     },
     onError: (error: any) => {
       console.error('Start game error:', error);
@@ -220,6 +248,8 @@ export function FindPikachuGame() {
       currentRound: 0,
     });
     setGameStarted(false);
+    setShowShuffleAnimation(false);
+    setCardsReady(false);
   }, []);
 
   // Start the game (deducts credits and allows tile selection)
@@ -238,10 +268,10 @@ export function FindPikachuGame() {
 
   // Handle card click
   const handleCardClick = (cardId: number) => {
-    if (!gameStarted) {
+    if (!gameStarted || !cardsReady) {
       toast({
-        title: "Game Not Started",
-        description: "Click 'Play' to start the game first!",
+        title: "Game Not Ready",
+        description: "Please wait for the shuffle to complete!",
         variant: "destructive",
       });
       return;
@@ -264,6 +294,13 @@ export function FindPikachuGame() {
         gameWon: false,
       }));
       
+      // Show game over toast
+      toast({
+        title: "💥 Game Over!",
+        description: `You hit a rock! Found ${gameState.pikachusFound}/4 Pikachus.`,
+        variant: "destructive",
+      });
+      
       // End the game
       console.log('Game over - calling API with:', { pikachusFound: gameState.pikachusFound, won: false });
       playGameMutation.mutate();
@@ -278,6 +315,12 @@ export function FindPikachuGame() {
         pikachusFound: newPikachusFound,
         currentRound: newPikachusFound,
       }));
+      
+      // Show success toast
+      toast({
+        title: "⚡ Pikachu Found!",
+        description: `Great! You found ${newPikachusFound}/4 Pikachus. Keep going!`,
+      });
       
       // Check if all Pikachus found
       if (newPikachusFound === 4) {
@@ -414,10 +457,12 @@ export function FindPikachuGame() {
           {/* Game Board */}
           <Card className="gaming-card mb-6 sm:mb-8 bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
             <CardHeader className="text-center px-4 sm:px-6">
-              <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-2">
+              <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-4">
                 🎮 Game Board
               </CardTitle>
-              <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+              
+              {/* Instruction Message */}
+              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600 mb-4">
                 <p className="text-gray-300 text-sm sm:text-base px-2">
                   {gameState.gameOver 
                     ? gameState.gameWon 
@@ -429,15 +474,158 @@ export function FindPikachuGame() {
                   }
                 </p>
                 {!gameState.gameOver && gameStarted && (
-                  <div className="mt-2 text-xs text-gray-400">
-                    Progress: {gameState.pikachusFound}/4 Pikachus found
+                  <div className="mt-3 space-y-2">
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <motion.div 
+                        className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(gameState.pikachusFound / 4) * 100}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </div>
+                    
+                    {/* Progress Text */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-300">
+                        🎯 <span className="font-semibold text-yellow-400">{gameState.pikachusFound}</span>/4 Pikachus found
+                      </span>
+                      <span className="text-gray-400">
+                        {4 - gameState.pikachusFound} remaining
+                      </span>
+                    </div>
+                    
+                    {/* Target Indicator */}
+                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-300">
+                      <span>Find:</span>
+                      <div className="flex items-center space-x-1">
+                        <img src={pikaImage} alt="Pikachu" className="w-4 h-4" />
+                        <span className="font-semibold text-yellow-400">Pikachu</span>
+                      </div>
+                      <span>• Avoid:</span>
+                      <div className="flex items-center space-x-1">
+                        <img src={rockImage} alt="Rock" className="w-4 h-4" />
+                        <span className="font-semibold text-red-400">Rocks</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </CardHeader>
             <CardContent className="px-4 sm:px-6">
               <div className="relative">
-                <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto">
+                {/* Shuffle Animation */}
+                {showShuffleAnimation && (
+                  <div className="flex justify-center items-center min-h-[400px]">
+                    <div className="text-center">
+                      <div className="mb-6 relative">
+                        {/* Card Shuffle Animation */}
+                        <div className="relative w-32 h-40 sm:w-40 sm:h-48 mx-auto">
+                          <AnimatePresence>
+                            {Array.from({length: 6}, (_, i) => (
+                              <motion.div
+                                key={i}
+                                className="absolute inset-0 rounded-lg shadow-lg overflow-hidden p-0 m-0"
+                                initial={{ 
+                                  x: 0, 
+                                  y: 0, 
+                                  rotate: 0,
+                                  scale: 1,
+                                  zIndex: i
+                                }}
+                                animate={{
+                                  x: [0, Math.sin(i * 0.5) * 20, Math.sin(i * 1) * 30, Math.sin(i * 1.5) * 15, 0],
+                                  y: [0, Math.cos(i * 0.5) * 15, Math.cos(i * 1) * 25, Math.cos(i * 1.5) * 10, 0],
+                                  rotate: [0, Math.sin(i * 0.3) * 10, Math.sin(i * 0.7) * 15, Math.sin(i * 1.2) * 8, 0],
+                                  scale: [1, 0.95 + Math.sin(i * 0.4) * 0.1, 0.9 + Math.sin(i * 0.8) * 0.15, 0.95 + Math.sin(i * 1.1) * 0.1, 1],
+                                  zIndex: [i, i + Math.floor(Math.sin(i * 0.6) * 3), i + Math.floor(Math.sin(i * 1.2) * 5), i + Math.floor(Math.sin(i * 1.8) * 2), i]
+                                }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                  delay: i * 0.1
+                                }}
+                              >
+                                <img 
+                                  src={bushImage} 
+                                  alt="Bush" 
+                                  className="w-full h-full object-cover rounded-lg block"
+                                />
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                        
+                        {/* Shuffle Effect Overlay */}
+                        <motion.div
+                          className="absolute inset-0 pointer-events-none"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: [0, 0.3, 0, 0.3, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                            <motion.div
+                              className="w-8 h-8 bg-white/20 rounded-full blur-sm"
+                              animate={{
+                                scale: [1, 2, 0.5, 1.8, 1],
+                                y: [0, -20, 10, -15, 0]
+                              }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                          </div>
+                        </motion.div>
+                      </div>
+                      
+                      <motion.div
+                        className="text-white text-2xl sm:text-3xl font-bold mb-3"
+                        animate={{ opacity: [0.7, 1, 0.7] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
+                          🔄 Shuffling Cards...
+                        </span>
+                      </motion.div>
+                      <motion.div 
+                        className="text-cyan-400 text-base sm:text-lg font-semibold"
+                        animate={{ opacity: [0.8, 1, 0.8] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                      >
+                        🎯 Preparing Pikachu hunt board
+                      </motion.div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Game Board */}
+                {!showShuffleAnimation && (
+                  <div className="space-y-4">
+                    {/* Visual Legend */}
+                    {gameStarted && !gameState.gameOver && (
+                      <motion.div 
+                        className="flex justify-center items-center space-x-6 p-3 bg-gray-800/50 rounded-lg border border-gray-600/30"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <img src={pikaImage} alt="Pikachu" className="w-6 h-6" />
+                          <span className="text-sm font-semibold text-yellow-400">Find Pikachu</span>
+                        </div>
+                        <div className="w-px h-6 bg-gray-600"></div>
+                        <div className="flex items-center space-x-2">
+                          <img src={rockImage} alt="Rock" className="w-6 h-6" />
+                          <span className="text-sm font-semibold text-red-400">Avoid Rock</span>
+                        </div>
+                        <div className="w-px h-6 bg-gray-600"></div>
+                        <div className="flex items-center space-x-2">
+                          <img src={bushImage} alt="Bush" className="w-6 h-6" />
+                          <span className="text-sm font-semibold text-green-400">Click Bush</span>
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto">
                   {gameState.cards.map((card) => (
                     <Button
                       key={card.id}
@@ -450,7 +638,7 @@ export function FindPikachuGame() {
                           : "bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 active:from-gray-500 active:to-gray-600 border-gray-500 hover:border-gray-400 shadow-md hover:shadow-lg hover:ring-1 hover:ring-gray-400/30"
                       }`}
                       onClick={() => handleCardClick(card.id)}
-                      disabled={gameState.gameOver || card.isRevealed}
+                      disabled={gameState.gameOver || card.isRevealed || !cardsReady}
                     >
                       {card.isRevealed ? (
                         card.isRock ? (
@@ -475,18 +663,54 @@ export function FindPikachuGame() {
                       )}
                     </Button>
                   ))}
-                </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Overlay when game hasn't started */}
                 {!gameStarted && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-black/90 to-gray-900/90 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 border-2 border-dashed border-gray-500/50">
+                  <div className="absolute inset-0 bg-gradient-to-br from-black/90 to-gray-900/90 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 border-2 border-dashed border-yellow-400/50">
                     <div className="text-center text-white p-6">
-                      <div className="text-xl sm:text-2xl font-bold mb-2 text-yellow-400">
-                        Press Begin Hunt to Start Game
-                      </div>
-                      <div className="text-lg font-semibold text-green-400">
-                        Find all pikachu!
-                      </div>
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        className="mb-4"
+                      >
+                        <div className="text-4xl sm:text-5xl mb-2">⚡</div>
+                      </motion.div>
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+                        className="text-2xl sm:text-3xl font-bold mb-3 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent"
+                      >
+                        Pikachu Hunt Challenge
+                      </motion.div>
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+                        className="text-lg sm:text-xl font-semibold mb-4 text-cyan-400"
+                      >
+                        Find All the Pikachus to Win Packs!
+                      </motion.div>
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+                        className="text-sm sm:text-base text-gray-300 mb-4"
+                      >
+                        Click on bushes to reveal Pikachus and avoid rocks
+                      </motion.div>
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.8, ease: "easeOut" }}
+                        className="text-base sm:text-lg text-gray-300 font-medium"
+                      >
+                        Click Begin Hunt to start game
+                      </motion.div>
                     </div>
                   </div>
                 )}
@@ -524,18 +748,18 @@ export function FindPikachuGame() {
                 onClick={initializeGame}
                 variant="outline"
                 className={`w-full sm:w-auto px-6 sm:px-8 py-3 text-base sm:text-sm border-2 transition-all duration-300 ${
-                  gameStarted && !gameState.gameOver
+                  (gameStarted && !gameState.gameOver) || showShuffleAnimation
                     ? "border-gray-500/50 bg-gray-700/30 text-gray-400 cursor-not-allowed opacity-60" 
                     : "border-blue-500/70 hover:border-blue-400 hover:bg-blue-500/15 text-blue-300 hover:text-blue-200 transform hover:scale-105 shadow-md hover:shadow-lg"
                 }`}
-                disabled={playGameMutation.isPending || (gameStarted && !gameState.gameOver)}
+                disabled={playGameMutation.isPending || (gameStarted && !gameState.gameOver) || showShuffleAnimation}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">
-                  {gameStarted && !gameState.gameOver ? "In Hunt" : "New Hunt"}
+                  {showShuffleAnimation ? "Shuffling..." : gameStarted && !gameState.gameOver ? "In Hunt" : "New Hunt"}
                 </span>
                 <span className="sm:hidden">
-                  {gameStarted && !gameState.gameOver ? "In Hunt" : "New Hunt"}
+                  {showShuffleAnimation ? "Shuffling..." : gameStarted && !gameState.gameOver ? "In Hunt" : "New Hunt"}
                 </span>
               </Button>
             )}
@@ -561,22 +785,28 @@ export function FindPikachuGame() {
               </p>
             </CardHeader>
             <CardContent className="px-4 sm:px-6">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                 {[
-                  { pikachus: "0-1", tier: "pokeball", name: "Pokeball", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", borderColor: "border-red-500/30" },
-                  { pikachus: "2", tier: "greatball", name: "Greatball", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30" },
-                  { pikachus: "3", tier: "ultraball", name: "Ultraball", color: "from-yellow-500 to-orange-500", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30" },
-                  { pikachus: "4", tier: "masterball", name: "Masterball", color: "from-purple-500 to-purple-600", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30" },
+                  { pikachus: "0-1", tier: "pokeball", name: "Pokeball", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", image: "/assets/pokeball.png" },
+                  { pikachus: "2", tier: "greatball", name: "Greatball", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30", image: "/assets/greatball.png" },
+                  { pikachus: "3", tier: "ultraball", name: "Ultraball", color: "from-yellow-500 to-orange-500", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30", image: "/assets/ultraball.png" },
+                  { pikachus: "4", tier: "masterball", name: "Masterball", color: "from-purple-500 to-purple-600", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", image: "/assets/masterball.png" },
                 ].map((reward) => (
-                  <div key={reward.pikachus} className={`text-center p-3 rounded-lg border-2 ${reward.bgColor} ${reward.borderColor} transition-all duration-300 hover:scale-105 hover:shadow-lg`}>
-                    <div className="flex justify-center mb-3">
-                      <div className="relative">
-                        <PackImage packType={reward.tier} size="small" />
-                        <div className={`absolute inset-0 bg-gradient-to-r ${reward.color} rounded-lg opacity-20 animate-pulse`}></div>
+                  <div key={reward.pikachus} className={`text-center p-4 sm:p-5 rounded-lg border-2 ${reward.bgColor} ${reward.borderColor} transition-all duration-300 hover:scale-105 hover:shadow-xl`}>
+                    <div className="flex justify-center mb-4">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24">
+                        <img 
+                          src={reward.image} 
+                          alt={reward.name}
+                          className="w-full h-full object-cover drop-shadow-lg"
+                          onError={(e) => {
+                            console.error('Pack reward image failed to load:', reward.image, 'for', reward.name);
+                          }}
+                        />
                       </div>
                     </div>
-                    <div className="font-bold text-sm sm:text-base text-white mb-1">{reward.name}</div>
-                    <div className="text-xs text-gray-300 font-medium">
+                    <div className="font-bold text-base sm:text-lg text-white mb-2">{reward.name}</div>
+                    <div className="text-sm text-gray-200 font-medium">
                       {reward.pikachus} Pikachu{reward.pikachus !== "1" ? 's' : ''}
                     </div>
                   </div>

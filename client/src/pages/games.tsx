@@ -23,12 +23,21 @@ const gameData = {
   ],
   minigames: [
     {
-      id: "minesweeper",
-      name: "Minesweeper",
-      description: "Find the Greens, Avoid the Bombs!",
-      cost: 20,
-      image: "/assets/minesweeper-image.png",
-      route: "/play/minesweeper"
+      id: "findpika",
+      name: "Find Pikachu",
+      description: "Find all the Pikachus!",
+      cost: 300,
+      image: "/assets/find-pika-image.png",
+      route: "/play/findpika"
+    },
+    {
+      id: "energy-match",
+      name: "Energy Match",
+      description: "Match energy cards to win packs!",
+      cost: 200,
+      gradient: "from-yellow-500 to-orange-500",
+      emoji: "⚡",
+      route: "/play/energy-match"
     },
     {
       id: "plinko",
@@ -146,9 +155,6 @@ export default function Play() {
             {/* Overlay with game info */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 rounded-b-2xl">
               <div className="text-white">
-                <h3 className="font-bold text-base mb-1">{game.name}</h3>
-                <p className="text-xs text-gray-300 mb-2">{game.description}</p>
-                
                 {/* Badge */}
                 {game.badge && (
                   <Badge className={`bg-gradient-to-r ${game.badgeColor} text-white border-0 mb-1 text-xs`}>
@@ -156,15 +162,12 @@ export default function Play() {
                   </Badge>
                 )}
                 
-                {/* Cost and Status */}
+                {/* Cost */}
                 <div className="flex items-center justify-between">
                   <div className="text-xs">
                     <span className="text-[#22D3EE] font-bold">
                       {game.cost > 0 ? `${game.cost} Credits` : 'Coming Soon'}
                     </span>
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {game.comingSoon ? 'Stay tuned' : 'Per play'}
                   </div>
                 </div>
               </div>
@@ -307,10 +310,6 @@ export default function Play() {
                   <GameCard key={game.id} game={game} isLarge={true} delay={0.3 + index * 0.1} />
                 ))}
               </div>
-              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
-                <span className="hidden md:inline">← Scroll to see more →</span>
-                <span className="md:hidden">← Swipe to see more →</span>
-              </div>
             </motion.section>
 
             {/* Minigames Section */}
@@ -330,10 +329,6 @@ export default function Play() {
                 {gameData.minigames.map((game, index) => (
                   <GameCard key={game.id} game={game} delay={0.5 + index * 0.1} />
                 ))}
-              </div>
-              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
-                <span className="hidden md:inline">← Scroll to see more games →</span>
-                <span className="md:hidden">← Swipe to see more games →</span>
               </div>
             </motion.section>
             
@@ -355,10 +350,6 @@ export default function Play() {
                   <GameCard key={game.id} game={game} delay={0.7 + index * 0.1} />
                 ))}
               </div>
-              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
-                <span className="hidden md:inline">← Scroll to see more packs →</span>
-                <span className="md:hidden">← Swipe to see more packs →</span>
-              </div>
             </motion.section>
 
             {/* Classic Packs Section */}
@@ -378,10 +369,6 @@ export default function Play() {
                 {gameData.classicPacks.map((game, index) => (
                   <GameCard key={game.id} game={game} delay={0.9 + index * 0.1} />
                 ))}
-              </div>
-              <div className="text-center mt-3 text-sm text-[#9CA3AF]">
-                <span className="hidden md:inline">← Scroll to see more →</span>
-                <span className="md:hidden">← Swipe to see more →</span>
               </div>
             </motion.section>
           </div>

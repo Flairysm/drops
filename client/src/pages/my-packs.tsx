@@ -166,8 +166,20 @@ export default function MyPacks() {
   // Pokemon pack images component
   const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
     const getPackImage = (type: string) => {
-      // Use classic pack image for all pack types
-      return classicPack;
+      switch (type.toLowerCase()) {
+        case 'pokeball':
+          return "/assets/pokeball.png";
+        case 'greatball':
+          return "/assets/greatball.png";
+        case 'ultraball':
+          return "/assets/ultraball.png";
+        case 'masterball':
+          return "/assets/masterball.png";
+        case 'luxury':
+          return "/assets/masterball.png"; // Use masterball for luxury pack
+        default:
+          return "/assets/pokeball.png";
+      }
     };
     
     const imageSize = size === 'small' ? 'w-16 h-20' : 'w-48 h-60';
@@ -179,6 +191,10 @@ export default function MyPacks() {
           alt={`${packType} pack`}
           className="w-full h-full object-contain pixel-crisp"
           style={{ imageRendering: 'pixelated' }}
+          onError={(e) => {
+            console.error('Pack image failed to load:', getPackImage(packType));
+            e.currentTarget.src = "/assets/pokeball.png"; // Fallback to pokeball
+          }}
         />
       </div>
     );
