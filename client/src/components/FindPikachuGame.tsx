@@ -40,6 +40,20 @@ interface PackAward {
 
 const FIND_PIKACHU_COST = 300; // 300 credits per game (RM 15)
 
+// Get reward tier based on Pikachus found
+const getRewardTier = (pikachusFound: number) => {
+  if (pikachusFound === 0 || pikachusFound === 1) {
+    return { tier: 'pokeball', name: 'Pokeball Pack' };
+  } else if (pikachusFound === 2) {
+    return { tier: 'greatball', name: 'Greatball Pack' };
+  } else if (pikachusFound === 3) {
+    return { tier: 'ultraball', name: 'Ultraball Pack' };
+  } else if (pikachusFound === 4) {
+    return { tier: 'masterball', name: 'Masterball Pack' };
+  }
+  return { tier: 'pokeball', name: 'Pokeball Pack' };
+};
+
 // Pack Image component
 const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
   const getPackImage = (type: string) => {
@@ -95,6 +109,7 @@ export function FindPikachuGame() {
   const [gameStarted, setGameStarted] = useState(false);
   const [showShuffleAnimation, setShowShuffleAnimation] = useState(false);
   const [cardsReady, setCardsReady] = useState(false);
+  const [showGameOverPopup, setShowGameOverPopup] = useState(false);
 
   // Fetch user credits
   const { data: userCredits, isLoading: isCreditsLoading } = useQuery({
@@ -250,6 +265,7 @@ export function FindPikachuGame() {
     setGameStarted(false);
     setShowShuffleAnimation(false);
     setCardsReady(false);
+    setShowGameOverPopup(false);
   }, []);
 
   // Start the game (deducts credits and allows tile selection)
@@ -294,12 +310,8 @@ export function FindPikachuGame() {
         gameWon: false,
       }));
       
-      // Show game over toast
-      toast({
-        title: "💥 Game Over!",
-        description: `You hit a rock! Found ${gameState.pikachusFound}/4 Pikachus.`,
-        variant: "destructive",
-      });
+      // Show game over popup
+      setShowGameOverPopup(true);
       
       // End the game
       console.log('Game over - calling API with:', { pikachusFound: gameState.pikachusFound, won: false });
@@ -332,6 +344,9 @@ export function FindPikachuGame() {
           gameOver: true,
           gameWon: true,
         }));
+        
+        // Show game over popup
+        setShowGameOverPopup(true);
         
         // End the game
         console.log('Game won - calling API with:', { pikachusFound: newPikachusFound, won: true });
@@ -817,6 +832,72 @@ export function FindPikachuGame() {
         </div>
       </main>
       <NavigationFooter />
+
+      {/* Game Over Popup */}
+      {showGameOverPopup && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-600 rounded-xl p-8 max-w-lg w-full shadow-2xl"
+          >
+            <div className="text-center space-y-6">
+              {/* Header */}
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-white tracking-wide">
+                  GAME OVER
+                </h2>
+                <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full"></div>
+              </div>
+              
+              {/* Pack Image */}
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl border-2 border-gray-600 flex items-center justify-center shadow-lg">
+                    <img 
+                      src={`/assets/${getRewardTier(gameState.pikachusFound).tier}.png`}
+                      alt={`${getRewardTier(gameState.pikachusFound).name} Pack`}
+                      className="w-16 h-16 object-cover"
+                      onError={(e) => {
+                        console.error('Pack image failed to load:', `/assets/${getRewardTier(gameState.pikachusFound).tier}.png`);
+                        e.currentTarget.src = "/assets/pokeball.png";
+                      }}
+                    />
+                  </div>
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-xl blur-sm -z-10"></div>
+                </div>
+              </div>
+              
+              {/* Content */}
+              <div className="space-y-3">
+                <p className="text-xl text-gray-200">
+                  You have won a <span className="font-bold text-green-400">{getRewardTier(gameState.pikachusFound).name}</span> pack!
+                </p>
+                
+                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                  <p className="text-sm text-gray-300">
+                    Go to My Packs to open it
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    Click New Hunt for a new game
+                  </p>
+                </div>
+              </div>
+              
+              {/* Button */}
+              <Button
+                onClick={() => setShowGameOverPopup(false)}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+              >
+                OK
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

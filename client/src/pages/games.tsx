@@ -35,8 +35,7 @@ const gameData = {
       name: "Energy Match",
       description: "Match energy cards to win packs!",
       cost: 200,
-      gradient: "from-yellow-500 to-orange-500",
-      emoji: "⚡",
+      image: "/assets/energy-match.png",
       route: "/play/energy-match"
     },
     {
