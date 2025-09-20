@@ -37,45 +37,34 @@ export default function Plinko() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       <Navigation />
-      <main className="pt-20 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <main className="pt-16 pb-16 relative z-10">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 w-full">
           {/* Header */}
-          <section className="py-8 text-center">
-            <Button 
-              variant="ghost" 
-              className="mb-4"
-              onClick={() => window.location.href = "/play"}
-              data-testid="button-back-to-play"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Play
-            </Button>
-            <h1 className="font-gaming font-bold text-4xl md:text-5xl mb-4">
-              <span className="bg-gradient-to-r from-primary via-accent to-legendary bg-clip-text text-transparent">PLINKO DROP</span>
+          <section className="py-4 sm:py-8 text-center">
+            <h1 className="font-gaming font-bold text-3xl sm:text-4xl md:text-5xl mb-3 sm:mb-4">
+              <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                PLINKO DROP
+              </span>
             </h1>
-            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
-              Drop balls and watch them bounce through the pegs to win amazing cards!
+            <p className="text-white text-base sm:text-lg max-w-2xl mx-auto px-2">
+              Drop balls and watch them bounce through the pegs to win amazing packs!
             </p>
           </section>
 
+
           {/* Game */}
-          <Card className="gaming-card max-w-4xl mx-auto">
-            <CardHeader className="text-center">
-              <CardTitle className="font-gaming text-2xl">Plinko Drop</CardTitle>
-              <div className="flex justify-center space-x-4 mt-4">
-                <Badge className="bg-legendary text-primary-foreground">Max: SSS Tier</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <PlinkoGame />
-            </CardContent>
-          </Card>
+          <PlinkoGame />
         </div>
       </main>
       
-      {/* Navigation Footer */}
       <NavigationFooter />
     </div>
   );

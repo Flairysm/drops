@@ -27,14 +27,6 @@ const gameData = {
       route: "/play/energy-match"
     },
     {
-      id: "plinko",
-      name: "Plinko Drop",
-      description: "Drop, Bounce, Win!",
-      cost: 20,
-      image: "/assets/classic-image.png",
-      route: "/play/plinko"
-    },
-    {
       id: "wheel",
       name: "Wheel Spin",
       description: "Spin and Win!",

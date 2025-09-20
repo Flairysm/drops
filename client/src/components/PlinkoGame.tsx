@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Play, Package, DollarSign } from "lucide-react";
+import { Play, Package, DollarSign, X, RotateCcw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 import classicPack from "/assets/classic-image.png";
 
 interface GameResult {
@@ -27,7 +29,7 @@ interface Ball {
 }
 
 const BOARD_WIDTH = 600;
-const BOARD_HEIGHT = 500;
+const BOARD_HEIGHT = 600;
 const PIN_RADIUS = 6;
 const BALL_RADIUS = 14; // Made bigger
 const LAYERS = 8;
@@ -56,36 +58,52 @@ const PackImage = ({
   size?: "small" | "large";
 }) => {
   const getPackImage = (type: string) => {
-    // Use classic pack image for all pack types
-    return classicPack;
+    switch (type.toLowerCase()) {
+      case 'pokeball':
+        return "/assets/pokeball.png";
+      case 'greatball':
+        return "/assets/greatball.png";
+      case 'ultraball':
+        return "/assets/ultraball.png";
+      case 'masterball':
+        return "/assets/masterball.png";
+      default:
+        return "/assets/pokeball.png";
+    }
   };
 
   const imageSize = size === "small" ? "w-8 h-10" : "w-16 h-20";
 
   return (
-    <div className={`${imageSize} mx-auto`}>
+    <div className={`${imageSize} mx-auto flex items-center justify-center`}>
       <img
         src={getPackImage(packType)}
         alt={`${packType} pack`}
         className="w-full h-full object-contain pixel-crisp"
         style={{ imageRendering: "pixelated" }}
+        onError={(e) => {
+          console.error('Pack image failed to load:', getPackImage(packType));
+          e.currentTarget.src = "/assets/pokeball.png";
+        }}
       />
     </div>
   );
 };
 
 export function PlinkoGame() {
-  const [fixedPrice, setFixedPrice] = useState("5.00");
+  const [fixedPrice, setFixedPrice] = useState("300");
   const [isPlaying, setIsPlaying] = useState(false);
   const [lastResult, setLastResult] = useState<GameResult | null>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [finalOutcome, setFinalOutcome] = useState<string | null>(null);
   const [showPackAssigned, setShowPackAssigned] = useState(false);
+  const [showGameOverPopup, setShowGameOverPopup] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const ballRef = useRef<Ball | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
 
   // Fetch user credits
   const { data: userCredits, isLoading: isCreditsLoading } = useQuery({
@@ -102,23 +120,22 @@ export function PlinkoGame() {
     gcTime: 60000,
   });
 
-  // Fetch fixed price for Plinko
-  const { data: gameSettings } = useQuery({
-    queryKey: ["/api/games/plinko/settings"],
-  });
+  // Fixed price is always 300 credits for Plinko
 
-  useEffect(() => {
-    if (
-      gameSettings &&
-      typeof gameSettings === "object" &&
-      gameSettings !== null &&
-      "price" in gameSettings
-    ) {
-      const price = String(gameSettings.price);
-      console.log("Plinko fixed price:", price, "(user input ignored:", fixedPrice, ")");
-      setFixedPrice(price);
+  // Get reward tier based on outcome
+  const getRewardTier = (outcome: string) => {
+    switch (outcome) {
+      case "Masterball":
+        return { tier: "masterball", name: "Masterball" };
+      case "Ultraball":
+        return { tier: "ultraball", name: "Ultraball" };
+      case "Greatball":
+        return { tier: "greatball", name: "Greatball" };
+      case "Pokeball":
+      default:
+        return { tier: "pokeball", name: "Pokeball" };
     }
-  }, [gameSettings]);
+  };
 
   // Credit deduction mutation for Plinko
   const deductCreditsMutation = useMutation({
@@ -153,10 +170,12 @@ export function PlinkoGame() {
       console.log("Credits deducted successfully, starting Plinko game");
       
       // Credits deducted successfully, start the game
+      console.log("Starting game, setting isPlaying=true, animationComplete=false");
       setIsPlaying(true);
       setAnimationComplete(false);
       setFinalOutcome(null);
       setLastResult(null);
+      setShowGameOverPopup(false);
 
       // Clear the canvas and redraw static board immediately
       drawStaticBoard();
@@ -194,10 +213,8 @@ export function PlinkoGame() {
 
       console.log("Plinko pack assignment successful:", result);
       
-      // Show pack assignment after successful API call
-      setTimeout(() => {
-        setShowPackAssigned(true);
-      }, 1000);
+      // Show game over popup after successful pack assignment
+      setShowGameOverPopup(true);
     },
     onError: (error: Error) => {
       toast({
@@ -254,7 +271,7 @@ export function PlinkoGame() {
   const getOutcomePositions = () => {
     const positions = [];
     const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-    const y = BOARD_HEIGHT - 40;
+    const y = BOARD_HEIGHT + 20;
 
     for (let i = 0; i < OUTCOMES.length; i++) {
       positions.push({
@@ -273,29 +290,28 @@ export function PlinkoGame() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // No predetermined target - let physics determine the outcome naturally
-    const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+    console.log("Starting Plinko animation");
 
-    // Initialize ball to drop more towards the center
-    const firstLayerPins = getPins().filter((_, index) => index < 3); // First 3 pins
-    const centerGap = 1; // Always drop between pins 2-3 (center gap)
-    const dropX =
-      (firstLayerPins[centerGap].x + firstLayerPins[centerGap + 1].x) / 2; // Drop between center pins
-
+    // Create ball at the top center
     const ball: Ball = {
-      x: dropX + (Math.random() - 0.5) * 2, // Smaller drop variation for more center focus
-      y: 20, // Standard start position
-      vx: (Math.random() - 0.5) * 0.08, // Reduced horizontal variance for center bias
+      x: BOARD_WIDTH / 2 + (Math.random() - 0.5) * 20, // Small random variation
+      y: 30, // Start position
+      vx: (Math.random() - 0.5) * 0.1, // Small horizontal velocity
       vy: 0, // Start with no vertical velocity
       radius: BALL_RADIUS,
       color: "#00d4ff",
     };
 
     ballRef.current = ball;
+    console.log("Ball created:", ball);
     const pins = getPins();
     const outcomePositions = getOutcomePositions();
 
     const animate = () => {
+      const ball = ballRef.current;
+      if (!ball) return;
+
+      // Clear canvas
       ctx.clearRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
       // Draw background
@@ -305,92 +321,40 @@ export function PlinkoGame() {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
-      // Draw pins with enhanced visual effects
+      // Draw pins
       pins.forEach((pin) => {
-        // Check if ball is near this pin for interaction effect
-        const ball = ballRef.current;
-        const isNearBall = ball && Math.sqrt((ball.x - pin.x) ** 2 + (ball.y - pin.y) ** 2) < 30;
-        
         ctx.beginPath();
         ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
-        
-        // Enhanced pin gradient
-        const pinGradient = ctx.createRadialGradient(
-          pin.x - 2,
-          pin.y - 2,
-          0,
-          pin.x,
-          pin.y,
-          PIN_RADIUS,
-        );
-        pinGradient.addColorStop(0, isNearBall ? "#94a3b8" : "#64748b");
-        pinGradient.addColorStop(1, isNearBall ? "#475569" : "#475569");
-        
-        ctx.fillStyle = pinGradient;
+        ctx.fillStyle = "#e2e8f0";
         ctx.fill();
-        
-        // Enhanced border
-        ctx.strokeStyle = isNearBall ? "#cbd5e1" : "#94a3b8";
-        ctx.lineWidth = isNearBall ? 2 : 1;
+        ctx.strokeStyle = "#64748b";
+        ctx.lineWidth = 1;
         ctx.stroke();
-        
-        // Add subtle glow effect when ball is near
-        if (isNearBall) {
-          ctx.shadowColor = "#0ea5e9";
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.arc(pin.x, pin.y, PIN_RADIUS + 2, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(14, 165, 233, 0.3)";
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
       });
 
-      // Draw outcome buckets
+      // Draw buckets
       outcomePositions.forEach((pos, index) => {
         const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
         const bucketX = index * bucketWidth;
 
         // Bucket background
-        ctx.fillStyle =
-          pos.outcome === "Masterball"
-            ? "rgba(139, 92, 246, 0.2)"
-            : pos.outcome === "Ultraball"
-              ? "rgba(255, 215, 0, 0.2)"
-              : pos.outcome === "Greatball"
-                ? "rgba(59, 130, 246, 0.2)"
-                : "rgba(148, 163, 184, 0.2)";
-        ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+        ctx.fillStyle = pos.outcome === "Masterball" ? "rgba(139, 92, 246, 0.2)" :
+                       pos.outcome === "Ultraball" ? "rgba(255, 215, 0, 0.2)" :
+                       pos.outcome === "Greatball" ? "rgba(59, 130, 246, 0.2)" :
+                       "rgba(148, 163, 184, 0.2)";
+        ctx.fillRect(bucketX, BOARD_HEIGHT - 160, bucketWidth, 80);
 
         // Bucket border
-        ctx.strokeStyle =
-          pos.outcome === "Masterball"
-            ? "#8b5cf6"
-            : pos.outcome === "Ultraball"
-              ? "#ffd700"
-              : pos.outcome === "Greatball"
-                ? "#3b82f6"
-                : "#94a3b8";
+        ctx.strokeStyle = pos.outcome === "Masterball" ? "rgba(139, 92, 246, 0.6)" :
+                         pos.outcome === "Ultraball" ? "rgba(255, 215, 0, 0.6)" :
+                         pos.outcome === "Greatball" ? "rgba(59, 130, 246, 0.6)" :
+                         "rgba(148, 163, 184, 0.6)";
         ctx.lineWidth = 2;
-        ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
-
-        // Bucket label - properly centered
-        ctx.fillStyle =
-          pos.outcome === "Masterball"
-            ? "#8b5cf6"
-            : pos.outcome === "Ultraball"
-              ? "#ffd700"
-              : pos.outcome === "Greatball"
-                ? "#3b82f6"
-                : "#64748b";
-        ctx.font = "bold 11px Inter";
-        ctx.textAlign = "center";
-        ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
+        ctx.strokeRect(bucketX, BOARD_HEIGHT - 160, bucketWidth, 80);
       });
 
-      // Stake.us-style physics for fair, natural feel
-      if (ball.y < BOARD_HEIGHT - 70) {
+      // Ball physics
+      if (ball.y < BOARD_HEIGHT - 200) { // Stop physics when ball reaches bucket area
         // Apply gravity
         ball.vy += GRAVITY;
 
@@ -398,7 +362,7 @@ export function PlinkoGame() {
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // Enhanced collision detection with natural pin influence
+        // Collision with pins
         pins.forEach((pin) => {
           const dx = ball.x - pin.x;
           const dy = ball.y - pin.y;
@@ -406,86 +370,62 @@ export function PlinkoGame() {
           const minDistance = ball.radius + PIN_RADIUS;
 
           if (distance < minDistance && distance > 0) {
-            // Calculate collision normal
-            const nx = dx / distance;
-            const ny = dy / distance;
-
             // Separate ball from pin
             const separation = minDistance - distance;
+            const nx = dx / distance;
+            const ny = dy / distance;
             ball.x += nx * separation;
             ball.y += ny * separation;
 
-            // Real Plinko board bounce physics
+            // Bounce physics
             const dotProduct = ball.vx * nx + ball.vy * ny;
-            
             if (dotProduct < 0) {
-              // Clean, predictable bounce
               ball.vx -= 2 * dotProduct * nx * RESTITUTION;
               ball.vy -= 2 * dotProduct * ny * RESTITUTION;
-
-              // Apply friction for natural energy loss
               ball.vx *= FRICTION;
               ball.vy *= FRICTION;
             }
           }
         });
 
-        // Clean wall collision physics
+        // Wall collisions
         if (ball.x < ball.radius) {
           ball.x = ball.radius;
           ball.vx = Math.abs(ball.vx) * RESTITUTION;
-          ball.vy *= FRICTION;
         }
         if (ball.x > BOARD_WIDTH - ball.radius) {
           ball.x = BOARD_WIDTH - ball.radius;
           ball.vx = -Math.abs(ball.vx) * RESTITUTION;
-          ball.vy *= FRICTION;
         }
 
-        // Light air resistance for natural movement
+        // Air resistance
         ball.vx *= 0.998;
         ball.vy *= 0.998;
-
-        // Subtle centering force to favor middle pins
-        const centerX = BOARD_WIDTH / 2;
-        const centerForce = (centerX - ball.x) * 0.0008; // Very gentle pull towards center
-        ball.vx += centerForce;
       } else {
-        // Ball has reached the bottom - determine final outcome
-        // Make sure ball is fully inside a bucket, not just touching
-        const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
-
-        // Clamp ball position to ensure it's within bounds
-        ball.x = Math.max(
-          ball.radius,
-          Math.min(BOARD_WIDTH - ball.radius, ball.x),
-        );
-
-        // Find which bucket the ball center is in
-        const bucketIndex = Math.floor(ball.x / bucketWidth);
-        const clampedIndex = Math.max(
-          0,
-          Math.min(OUTCOMES.length - 1, bucketIndex),
-        );
-
-        // Move ball to center of the bucket it landed in
-        const bucketCenter = clampedIndex * bucketWidth + bucketWidth / 2;
-        ball.x = bucketCenter;
-        ball.y = BOARD_HEIGHT - 30; // Position ball inside the bucket
-
+        // Ball has reached the bucket area
+        console.log("Ball reached bucket area, animationComplete:", animationComplete);
         if (!animationComplete) {
-          setAnimationComplete(true);
+          // Determine which bucket the ball landed in
+          const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
+          const bucketIndex = Math.floor(ball.x / bucketWidth);
+          const clampedIndex = Math.max(0, Math.min(OUTCOMES.length - 1, bucketIndex));
+          
+          // Position ball in the center of the bucket
+          const bucketCenter = clampedIndex * bucketWidth + bucketWidth / 2;
+          ball.x = bucketCenter;
+          ball.y = BOARD_HEIGHT - 120; // Position inside bucket
+          ball.vx = 0;
+          ball.vy = 0;
 
-          // Trust the physics simulation - use the visual outcome
+          console.log(`Ball landed in bucket ${clampedIndex}, outcome: ${OUTCOMES[clampedIndex]}`);
+          
+          setAnimationComplete(true);
+          setIsPlaying(false);
+
           const actualOutcome = OUTCOMES[clampedIndex];
           setFinalOutcome(actualOutcome);
 
-          // Send the actual physics result to backend for pack assignment
-          console.log(
-            `Frontend physics result: ${actualOutcome} (bucket ${clampedIndex})`,
-          );
-
-          // Send the result to backend for pack assignment
+          // Send result to backend - popup will show after API success
           playGameMutation.mutate({
             gameType: 'plinko',
             betAmount: fixedPrice.toString(),
@@ -494,38 +434,17 @@ export function PlinkoGame() {
         }
       }
 
-      // Draw ball with enhanced visual effects
+      // Draw ball
       ctx.beginPath();
       ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-
-      // Enhanced ball gradient with depth
-      const ballGradient = ctx.createRadialGradient(
-        ball.x - 4,
-        ball.y - 4,
-        0,
-        ball.x,
-        ball.y,
-        ball.radius,
-      );
-      ballGradient.addColorStop(0, "#ffffff");
-      ballGradient.addColorStop(0.3, "#e0f2fe");
-      ballGradient.addColorStop(0.7, "#0288d1");
-      ballGradient.addColorStop(1, ball.color);
-      ctx.fillStyle = ballGradient;
+      ctx.fillStyle = ball.color;
       ctx.fill();
-      
-      // Enhanced border with shadow effect
       ctx.strokeStyle = "#0ea5e9";
       ctx.lineWidth = 2;
       ctx.stroke();
-      
-      // Add highlight for 3D effect
-      ctx.beginPath();
-      ctx.arc(ball.x - 3, ball.y - 3, ball.radius * 0.3, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-      ctx.fill();
 
-      if (ball.y < BOARD_HEIGHT - 60) {
+      // Continue animation if ball hasn't reached bucket area
+      if (ball.y < BOARD_HEIGHT - 200 && !animationComplete) {
         animationRef.current = requestAnimationFrame(animate);
       }
     };
@@ -534,7 +453,7 @@ export function PlinkoGame() {
   };
 
   const handlePlay = () => {
-    console.log("Plinko play button clicked. Fixed price:", fixedPrice, "Game settings:", gameSettings);
+    console.log("Plinko play button clicked. Fixed price:", fixedPrice);
     
     // Prevent multiple clicks while game is starting
     if (isPlaying || deductCreditsMutation.isPending) {
@@ -590,14 +509,28 @@ export function PlinkoGame() {
     const pins = getPins();
     const outcomePositions = getOutcomePositions();
 
-    // Draw pins
+    // Draw pins with enhanced styling
     pins.forEach((pin) => {
+      // Pin shadow
+      ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+      ctx.beginPath();
+      ctx.arc(pin.x + 1, pin.y + 1, PIN_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Pin gradient
+      const gradient = ctx.createRadialGradient(pin.x, pin.y, 0, pin.x, pin.y, PIN_RADIUS);
+      gradient.addColorStop(0, "#fbbf24");
+      gradient.addColorStop(0.7, "#f59e0b");
+      gradient.addColorStop(1, "#d97706");
+      
+      ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(pin.x, pin.y, PIN_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = "#64748b";
       ctx.fill();
-      ctx.strokeStyle = "#94a3b8";
-      ctx.lineWidth = 1;
+      
+      // Pin highlight
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 2;
       ctx.stroke();
     });
 
@@ -606,16 +539,30 @@ export function PlinkoGame() {
       const bucketWidth = BOARD_WIDTH / OUTCOMES.length;
       const bucketX = index * bucketWidth;
 
-      ctx.fillStyle =
+      // Bucket gradient background - moved up more
+      const bucketGradient = ctx.createLinearGradient(bucketX, BOARD_HEIGHT - 160, bucketX, BOARD_HEIGHT - 80);
+      bucketGradient.addColorStop(0, 
         pos.outcome === "Masterball"
-          ? "rgba(139, 92, 246, 0.2)"
+          ? "rgba(139, 92, 246, 0.3)"
           : pos.outcome === "Ultraball"
-            ? "rgba(255, 215, 0, 0.2)"
+            ? "rgba(255, 215, 0, 0.3)"
             : pos.outcome === "Greatball"
-              ? "rgba(59, 130, 246, 0.2)"
-              : "rgba(148, 163, 184, 0.2)";
-      ctx.fillRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+              ? "rgba(59, 130, 246, 0.3)"
+              : "rgba(239, 68, 68, 0.3)"
+      );
+      bucketGradient.addColorStop(1, 
+        pos.outcome === "Masterball"
+          ? "rgba(139, 92, 246, 0.1)"
+          : pos.outcome === "Ultraball"
+            ? "rgba(255, 215, 0, 0.1)"
+            : pos.outcome === "Greatball"
+              ? "rgba(59, 130, 246, 0.1)"
+              : "rgba(239, 68, 68, 0.1)"
+      );
+      ctx.fillStyle = bucketGradient;
+      ctx.fillRect(bucketX, BOARD_HEIGHT - 160, bucketWidth, 80);
 
+      // Bucket border with glow - moved up more
       ctx.strokeStyle =
         pos.outcome === "Masterball"
           ? "#8b5cf6"
@@ -623,21 +570,16 @@ export function PlinkoGame() {
             ? "#ffd700"
             : pos.outcome === "Greatball"
               ? "#3b82f6"
-              : "#94a3b8";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bucketX, BOARD_HEIGHT - 60, bucketWidth, 60);
+              : "#ef4444";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(bucketX, BOARD_HEIGHT - 160, bucketWidth, 80);
+      
+      // Inner border highlight - moved up more
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bucketX + 1, BOARD_HEIGHT - 159, bucketWidth - 2, 78);
 
-      ctx.fillStyle =
-        pos.outcome === "Masterball"
-          ? "#8b5cf6"
-          : pos.outcome === "Ultraball"
-            ? "#ffd700"
-            : pos.outcome === "Greatball"
-              ? "#3b82f6"
-              : "#64748b";
-      ctx.font = "bold 11px Inter";
-      ctx.textAlign = "center";
-      ctx.fillText(pos.outcome, bucketX + bucketWidth / 2, BOARD_HEIGHT - 25);
+      // Pack images are now displayed as overlay, no need to draw on canvas
     });
   };
 
@@ -654,208 +596,227 @@ export function PlinkoGame() {
   return (
     <div className="space-y-6">
       {/* Game Board */}
-      <Card className="gaming-card">
-        <CardContent className="p-6">
-          <div className="text-center mb-6">
-            <h3 className="font-gaming font-bold text-xl mb-2">Plinko Board</h3>
-            <p className="text-muted-foreground">
-              Drop your ball through 9 layers of pins!
+      <Card className="gaming-card mb-6 sm:mb-8 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30 shadow-2xl shadow-purple-500/20">
+        <CardHeader className="text-center px-4 sm:px-6">
+          <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-4">
+            <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+              Game Board
+            </span>
+          </CardTitle>
+          
+          {/* Instruction Message */}
+          <div className="bg-gradient-to-r from-purple-800/30 to-blue-800/30 rounded-lg p-4 border border-purple-500/50 mb-4 backdrop-blur-sm">
+            <p className="text-white text-sm sm:text-base px-2 font-medium">
+              {isPlaying 
+                ? "Ball is dropping through the pins..."
+                : "Click 'Drop Ball' to start the game and watch it bounce through the pegs!"
+              }
             </p>
           </div>
 
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6">
           <div className="flex justify-center">
             <div className="relative w-full max-w-[600px]">
+              {/* Animated background particles */}
+              <div className="absolute inset-0 overflow-hidden rounded-xl">
+                <div className="absolute top-4 left-4 w-2 h-2 bg-yellow-400/30 rounded-full animate-pulse"></div>
+                <div className="absolute top-8 right-8 w-1 h-1 bg-purple-400/40 rounded-full animate-ping"></div>
+                <div className="absolute top-16 left-1/3 w-1.5 h-1.5 bg-blue-400/30 rounded-full animate-pulse"></div>
+                <div className="absolute top-12 right-1/4 w-1 h-1 bg-orange-400/40 rounded-full animate-ping"></div>
+                <div className="absolute top-20 left-2/3 w-2 h-2 bg-pink-400/30 rounded-full animate-pulse"></div>
+              </div>
               <canvas
                 ref={canvasRef}
                 width={BOARD_WIDTH}
                 height={BOARD_HEIGHT}
-                className="border border-border rounded-lg bg-background/50 w-full h-auto max-w-full"
+                className="border-2 border-purple-500/50 rounded-xl bg-gradient-to-b from-slate-800 to-slate-900 w-full h-auto max-w-full shadow-2xl shadow-purple-500/20"
                 style={{ maxWidth: "100%", height: "auto" }}
               />
 
-              {/* Result Overlay with Pack Design */}
-              {animationComplete && finalOutcome && !showPackAssigned && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                  <div className="text-center space-y-2 p-3">
-                    <div
-                      className={`w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 ${
-                        finalOutcome === "Masterball"
-                          ? "border-purple-500 shadow-lg shadow-purple-500/50"
-                          : finalOutcome === "Ultraball"
-                            ? "border-yellow-500 shadow-lg shadow-yellow-500/50"
-                            : finalOutcome === "Greatball"
-                              ? "border-blue-500 shadow-lg shadow-blue-500/50"
-                              : "border-red-500 shadow-lg shadow-red-500/50"
-                      }`}
-                    >
-                      <PackImage
-                        packType={finalOutcome.toLowerCase()}
-                        size="small"
-                      />
-                    </div>
-                    <div className="text-white">
-                      <h4 className="font-bold text-lg">
-                        {finalOutcome} Pack!
-                      </h4>
-                      <p className="text-xs opacity-80">
-                        Ball landed in the {finalOutcome} bucket
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Pack Assignment Overlay with Pack Design */}
-              {showPackAssigned && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-lg">
-                  <div className="text-center space-y-4 p-4 bg-background/90 rounded-lg border border-border max-w-xs mx-2">
-                    <div className="space-y-2">
-                      <div
-                        className={`w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 ${
-                          finalOutcome === "Masterball"
-                            ? "border-purple-500 shadow-lg shadow-purple-500/50"
-                            : finalOutcome === "Ultraball"
-                              ? "border-yellow-500 shadow-lg shadow-yellow-500/50"
-                              : finalOutcome === "Greatball"
-                                ? "border-blue-500 shadow-lg shadow-blue-500/50"
-                                : "border-red-500 shadow-lg shadow-red-500/50"
-                        }`}
-                      >
+              {/* Pack Images Overlay */}
+              <div className="absolute bottom-14 left-0 right-0 flex justify-center" style={{ transform: 'translateY(2.1px)' }}>
+                <div className="flex justify-center w-full max-w-[600px] px-0">
+                  {OUTCOMES.map((outcome, index) => (
+                    <div key={index} className="flex flex-col items-center justify-center" style={{ 
+                      width: `${100/OUTCOMES.length}%`,
+                      marginLeft: index > 0 ? '-0.65px' : '0px'
+                    }}>
+                      <div className="w-16 h-20 flex items-center justify-center" style={{ 
+                        transform: `scale(1.796875) ${outcome === 'Ultraball' && index === 2 ? 'translateX(2px)' : ''}` 
+                      }}>
                         <PackImage
-                          packType={finalOutcome?.toLowerCase() || "pokeball"}
-                          size="large"
+                          packType={outcome.toLowerCase()}
+                          size="small"
                         />
                       </div>
-                      <h4 className="font-bold text-xl text-white">
-                        Pack Assigned!
-                      </h4>
-                      <p className="text-green-400 font-medium">
-                        {finalOutcome} Pack added to "My Packs"
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Your {finalOutcome} pack is ready to open!
-                      </p>
                     </div>
-                    <Button
-                      onClick={() => {
-                        setShowPackAssigned(false);
-                        setIsPlaying(false);
-                        setFinalOutcome(null);
-                        setAnimationComplete(false);
-                      }}
-                      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                      data-testid="button-pack-assigned-ok"
-                    >
-                      OK
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              )}
+              </div>
+
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Game Controls */}
-      <Card className="gaming-card">
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {/* Credit Balance Display */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg p-2 border border-green-200 dark:border-green-700">
-              <div className="flex items-center justify-center space-x-1">
-                <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span
-                  className="text-sm font-semibold text-green-600 dark:text-green-400"
-                  data-testid="text-credit-balance"
-                >
-                  Your Credits: {isCreditsLoading ? "Loading..." : (userCredits && typeof userCredits === 'object' && 'credits' in userCredits ? Number((userCredits as any).credits).toFixed(2) : "0.00")}
-                </span>
-              </div>
-            </div>
+      <div className="flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4 mb-6 sm:mb-8">
+        <Button
+          onClick={handlePlay}
+          className="w-full sm:w-auto px-6 sm:px-8 py-3 text-base sm:text-sm bg-green-600 hover:bg-green-700 text-white border-2 border-green-500 hover:border-green-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 font-bold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          disabled={isPlaying || playGameMutation.isPending || deductCreditsMutation.isPending}
+          data-testid="button-play-plinko"
+        >
+          {isPlaying || playGameMutation.isPending ? (
+            <>
+              <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+              <span className="hidden sm:inline">Ball Dropping...</span>
+              <span className="sm:hidden">Dropping...</span>
+            </>
+          ) : deductCreditsMutation.isPending ? (
+            <>
+              <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+              <span className="hidden sm:inline">Processing...</span>
+              <span className="sm:hidden">Processing</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Drop Ball</span>
+              <span className="sm:hidden">Drop Ball</span>
+              <Badge variant="secondary" className="ml-2 bg-yellow-500/20 text-yellow-400 border-yellow-400/30">
+                {fixedPrice} Credits
+              </Badge>
+            </>
+          )}
+        </Button>
+        
+        <Button
+          onClick={() => window.location.href = '/play'}
+          variant="ghost"
+          className="w-full sm:w-auto px-6 sm:px-8 py-3 text-base sm:text-sm text-gray-400 hover:text-white hover:bg-gray-800/60 transition-all duration-300 border border-transparent hover:border-gray-600/30"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Back to Games
+        </Button>
+      </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg p-2 border border-blue-200 dark:border-blue-700">
-              <div className="flex items-center justify-center space-x-1">
-                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span
-                  className="text-sm font-semibold text-blue-600 dark:text-blue-400"
-                  data-testid="text-game-cost"
-                >
-                  Cost: {fixedPrice} credits per play
-                </span>
-              </div>
-            </div>
+      {/* Pack Rewards Info */}
+      <Card className="gaming-card mb-6 sm:mb-8 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-500/30 shadow-2xl shadow-purple-500/20">
+        <CardHeader className="text-center px-4 sm:px-6 pb-4">
+          <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-2">
+            <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+              Pack Rewards
+            </span>
+          </CardTitle>
+          <p className="text-white text-sm font-medium">
+            Drop balls to win amazing packs!
+          </p>
+        </CardHeader>
+        <CardContent className="px-4 sm:px-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { tier: "pokeball", name: "Pokeball", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", borderColor: "border-red-500/30", image: "/assets/pokeball.png" },
+              { tier: "greatball", name: "Greatball", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30", image: "/assets/greatball.png" },
+              { tier: "ultraball", name: "Ultraball", color: "from-yellow-500 to-orange-500", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30", image: "/assets/ultraball.png" },
+              { tier: "masterball", name: "Masterball", color: "from-purple-500 to-purple-600", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30", image: "/assets/masterball.png" },
+            ].map((reward) => (
+              <div key={reward.tier} className={`text-center p-4 sm:p-5 rounded-lg border-2 ${reward.bgColor} ${reward.borderColor} transition-all duration-300 hover:scale-105 hover:shadow-xl`}>
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24">
+                      <img 
+                        src={reward.image} 
+                        alt={reward.name}
+                        className="w-full h-full object-cover drop-shadow-lg"
+                        onError={(e) => {
+                          console.error('Pack reward image failed to load:', reward.image, 'for', reward.name);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="font-bold text-base sm:text-lg text-white mb-2">{reward.name}</div>
+                  <div className="text-sm text-gray-200 font-medium">
+                    {reward.tier === 'pokeball' ? 'Common' : reward.tier === 'greatball' ? 'Uncommon' : reward.tier === 'ultraball' ? 'Rare' : 'Legendary'}
+                  </div>
+                </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-            <Button
-              onClick={handlePlay}
-              disabled={isPlaying || playGameMutation.isPending || deductCreditsMutation.isPending}
-              className="w-full bg-gradient-to-r from-primary to-accent hover:glow-effect transition-all text-lg py-6"
-              data-testid="button-play-plinko"
+      {/* Game Over Popup */}
+      <AnimatePresence>
+        {showGameOverPopup && finalOutcome && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-600 rounded-xl p-8 max-w-lg w-full shadow-2xl"
             >
-              {isPlaying || playGameMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Ball Dropping...
-                </>
-              ) : deductCreditsMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Starting Game...
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5 mr-2" />
-                  Drop Ball ({fixedPrice} Credits)
-                </>
-              )}
-            </Button>
+              <div className="text-center space-y-6">
+                {/* Header */}
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-bold text-white tracking-wide">
+                    GAME OVER
+                  </h2>
+                  <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full"></div>
+                </div>
+                
+                {/* Pack Image */}
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl border-2 border-gray-600 flex items-center justify-center shadow-lg">
+                      <img 
+                        src={`/assets/${getRewardTier(finalOutcome).tier}.png`}
+                        alt={`${getRewardTier(finalOutcome).name} Pack`}
+                        className="w-16 h-16 object-cover"
+                        onError={(e) => {
+                          console.error('Pack image failed to load:', `/assets/${getRewardTier(finalOutcome).tier}.png`);
+                          e.currentTarget.src = "/assets/pokeball.png";
+                        }}
+                      />
+                    </div>
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-xl blur-sm -z-10"></div>
+                  </div>
+                </div>
+                
+                {/* Content */}
+                <div className="space-y-3">
+                  <p className="text-xl text-gray-200">
+                    You have won a <span className="font-bold text-green-400">{getRewardTier(finalOutcome).name}</span> pack!
+                  </p>
+                  
+                  <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                    <p className="text-sm text-gray-300">
+                      Go to My Packs to open it
+                    </p>
+                    <p className="text-sm text-gray-300">
+                      Click Drop Ball for a new game
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Button */}
+                <Button
+                  onClick={() => {
+                    setShowGameOverPopup(false);
+                    setIsPlaying(false);
+                    setFinalOutcome(null);
+                    setAnimationComplete(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                >
+                  OK
+                </Button>
+              </div>
+            </motion.div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Pack Tiers Display */}
-      <Card className="gaming-card">
-        <CardContent className="p-6">
-          <h4 className="font-semibold mb-4">Pack Tiers</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="text-center space-y-2">
-              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-red-500 shadow-lg shadow-red-500/50">
-                <PackImage packType="pokeball" size="large" />
-              </div>
-              <div>
-                <p className="font-semibold text-red-400">Pokeball</p>
-                <p className="text-xs text-muted-foreground">Most Common</p>
-              </div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-blue-500 shadow-lg shadow-blue-500/50">
-                <PackImage packType="greatball" size="large" />
-              </div>
-              <div>
-                <p className="font-semibold text-blue-400">Great Ball</p>
-                <p className="text-xs text-muted-foreground">Uncommon</p>
-              </div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-yellow-500 shadow-lg shadow-yellow-500/50">
-                <PackImage packType="ultraball" size="large" />
-              </div>
-              <div>
-                <p className="font-semibold text-yellow-400">Ultra Ball</p>
-                <p className="text-xs text-muted-foreground">Rare</p>
-              </div>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="w-16 h-20 mx-auto rounded-lg overflow-hidden border-2 border-purple-500 shadow-lg shadow-purple-500/50">
-                <PackImage packType="masterball" size="large" />
-              </div>
-              <div>
-                <p className="font-semibold text-purple-400">Master Ball</p>
-                <p className="text-xs text-muted-foreground">Legendary</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
