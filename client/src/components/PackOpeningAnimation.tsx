@@ -97,7 +97,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           bg: 'bg-gradient-to-br from-red-400 via-red-500 to-red-600',
           glow: 'shadow-2xl shadow-red-500/70 ring-4 ring-red-400 drop-shadow-2xl',
           animate: 'animate-pulse',
-          particles: '⭐✨⭐',
+          particles: '•••',
           borderGlow: 'border-red-400 shadow-red-500/80'
         };
       case 'ss':
@@ -105,7 +105,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           bg: 'bg-gradient-to-br from-pink-400 via-pink-500 to-pink-600', 
           glow: 'shadow-2xl shadow-pink-500/70 ring-4 ring-pink-400 drop-shadow-2xl',
           animate: 'animate-pulse',
-          particles: '💎🔥💎',
+          particles: '♦♦♦',
           borderGlow: 'border-pink-400 shadow-pink-500/80'
         };
       case 's':
@@ -113,7 +113,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           bg: 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600',
           glow: 'shadow-xl shadow-yellow-500/60 ring-2 ring-yellow-400 drop-shadow-xl',
           animate: 'animate-pulse',
-          particles: '⚡💫⚡',
+          particles: '▲▲▲',
           borderGlow: 'border-yellow-400 shadow-yellow-500/70'
         };
       case 'a':
@@ -121,7 +121,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           bg: 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600',
           glow: 'shadow-xl shadow-purple-500/60 ring-2 ring-purple-400 drop-shadow-xl',
           animate: 'animate-pulse',
-          particles: '💜⚡💜',
+          particles: '◆◆◆',
           borderGlow: 'border-purple-400 shadow-purple-500/70'
         };
       case 'b':
@@ -327,7 +327,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     
                     <div className="text-center space-y-2">
                       <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white animate-bounce">
-                        ⭐ ADDED TO VAULT ⭐
+                        ADDED TO VAULT
                       </Badge>
                     </div>
                   </div>

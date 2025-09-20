@@ -9,18 +9,6 @@ import { motion } from "framer-motion";
 
 // Game data structure
 const gameData = {
-  popular: [
-    {
-      id: "plinko",
-      name: "Plinko Drop",
-      description: "Drop, Bounce, Win!",
-      cost: 20,
-      image: "/assets/classic-image.png",
-      route: "/play/plinko",
-      badge: "Most Popular",
-      badgeColor: "from-[#f59e0b] to-[#ef4444]"
-    }
-  ],
   minigames: [
     {
       id: "findpika",
@@ -52,7 +40,6 @@ const gameData = {
       description: "Spin and Win!",
       cost: 20,
       gradient: "from-[#f59e0b] to-[#ef4444]",
-      emoji: "🎯",
       route: "/play/wheel"
     }
   ],
@@ -63,7 +50,6 @@ const gameData = {
       description: "New pack types coming soon!",
       cost: 0,
       gradient: "from-[#A855F7] to-[#7C3AED]",
-      emoji: "✨",
       route: "#",
       comingSoon: true
     }
@@ -75,7 +61,6 @@ const gameData = {
       description: "Premium graded cards in protective cases",
       cost: 0,
       gradient: "from-[#7c3aed] to-[#22d3ee]",
-      emoji: "👑",
       route: "/play/slabs",
       comingSoon: true
     },
@@ -85,7 +70,6 @@ const gameData = {
       description: "Rare vintage cards from classic sets",
       cost: 0,
       gradient: "from-[#f59e0b] to-[#ef4444]",
-      emoji: "⚡",
       route: "/play/vintage",
       comingSoon: true
     }
@@ -147,7 +131,7 @@ export default function Play() {
               />
             ) : (
               <div className={`w-full h-full bg-gradient-to-br ${game.gradient} rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(124,58,237,0.4)]`}>
-                <span className="text-white text-3xl">{game.emoji}</span>
+                <span className="text-white text-2xl font-bold">{game.name}</span>
               </div>
             )}
             
@@ -291,31 +275,11 @@ export default function Play() {
 
           {/* Game Categories */}
           <div className="space-y-8">
-            {/* Popular Section */}
-            <motion.section
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <div className="flex items-center mb-6">
-                {/* Neon Strip */}
-                <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
-                
-                {/* Popular Title */}
-                <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Popular</h2>
-              </div>
-              <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
-                {gameData.popular.map((game, index) => (
-                  <GameCard key={game.id} game={game} isLarge={true} delay={0.3 + index * 0.1} />
-                ))}
-              </div>
-            </motion.section>
-
             {/* Minigames Section */}
             <motion.section
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
               <div className="flex items-center mb-6">
                 {/* Neon Strip */}
@@ -326,7 +290,7 @@ export default function Play() {
               </div>
               <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
                 {gameData.minigames.map((game, index) => (
-                  <GameCard key={game.id} game={game} delay={0.5 + index * 0.1} />
+                  <GameCard key={game.id} game={game} delay={0.3 + index * 0.1} />
                 ))}
               </div>
             </motion.section>
@@ -335,7 +299,7 @@ export default function Play() {
             <motion.section
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
             >
               <div className="flex items-center mb-6">
                 {/* Neon Strip */}
@@ -346,7 +310,7 @@ export default function Play() {
               </div>
               <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
                 {gameData.specialPacks.map((game, index) => (
-                  <GameCard key={game.id} game={game} delay={0.7 + index * 0.1} />
+                  <GameCard key={game.id} game={game} delay={0.5 + index * 0.1} />
                 ))}
               </div>
             </motion.section>
@@ -355,7 +319,7 @@ export default function Play() {
             <motion.section
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
             >
               <div className="flex items-center mb-6">
                 {/* Neon Strip */}
@@ -366,7 +330,7 @@ export default function Play() {
               </div>
               <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
                 {gameData.classicPacks.map((game, index) => (
-                  <GameCard key={game.id} game={game} delay={0.9 + index * 0.1} />
+                  <GameCard key={game.id} game={game} delay={0.7 + index * 0.1} />
                 ))}
               </div>
             </motion.section>

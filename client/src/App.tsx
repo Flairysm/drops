@@ -55,7 +55,7 @@ function RouterComponent() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">⚠️</div>
+          <div className="text-6xl mb-4 font-bold text-yellow-500">!</div>
           <h1 className="text-2xl font-bold mb-2">Loading Timeout</h1>
           <p className="text-muted-foreground mb-4">Something went wrong while loading</p>
           <button 

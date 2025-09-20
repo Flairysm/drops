@@ -330,7 +330,7 @@ export function FindPikachuGame() {
       
       // Show success toast
       toast({
-        title: "⚡ Pikachu Found!",
+        title: "Pikachu Found!",
         description: `Great! You found ${newPikachusFound}/4 Pikachus. Keep going!`,
       });
       
@@ -390,7 +390,7 @@ export function FindPikachuGame() {
           <Card className="gaming-card w-full max-w-sm sm:max-w-md animate-in zoom-in-95 duration-300 bg-gray-900 border-gray-700">
             <CardHeader className="text-center px-4 sm:px-6">
               <CardTitle className="font-gaming text-xl sm:text-2xl text-white">
-                🎉 Pack Awarded! 🎉
+                Pack Awarded!
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-3 sm:space-y-4 px-4 sm:px-6 pb-6">
@@ -473,7 +473,7 @@ export function FindPikachuGame() {
           <Card className="gaming-card mb-6 sm:mb-8 bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
             <CardHeader className="text-center px-4 sm:px-6">
               <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-4">
-                🎮 Game Board
+                Game Board
               </CardTitle>
               
               {/* Instruction Message */}
@@ -481,8 +481,8 @@ export function FindPikachuGame() {
                 <p className="text-gray-300 text-sm sm:text-base px-2">
                   {gameState.gameOver 
                     ? gameState.gameWon 
-                      ? `🌟 You won! You'll receive a ${getPackTier(gameState.pikachusFound)} pack! 🌟`
-                      : `🌙 Hunt ended! You found ${gameState.pikachusFound} Pikachus and earned a ${getPackTier(gameState.pikachusFound)} pack!`
+                      ? `You won! You'll receive a ${getPackTier(gameState.pikachusFound)} pack!`
+                      : `Hunt ended! You found ${gameState.pikachusFound} Pikachus and earned a ${getPackTier(gameState.pikachusFound)} pack!`
                     : !gameStarted 
                       ? "Click 'Begin Hunt' to start the game"
                       : "Click the bushes to reveal them. Find all Pikachus to win!"
@@ -503,7 +503,7 @@ export function FindPikachuGame() {
                     {/* Progress Text */}
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-300">
-                        🎯 <span className="font-semibold text-yellow-400">{gameState.pikachusFound}</span>/4 Pikachus found
+                        <span className="font-semibold text-yellow-400">{gameState.pikachusFound}</span>/4 Pikachus found
                       </span>
                       <span className="text-gray-400">
                         {4 - gameState.pikachusFound} remaining
@@ -598,7 +598,7 @@ export function FindPikachuGame() {
                         transition={{ duration: 1.5, repeat: Infinity }}
                       >
                         <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
-                          🔄 Shuffling Cards...
+                          Shuffling Cards...
                         </span>
                       </motion.div>
                       <motion.div 
@@ -606,7 +606,7 @@ export function FindPikachuGame() {
                         animate={{ opacity: [0.8, 1, 0.8] }}
                         transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
                       >
-                        🎯 Preparing Pikachu hunt board
+                        Preparing Pikachu hunt board
                       </motion.div>
                     </div>
                   </div>
@@ -692,7 +692,6 @@ export function FindPikachuGame() {
                         transition={{ duration: 0.5, ease: "easeOut" }}
                         className="mb-4"
                       >
-                        <div className="text-4xl sm:text-5xl mb-2">⚡</div>
                       </motion.div>
                       <motion.div
                         initial={{ y: 20, opacity: 0 }}
@@ -793,7 +792,7 @@ export function FindPikachuGame() {
           <Card className="gaming-card mb-6 sm:mb-8 bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
             <CardHeader className="text-center px-4 sm:px-6 pb-4">
               <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-2">
-                🎁 Pack Rewards
+                Pack Rewards
               </CardTitle>
               <p className="text-gray-300 text-sm">
                 Find more Pikachus to earn better packs!

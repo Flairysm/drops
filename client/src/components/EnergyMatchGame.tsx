@@ -352,7 +352,7 @@ export function EnergyMatchGame() {
           <section className="py-4 sm:py-8 text-center">
             <h1 className="font-gaming font-bold text-3xl sm:text-4xl md:text-5xl mb-3 sm:mb-4">
               <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
-                ⚡ ENERGY MATCH ⚡
+                ENERGY MATCH
               </span>
             </h1>
             <p className="text-white text-base sm:text-lg max-w-2xl mx-auto px-2">
@@ -396,7 +396,7 @@ export function EnergyMatchGame() {
           <Card className="gaming-card mb-6 sm:mb-8 bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
             <CardHeader className="text-center px-4 sm:px-6">
               <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-2">
-                🎮 Game Board
+                Game Board
               </CardTitle>
               <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-600">
                 <div className="text-gray-300 px-4">
@@ -744,7 +744,7 @@ export function EnergyMatchGame() {
                       transition={{ duration: 0.5, ease: "easeOut" }}
                       className="mb-4"
                     >
-                      <div className="text-4xl sm:text-5xl mb-2">⚡</div>
+                     
                     </motion.div>
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
@@ -846,7 +846,7 @@ export function EnergyMatchGame() {
         <Card className="gaming-card mb-6 sm:mb-8 bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
           <CardHeader className="text-center px-4 sm:px-6 pb-4">
             <CardTitle className="font-gaming text-xl sm:text-2xl text-white mb-2">
-              🎁 Pack Rewards
+              Pack Rewards
             </CardTitle>
             <p className="text-gray-300 text-sm">
               Match more cards to earn better packs!

@@ -497,7 +497,7 @@ export default function Home() {
                       <CardContent className="p-0 h-full">
                         {/* Plinko Game Image */}
                         <div className="w-full h-full bg-gradient-to-br from-[#3b82f6] to-[#7C3AED] rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.4)]">
-                          <span className="text-white text-sm font-bold">🎯</span>
+                          <span className="text-white text-sm font-bold">TARGET</span>
                         </div>
                       </CardContent>
                     </Card>
