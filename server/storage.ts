@@ -682,10 +682,8 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
-      console.log(`Pack opened: Generated ${packCards.length} total cards (${packCards.filter(c => !c.isHit).length} commons + ${packCards.filter(c => c.isHit).length} hit)`);
       
       // Log stock changes for debugging
-      console.log(`Stock reduction summary:`);
       
       if (!newUserCard) {
         throw new Error('Failed to create or retrieve user card');
@@ -1032,10 +1030,8 @@ export class DatabaseStorage implements IStorage {
 
   async createSpecialPack(pack: InsertSpecialPack): Promise<SpecialPack> {
     try {
-      console.log('Storage: Creating special pack with data:', pack);
       
       const [newPack] = await db.insert(specialPacks).values(pack).returning();
-      console.log('Storage: Created special pack:', newPack);
       return newPack;
     } catch (error: any) {
       console.error('Storage: Error creating special pack:', error);

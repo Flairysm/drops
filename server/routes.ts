@@ -100,7 +100,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ message: "Plinko pricing not configured" });
         }
         actualBetAmount = gameSettings.price;
-        console.log(`Plinko fixed price: ${actualBetAmount} (user input ignored: ${betAmount})`);
       } else {
         // For other games, validate user input
         const bet = parseFloat(betAmount);
@@ -133,7 +132,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tier: plinkoResult.toLowerCase(), // Convert "Masterball" to "masterball"
           gameType,
         };
-        console.log(`Plinko result from frontend: ${plinkoResult} → pack type=${result.tier}`);
       } else if (gameType === 'wheel' && wheelResult) {
         // Use frontend wheel result for Wheel
         result = {
@@ -141,7 +139,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tier: wheelResult.toLowerCase(), // Use wheel result from frontend
           gameType,
         };
-        console.log(`Wheel result from frontend: ${wheelResult} → pack type=${result.tier}`);
       } else {
         // Use backend simulation for other games
         result = await simulateGame(gameType, parseFloat(actualBetAmount));
@@ -153,13 +150,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (gameType === 'plinko' || gameType === 'wheel') {
         // For Plinko and Wheel, award packs based on outcome
         const packType = result.tier;
-        console.log(`${gameType} pack assignment: ${packType}`);
         
         const packs = await storage.getActivePacks();
         const targetPack = packs.find(p => p.type === packType);
         
         if (!targetPack) {
-          console.log(`Available pack types:`, packs.map(p => p.type));
           throw new Error(`Pack type ${packType} not found`);
         }
 
@@ -220,7 +215,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Minesweeper game endpoint
   app.post('/api/games/minesweeper', isAuthenticatedCombined, async (req: any, res) => {
-    console.log('Minesweeper endpoint called with:', { body: req.body, userId: req.user.id });
     try {
       const userId = req.user.id;
       const { greensFound, won } = req.body;
@@ -248,7 +242,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let pack = packs.find(p => p.type === packTier);
       if (!pack) {
         // If pack doesn't exist, use a default pack or return error
-        console.log(`Pack type ${packTier} not found, available types:`, packs.map(p => p.type));
         return res.status(500).json({ message: `Pack type ${packTier} not available` });
       }
 
@@ -429,23 +422,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User credit update endpoint for reload page
   app.post('/api/user/update-credits', isAuthenticatedCombined, async (req: any, res) => {
-    console.log('🔥 /api/user/update-credits endpoint hit!');
-    console.log('Request body:', req.body);
-    console.log('User:', req.user);
     
     try {
       const userId = req.user.id;
       const { credits } = req.body;
 
-      console.log('Processing credits:', credits);
 
       const creditAmount = parseFloat(credits);
       if (isNaN(creditAmount) || creditAmount <= 0) {
-        console.log('Invalid credit amount:', credits);
         return res.status(400).json({ message: "Invalid credit amount" });
       }
 
-      console.log('Adding credits to user:', userId, 'amount:', creditAmount);
 
       // Add credits to user account
       await storage.updateUserCredits(userId, creditAmount.toFixed(2));
@@ -466,7 +453,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Added ${creditAmount} credits to your account`,
       });
 
-      console.log('Successfully added credits:', creditAmount);
       res.json({ success: true, creditsAdded: creditAmount });
     } catch (error) {
       console.error("Error updating user credits:", error);
@@ -697,11 +683,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/inventory', async (req: any, res) => {
     try {
-      console.log('POST /api/admin/inventory called with body:', req.body);
       const cardData = insertInventorySchema.parse(req.body);
-      console.log('Parsed card data:', cardData);
       const inventoryCard = await storage.createInventoryCard(cardData);
-      console.log('Created inventory card:', inventoryCard);
       res.json(inventoryCard);
     } catch (error: any) {
       console.error("Error creating inventory card:", error);
@@ -724,9 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/inventory/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
-      console.log('DELETE /api/admin/inventory called with id:', id);
       await storage.deleteInventoryCard(id);
-      console.log('Inventory card deleted successfully:', id);
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error deleting inventory card:", error);
@@ -765,7 +746,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name, description, image, price, totalCards } = req.body;
       
-      console.log('Received special pack data:', { name, description, image, price, totalCards });
       
       if (!name || !description || !image || !price || !totalCards) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -780,11 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       };
 
-      console.log('Creating special pack with data:', packData);
-
       const pack = await storage.createSpecialPack(packData);
-
-      console.log('Created special pack:', pack);
       res.json(pack);
     } catch (error: any) {
       console.error('Error creating special pack:', error);
@@ -818,7 +794,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       await storage.deleteSpecialPack(id);
-      console.log('Deleted special pack:', id);
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting special pack:', error);

@@ -40,7 +40,6 @@ export default function Admin() {
     quantity: number;
   }>>([]);
   const [editingQuantity, setEditingQuantity] = useState<{ [key: string]: number }>({});
-  const [specialSection, setSpecialSection] = useState<"view" | "edit" | "add">("view");
   const [specialPools, setSpecialPools] = useState<Array<{
     id: string;
     name: string;
@@ -136,13 +135,10 @@ export default function Admin() {
   const fetchInventoryCards = async () => {
     try {
       setIsLoadingInventory(true);
-      console.log('Fetching inventory cards...');
       const response = await fetch('http://localhost:3000/api/admin/inventory');
-      console.log('Fetch response status:', response.status);
       
       if (response.ok) {
         const cards = await response.json();
-        console.log('Fetched cards:', cards);
         setInventoryCards(cards);
       } else {
         const errorText = await response.text();
@@ -172,7 +168,6 @@ export default function Admin() {
   // Load inventory when switching to mystery add section
   useEffect(() => {
     if (activeTab === 'manage' && manageSection === 'mystery' && mysterySection === 'add') {
-      console.log('Loading inventory for mystery add section...');
       fetchInventoryCards();
     }
   }, [activeTab, manageSection, mysterySection]);
@@ -195,7 +190,6 @@ export default function Admin() {
           credits: credits
         };
 
-        console.log('Sending card data:', cardData);
 
         const response = await fetch('http://localhost:3000/api/admin/inventory', {
           method: 'POST',
@@ -205,12 +199,9 @@ export default function Admin() {
           body: JSON.stringify(cardData),
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
 
         if (response.ok) {
           const result = await response.json();
-          console.log('Card created successfully:', result);
           
           // Refresh inventory
           await fetchInventoryCards();
@@ -284,7 +275,6 @@ export default function Admin() {
           credits: credits
         };
 
-        console.log('Updating card data:', cardData);
 
         const response = await fetch(`http://localhost:3000/api/admin/inventory/${editingCard.id}`, {
           method: 'PATCH',
@@ -294,11 +284,9 @@ export default function Admin() {
           body: JSON.stringify(cardData),
         });
 
-        console.log('Update response status:', response.status);
 
         if (response.ok) {
           const result = await response.json();
-          console.log('Card updated successfully:', result);
           
           // Refresh inventory
           await fetchInventoryCards();
@@ -341,9 +329,6 @@ export default function Admin() {
   );
 
   // Debug logging
-  console.log('Inventory cards count:', inventoryCards.length);
-  console.log('Mystery search query:', mysterySearchQuery);
-  console.log('Mystery filtered cards count:', mysteryFilteredCards.length);
 
   // Add card to mystery pack
   const handleAddToMysteryPack = (card: { id: string; name: string; imageUrl: string; credits: number; }) => {
