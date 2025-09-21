@@ -90,6 +90,39 @@ export const virtualLibrary = pgTable("virtual_library", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Admin inventory - for managing card inventory
+export const inventory = pgTable("inventory", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  imageUrl: varchar("image_url").notNull(),
+  credits: integer("credits").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const specialPacks = pgTable("special_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  imageUrl: varchar("image_url", { length: 500 }).notNull(),
+  price: varchar("price", { length: 20 }).notNull(),
+  guarantee: varchar("guarantee", { length: 255 }),
+  totalPacks: integer("total_packs"),
+  prizePool: varchar("prize_pool", { length: 255 }),
+  odds: varchar("odds", { length: 255 }),
+  pulledStatus: varchar("pulled_status", { length: 255 }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const specialPackCards = pgTable("special_pack_cards", {
+  id: varchar("id").primaryKey(),
+  packId: varchar("pack_id").notNull().references(() => specialPacks.id, { onDelete: "cascade" }),
+  cardId: varchar("card_id").notNull().references(() => inventory.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 
 // Game settings for configurable prices and options
 export const gameSettings = pgTable("game_settings", {
@@ -269,6 +302,25 @@ export const packOddsRelations = relations(packOdds, ({ one }) => ({
 export const virtualLibraryRelations = relations(virtualLibrary, ({ many }) => ({
 }));
 
+export const inventoryRelations = relations(inventory, ({ many }) => ({
+  specialPackCards: many(specialPackCards),
+}));
+
+export const specialPacksRelations = relations(specialPacks, ({ many }) => ({
+  cards: many(specialPackCards),
+}));
+
+export const specialPackCardsRelations = relations(specialPackCards, ({ one }) => ({
+  pack: one(specialPacks, {
+    fields: [specialPackCards.packId],
+    references: [specialPacks.id],
+  }),
+  card: one(inventory, {
+    fields: [specialPackCards.cardId],
+    references: [inventory.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -353,6 +405,19 @@ export const insertVirtualLibrarySchema = createInsertSchema(virtualLibrary).omi
   createdAt: true,
 });
 
+export const insertInventorySchema = createInsertSchema(inventory).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSpecialPackSchema = createInsertSchema(specialPacks).omit({
+  createdAt: true,
+});
+
+export const insertSpecialPackCardSchema = createInsertSchema(specialPackCards).omit({
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -360,6 +425,7 @@ export type Card = typeof cards.$inferSelect;
 export type Pack = typeof packs.$inferSelect;
 export type PackOdds = typeof packOdds.$inferSelect;
 export type VirtualLibraryCard = typeof virtualLibrary.$inferSelect;
+export type InventoryCard = typeof inventory.$inferSelect;
 export type UserCard = typeof userCards.$inferSelect;
 export type UserPack = typeof userPacks.$inferSelect;
 export type GlobalFeed = typeof globalFeed.$inferSelect;
@@ -372,6 +438,11 @@ export type PullRate = typeof pullRates.$inferSelect;
 export type InsertCard = z.infer<typeof insertCardSchema>;
 export type InsertPack = z.infer<typeof insertPackSchema>;
 export type InsertVirtualLibraryCard = z.infer<typeof insertVirtualLibrarySchema>;
+export type InsertInventoryCard = z.infer<typeof insertInventorySchema>;
+export type SpecialPack = typeof specialPacks.$inferSelect;
+export type InsertSpecialPack = z.infer<typeof insertSpecialPackSchema>;
+export type SpecialPackCard = typeof specialPackCards.$inferSelect;
+export type InsertSpecialPackCard = z.infer<typeof insertSpecialPackCardSchema>;
 export type InsertUserCard = z.infer<typeof insertUserCardSchema>;
 export type InsertUserPack = z.infer<typeof insertUserPackSchema>;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;

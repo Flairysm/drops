@@ -87,6 +87,21 @@ CREATE TABLE IF NOT EXISTS virtual_library (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Create inventory table for admin panel
+CREATE TABLE IF NOT EXISTS inventory (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    credits INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for inventory table
+CREATE INDEX IF NOT EXISTS idx_inventory_name ON inventory(name);
+CREATE INDEX IF NOT EXISTS idx_inventory_credits ON inventory(credits);
+CREATE INDEX IF NOT EXISTS idx_inventory_created_at ON inventory(created_at);
+
 -- Create expansions table
 CREATE TABLE IF NOT EXISTS expansions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

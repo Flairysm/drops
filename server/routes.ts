@@ -2,11 +2,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin, isAdminCombined } from "./auth";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { 
   insertCardSchema, 
   insertPackSchema,
   insertVirtualLibrarySchema,
+  insertInventorySchema,
   insertShippingRequestSchema,
   type GameResult 
 } from "@shared/schema";
@@ -25,6 +28,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development'
     });
+  });
+
+  // Test inventory endpoint (no auth required for testing)
+  app.get('/api/test-inventory', async (req, res) => {
+    try {
+      const inventoryCards = await storage.getInventoryCards();
+      res.json({ success: true, count: inventoryCards.length, cards: inventoryCards });
+    } catch (error: any) {
+      console.error("Error testing inventory:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
   });
 
   // Auth routes
@@ -667,6 +681,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting virtual library card:", error);
       res.status(500).json({ message: "Failed to delete virtual library card" });
+    }
+  });
+
+  // Inventory admin routes (temporarily removing auth for testing)
+  app.get('/api/admin/inventory', async (req: any, res) => {
+    try {
+      const inventoryCards = await storage.getInventoryCards();
+      res.json(inventoryCards);
+    } catch (error) {
+      console.error("Error fetching inventory cards:", error);
+      res.status(500).json({ message: "Failed to fetch inventory cards" });
+    }
+  });
+
+  app.post('/api/admin/inventory', async (req: any, res) => {
+    try {
+      console.log('POST /api/admin/inventory called with body:', req.body);
+      const cardData = insertInventorySchema.parse(req.body);
+      console.log('Parsed card data:', cardData);
+      const inventoryCard = await storage.createInventoryCard(cardData);
+      console.log('Created inventory card:', inventoryCard);
+      res.json(inventoryCard);
+    } catch (error: any) {
+      console.error("Error creating inventory card:", error);
+      res.status(500).json({ message: "Failed to create inventory card", error: error.message });
+    }
+  });
+
+  app.patch('/api/admin/inventory/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const cardData = insertInventorySchema.partial().parse(req.body);
+      const inventoryCard = await storage.updateInventoryCard(id, cardData);
+      res.json(inventoryCard);
+    } catch (error) {
+      console.error("Error updating inventory card:", error);
+      res.status(500).json({ message: "Failed to update inventory card" });
+    }
+  });
+
+  app.delete('/api/admin/inventory/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      console.log('DELETE /api/admin/inventory called with id:', id);
+      await storage.deleteInventoryCard(id);
+      console.log('Inventory card deleted successfully:', id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting inventory card:", error);
+      res.status(500).json({ message: "Failed to delete inventory card", error: error.message });
+    }
+  });
+
+  // Test endpoint for debugging
+  app.get('/api/test-db', async (req: any, res) => {
+    try {
+      // Test raw SQL insert
+      const result = await db.execute(sql`
+        INSERT INTO special_packs (id, name, description, image_url, price, total_packs, is_active) 
+        VALUES (gen_random_uuid(), ${'Test Pack'}, ${'Test Description'}, ${'https://example.com/test.jpg'}, ${'10.99'}, ${5}, ${true})
+        RETURNING *
+      `);
+      res.json({ success: true, result: result.rows });
+    } catch (error: any) {
+      console.error('Test DB error:', error);
+      res.status(500).json({ error: error.message, stack: error.stack });
+    }
+  });
+
+  // Admin special packs routes
+  app.get('/api/admin/special-packs', async (req: any, res) => {
+    try {
+      const packs = await storage.getSpecialPacks();
+      res.json(packs);
+    } catch (error: any) {
+      console.error('Error fetching special packs:', error);
+      res.status(500).json({ error: 'Failed to fetch special packs' });
+    }
+  });
+
+  app.post('/api/admin/special-packs', async (req: any, res) => {
+    try {
+      const { name, description, image, price, totalCards } = req.body;
+      
+      console.log('Received special pack data:', { name, description, image, price, totalCards });
+      
+      if (!name || !description || !image || !price || !totalCards) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const packData = {
+        name,
+        description,
+        imageUrl: image,
+        price: price.toString(),
+        totalPacks: parseInt(totalCards),
+        isActive: true
+      };
+
+      console.log('Creating special pack with data:', packData);
+
+      const pack = await storage.createSpecialPack(packData);
+
+      console.log('Created special pack:', pack);
+      res.json(pack);
+    } catch (error: any) {
+      console.error('Error creating special pack:', error);
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to create special pack' });
+    }
+  });
+
+  app.put('/api/admin/special-packs/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, image, price, totalCards } = req.body;
+      
+      const pack = await storage.updateSpecialPack(id, {
+        name,
+        description,
+        image,
+        price: price ? price.toString() : undefined,
+        totalCards: totalCards ? parseInt(totalCards) : undefined
+      });
+
+      res.json(pack);
+    } catch (error: any) {
+      console.error('Error updating special pack:', error);
+      res.status(500).json({ error: 'Failed to update special pack' });
+    }
+  });
+
+  app.delete('/api/admin/special-packs/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteSpecialPack(id);
+      console.log('Deleted special pack:', id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting special pack:', error);
+      res.status(500).json({ error: 'Failed to delete special pack' });
+    }
+  });
+
+  // Special pack cards routes
+  app.post('/api/admin/special-packs/:packId/cards', async (req: any, res) => {
+    try {
+      const { packId } = req.params;
+      const { cardId, quantity = 1 } = req.body;
+      
+      if (!cardId) {
+        return res.status(400).json({ error: 'Missing cardId' });
+      }
+
+      const packCard = await storage.addCardToSpecialPack(packId, cardId, quantity);
+      res.json(packCard);
+    } catch (error: any) {
+      console.error('Error adding card to special pack:', error);
+      res.status(500).json({ error: 'Failed to add card to special pack' });
+    }
+  });
+
+  app.delete('/api/admin/special-packs/:packId/cards/:cardId', async (req: any, res) => {
+    try {
+      const { packId, cardId } = req.params;
+      await storage.removeCardFromSpecialPack(packId, cardId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error removing card from special pack:', error);
+      res.status(500).json({ error: 'Failed to remove card from special pack' });
+    }
+  });
+
+  app.patch('/api/admin/special-packs/:packId/cards/:cardId', async (req: any, res) => {
+    try {
+      const { packId, cardId } = req.params;
+      const { quantity } = req.body;
+      
+      if (quantity === undefined) {
+        return res.status(400).json({ error: 'Missing quantity' });
+      }
+
+      const packCard = await storage.updateSpecialPackCardQuantity(packId, cardId, quantity);
+      res.json(packCard);
+    } catch (error: any) {
+      console.error('Error updating special pack card quantity:', error);
+      res.status(500).json({ error: 'Failed to update special pack card quantity' });
     }
   });
 

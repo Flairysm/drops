@@ -8,6 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 
 // Game data structure
+interface GameItem {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  image?: string;
+  gradient?: string;
+  route: string;
+  comingSoon?: boolean;
+  badge?: string;
+  badgeColor?: string;
+}
+
 const gameData = {
   minigames: [
     {
@@ -34,38 +47,9 @@ const gameData = {
       gradient: "from-[#f59e0b] to-[#ef4444]",
       route: "/play/wheel"
     }
-  ],
-  specialPacks: [
-    {
-      id: "coming-soon-1",
-      name: "Coming Soon",
-      description: "New pack types coming soon!",
-      cost: 0,
-      gradient: "from-[#A855F7] to-[#7C3AED]",
-      route: "#",
-      comingSoon: true
-    }
-  ],
-  classicPacks: [
-    {
-      id: "slabs",
-      name: "Slabs Collection",
-      description: "Premium graded cards in protective cases",
-      cost: 0,
-      gradient: "from-[#7c3aed] to-[#22d3ee]",
-      route: "/play/slabs",
-      comingSoon: true
-    },
-    {
-      id: "vintage",
-      name: "Vintage Collection",
-      description: "Rare vintage cards from classic sets",
-      cost: 0,
-      gradient: "from-[#f59e0b] to-[#ef4444]",
-      route: "/play/vintage",
-      comingSoon: true
-    }
-  ]
+  ] as GameItem[],
+  specialPacks: [] as GameItem[],
+  classicPacks: [] as GameItem[]
 };
 
 export default function Play() {
@@ -97,7 +81,7 @@ export default function Play() {
   }
 
   // Game Card Component
-  const GameCard = ({ game, isLarge = false, delay = 0 }: { game: any, isLarge?: boolean, delay?: number }) => {
+  const GameCard = ({ game, isLarge = false, delay = 0 }: { game: GameItem, isLarge?: boolean, delay?: number }) => {
     const cardSize = isLarge ? "w-72 h-64" : "w-56 h-48";
     
     return (
@@ -287,45 +271,49 @@ export default function Play() {
               </div>
             </motion.section>
             
-            {/* Special Packs Section */}
-            <motion.section
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <div className="flex items-center mb-6">
-                {/* Neon Strip */}
-                <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
-                
-                {/* Special Packs Title */}
-                <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Special Packs</h2>
-              </div>
-              <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
-                {gameData.specialPacks.map((game, index) => (
-                  <GameCard key={game.id} game={game} delay={0.5 + index * 0.1} />
-                ))}
-              </div>
-            </motion.section>
+            {/* Special Packs Section - Only show if there are packs */}
+            {gameData.specialPacks.length > 0 && (
+              <motion.section
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                <div className="flex items-center mb-6">
+                  {/* Neon Strip */}
+                  <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
+                  
+                  {/* Special Packs Title */}
+                  <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Special Packs</h2>
+                </div>
+                <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
+                  {gameData.specialPacks.map((game, index) => (
+                    <GameCard key={game.id} game={game} delay={0.5 + index * 0.1} />
+                  ))}
+                </div>
+              </motion.section>
+            )}
 
-            {/* Classic Packs Section */}
-            <motion.section
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <div className="flex items-center mb-6">
-                {/* Neon Strip */}
-                <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
-                
-                {/* Classic Packs Title */}
-                <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Classic Packs</h2>
-              </div>
-              <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
-                {gameData.classicPacks.map((game, index) => (
-                  <GameCard key={game.id} game={game} delay={0.7 + index * 0.1} />
-                ))}
-              </div>
-            </motion.section>
+            {/* Classic Packs Section - Only show if there are packs */}
+            {gameData.classicPacks.length > 0 && (
+              <motion.section
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+              >
+                <div className="flex items-center mb-6">
+                  {/* Neon Strip */}
+                  <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
+                  
+                  {/* Classic Packs Title */}
+                  <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Classic Packs</h2>
+                </div>
+                <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
+                  {gameData.classicPacks.map((game, index) => (
+                    <GameCard key={game.id} game={game} delay={0.7 + index * 0.1} />
+                  ))}
+                </div>
+              </motion.section>
+            )}
           </div>
         </div>
       </main>

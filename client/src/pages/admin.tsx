@@ -1,671 +1,582 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest } from "@/lib/queryClient";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { 
   Users, 
   Package, 
   Settings, 
   TrendingUp, 
-  Ban,
-  Plus,
   Edit,
-  Trash2,
-  Eye,
-  ChevronDown,
-  ChevronUp,
-  X,
-  ToggleLeft,
-  ToggleRight,
+  Ban,
   Coins,
   History,
-  DollarSign
+  Plus,
+  X,
+  Eye
 } from "lucide-react";
-import type { User, VirtualLibraryCard } from "@shared/schema";
-
-const virtualLibrarySchema = z.object({
-  name: z.string().min(1, "Card name is required"),
-  tier: z.enum(["D", "C", "B", "A", "S", "SS", "SSS"]),
-  imageUrl: z.string().optional(),
-  marketValue: z.string().min(1, "Market value is required"),
-  stock: z.number().min(0, "Stock must be 0 or greater").optional(),
-});
-
-const virtualPackSchema = z.object({
-  name: z.string().min(1, "Pack name is required"),
-  price: z.string().min(1, "Price is required"),
-  imageUrl: z.string().optional(),
-  category: z.enum(["Special", "Classic"]),
-});
-
-const userEditSchema = z.object({
-  credits: z.number().min(0, "Credits must be 0 or greater"),
-});
-
-type VirtualLibraryFormData = z.infer<typeof virtualLibrarySchema>;
-type VirtualPackFormData = z.infer<typeof virtualPackSchema>;
-type UserEditFormData = z.infer<typeof userEditSchema>;
-
-const tierColors = {
-  D: "gray",
-  C: "green",
-  B: "blue", 
-  A: "purple",
-  S: "yellow",
-  SS: "orange",
-  SSS: "red"
-};
-
-// Card Gallery Component for displaying cards by tier
-const CardGalleryContent = ({ packId }: { packId: string }) => {
-  const [galleryCards, setGalleryCards] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  const handleRemoveCard = async (cardId: string) => {
-    try {
-      // Remove the card from the pack by filtering it out and resaving
-      const currentPackCards = galleryCards.filter(card => card.id !== cardId);
-      const cardIds = currentPackCards.map(card => card.id);
-      const weights = currentPackCards.map(() => 1);
-      
-      const response = await apiRequest("POST", `/api/admin/virtual-packs/${packId}/cards`, {
-        cardIds,
-        weights
-      });
-      
-      if (response.ok) {
-        // Update local state immediately
-        setGalleryCards(currentPackCards);
-        toast({
-          title: "Success",
-          description: "Card removed from pack",
-        });
-      }
-    } catch (error) {
-      console.error("Failed to remove card:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove card from pack",
-        variant: "destructive",
-      });
-    }
-  };
-
-  useEffect(() => {
-    const loadGalleryCards = async () => {
-      if (!packId) return;
-      
-      setLoading(true);
-      try {
-        const packCardsResponse = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
-        const allCardsResponse = await apiRequest("GET", "/api/admin/cards");
-        
-        const packCards = await packCardsResponse.json();
-        const allCards = await allCardsResponse.json();
-        
-        console.log("Pack cards:", packCards);
-        console.log("All cards:", allCards);
-        
-        if (!Array.isArray(packCards) || !Array.isArray(allCards)) {
-          console.error("Invalid data structure - expected arrays");
-          setGalleryCards([]);
-          return;
-        }
-        
-        const cardDetails = packCards.map((pc: any) => {
-          const card = allCards.find((c: any) => c.id === pc.cardId);
-          return card ? { ...card, weight: pc.weight } : null;
-        }).filter(Boolean);
-        
-        console.log("Gallery loaded:", cardDetails.length, "cards for pack", packId);
-        setGalleryCards(cardDetails);
-      } catch (error) {
-        console.error("Failed to load gallery cards:", error);
-        setGalleryCards([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadGalleryCards();
-  }, [packId]);
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-32">Loading cards...</div>;
-  }
-
-  if (galleryCards.length === 0) {
-    return <div className="text-center text-muted-foreground py-8">No cards in this pack</div>;
-  }
-
-  // Group cards by tier
-  const cardsByTier = galleryCards.reduce((acc, card: any) => {
-    const tier = card.tier || 'D';
-    if (!acc[tier]) acc[tier] = [];
-    acc[tier].push(card);
-    return acc;
-  }, {} as Record<string, any[]>);
-
-  const tierOrder = ['SSS', 'SS', 'S', 'A', 'B', 'C', 'D'];
-  
-  return (
-    <div className="space-y-6">
-      {tierOrder.map(tier => {
-        const tierCards = cardsByTier[tier];
-        if (!tierCards || tierCards.length === 0) return null;
-        
-        return (
-          <div key={tier} className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <div className={`w-6 h-6 rounded-full bg-${tierColors[tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
-                <span className={`text-sm font-bold tier-${tierColors[tier as keyof typeof tierColors]}`}>
-                  {tier}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold">
-                {tier} Tier ({tierCards.length} card{tierCards.length !== 1 ? 's' : ''})
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
-              {tierCards.map((card: any) => (
-                <div key={card.id} className="relative group">
-                  <div className="aspect-[3/4] rounded-md overflow-hidden bg-muted/30 border border-muted hover:border-primary/50 transition-colors w-20 h-28">
-                    {card.imageUrl ? (
-                      <img 
-                        src={card.imageUrl} 
-                        alt={card.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling?.setAttribute('style', 'display: flex');
-                        }}
-                      />
-                    ) : null}
-                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center" style={{ display: card.imageUrl ? 'none' : 'flex' }}>
-                      <Package className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                  
-                  {/* Remove Button */}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 w-5 h-5 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveCard(card.id)}
-                    data-testid={`button-remove-card-${card.id}`}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                  
-                  {/* Card Info Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/90 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="text-[10px] font-medium truncate">{card.name}</div>
-                    <div className="text-[9px] text-gray-300">{card.marketValue}c</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
 
 export default function Admin() {
-  const { toast } = useToast();
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
-  const queryClient = useQueryClient();
-  const [inventorySection, setInventorySection] = useState<"inventory" | "content">("inventory");
-  const [editingCard, setEditingCard] = useState<any>(null);
-  const [editingPack, setEditingPack] = useState<any>(null);
-  const [showPackCardSelector, setShowPackCardSelector] = useState(false);
-  const [selectedCards, setSelectedCards] = useState<string[]>([]);
-  const [expandedPacks, setExpandedPacks] = useState<Set<string>>(new Set());
-  const [packCardPools, setPackCardPools] = useState<Record<string, any[]>>({});
-  const [showCardGallery, setShowCardGallery] = useState(false);
-  const [galleryPack, setGalleryPack] = useState<any>(null);
-  const [inventorySearch, setInventorySearch] = useState("");
-  const [editingUser, setEditingUser] = useState<any>(null);
-  const [showUserTransactions, setShowUserTransactions] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showUserDialog, setShowUserDialog] = useState(false);
+  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
+  const [creditAmount, setCreditAmount] = useState(0);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [manageSection, setManageSection] = useState<"classic" | "special" | "mystery">("classic");
+  const [mysterySection, setMysterySection] = useState<"view" | "edit" | "add">("view");
+  const [mysterySearchQuery, setMysterySearchQuery] = useState("");
+  const [mysteryPackCards, setMysteryPackCards] = useState<Array<{
+    id: string;
+    name: string;
+    imageUrl: string;
+    credits: number;
+    quantity: number;
+  }>>([]);
+  const [editingQuantity, setEditingQuantity] = useState<{ [key: string]: number }>({});
+  const [specialSection, setSpecialSection] = useState<"view" | "edit" | "add">("view");
+  const [specialPools, setSpecialPools] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    image?: string;
+    imageUrl?: string;
+    price: number | string;
+    totalCards?: number;
+    totalPacks?: number;
+    cards?: Array<{
+      id: string;
+      name: string;
+      imageUrl: string;
+      credits: number;
+      quantity: number;
+    }>;
+  }>>([]);
+  const [showAddPoolDialog, setShowAddPoolDialog] = useState(false);
+  const [showEditPoolDialog, setShowEditPoolDialog] = useState(false);
+  const [editingPool, setEditingPool] = useState<{
+    id: string;
+    name: string;
+    description: string;
+    image: string;
+    price: number;
+    totalCards: number;
+  } | null>(null);
+  const [newPool, setNewPool] = useState({ 
+    name: '', 
+    description: '', 
+    image: '', 
+    price: '', 
+    totalCards: '' 
+  });
+  const [inventoryCards, setInventoryCards] = useState<Array<{
+    id: string;
+    name: string;
+    imageUrl: string;
+    credits: number;
+  }>>([]);
+  const [showAddCardForm, setShowAddCardForm] = useState(false);
+  const [editingCard, setEditingCard] = useState<{ id: string; name: string; imageUrl: string; credits: number; } | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', imageUrl: '', credits: '' });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [newCard, setNewCard] = useState({
+    name: '',
+    imageUrl: '',
+    credits: ''
+  });
+  const [isLoadingInventory, setIsLoadingInventory] = useState(false);
 
-  // Set up form data when editing a card
-  useEffect(() => {
-    if (editingCard) {
-      virtualLibraryForm.reset({
-        name: editingCard.name,
-        tier: editingCard.tier,
-        imageUrl: editingCard.imageUrl || "",
-        marketValue: editingCard.marketValue.toString(),
-        stock: editingCard.stock || 0,
-      });
+
+  // Mock user data - replace with real data later
+  const mockUsers = [
+    { id: 1, email: "user1@example.com", credits: 150, totalSpent: 25.50, isBanned: false, joinDate: "2024-01-15" },
+    { id: 2, email: "user2@example.com", credits: 75, totalSpent: 45.00, isBanned: false, joinDate: "2024-02-20" },
+    { id: 3, email: "user3@example.com", credits: 0, totalSpent: 12.75, isBanned: true, joinDate: "2024-01-30" },
+    { id: 4, email: "user4@example.com", credits: 200, totalSpent: 67.25, isBanned: false, joinDate: "2024-03-10" },
+  ];
+
+  const handleEditUser = (user: any) => {
+    setSelectedUser(user);
+    setCreditAmount(user.credits);
+    setShowUserDialog(true);
+  };
+
+  const handleBanUser = () => {
+    if (selectedUser) {
+      // Ban user logic here
+      setShowUserDialog(false);
     }
-  }, [editingCard]);
+  };
 
-  const virtualLibraryForm = useForm<VirtualLibraryFormData>({
-    resolver: zodResolver(virtualLibrarySchema),
-    defaultValues: {
-      name: "",
-      tier: "D",
-      imageUrl: "",
-      marketValue: "",
-      stock: 0,
-    },
-  });
-
-  const virtualPackForm = useForm<VirtualPackFormData>({
-    resolver: zodResolver(virtualPackSchema),
-    defaultValues: {
-      name: "",
-      price: "",
-      imageUrl: "",
-      category: "Classic",
-    },
-  });
-
-  const userEditForm = useForm<UserEditFormData>({
-    resolver: zodResolver(userEditSchema),
-    defaultValues: {
-      credits: 0,
-    },
-  });
-
-  // Set up form data when editing a user
-  useEffect(() => {
-    if (editingUser) {
-      userEditForm.reset({
-        credits: parseFloat(editingUser.credits || '0'),
-      });
+  const handleUpdateCredits = () => {
+    if (selectedUser) {
+      // Update credits logic here
+      setShowUserDialog(false);
     }
-  }, [editingUser]);
+  };
 
-  // Data queries
-  const { data: stats } = useQuery({
-    queryKey: ["/api/admin/stats"],
-    enabled: !!isAuthenticated,
-    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
-  });
+  const handleViewTransactions = () => {
+    setShowTransactionDialog(true);
+  };
 
-  const { data: users } = useQuery({
-    queryKey: ["/api/admin/users"],
-    enabled: !!isAuthenticated,
-    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
-  });
+  const handleNewCardChange = (field: string, value: string) => {
+    setNewCard(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
-  const { data: allCards } = useQuery({
-    queryKey: ["/api/admin/cards"],
-    enabled: !!isAuthenticated,
-    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
-    refetchInterval: 5000, // Auto-refresh every 5 seconds to catch refunds
-  });
-
-  const { data: virtualPacks } = useQuery({
-    queryKey: ["/api/admin/virtual-packs"],
-    enabled: !!isAuthenticated,
-    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
-  });
-
-  const { data: systemSettings } = useQuery({
-    queryKey: ["/api/admin/system-settings"],
-    enabled: !!isAuthenticated,
-    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
-  });
-
-  const { data: userTransactions } = useQuery({
-    queryKey: ["/api/admin/users", selectedUserId, "transactions"],
-    enabled: !!isAuthenticated && !!selectedUserId && showUserTransactions,
-    retry: (failureCount, error) => !isUnauthorizedError(error) && failureCount < 3,
-  });
-
-  // Mutations
-  const createVirtualLibraryCardMutation = useMutation({
-    mutationFn: (data: VirtualLibraryFormData) => apiRequest("POST", "/api/admin/cards", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/cards"] });
-      virtualLibraryForm.reset();
-      toast({
-        title: "Success",
-        description: "Card created successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteVirtualLibraryCardMutation = useMutation({
-    mutationFn: (cardId: string) => apiRequest("DELETE", `/api/admin/cards/${cardId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/cards"] });
-      toast({
-        title: "Success",
-        description: "Card deleted successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const createVirtualPackMutation = useMutation({
-    mutationFn: async (data: VirtualPackFormData) => {
-      // Create the pack with category info
-      const packData = {
-        ...data,
-        cardCount: 10, // Default card count
-        description: `${data.category} Pack` // Auto-generate description
-      };
-      const packResponse = await apiRequest("POST", "/api/admin/virtual-packs", packData);
-      const newPack = packResponse as any;
+  // Fetch inventory cards from API
+  const fetchInventoryCards = async () => {
+    try {
+      setIsLoadingInventory(true);
+      console.log('Fetching inventory cards...');
+      const response = await fetch('http://localhost:3000/api/admin/inventory');
+      console.log('Fetch response status:', response.status);
       
-      // Set default pull rates for the new pack
-      if (newPack && newPack.id) {
-        try {
-          await apiRequest("POST", `/api/admin/virtual-packs/${newPack.id}/pull-rates`, {
-            rates: [
-              { cardTier: 'D', probability: 70.0 },
-              { cardTier: 'C', probability: 20.0 },
-              { cardTier: 'B', probability: 7.0 },
-              { cardTier: 'A', probability: 2.0 },
-              { cardTier: 'S', probability: 0.8 },
-              { cardTier: 'SS', probability: 0.15 },
-              { cardTier: 'SSS', probability: 0.05 }
-            ]
-          });
-        } catch (error) {
-          console.log("Pull rates setup completed with default odds");
-        }
+      if (response.ok) {
+        const cards = await response.json();
+        console.log('Fetched cards:', cards);
+        setInventoryCards(cards);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch inventory cards:', errorText);
       }
-      
-      return newPack;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
-      virtualPackForm.reset();
-      toast({
-        title: "Content Created",
-        description: "New content pack created with default pull rates",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const banUserMutation = useMutation({
-    mutationFn: (userId: string) => apiRequest("POST", `/api/admin/users/${userId}/ban`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({
-        title: "Success",
-        description: "User banned successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateUserCreditsMutation = useMutation({
-    mutationFn: ({ userId, credits }: { userId: string; credits: number }) => 
-      apiRequest("PATCH", `/api/admin/users/${userId}/credits`, { credits }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      // Also invalidate the auth user query to refresh personal credits display
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      setEditingUser(null);
-      userEditForm.reset();
-      toast({
-        title: "Success",
-        description: "User credits updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateSystemSettingMutation = useMutation({
-    mutationFn: ({ settingKey, settingValue }: { settingKey: string; settingValue: boolean }) => 
-      apiRequest("POST", `/api/admin/system-settings/${settingKey}`, { settingValue }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/system-settings"] });
-      toast({
-        title: "Setting Updated",
-        description: "System setting has been updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleToggleSystemSetting = (settingKey: string, currentValue: boolean) => {
-    updateSystemSettingMutation.mutate({
-      settingKey,
-      settingValue: !currentValue,
-    });
-  };
-
-  const onVirtualLibrarySubmit = (data: VirtualLibraryFormData) => {
-    createVirtualLibraryCardMutation.mutate(data);
-  };
-
-  const handleDeleteCard = (cardId: string) => {
-    if (confirm("Are you sure you want to delete this card?")) {
-      deleteVirtualLibraryCardMutation.mutate(cardId);
-    }
-  };
-
-  const deleteVirtualPackMutation = useMutation({
-    mutationFn: (packId: string) => apiRequest("DELETE", `/api/admin/virtual-packs/${packId}`),
-    onSuccess: () => {
-      console.log("Pack deleted successfully, invalidating cache...");
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
-      // Force a refetch to see if it helps
-      queryClient.refetchQueries({ queryKey: ["/api/admin/virtual-packs"] });
-      toast({
-        title: "Success",
-        description: "Pack deleted successfully",
-      });
-    },
-    onError: (error) => {
-      console.error("Delete pack error:", error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleDeleteVirtualPack = (packId: string) => {
-    if (confirm("Are you sure you want to delete this pack?")) {
-      deleteVirtualPackMutation.mutate(packId);
-    }
-  };
-
-  const handleManagePackCards = async (pack: any) => {
-    setEditingPack(pack);
-    setShowPackCardSelector(true);
-    
-    // Load current cards in pack
-    try {
-      const currentCardsResponse = await apiRequest("GET", `/api/admin/virtual-packs/${pack.id}/cards`);
-      const currentCards = await currentCardsResponse.json();
-      const cardIds = Array.isArray(currentCards) ? currentCards.map((card: any) => card.virtualLibraryCardId) : [];
-      setSelectedCards(cardIds);
-    } catch (error) {
-      console.error("Failed to load current card pool:", error);
-      setSelectedCards([]);
-    }
-  };
-
-  const handleSavePackCards = async () => {
-    if (!editingPack) return;
-    
-    console.log(`Saving card pool for pack ${editingPack.id} with ${selectedCards.length} cards:`, selectedCards);
-    
-    try {
-      const response = await apiRequest("POST", `/api/admin/virtual-packs/${editingPack.id}/cards`, {
-        cardIds: selectedCards,
-        weights: selectedCards.map(() => 1),
-      });
-      
-      console.log("Card pool save response:", response);
-      
-      // Clear the cached card pool for this pack to force reload
-      setPackCardPools(prev => {
-        const updated = { ...prev };
-        delete updated[editingPack.id];
-        return updated;
-      });
-      
-      // Force expansion to show updated cards
-      setExpandedPacks(prev => new Set([...Array.from(prev), editingPack.id]));
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/virtual-packs"] });
-      setShowPackCardSelector(false);
-      setEditingPack(null);
-      setSelectedCards([]);
-      
-      toast({
-        title: "Success",
-        description: `Card pool updated successfully (${selectedCards.length} cards)`,
-      });
     } catch (error: any) {
-      console.error("Card pool save error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save card pool",
-        variant: "destructive",
-      });
+      console.error('Error fetching inventory cards:', error);
+    } finally {
+      setIsLoadingInventory(false);
     }
   };
 
-  const handleSaveCardEdit = async (data: VirtualLibraryFormData) => {
-    if (!editingCard) return;
-    
-    try {
-      const response = await apiRequest("PATCH", `/api/admin/cards/${editingCard.id}`, data);
-      await response.json();
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/cards"] });
-      setEditingCard(null);
-      virtualLibraryForm.reset();
-      
-      toast({
-        title: "Success",
-        description: "Card updated successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update card",
-        variant: "destructive",
-      });
+  // Load inventory when switching to inventory tab
+  useEffect(() => {
+    if (activeTab === 'inventory') {
+      fetchInventoryCards();
     }
-  };
+  }, [activeTab]);
 
-  const handleEditUserCredits = (user: any) => {
-    setEditingUser(user);
-  };
+  // Load special packs when manage tab is active
+  useEffect(() => {
+    if (activeTab === 'manage') {
+      fetchSpecialPacks();
+    }
+  }, [activeTab]);
 
-  const handleSaveUserCredits = (data: UserEditFormData) => {
-    if (!editingUser) return;
-    updateUserCreditsMutation.mutate({
-      userId: editingUser.id,
-      credits: data.credits
-    });
-  };
+  // Load inventory when switching to mystery add section
+  useEffect(() => {
+    if (activeTab === 'manage' && manageSection === 'mystery' && mysterySection === 'add') {
+      console.log('Loading inventory for mystery add section...');
+      fetchInventoryCards();
+    }
+  }, [activeTab, manageSection, mysterySection]);
 
-  const handleViewUserTransactions = (userId: string) => {
-    setSelectedUserId(userId);
-    setShowUserTransactions(true);
-  };
-
-  const toggleCardSelection = (cardId: string) => {
-    setSelectedCards(prev => 
-      prev.includes(cardId) 
-        ? prev.filter(id => id !== cardId)
-        : [...prev, cardId]
-    );
-  };
-
-  const togglePackExpansion = async (packId: string) => {
-    const newExpanded = new Set(expandedPacks);
-    
-    if (expandedPacks.has(packId)) {
-      newExpanded.delete(packId);
-    } else {
-      newExpanded.add(packId);
+  const handleAddCard = async () => {
+    if (newCard.name.trim() && newCard.imageUrl.trim() && newCard.credits.trim()) {
+      const credits = parseInt(newCard.credits);
       
-      // Load card pool if not already loaded
-      if (!packCardPools[packId]) {
-        try {
-          const packCardsResponse = await apiRequest("GET", `/api/admin/virtual-packs/${packId}/cards`);
-          const packCards = await packCardsResponse.json();
-          const cardDetails = await Promise.all(
-            (Array.isArray(packCards) ? packCards : []).map(async (pc: any) => {
-              const card = Array.isArray(allCards) ? allCards.find((c: any) => c.packType === 'virtual' && c.name === pc.name) : null;
-              return card ? { ...card, weight: pc.weight } : null;
-            })
-          );
+      // Validate credits is a positive number
+      if (isNaN(credits) || credits <= 0) {
+        alert('Please enter a valid credit amount (positive number)');
+        return;
+      }
+
+      try {
+        const cardData = {
+          id: `${newCard.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+          name: newCard.name.trim(),
+          imageUrl: newCard.imageUrl.trim(),
+          credits: credits
+        };
+
+        console.log('Sending card data:', cardData);
+
+        const response = await fetch('http://localhost:3000/api/admin/inventory', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(cardData),
+        });
+
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Card created successfully:', result);
           
-          setPackCardPools(prev => ({
-            ...prev,
-            [packId]: cardDetails.filter(Boolean)
-          }));
-        } catch (error) {
-          console.error("Failed to load pack cards:", error);
+          // Refresh inventory
+          await fetchInventoryCards();
+          
+          // Reset form and close dialog
+          setNewCard({ name: '', imageUrl: '', credits: '' });
+          setShowAddCardForm(false);
+          
+          // Show success message
+          alert('Card added successfully!');
+        } else {
+          const errorText = await response.text();
+          console.error('API Error:', errorText);
+          alert(`Failed to add card: ${errorText}`);
+        }
+      } catch (error: any) {
+        console.error('Error adding card:', error);
+        alert(`Failed to add card: ${error.message}`);
+      }
+    } else {
+      alert('Please fill in all fields');
+    }
+  };
+
+  const handleRemoveCard = async (cardId: string, cardName: string) => {
+    if (confirm(`Are you sure you want to remove ${cardName}?`)) {
+      try {
+        const response = await fetch(`http://localhost:3000/api/admin/inventory/${cardId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          // Refresh inventory
+          await fetchInventoryCards();
+          alert('Card removed successfully!');
+    } else {
+          alert('Failed to remove card. Please try again.');
+        }
+        } catch (error: any) {
+        console.error('Error removing card:', error);
+        alert('Failed to remove card. Please try again.');
         }
       }
-    }
-    
-    setExpandedPacks(newExpanded);
   };
+
+  const handleEditCard = (card: { id: string; name: string; imageUrl: string; credits: number; }) => {
+    setEditingCard(card);
+    setEditForm({
+      name: card.name,
+      imageUrl: card.imageUrl,
+      credits: card.credits.toString()
+    });
+  };
+
+  const handleUpdateCard = async () => {
+    if (!editingCard) return;
+
+    if (editForm.name.trim() && editForm.imageUrl.trim() && editForm.credits.trim()) {
+      const credits = parseInt(editForm.credits);
+      
+      // Validate credits is a positive number
+      if (isNaN(credits) || credits <= 0) {
+        alert('Please enter a valid credit amount (positive number)');
+        return;
+      }
+
+      try {
+        const cardData = {
+          name: editForm.name.trim(),
+          imageUrl: editForm.imageUrl.trim(),
+          credits: credits
+        };
+
+        console.log('Updating card data:', cardData);
+
+        const response = await fetch(`http://localhost:3000/api/admin/inventory/${editingCard.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(cardData),
+        });
+
+        console.log('Update response status:', response.status);
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Card updated successfully:', result);
+          
+          // Refresh inventory
+          await fetchInventoryCards();
+          
+          // Reset form and close edit mode
+          setEditingCard(null);
+          setEditForm({ name: '', imageUrl: '', credits: '' });
+          
+          // Show success message
+          alert('Card updated successfully!');
+        } else {
+          const errorText = await response.text();
+          console.error('API Error:', errorText);
+          alert(`Failed to update card: ${errorText}`);
+        }
+      } catch (error: any) {
+        console.error('Error updating card:', error);
+        alert(`Failed to update card: ${error.message}`);
+      }
+    } else {
+      alert('Please fill in all fields');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCard(null);
+    setEditForm({ name: '', imageUrl: '', credits: '' });
+  };
+
+  // Filter cards based on search query
+  const filteredCards = inventoryCards.filter(card => 
+    card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    card.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Filter cards for mystery pack search
+  const mysteryFilteredCards = inventoryCards.filter(card => 
+    card.name.toLowerCase().includes(mysterySearchQuery.toLowerCase()) ||
+    card.id.toLowerCase().includes(mysterySearchQuery.toLowerCase())
+  );
+
+  // Debug logging
+  console.log('Inventory cards count:', inventoryCards.length);
+  console.log('Mystery search query:', mysterySearchQuery);
+  console.log('Mystery filtered cards count:', mysteryFilteredCards.length);
+
+  // Add card to mystery pack
+  const handleAddToMysteryPack = (card: { id: string; name: string; imageUrl: string; credits: number; }) => {
+    // Check if card is already in mystery pack
+    const existingCard = mysteryPackCards.find(mysteryCard => mysteryCard.id === card.id);
+    
+    if (existingCard) {
+      // If card exists, increase quantity
+      setMysteryPackCards(prev => prev.map(mysteryCard => 
+        mysteryCard.id === card.id 
+          ? { ...mysteryCard, quantity: mysteryCard.quantity + 1 }
+          : mysteryCard
+      ));
+      alert(`${card.name} quantity increased!`);
+    } else {
+      // Add new card to mystery pack with quantity 1
+      setMysteryPackCards(prev => [...prev, { ...card, quantity: 1 }]);
+      alert(`${card.name} added to mystery pack!`);
+    }
+  };
+
+  // Handle quantity editing
+  const handleQuantityChange = (cardId: string, newQuantity: number) => {
+    if (newQuantity < 0) return;
+    
+    setEditingQuantity(prev => ({
+      ...prev,
+      [cardId]: newQuantity
+    }));
+  };
+
+  // Save quantity changes
+  const handleSaveQuantity = (cardId: string) => {
+    const newQuantity = editingQuantity[cardId];
+    if (newQuantity === undefined || newQuantity < 0) return;
+
+    if (newQuantity === 0) {
+      // Remove card if quantity is 0
+      setMysteryPackCards(prev => prev.filter(card => card.id !== cardId));
+      alert('Card removed from mystery pack!');
+    } else {
+      // Update quantity
+      setMysteryPackCards(prev => prev.map(card => 
+        card.id === cardId 
+          ? { ...card, quantity: newQuantity }
+          : card
+      ));
+      alert('Quantity updated!');
+    }
+
+    // Clear editing state
+    setEditingQuantity(prev => {
+      const newState = { ...prev };
+      delete newState[cardId];
+      return newState;
+    });
+  };
+
+  // Cancel quantity editing
+  const handleCancelQuantity = (cardId: string) => {
+    setEditingQuantity(prev => {
+      const newState = { ...prev };
+      delete newState[cardId];
+      return newState;
+    });
+  };
+
+  // Special Pool Management
+  const handleAddPool = async () => {
+    if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim() && newPool.totalCards.trim()) {
+      try {
+        const response = await fetch('http://localhost:3000/api/admin/special-packs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: newPool.name.trim(),
+            description: newPool.description.trim(),
+            image: newPool.image.trim(),
+            price: parseFloat(newPool.price),
+            totalCards: parseInt(newPool.totalCards)
+          }),
+        });
+
+        if (response.ok) {
+          const newPack = await response.json();
+          setSpecialPools(prev => [...prev, { ...newPack, cards: [] }]);
+          setNewPool({ name: '', description: '', image: '', price: '', totalCards: '' });
+          setShowAddPoolDialog(false);
+          alert('Special pack created successfully!');
+        } else {
+          const error = await response.json();
+          alert(`Failed to create special pack: ${error.error}`);
+        }
+      } catch (error: any) {
+        console.error('Error creating special pack:', error);
+        alert('Failed to create special pack. Please try again.');
+      }
+    } else {
+      alert('Please fill in all fields');
+    }
+  };
+
+  const handleRemovePool = async (poolId: string) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/admin/special-packs/${poolId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setSpecialPools(prev => prev.filter(pool => pool.id !== poolId));
+        alert('Special pack removed successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Failed to remove special pack: ${error.error}`);
+      }
+    } catch (error: any) {
+      console.error('Error removing special pack:', error);
+      alert('Failed to remove special pack. Please try again.');
+    }
+  };
+
+  const handleEditPool = (pool: any) => {
+    setEditingPool({
+      id: pool.id,
+      name: pool.name,
+      description: pool.description,
+      image: pool.imageUrl || pool.image,
+      price: pool.price,
+      totalCards: pool.totalCards
+    });
+    setShowEditPoolDialog(true);
+  };
+
+  const handleUpdatePool = async () => {
+    if (editingPool && editingPool.name.trim() && editingPool.description.trim() && editingPool.image.trim()) {
+      try {
+        const response = await fetch(`http://localhost:3000/api/admin/special-packs/${editingPool.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: editingPool.name.trim(),
+            description: editingPool.description.trim(),
+            image: editingPool.image.trim(),
+            price: editingPool.price,
+            totalCards: editingPool.totalCards
+          }),
+        });
+
+        if (response.ok) {
+          const updatedPack = await response.json();
+          setSpecialPools(prev => prev.map(pool => 
+            pool.id === editingPool.id 
+              ? { ...pool, ...updatedPack }
+              : pool
+          ));
+          setShowEditPoolDialog(false);
+          setEditingPool(null);
+          alert('Special pack updated successfully!');
+        } else {
+          const error = await response.json();
+          alert(`Failed to update special pack: ${error.error}`);
+        }
+      } catch (error: any) {
+        console.error('Error updating special pack:', error);
+        alert('Failed to update special pack. Please try again.');
+      }
+    } else {
+      alert('Please fill in all required fields');
+    }
+  };
+
+  const handleCancelEditPool = () => {
+    setShowEditPoolDialog(false);
+    setEditingPool(null);
+  };
+
+  // Fetch special packs from API
+  const fetchSpecialPacks = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/special-packs');
+      if (response.ok) {
+        const packs = await response.json();
+        setSpecialPools(packs);
+      } else {
+        console.error('Failed to fetch special packs');
+      }
+    } catch (error: any) {
+      console.error('Error fetching special packs:', error);
+    }
+  };
+
+  const handleAddCardToPool = (poolId: string, card: { id: string; name: string; imageUrl: string; credits: number; }) => {
+    setSpecialPools(prev => prev.map(pool => {
+      if (pool.id === poolId) {
+        const existingCard = pool.cards?.find(c => c.id === card.id);
+        if (existingCard) {
+          return {
+            ...pool,
+            cards: (pool.cards || []).map(c => 
+              c.id === card.id 
+                ? { ...c, quantity: c.quantity + 1 }
+                : c
+            )
+          };
+        } else {
+          return {
+            ...pool,
+            cards: [...(pool.cards || []), { ...card, quantity: 1 }]
+          };
+        }
+      }
+      return pool;
+    }));
+    alert(`${card.name} added to pool!`);
+  };
+
+  const handleRemoveCardFromPool = (poolId: string, cardId: string) => {
+    setSpecialPools(prev => prev.map(pool => {
+      if (pool.id === poolId) {
+        return {
+          ...pool,
+          cards: (pool.cards || []).filter(card => card.id !== cardId)
+        };
+      }
+      return pool;
+    }));
+    alert('Card removed from pool!');
+  };
+
 
   if (isLoading) {
     return (
@@ -704,15 +615,19 @@ export default function Admin() {
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold font-gaming mb-8 text-center">Admin Dashboard</h1>
           
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full max-w-4xl mx-auto grid-cols-4 mb-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full max-w-5xl mx-auto grid-cols-5 mb-8">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="users" data-testid="tab-users">
+              <TabsTrigger value="user" data-testid="tab-user">
                 <Users className="w-4 h-4 mr-2" />
-                Users
+                User
+              </TabsTrigger>
+              <TabsTrigger value="manage" data-testid="tab-manage">
+                <Package className="w-4 h-4 mr-2" />
+                Manage
               </TabsTrigger>
               <TabsTrigger value="inventory" data-testid="tab-inventory">
                 <Package className="w-4 h-4 mr-2" />
@@ -726,14 +641,14 @@ export default function Admin() {
 
             {/* Overview Tab */}
             <TabsContent value="overview">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{(stats as any)?.totalUsers || 0}</div>
+                    <div className="text-2xl font-bold">0</div>
                   </CardContent>
                 </Card>
 
@@ -743,42 +658,80 @@ export default function Admin() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">RM {(stats as any)?.totalRevenue || "0.00"}</div>
+                    <div className="text-2xl font-bold">RM 0.00</div>
                   </CardContent>
                 </Card>
 
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Cards in Library</CardTitle>
+                    <CardTitle className="text-sm font-medium">Top Spender</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">RM 0.00</div>
+                    <p className="text-xs text-muted-foreground">user@example.com</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <Card className="gaming-card">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Recent SS Card</CardTitle>
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{Array.isArray(allCards) ? allCards.length : 0}</div>
+                    <div className="text-2xl font-bold">Card Name</div>
+                    <p className="text-xs text-muted-foreground">Pulled by user@example.com</p>
                   </CardContent>
                 </Card>
 
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Themed Packs</CardTitle>
+                    <CardTitle className="text-sm font-medium">Recent SSS Card</CardTitle>
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{Array.isArray(virtualPacks) ? virtualPacks.length : 0}</div>
+                    <div className="text-2xl font-bold">Card Name</div>
+                    <p className="text-xs text-muted-foreground">Pulled by user@example.com</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="gaming-card">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Daily P&L</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">+RM 0.00</div>
+                    <p className="text-xs text-muted-foreground">Today</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="gaming-card">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Monthly P&L</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">+RM 0.00</div>
+                    <p className="text-xs text-muted-foreground">This Month</p>
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
 
-            {/* Users Tab */}
-            <TabsContent value="users">
+            {/* User Tab */}
+            <TabsContent value="user">
               <Card className="gaming-card">
                 <CardHeader>
                   <CardTitle>User Management</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {users ? (
                     <div className="space-y-4">
-                      {Array.isArray(users) ? users.map((user: User) => (
+                    {mockUsers.map((user) => (
                         <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
                           <div className="flex items-center space-x-4">
                             <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
@@ -789,6 +742,9 @@ export default function Admin() {
                               <div className="text-sm text-muted-foreground">
                                 Credits: {user.credits} • Spent: RM {user.totalSpent}
                               </div>
+                            <div className="text-xs text-muted-foreground">
+                              Joined: {user.joinDate}
+                              </div>
                             </div>
                           </div>
                           
@@ -796,839 +752,1038 @@ export default function Admin() {
                             {user.isBanned && (
                               <Badge variant="destructive">Banned</Badge>
                             )}
-                            {user.isSuspended && (
-                              <Badge variant="secondary">Suspended</Badge>
-                            )}
                             
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleEditUserCredits(user)}
-                              data-testid={`button-edit-credits-${user.id}`}
-                            >
-                              <Coins className="w-3 h-3 mr-1" />
-                              Edit Credits
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewUserTransactions(user.id)}
-                              data-testid={`button-view-transactions-${user.id}`}
-                            >
-                              <History className="w-3 h-3 mr-1" />
-                              Transactions
-                            </Button>
-                            
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={user.isBanned || false}
-                              onClick={() => banUserMutation.mutate(user.id)}
-                              data-testid={`button-ban-${user.id}`}
-                            >
-                              <Ban className="w-3 h-3 mr-1" />
-                              Ban
+                            onClick={() => handleEditUser(user)}
+                          >
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
                             </Button>
                           </div>
                         </div>
-                      )) : null}
+                    ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                      <p className="mt-2 text-muted-foreground">Loading users...</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Inventory Management - Two Sections */}
-            <TabsContent value="inventory">
+            {/* Manage Tab */}
+            <TabsContent value="manage">
               <div className="space-y-6">
                 {/* Section Selector */}
                 <div className="flex gap-4 mb-6">
                   <Button
-                    variant={inventorySection === "inventory" ? "default" : "outline"}
-                    onClick={() => setInventorySection("inventory")}
-                    data-testid="tab-manage-inventory"
+                    variant={manageSection === "classic" ? "default" : "outline"}
+                    onClick={() => setManageSection("classic")}
                   >
                     <Package className="w-4 h-4 mr-2" />
-                    Manage Inventory
+                    Classic
                   </Button>
                   <Button
-                    variant={inventorySection === "content" ? "default" : "outline"}
-                    onClick={() => setInventorySection("content")}
-                    data-testid="tab-manage-content"
+                    variant={manageSection === "special" ? "default" : "outline"}
+                    onClick={() => setManageSection("special")}
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Manage Content
+                    <Package className="w-4 h-4 mr-2" />
+                    Special
+                  </Button>
+                  <Button
+                    variant={manageSection === "mystery" ? "default" : "outline"}
+                    onClick={() => setManageSection("mystery")}
+                  >
+                    <Package className="w-4 h-4 mr-2" />
+                    Mystery
                   </Button>
                 </div>
 
-                {/* Manage Inventory Section */}
-                {inventorySection === "inventory" && (
-                  <div className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Add New Card */}
+                {/* Classic Pack Section */}
+                {manageSection === "classic" && (
                       <Card className="gaming-card">
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Plus className="w-5 h-5" />
-                            Add New Card to Inventory
-                          </CardTitle>
+                      <CardTitle>Classic Pack Management</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <form onSubmit={virtualLibraryForm.handleSubmit(onVirtualLibrarySubmit)} className="space-y-4">
-                            <div>
-                              <Label htmlFor="card-name">Card Name</Label>
-                              <Input
-                                id="card-name"
-                                {...virtualLibraryForm.register("name")}
-                                placeholder="Enter card name"
-                                data-testid="input-card-name"
-                              />
-                              {virtualLibraryForm.formState.errors.name && (
-                                <p className="text-sm text-destructive mt-1">{virtualLibraryForm.formState.errors.name.message}</p>
-                              )}
+                      <div className="text-center py-8">
+                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Classic Pack</h3>
+                        <p className="text-muted-foreground">
+                          Manage classic card packs and their contents
+                        </p>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="card-tier">Tier</Label>
-                                <Select onValueChange={(value) => virtualLibraryForm.setValue("tier", value as any)}>
-                                  <SelectTrigger data-testid="select-card-tier">
-                                    <SelectValue placeholder="Select tier" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="D">D Tier</SelectItem>
-                                    <SelectItem value="C">C Tier</SelectItem>
-                                    <SelectItem value="B">B Tier</SelectItem>
-                                    <SelectItem value="A">A Tier</SelectItem>
-                                    <SelectItem value="S">S Tier</SelectItem>
-                                    <SelectItem value="SS">SS Tier</SelectItem>
-                                    <SelectItem value="SSS">SSS Tier</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div>
-                                <Label htmlFor="card-value">Market Value</Label>
-                                <Input
-                                  id="card-value"
-                                  {...virtualLibraryForm.register("marketValue")}
-                                  placeholder="1.00"
-                                  data-testid="input-card-value"
-                                />
-                              </div>
-                            </div>
-
-                            <div>
-                              <Label htmlFor="card-image">Image URL (Optional)</Label>
-                              <Input
-                                id="card-image"
-                                {...virtualLibraryForm.register("imageUrl")}
-                                placeholder="https://example.com/image.jpg"
-                                data-testid="input-card-image"
-                              />
-                            </div>
-
-                            <Button 
-                              type="submit" 
-                              className="w-full"
-                              disabled={createVirtualLibraryCardMutation.isPending}
-                              data-testid="button-add-card"
-                            >
-                              {createVirtualLibraryCardMutation.isPending ? "Adding..." : "Add to Inventory"}
-                            </Button>
-                          </form>
                         </CardContent>
                       </Card>
-
-                      {/* Current Inventory */}
-                      <Card className="gaming-card">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle>Unified Card Inventory ({Array.isArray(allCards) ? allCards.length : 0} cards)</CardTitle>
-                          </div>
-                          <div className="mt-3">
-                            <Input
-                              type="text"
-                              placeholder="Search cards by name or tier..."
-                              value={inventorySearch}
-                              onChange={(e) => setInventorySearch(e.target.value)}
-                              className="max-w-md"
-                              data-testid="input-inventory-search"
-                            />
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 max-h-80 overflow-y-auto">
-                            {(Array.isArray(allCards) ? allCards.filter((card: any) => {
-                              const searchTerm = inventorySearch.toLowerCase();
-                              return card.name.toLowerCase().includes(searchTerm) || 
-                                     card.tier.toLowerCase().includes(searchTerm);
-                            }) : []).map((card: any) => (
-                              <div key={card.id} className="flex items-center justify-between p-3 rounded border">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
-                                    <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
-                                      {card.tier}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <div className="font-medium">{card.name}</div>
-                                    <div className="text-sm text-muted-foreground">${card.marketValue}</div>
-                                    <div className="text-xs text-blue-600 dark:text-blue-400">
-                                      Stock: {card.stock || 0} available
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setEditingCard(card)}
-                                    data-testid={`button-edit-card-${card.id}`}
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleDeleteCard(card.id)}
-                                    data-testid={`button-delete-card-${card.id}`}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            )) || (
-                              <p className="text-center text-muted-foreground py-8">No cards in inventory yet.</p>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
                 )}
 
-                {/* Manage Content Section */}
-                {inventorySection === "content" && (
+                {/* Special Pack Section */}
+                {manageSection === "special" && (
                   <div className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Create New Content */}
-                      <Card className="gaming-card">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Plus className="w-5 h-5" />
-                            Create New Content
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <form onSubmit={virtualPackForm.handleSubmit((data) => {
-                            createVirtualPackMutation.mutate(data);
-                          })} className="space-y-4">
-                            <div>
-                              <Label htmlFor="content-name">Content Name</Label>
-                              <Input
-                                id="content-name"
-                                {...virtualPackForm.register("name")}
-                                placeholder="e.g., Black Bolt Collection"
-                                data-testid="input-content-name"
-                              />
-                              {virtualPackForm.formState.errors.name && (
-                                <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.name.message}</p>
-                              )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="content-price">Price</Label>
-                                <Input
-                                  id="content-price"
-                                  {...virtualPackForm.register("price")}
-                                  placeholder="8.00"
-                                  data-testid="input-content-price"
-                                />
-                                {virtualPackForm.formState.errors.price && (
-                                  <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.price.message}</p>
-                                )}
-                              </div>
-
-                              <div>
-                                <Label htmlFor="content-category">Category</Label>
-                                <Select onValueChange={(value) => virtualPackForm.setValue("category", value as any)}>
-                                  <SelectTrigger data-testid="select-content-category">
-                                    <SelectValue placeholder="Select category" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Special">Special Packs</SelectItem>
-                                    <SelectItem value="Classic">Classic Packs</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                {virtualPackForm.formState.errors.category && (
-                                  <p className="text-sm text-destructive mt-1">{virtualPackForm.formState.errors.category.message}</p>
-                                )}
-                              </div>
-                            </div>
-
-                            <div>
-                              <Label htmlFor="content-image">Image URL (Optional)</Label>
-                              <Input
-                                id="content-image"
-                                {...virtualPackForm.register("imageUrl")}
-                                placeholder="https://example.com/pack-image.jpg"
-                                data-testid="input-content-image"
-                              />
-                            </div>
-
-                            <Button 
-                              type="submit" 
-                              className="w-full" 
-                              disabled={createVirtualPackMutation.isPending}
-                              data-testid="button-create-content"
-                            >
-                              {createVirtualPackMutation.isPending ? "Creating..." : "Create Content"}
-                            </Button>
-                          </form>
-                        </CardContent>
-                      </Card>
-
-                      {/* Content List */}
-                      <Card className="gaming-card">
-                        <CardHeader>
-                          <CardTitle>Content Library ({Array.isArray(virtualPacks) ? virtualPacks.length : 0} packs)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3 max-h-80 overflow-y-auto">
-                            {Array.isArray(virtualPacks) ? virtualPacks.map((pack: any) => (
-                              <div key={pack.id} className="border rounded">
-                                <div className="flex items-center justify-between p-3">
-                                  <div className="flex-1">
-                                    <div className="font-medium">{pack.name}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {pack.price} credits • {pack.description || 'No description'}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {packCardPools[pack.id]?.length || 0} cards in pool
+                    {/* Special Packs Display */}
+                    <Card className="gaming-card">
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle>Special Packs</CardTitle>
+                          <Button onClick={() => setShowAddPoolDialog(true)}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Content
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {specialPools.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-medium mb-2">No special packs created</h3>
+                            <p className="text-muted-foreground">
+                              Click "Add Content" to create your first special pack
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {specialPools.map((pool) => (
+                              <div key={pool.id} className="border rounded-lg p-4">
+                                <div className="space-y-4">
+                                  {/* Pack Header */}
+                                  <div className="flex gap-4">
+                                    <img
+                                      src={pool.imageUrl || pool.image}
+                                      alt={pool.name}
+                                      className="w-20 h-20 object-cover rounded flex-shrink-0"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                                      }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-lg mb-1">{pool.name}</h4>
+                                      <p className="text-sm text-muted-foreground mb-2">{pool.description}</p>
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                                        <div>Price: ${pool.price}</div>
+                                        <div>Total Cards: {pool.totalPacks || pool.totalCards || 0}</div>
+                                        <div>Cards Added: {pool.cards?.length || 0}</div>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="flex gap-1">
+                                  
+                                  {/* Action Buttons */}
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     <Button
-                                      size="sm"
-                                      variant="ghost"
                                       onClick={() => {
-                                        setGalleryPack(pack);
-                                        setShowCardGallery(true);
-                                        // Clear cache to force fresh data load
-                                        setPackCardPools(prev => {
-                                          const updated = { ...prev };
-                                          delete updated[pack.id];
-                                          return updated;
-                                        });
+                                        // TODO: View prize functionality
+                                        alert('View prize functionality coming soon');
                                       }}
-                                      data-testid={`button-view-cards-${pack.id}`}
-                                      title="View card gallery"
-                                    >
-                                      <Eye className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
                                       variant="outline"
-                                      onClick={() => handleManagePackCards(pack)}
-                                      data-testid={`button-edit-pack-${pack.id}`}
-                                      title="Edit card pool"
+                                      size="sm"
+                                      className="w-full"
                                     >
-                                      <Edit className="w-3 h-3" />
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      View Prize
                                     </Button>
                                     <Button
+                                      onClick={() => {
+                                        // TODO: Edit prize functionality
+                                        alert('Edit prize functionality coming soon');
+                                      }}
+                                      variant="outline"
                                       size="sm"
-                                      variant="destructive"
-                                      onClick={() => handleDeleteVirtualPack(pack.id)}
-                                      data-testid={`button-delete-pack-${pack.id}`}
+                                      className="w-full"
                                     >
-                                      <Trash2 className="w-3 h-3" />
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit Prize
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleEditPool(pool)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full"
+                                    >
+                                      <Package className="w-4 h-4 mr-2" />
+                                      Edit Content
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleRemovePool(pool.id)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full"
+                                    >
+                                      <X className="w-4 h-4 mr-2" />
+                                      Remove
                                     </Button>
                                   </div>
                                 </div>
                                 
-                                {/* Expanded Card Pool View */}
-                                {expandedPacks.has(pack.id) && (
-                                  <div className="border-t bg-muted/30 p-3">
-                                    {packCardPools[pack.id]?.length > 0 ? (
-                                      <div className="grid gap-2 max-h-32 overflow-y-auto">
-                                        {packCardPools[pack.id].map((card: any) => (
-                                          <div key={card.id} className="flex items-center space-x-2 text-xs">
-                                            <div className={`w-4 h-4 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
-                                              <span className={`text-[10px] font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
-                                                {card.tier}
-                                              </span>
-                                            </div>
-                                            <span className="flex-1">{card.name}</span>
-                                            <span className="text-muted-foreground">{card.marketValue}c</span>
-                                          </div>
-                                        ))}
+                                {(pool.cards?.length || 0) > 0 && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {(pool.cards || []).map((card) => (
+                                      <div key={card.id} className="flex items-center gap-3 p-3 border rounded">
+                                        <img
+                                          src={card.imageUrl}
+                                          alt={card.name}
+                                          className="w-12 h-12 object-cover rounded"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                                          }}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-sm truncate">{card.name}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            Credits: {card.credits} | Qty: {card.quantity}
+                                          </p>
+                                        </div>
                                       </div>
-                                    ) : (
-                                      <p className="text-xs text-muted-foreground">No cards assigned to this pack</p>
-                                    )}
-                                    <div className="mt-2">
-                                      <Button
-                                        size="sm"
-                                        variant="link"
-                                        onClick={() => togglePackExpansion(pack.id)}
-                                        className="text-xs p-0 h-auto"
-                                      >
-                                        <ChevronUp className="w-3 h-3 mr-1" />
-                                        Hide cards
-                                      </Button>
-                                    </div>
+                                    ))}
                                   </div>
                                 )}
                               </div>
-                            )) : (
-                              <p className="text-center text-muted-foreground py-8">No content created yet.</p>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Mystery Pack Section */}
+                {manageSection === "mystery" && (
+                  <div className="space-y-6">
+                    {/* Mystery Pack Sub-navigation */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant={mysterySection === "view" ? "default" : "outline"}
+                        onClick={() => setMysterySection("view")}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        variant={mysterySection === "edit" ? "default" : "outline"}
+                        onClick={() => setMysterySection("edit")}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant={mysterySection === "add" ? "default" : "outline"}
+                        onClick={() => setMysterySection("add")}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add
+                      </Button>
+                    </div>
+
+                    {/* View Tab */}
+                    {mysterySection === "view" && (
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle>View Mystery Pack</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {mysteryPackCards.length === 0 ? (
+                            <div className="text-center py-8">
+                              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                              <h3 className="text-lg font-medium mb-2">No cards in mystery pack</h3>
+                              <p className="text-muted-foreground">
+                                Add cards from inventory to build your mystery pack
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center mb-4">
+                                <p className="text-sm text-muted-foreground">
+                                  {mysteryPackCards.length} card(s) in mystery pack
+                                </p>
+                              </div>
+                              {mysteryPackCards.map((card) => (
+                                <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                                  <img
+                                    src={card.imageUrl}
+                                    alt={card.name}
+                                    className="w-16 h-16 object-cover rounded"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                                    }}
+                                  />
+                                  <div className="flex-1">
+                                    <h4 className="font-medium">{card.name}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      Credits: {card.credits} | Quantity: {card.quantity}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Edit Tab */}
+                    {mysterySection === "edit" && (
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle>Edit Mystery Pack</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {mysteryPackCards.length === 0 ? (
+                            <div className="text-center py-8">
+                              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                              <h3 className="text-lg font-medium mb-2">No cards in mystery pack</h3>
+                              <p className="text-muted-foreground">
+                                Add cards from inventory to build your mystery pack
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center mb-4">
+                                <p className="text-sm text-muted-foreground">
+                                  {mysteryPackCards.length} card(s) in mystery pack
+                                </p>
+                              </div>
+                              {mysteryPackCards.map((card) => (
+                                <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                                  <img
+                                    src={card.imageUrl}
+                                    alt={card.name}
+                                    className="w-16 h-16 object-cover rounded"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                                    }}
+                                  />
+                                  <div className="flex-1">
+                                    <h4 className="font-medium">{card.name}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      Credits: {card.credits}
+                                    </p>
+                                    {editingQuantity[card.id] !== undefined ? (
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={editingQuantity[card.id]}
+                                          onChange={(e) => handleQuantityChange(card.id, parseInt(e.target.value) || 0)}
+                                          className="w-20 h-8"
+                                        />
+                                        <Button
+                                          onClick={() => handleSaveQuantity(card.id)}
+                                          size="sm"
+                                          className="h-8"
+                                        >
+                                          Save
+                                        </Button>
+                                        <Button
+                                          onClick={() => handleCancelQuantity(card.id)}
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8"
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <span className="text-sm text-muted-foreground">
+                                          Quantity: {card.quantity}
+                                        </span>
+                                        <Button
+                                          onClick={() => setEditingQuantity(prev => ({ ...prev, [card.id]: card.quantity }))}
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8"
+                                        >
+                                          <Edit className="w-3 h-3 mr-1" />
+                                          Edit
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Button
+                                    onClick={() => {
+                                      setMysteryPackCards(prev => prev.filter(c => c.id !== card.id));
+                                      alert(`${card.name} removed from mystery pack!`);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <X className="w-4 h-4 mr-2" />
+                                    Remove
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Add Tab */}
+                    {mysterySection === "add" && (
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle>Add Cards to Mystery Pack</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {/* Search Bar */}
+                          <div className="mb-6">
+                            <Input
+                              type="text"
+                              placeholder="Search cards from inventory..."
+                              value={mysterySearchQuery}
+                              onChange={(e) => setMysterySearchQuery(e.target.value)}
+                              className="w-full"
+                            />
+                            {mysterySearchQuery && (
+                              <p className="text-sm text-muted-foreground mt-2">
+                                Showing {mysteryFilteredCards.length} of {inventoryCards.length} cards
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Cards List */}
+                          <div className="space-y-3">
+                            {mysteryFilteredCards.length === 0 ? (
+                              <div className="text-center py-8">
+                                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                <h3 className="text-lg font-medium mb-2">
+                                  {mysterySearchQuery ? "No cards found" : "No cards in inventory"}
+                                </h3>
+                                <p className="text-muted-foreground">
+                                  {mysterySearchQuery 
+                                    ? "Try adjusting your search terms"
+                                    : "Add some cards to inventory first"
+                                  }
+                                </p>
+                              </div>
+                            ) : (
+                              mysteryFilteredCards.map((card) => (
+                                <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                                  <img
+                                    src={card.imageUrl}
+                                    alt={card.name}
+                                    className="w-16 h-16 object-cover rounded"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                                    }}
+                                  />
+                                  <div className="flex-1">
+                                    <h4 className="font-medium">{card.name}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      Credits: {card.credits}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    onClick={() => handleAddToMysteryPack(card)}
+                                    size="sm"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add
+                                  </Button>
+                                </div>
+                              ))
                             )}
                           </div>
                         </CardContent>
                       </Card>
-                    </div>
+                    )}
                   </div>
                 )}
-              </div>
+                              </div>
+            </TabsContent>
+
+            {/* Inventory Tab */}
+            <TabsContent value="inventory">
+                      <Card className="gaming-card">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                    <Package className="w-5 h-5" />
+                    Card Inventory
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                  <div className="space-y-3">
+                    {/* Search Bar */}
+                    <div className="mb-4">
+                      <Input
+                        type="text"
+                        placeholder="Search cards by name or ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full"
+                      />
+                      {searchQuery && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Showing {filteredCards.length} of {inventoryCards.length} cards
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Loading State */}
+                    {isLoadingInventory && (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                        <p className="mt-2 text-muted-foreground">Loading inventory...</p>
+                            </div>
+                    )}
+
+                    {/* Card List - Row View */}
+                    {!isLoadingInventory && filteredCards.map((card) => (
+                      <Card key={card.id} className="gaming-card">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            {/* Card Image */}
+                            <div className="w-20 h-28 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                              <img
+                                src={card.imageUrl}
+                                alt={card.name}
+                                className="w-full h-full object-cover rounded"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                              </div>
+
+                            {/* Card Details */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-lg mb-1">{card.name}</h3>
+                              <p className="text-sm text-blue-600 font-medium">
+                                {card.credits} Credits
+                              </p>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 flex-shrink-0">
+                            <Button 
+                                variant="outline"
+                                      size="sm"
+                                      onClick={() => handleEditCard(card)}
+                              >
+                                <Edit className="w-4 h-4 mr-1" />
+                                Edit
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                onClick={() => handleRemoveCard(card.id, card.name)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                <X className="w-4 h-4 mr-1" />
+                                Remove
+                                    </Button>
+                                  </div>
+                                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {/* Empty State */}
+                    {!isLoadingInventory && inventoryCards.length === 0 && (
+                      <div className="text-center py-8">
+                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No Cards in Inventory</h3>
+                        <p className="text-muted-foreground">
+                          Add your first card to get started
+                        </p>
+                      </div>
+                    )}
+
+                    {/* No Search Results */}
+                    {!isLoadingInventory && inventoryCards.length > 0 && filteredCards.length === 0 && (
+                      <div className="text-center py-8">
+                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No Cards Found</h3>
+                        <p className="text-muted-foreground">
+                          No cards match your search "{searchQuery}"
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          className="mt-4"
+                          onClick={() => setSearchQuery('')}
+                        >
+                          Clear Search
+                        </Button>
+                      </div>
+                    )}
+                          </div>
+                        </CardContent>
+                      </Card>
             </TabsContent>
 
             {/* Settings Tab */}
             <TabsContent value="settings">
-              <div className="space-y-6">
                 <Card className="gaming-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Settings className="w-5 h-5" />
                       System Settings
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Control administrative settings and system behavior
-                    </p>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    {Array.isArray(systemSettings) && systemSettings.length ? (
-                      <div className="space-y-4">
-                        {systemSettings.map((setting: any) => (
-                          <div key={setting.settingKey} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="space-y-1">
-                              <div className="font-medium capitalize">
-                                {setting.settingKey.replace(/_/g, ' ')}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {setting.description}
-                              </div>
-                              {setting.updatedBy && (
-                                <div className="text-xs text-muted-foreground">
-                                  Last updated by: {setting.updatedBy} on {new Date(setting.updatedAt).toLocaleString()}
-                                </div>
-                              )}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleSystemSetting(setting.settingKey, setting.settingValue)}
-                              disabled={updateSystemSettingMutation.isPending}
-                              className="ml-4"
-                              data-testid={`button-toggle-${setting.settingKey}`}
-                            >
-                              {setting.settingValue ? (
-                                <ToggleRight className="w-6 h-6 text-green-500" />
-                              ) : (
-                                <ToggleLeft className="w-6 h-6 text-gray-400" />
-                              )}
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
+                <CardContent>
                       <div className="text-center py-8">
                         <Settings className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium mb-2">No Settings Configured</h3>
-                        <p className="text-muted-foreground">
-                          System settings will appear here once they are created.
-                        </p>
+                    <h3 className="text-lg font-medium mb-2">System Settings</h3>
                       </div>
-                    )}
                   </CardContent>
                 </Card>
-
-                <Card className="gaming-card">
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Common administrative actions and system controls
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleToggleSystemSetting('maintenance_mode', 
-                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue || false : false)}
-                        disabled={updateSystemSettingMutation.isPending}
-                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
-                        data-testid="button-toggle-maintenance"
-                      >
-                        <div className="font-medium">Toggle Maintenance Mode</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'maintenance_mode')?.settingValue 
-                            ? 'Disable maintenance mode' 
-                            : 'Enable maintenance mode' : 'Enable maintenance mode'}
-                        </div>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        onClick={() => handleToggleSystemSetting('new_registrations', 
-                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'new_registrations')?.settingValue || true : true)}
-                        disabled={updateSystemSettingMutation.isPending}
-                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
-                        data-testid="button-toggle-registrations"
-                      >
-                        <div className="font-medium">Toggle New Registrations</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'new_registrations')?.settingValue !== false
-                            ? 'Disable new user registrations'
-                            : 'Enable new user registrations' : 'Enable new user registrations'}
-                        </div>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        onClick={() => handleToggleSystemSetting('pack_openings', 
-                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'pack_openings')?.settingValue || true : true)}
-                        disabled={updateSystemSettingMutation.isPending}
-                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
-                        data-testid="button-toggle-pack-openings"
-                      >
-                        <div className="font-medium">Toggle Pack Openings</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'pack_openings')?.settingValue !== false
-                            ? 'Disable pack opening feature'
-                            : 'Enable pack opening feature' : 'Enable pack opening feature'}
-                        </div>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        onClick={() => handleToggleSystemSetting('global_feed', 
-                          Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'global_feed')?.settingValue || true : true)}
-                        disabled={updateSystemSettingMutation.isPending}
-                        className="h-auto p-4 text-left flex flex-col items-start space-y-2"
-                        data-testid="button-toggle-global-feed"
-                      >
-                        <div className="font-medium">Toggle Global Feed</div>
-                        <div className="text-sm text-muted-foreground">
-                          {Array.isArray(systemSettings) ? systemSettings.find((s: any) => s.settingKey === 'global_feed')?.settingValue !== false
-                            ? 'Hide global activity feed'
-                            : 'Show global activity feed' : 'Show global activity feed'}
-                        </div>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
             </TabsContent>
           </Tabs>
 
-          {/* Card Gallery Dialog */}
-          <Dialog open={showCardGallery} onOpenChange={setShowCardGallery}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Card Gallery - {galleryPack?.name}</DialogTitle>
-              </DialogHeader>
-              
-              <CardGalleryContent packId={galleryPack?.id} />
-            </DialogContent>
-          </Dialog>
-
-          {/* Edit Card Dialog */}
-          <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
+          {/* User Action Dialog */}
+          <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Edit Card</DialogTitle>
+                <DialogTitle>User Actions</DialogTitle>
                 <DialogDescription>
-                  Modify the card details including name, tier, market value, and stock quantity.
+                  Manage user: {selectedUser?.email}
                 </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={virtualLibraryForm.handleSubmit(handleSaveCardEdit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Card Name</Label>
-                  <Input
-                    id="edit-name"
-                    {...virtualLibraryForm.register("name")}
-                    placeholder="Enter card name"
-                    data-testid="input-edit-name"
-                  />
-                  {virtualLibraryForm.formState.errors.name && (
-                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.name.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-tier">Tier</Label>
-                  <Select onValueChange={(value) => virtualLibraryForm.setValue("tier", value as any)}>
-                    <SelectTrigger data-testid="select-edit-tier">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["D", "C", "B", "A", "S", "SS", "SSS"].map((tier) => (
-                        <SelectItem key={tier} value={tier}>{tier}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {virtualLibraryForm.formState.errors.tier && (
-                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.tier.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-marketValue">Market Value (credits)</Label>
-                  <Input
-                    id="edit-marketValue"
-                    {...virtualLibraryForm.register("marketValue")}
-                    placeholder="100"
-                    data-testid="input-edit-market-value"
-                  />
-                  {virtualLibraryForm.formState.errors.marketValue && (
-                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.marketValue.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-imageUrl">Image URL (optional)</Label>
-                  <Input
-                    id="edit-imageUrl"
-                    {...virtualLibraryForm.register("imageUrl")}
-                    placeholder="https://example.com/card-image.jpg"
-                    data-testid="input-edit-image"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-stock">Stock Quantity</Label>
-                  <Input
-                    id="edit-stock"
-                    type="number"
-                    min="0"
-                    {...virtualLibraryForm.register("stock", { valueAsNumber: true })}
-                    placeholder="0"
-                    data-testid="input-edit-stock"
-                  />
-                  {virtualLibraryForm.formState.errors.stock && (
-                    <p className="text-sm text-destructive">{virtualLibraryForm.formState.errors.stock.message}</p>
-                  )}
-                </div>
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setEditingCard(null)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" data-testid="button-save-card-edit">
-                    Save Changes
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Card Pool Selection Dialog */}
-          <Dialog open={showPackCardSelector} onOpenChange={setShowPackCardSelector}>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Card Pool for {editingPack?.name}</DialogTitle>
               </DialogHeader>
               
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Select which cards from inventory should be included in this pack:
-                  </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
-                    Currently selected: {selectedCards.length} cards
-                  </p>
-                </div>
-                
-                <div className="grid gap-3">
-                  {Array.isArray(allCards) ? allCards.map((card: any) => (
-                    <div key={card.id} className="flex items-center space-x-3 p-3 border rounded">
-                      <Checkbox
-                        checked={selectedCards.includes(card.id)}
-                        onCheckedChange={() => toggleCardSelection(card.id)}
-                        data-testid={`checkbox-card-${card.id}`}
-                      />
-                      <div className={`w-8 h-8 rounded-full bg-${tierColors[card.tier as keyof typeof tierColors]}/20 flex items-center justify-center`}>
-                        <span className={`text-xs font-bold tier-${tierColors[card.tier as keyof typeof tierColors]}`}>
-                          {card.tier}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium">{card.name}</div>
-                        <div className="text-sm text-muted-foreground">{card.marketValue} credits</div>
-                      </div>
-                    </div>
-                  )) : (
-                    <p className="text-center text-muted-foreground py-8">No cards available in inventory.</p>
-                  )}
-                </div>
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        variant="outline"
+                    onClick={handleViewTransactions}
+                    className="h-auto p-4 flex flex-col items-center space-y-2"
+                  >
+                    <History className="w-6 h-6" />
+                    <span>View Transactions</span>
+                      </Button>
 
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowPackCardSelector(false);
-                    setEditingPack(null);
-                    setSelectedCards([]);
-                  }}
-                  data-testid="button-cancel-card-selection"
+                      <Button
+                        variant="outline"
+                    onClick={handleBanUser}
+                    className="h-auto p-4 flex flex-col items-center space-y-2"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSavePackCards}
-                  data-testid="button-save-card-pool"
-                >
-                  Save Card Pool ({selectedCards.length} selected)
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                    <Ban className="w-6 h-6" />
+                    <span>{selectedUser?.isBanned ? 'Unban User' : 'Ban User'}</span>
+                      </Button>
+                        </div>
 
-          {/* Edit User Credits Dialog */}
-          <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit User Credits</DialogTitle>
-                <DialogDescription>
-                  Update the credit amount for this user account.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={userEditForm.handleSubmit(handleSaveUserCredits)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>User Email</Label>
-                  <div className="px-3 py-2 bg-muted rounded-md">
-                    {editingUser?.email}
-                  </div>
+                  <Label htmlFor="credits">Edit Credits</Label>
+                <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground">
+                      Current Credits: <span className="font-semibold">{selectedUser?.credits}</span>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Current Credits</Label>
-                  <div className="px-3 py-2 bg-muted rounded-md">
-                    {editingUser?.credits}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="credits">New Credits Amount</Label>
+                    <div className="flex space-x-2">
                   <Input
                     id="credits"
                     type="number"
+                        value={creditAmount}
+                        onChange={(e) => setCreditAmount(Number(e.target.value))}
+                        placeholder="Enter new credit amount"
                     min="0"
-                    step="1"
-                    {...userEditForm.register("credits", { valueAsNumber: true })}
-                    placeholder="Enter new credits amount"
-                    data-testid="input-user-credits"
-                  />
-                  {userEditForm.formState.errors.credits && (
-                    <p className="text-sm text-destructive">{userEditForm.formState.errors.credits.message}</p>
-                  )}
+                      />
+                      <Button onClick={handleUpdateCredits}>
+                        <Coins className="w-4 h-4 mr-1" />
+                        Update
+                  </Button>
                 </div>
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={updateUserCreditsMutation.isPending}
-                    data-testid="button-save-user-credits"
-                  >
-                    {updateUserCreditsMutation.isPending ? "Saving..." : "Save Credits"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* User Transactions Dialog */}
-          <Dialog open={showUserTransactions} onOpenChange={setShowUserTransactions}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>User Transaction History</DialogTitle>
-                <DialogDescription>
-                  View all transactions for this user including credit purchases, refunds, and game expenses.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                {userTransactions ? (
-                  Array.isArray(userTransactions) && userTransactions.length > 0 ? (
-                    <div className="space-y-3">
-                      {userTransactions.map((transaction: any) => (
-                        <div key={transaction.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                              <DollarSign className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                              <div className="font-semibold">{transaction.type}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(transaction.createdAt).toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="text-right">
-                            <div className="font-bold text-lg">
-                              {transaction.type === 'credit_purchase' ? '+' : '-'}
-                              {transaction.amount} credits
-                            </div>
-                            {transaction.description && (
-                              <div className="text-sm text-muted-foreground">
-                                {transaction.description}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No transactions found for this user.</p>
-                    </div>
-                  )
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="mt-2 text-muted-foreground">Loading transactions...</p>
-                  </div>
-                )}
+                    <div className="text-xs text-muted-foreground">
+                      Change: {creditAmount - (selectedUser?.credits || 0)} credits
+                      </div>
+                      </div>
+                </div>
               </div>
 
               <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setShowUserTransactions(false);
-                    setSelectedUserId(null);
-                  }}
-                >
+                <Button variant="outline" onClick={() => setShowUserDialog(false)}>
                   Close
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Transaction History Dialog */}
+          <Dialog open={showTransactionDialog} onOpenChange={setShowTransactionDialog}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Transaction History</DialogTitle>
+                <DialogDescription>
+                  Transaction history for {selectedUser?.email}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                    <div className="text-center py-8">
+                  <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Transaction History</h3>
+                  <p className="text-muted-foreground">
+                    Transaction data will be loaded here.
+                  </p>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                <Button variant="outline" onClick={() => setShowTransactionDialog(false)}>
+                  Close
+                  </Button>
+                </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Floating Add Card Button - Only show on Inventory tab */}
+          {activeTab === 'inventory' && (
+            <Button
+              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 gaming-button"
+              onClick={() => setShowAddCardForm(true)}
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
+          )}
+
+          {/* Add Card Dialog */}
+          <Dialog open={showAddCardForm} onOpenChange={setShowAddCardForm}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Card</DialogTitle>
+                <DialogDescription>
+                  Add a new card to the inventory.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="cardName">Card Name</Label>
+                  <Input
+                    id="cardName"
+                    value={newCard.name}
+                    onChange={(e) => handleNewCardChange('name', e.target.value)}
+                    placeholder="Enter card name"
+                    required
+                  />
+                            </div>
+                
+                            <div>
+                  <Label htmlFor="imageUrl">Image URL</Label>
+                  <Input
+                    id="imageUrl"
+                    type="url"
+                    value={newCard.imageUrl}
+                    onChange={(e) => handleNewCardChange('imageUrl', e.target.value)}
+                    placeholder="https://example.com/card-image.jpg"
+                    required
+                  />
+                          </div>
+                          
+                <div>
+                  <Label htmlFor="credits">Credits</Label>
+                  <Input
+                    id="credits"
+                    type="number"
+                    min="0"
+                    value={newCard.credits}
+                    onChange={(e) => handleNewCardChange('credits', e.target.value)}
+                    placeholder="Enter credit amount"
+                    required
+                  />
+                            </div>
+                              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAddCardForm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleAddCard}>
+                  Add Card
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Card Dialog */}
+          <Dialog open={editingCard !== null} onOpenChange={() => setEditingCard(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Card</DialogTitle>
+                <DialogDescription>
+                  Update the card details.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="editCardName">Card Name</Label>
+                  <Input
+                    id="editCardName"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Enter card name"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="editImageUrl">Image URL</Label>
+                  <Input
+                    id="editImageUrl"
+                    type="url"
+                    value={editForm.imageUrl}
+                    onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })}
+                    placeholder="https://example.com/card-image.jpg"
+                    required
+                  />
+                </div>
+                          
+                <div>
+                  <Label htmlFor="editCredits">Credits</Label>
+                  <Input
+                    id="editCredits"
+                    type="number"
+                    min="0"
+                    value={editForm.credits}
+                    onChange={(e) => setEditForm({ ...editForm, credits: e.target.value })}
+                    placeholder="Enter credit amount"
+                    required
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateCard}>
+                  Update Card
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+        {/* Add Content Dialog */}
+        <Dialog open={showAddPoolDialog} onOpenChange={setShowAddPoolDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Content to Special Packs</DialogTitle>
+              <DialogDescription>
+                Create new special packs and add cards to them.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Create New Pack Section */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-medium mb-4">Create New Special Pack</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="poolName">Pack Name</Label>
+                    <Input
+                      id="poolName"
+                      value={newPool.name}
+                      onChange={(e) => setNewPool({ ...newPool, name: e.target.value })}
+                      placeholder="Enter pack name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="poolImage">Pack Image URL</Label>
+                    <Input
+                      id="poolImage"
+                      value={newPool.image}
+                      onChange={(e) => setNewPool({ ...newPool, image: e.target.value })}
+                      placeholder="https://example.com/pack-image.jpg"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="poolPrice">Price ($)</Label>
+                    <Input
+                      id="poolPrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newPool.price}
+                      onChange={(e) => setNewPool({ ...newPool, price: e.target.value })}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="poolTotalCards">Total Cards</Label>
+                    <Input
+                      id="poolTotalCards"
+                      type="number"
+                      min="1"
+                      value={newPool.totalCards}
+                      onChange={(e) => setNewPool({ ...newPool, totalCards: e.target.value })}
+                      placeholder="10"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <Label htmlFor="poolDescription">Description</Label>
+                    <Input
+                      id="poolDescription"
+                      value={newPool.description}
+                      onChange={(e) => setNewPool({ ...newPool, description: e.target.value })}
+                      placeholder="Enter pack description"
+                      required
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleAddPool}
+                  className="mt-4"
+                  disabled={!newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.totalCards.trim() || !newPool.description.trim()}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Pack
+                </Button>
+              </div>
+
+              {/* Add Cards to Existing Packs */}
+              {specialPools.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-medium">Add Cards to Existing Packs</h3>
+                  
+                  {specialPools.map((pool) => (
+                    <div key={pool.id} className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-3">{pool.name}</h4>
+                      <p className="text-sm text-muted-foreground mb-3">{pool.description}</p>
+                      
+                      {/* Show available cards from inventory */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {inventoryCards.slice(0, 9).map((card) => (
+                          <div key={card.id} className="flex items-center gap-3 p-3 border rounded">
+                            <img
+                              src={card.imageUrl}
+                              alt={card.name}
+                              className="w-12 h-12 object-cover rounded"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{card.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Credits: {card.credits}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => handleAddCardToPool(pool.id, card)}
+                              size="sm"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAddPoolDialog(false);
+                  setNewPool({ name: '', description: '', image: '', price: '', totalCards: '' });
+                }}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Pool Dialog */}
+        <Dialog open={showEditPoolDialog} onOpenChange={setShowEditPoolDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Special Pack</DialogTitle>
+              <DialogDescription>
+                Update the pack details and settings.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {editingPool && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="editPoolName">Pack Name</Label>
+                    <Input
+                      id="editPoolName"
+                      value={editingPool.name}
+                      onChange={(e) => setEditingPool({ ...editingPool, name: e.target.value })}
+                      placeholder="Enter pack name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="editPoolImage">Pack Image URL</Label>
+                    <Input
+                      id="editPoolImage"
+                      value={editingPool.image}
+                      onChange={(e) => setEditingPool({ ...editingPool, image: e.target.value })}
+                      placeholder="https://example.com/pack-image.jpg"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="editPoolPrice">Price ($)</Label>
+                    <Input
+                      id="editPoolPrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editingPool.price}
+                      onChange={(e) => setEditingPool({ ...editingPool, price: parseFloat(e.target.value) || 0 })}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="editPoolTotalCards">Total Cards</Label>
+                    <Input
+                      id="editPoolTotalCards"
+                      type="number"
+                      min="1"
+                      value={editingPool.totalCards}
+                      onChange={(e) => setEditingPool({ ...editingPool, totalCards: parseInt(e.target.value) || 1 })}
+                      placeholder="10"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <Label htmlFor="editPoolDescription">Description</Label>
+                    <Input
+                      id="editPoolDescription"
+                      value={editingPool.description}
+                      onChange={(e) => setEditingPool({ ...editingPool, description: e.target.value })}
+                      placeholder="Enter pack description"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={handleCancelEditPool}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdatePool}
+                disabled={!editingPool?.name.trim() || !editingPool?.image.trim() || !editingPool?.description.trim()}
+              >
+                Update Pack
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         </div>
       </div>
     </div>

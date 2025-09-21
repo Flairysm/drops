@@ -4,6 +4,9 @@ import {
   packs,
   packOdds,
   virtualLibrary,
+  inventory,
+  specialPacks,
+  specialPackCards,
   userCards,
   userPacks,
   globalFeed,
@@ -20,6 +23,11 @@ import {
   type Pack,
   type PackOdds,
   type VirtualLibraryCard,
+  type InventoryCard,
+  type SpecialPack,
+  type InsertSpecialPack,
+  type SpecialPackCard,
+  type InsertSpecialPackCard,
   type UserCard,
   type UserPack,
   type GlobalFeed,
@@ -31,6 +39,9 @@ import {
   type InsertCard,
   type InsertPack,
   type InsertVirtualLibraryCard,
+  type InsertInventoryCard,
+  type InsertSpecialPack,
+  type InsertSpecialPackCard,
   type InsertUserCard,
   type InsertUserPack,
   type InsertTransaction,
@@ -137,6 +148,23 @@ export interface IStorage {
   getPackPullRates(packType: string): Promise<PullRate[]>;
   setPackPullRates(packType: string, rates: { cardTier: string; probability: number }[], updatedBy?: string): Promise<void>;
   getAllPullRates(): Promise<PullRate[]>;
+  
+  // Inventory operations
+  getInventoryCards(): Promise<InventoryCard[]>;
+  createInventoryCard(card: InsertInventoryCard): Promise<InventoryCard>;
+  updateInventoryCard(id: string, card: Partial<InsertInventoryCard>): Promise<InventoryCard>;
+  deleteInventoryCard(id: string): Promise<void>;
+  
+  // Special Packs
+  getSpecialPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>>;
+  createSpecialPack(pack: InsertSpecialPack): Promise<SpecialPack>;
+  updateSpecialPack(id: string, pack: Partial<InsertSpecialPack>): Promise<SpecialPack>;
+  deleteSpecialPack(id: string): Promise<void>;
+  
+  // Special Pack Cards
+  addCardToSpecialPack(packId: string, cardId: string, quantity?: number): Promise<SpecialPackCard>;
+  removeCardFromSpecialPack(packId: string, cardId: string): Promise<void>;
+  updateSpecialPackCardQuantity(packId: string, cardId: string, quantity: number): Promise<SpecialPackCard>;
 }
 
 interface PackOpenResult {
@@ -971,6 +999,109 @@ export class DatabaseStorage implements IStorage {
 
   async getAllSystemSettings(): Promise<SystemSetting[]> {
     return await db.select().from(systemSettings).orderBy(systemSettings.settingKey);
+  }
+
+  // Inventory operations
+  async getInventoryCards(): Promise<InventoryCard[]> {
+    return await db.select().from(inventory).orderBy(desc(inventory.createdAt));
+  }
+
+  async createInventoryCard(card: InsertInventoryCard): Promise<InventoryCard> {
+    const [newCard] = await db.insert(inventory).values(card).returning();
+    return newCard;
+  }
+
+  async updateInventoryCard(id: string, card: Partial<InsertInventoryCard>): Promise<InventoryCard> {
+    const [updatedCard] = await db
+      .update(inventory)
+      .set({ ...card, updatedAt: new Date() })
+      .where(eq(inventory.id, id))
+      .returning();
+    return updatedCard;
+  }
+
+  async deleteInventoryCard(id: string): Promise<void> {
+    await db.delete(inventory).where(eq(inventory.id, id));
+  }
+
+  // Special Packs
+  async getSpecialPacks(): Promise<Array<SpecialPack>> {
+    const packs = await db.select().from(specialPacks);
+    return packs;
+  }
+
+  async createSpecialPack(pack: InsertSpecialPack): Promise<SpecialPack> {
+    try {
+      console.log('Storage: Creating special pack with data:', pack);
+      
+      const [newPack] = await db.insert(specialPacks).values(pack).returning();
+      console.log('Storage: Created special pack:', newPack);
+      return newPack;
+    } catch (error: any) {
+      console.error('Storage: Error creating special pack:', error);
+      console.error('Storage: Error message:', error.message);
+      console.error('Storage: Error code:', error.code);
+      throw error;
+    }
+  }
+
+  async updateSpecialPack(id: string, pack: Partial<InsertSpecialPack>): Promise<SpecialPack> {
+    const [updatedPack] = await db
+      .update(specialPacks)
+      .set({ ...pack, updatedAt: new Date() })
+      .where(eq(specialPacks.id, id))
+      .returning();
+    return updatedPack;
+  }
+
+  async deleteSpecialPack(id: string): Promise<void> {
+    await db.delete(specialPacks).where(eq(specialPacks.id, id));
+  }
+
+  // Special Pack Cards
+  async addCardToSpecialPack(packId: string, cardId: string, quantity: number = 1): Promise<SpecialPackCard> {
+    const existingCard = await db
+      .select()
+      .from(specialPackCards)
+      .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)))
+      .limit(1);
+
+    if (existingCard.length > 0) {
+      // Update existing card quantity
+      const [updatedCard] = await db
+        .update(specialPackCards)
+        .set({ quantity: existingCard[0].quantity + quantity })
+        .where(eq(specialPackCards.id, existingCard[0].id))
+        .returning();
+      return updatedCard;
+    } else {
+      // Create new card entry
+      const [newCard] = await db
+        .insert(specialPackCards)
+        .values({
+          id: `spc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          packId,
+          cardId,
+          quantity
+        })
+        .returning();
+      return newCard;
+    }
+  }
+
+  async removeCardFromSpecialPack(packId: string, cardId: string): Promise<void> {
+    await db
+      .delete(specialPackCards)
+      .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)));
+  }
+
+  async updateSpecialPackCardQuantity(packId: string, cardId: string, quantity: number): Promise<SpecialPackCard> {
+    const [updatedCard] = await db
+      .update(specialPackCards)
+      .set({ quantity })
+      .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)))
+      .returning();
+    return updatedCard;
   }
 
   private getSettingDescription(settingKey: string): string {
