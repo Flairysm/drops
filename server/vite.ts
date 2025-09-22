@@ -13,6 +13,13 @@ export async function setupVite(app: Express, server: Server) {
     appType: 'custom',
     root: path.resolve(__dirname, '../client'),
     configFile: path.resolve(__dirname, '../vite.config.ts'),
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, '../client/src'),
+        '@shared': path.resolve(__dirname, '../shared'),
+        '@assets': path.resolve(__dirname, '../attached_assets'),
+      },
+    },
   });
 
   app.use(vite.middlewares);
