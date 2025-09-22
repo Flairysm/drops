@@ -12,17 +12,20 @@ export async function setupVite(app: Express, server: Server) {
     server: { middlewareMode: true },
     appType: 'custom',
     root: path.resolve(__dirname, '../client'),
+    configFile: path.resolve(__dirname, '../vite.config.ts'),
   });
 
-  app.use(vite.ssrLoadModule);
+  app.use(vite.middlewares);
+  
   app.use('*', async (req, res, next) => {
     try {
       const url = req.originalUrl;
+      
+      // Transform the HTML template
       let template = await vite.transformIndexHtml(url, '');
-      const { render } = await vite.ssrLoadModule('/src/entry-server.tsx');
-      const appHtml = await render(url);
-      const html = template.replace(`<!--ssr-outlet-->`, appHtml);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      
+      // For SPA, just serve the template
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
