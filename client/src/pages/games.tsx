@@ -6,6 +6,7 @@ import { NavigationFooter } from "@/components/NavigationFooter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 
 // Game data structure
 interface GameItem {
@@ -55,6 +56,19 @@ const gameData = {
 export default function Play() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Fetch available packs
+  const { data: availablePacks, isLoading: packsLoading } = useQuery({
+    queryKey: ["/api/available-packs"],
+    queryFn: async () => {
+      const response = await fetch("/api/available-packs");
+      if (!response.ok) {
+        throw new Error("Failed to fetch available packs");
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
 
 
   // Redirect if not authenticated
@@ -272,7 +286,7 @@ export default function Play() {
             </motion.section>
             
             {/* Special Packs Section - Only show if there are packs */}
-            {gameData.specialPacks.length > 0 && (
+            {availablePacks?.specialPacks?.length > 0 && (
               <motion.section
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -286,15 +300,28 @@ export default function Play() {
                   <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Special Packs</h2>
                 </div>
                 <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
-                  {gameData.specialPacks.map((game, index) => (
-                    <GameCard key={game.id} game={game} delay={0.5 + index * 0.1} />
+                  {availablePacks.specialPacks.map((pack: any, index: number) => (
+                    <GameCard 
+                      key={pack.id} 
+                      game={{
+                        id: pack.id,
+                        name: pack.name,
+                        description: pack.description || "Special pack with unique cards",
+                        cost: parseFloat(pack.price),
+                        image: pack.imageUrl,
+                        route: `/purchase/special/${pack.id}`,
+                        badge: "Special",
+                        badgeColor: "bg-purple-500"
+                      }} 
+                      delay={0.5 + index * 0.1} 
+                    />
                   ))}
                 </div>
               </motion.section>
             )}
 
             {/* Classic Packs Section - Only show if there are packs */}
-            {gameData.classicPacks.length > 0 && (
+            {availablePacks?.classicPacks?.length > 0 && (
               <motion.section
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -308,12 +335,26 @@ export default function Play() {
                   <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Classic Packs</h2>
                 </div>
                 <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-4 snap-x snap-mandatory max-w-4xl mx-auto">
-                  {gameData.classicPacks.map((game, index) => (
-                    <GameCard key={game.id} game={game} delay={0.7 + index * 0.1} />
+                  {availablePacks.classicPacks.map((pack: any, index: number) => (
+                    <GameCard 
+                      key={pack.id} 
+                      game={{
+                        id: pack.id,
+                        name: pack.name,
+                        description: pack.description || `${pack.subtype} classic pack`,
+                        cost: parseFloat(pack.price),
+                        image: pack.imageUrl,
+                        route: `/purchase/classic/${pack.id}`,
+                        badge: "Classic",
+                        badgeColor: "bg-orange-500"
+                      }} 
+                      delay={0.7 + index * 0.1} 
+                    />
                   ))}
                 </div>
               </motion.section>
             )}
+
           </div>
         </div>
       </main>

@@ -96,12 +96,13 @@ export const inventory = pgTable("inventory", {
   name: varchar("name", { length: 255 }).notNull(),
   imageUrl: varchar("image_url").notNull(),
   credits: integer("credits").notNull(),
+  tier: varchar("tier", { length: 20 }).default("D").notNull(), // D, C, B, A, S, SS, SSS
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const specialPacks = pgTable("special_packs", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
   imageUrl: varchar("image_url", { length: 500 }).notNull(),
@@ -111,6 +112,7 @@ export const specialPacks = pgTable("special_packs", {
   prizePool: varchar("prize_pool", { length: 255 }),
   odds: varchar("odds", { length: 255 }),
   pulledStatus: varchar("pulled_status", { length: 255 }),
+  packType: varchar("pack_type", { length: 50 }).default('special').notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -123,6 +125,31 @@ export const specialPackCards = pgTable("special_pack_cards", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Mystery packs table - one pack with 4 subtypes
+export const mysteryPacks = pgTable("mystery_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name").notNull().default("Mystery Pack"),
+  description: text("description"),
+  imageUrl: varchar("image_url"),
+  subtype: varchar("subtype", { length: 20 }).notNull().default("pokeball"), // pokeball, greatball, ultraball, masterball
+  price: decimal("price", { precision: 10, scale: 2 }),
+  guarantee: text("guarantee"),
+  totalPacks: integer("total_packs"),
+  prizePool: text("prize_pool"),
+  odds: jsonb("odds"), // Store odds as JSON for each subtype
+  pulledStatus: text("pulled_status"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Mystery pack cards table
+export const mysteryPackCards = pgTable("mystery_pack_cards", {
+  id: varchar("id").primaryKey(),
+  packId: uuid("pack_id").notNull().references(() => mysteryPacks.id, { onDelete: "cascade" }),
+  cardId: varchar("card_id").notNull().references(() => inventory.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 // Game settings for configurable prices and options
 export const gameSettings = pgTable("game_settings", {
@@ -418,6 +445,14 @@ export const insertSpecialPackCardSchema = createInsertSchema(specialPackCards).
   createdAt: true,
 });
 
+export const insertMysteryPackSchema = createInsertSchema(mysteryPacks).omit({
+  createdAt: true,
+});
+
+export const insertMysteryPackCardSchema = createInsertSchema(mysteryPackCards).omit({
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -443,6 +478,10 @@ export type SpecialPack = typeof specialPacks.$inferSelect;
 export type InsertSpecialPack = z.infer<typeof insertSpecialPackSchema>;
 export type SpecialPackCard = typeof specialPackCards.$inferSelect;
 export type InsertSpecialPackCard = z.infer<typeof insertSpecialPackCardSchema>;
+export type MysteryPack = typeof mysteryPacks.$inferSelect;
+export type InsertMysteryPack = z.infer<typeof insertMysteryPackSchema>;
+export type MysteryPackCard = typeof mysteryPackCards.$inferSelect;
+export type InsertMysteryPackCard = z.infer<typeof insertMysteryPackCardSchema>;
 export type InsertUserCard = z.infer<typeof insertUserCardSchema>;
 export type InsertUserPack = z.infer<typeof insertUserPackSchema>;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;

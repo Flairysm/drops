@@ -1,12 +1,13 @@
 import {
   users,
-  cards,
   packs,
   packOdds,
   virtualLibrary,
   inventory,
   specialPacks,
   specialPackCards,
+  mysteryPacks,
+  mysteryPackCards,
   userCards,
   userPacks,
   globalFeed,
@@ -28,6 +29,10 @@ import {
   type InsertSpecialPack,
   type SpecialPackCard,
   type InsertSpecialPackCard,
+  type MysteryPack,
+  type InsertMysteryPack,
+  type MysteryPackCard,
+  type InsertMysteryPackCard,
   type UserCard,
   type UserPack,
   type GlobalFeed,
@@ -40,8 +45,6 @@ import {
   type InsertPack,
   type InsertVirtualLibraryCard,
   type InsertInventoryCard,
-  type InsertSpecialPack,
-  type InsertSpecialPackCard,
   type InsertUserCard,
   type InsertUserPack,
   type InsertTransaction,
@@ -67,13 +70,7 @@ export interface IStorage {
   createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   
-  // Card operations
-  getCards(packType?: string): Promise<Card[]>;
-  getCard(id: string): Promise<Card | undefined>;
-  createCard(card: InsertCard): Promise<Card>;
-  updateCard(id: string, card: Partial<InsertCard>): Promise<Card>;
-  updateCardStock(id: string, stock: number): Promise<void>;
-  deleteCard(id: string): Promise<void>;
+  // Card operations (using inventory instead of cards table)
   
   // Pack operations
   getPacks(): Promise<Pack[]>;
@@ -157,14 +154,34 @@ export interface IStorage {
   
   // Special Packs
   getSpecialPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>>;
+  getSpecialPackById(id: string): Promise<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>;
   createSpecialPack(pack: InsertSpecialPack): Promise<SpecialPack>;
   updateSpecialPack(id: string, pack: Partial<InsertSpecialPack>): Promise<SpecialPack>;
   deleteSpecialPack(id: string): Promise<void>;
   
+  // Classic Packs
+  getClassicPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>>;
+  getClassicPackById(id: string): Promise<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>;
+  createClassicPack(pack: any): Promise<SpecialPack>;
+  updateClassicPack(id: string, pack: any): Promise<SpecialPack>;
+  deleteClassicPack(id: string): Promise<void>;
+  
   // Special Pack Cards
   addCardToSpecialPack(packId: string, cardId: string, quantity?: number): Promise<SpecialPackCard>;
-  removeCardFromSpecialPack(packId: string, cardId: string): Promise<void>;
-  updateSpecialPackCardQuantity(packId: string, cardId: string, quantity: number): Promise<SpecialPackCard>;
+  removeCardFromSpecialPack(packId: string, specialPackCardId: string): Promise<void>;
+  updateSpecialPackCardQuantity(packId: string, specialPackCardId: string, quantity: number): Promise<SpecialPackCard>;
+  
+  // Mystery Packs
+  getMysteryPacks(): Promise<Array<MysteryPack & { cards: Array<MysteryPackCard & { card: InventoryCard }> }>>;
+  getMysteryPackById(id: string): Promise<MysteryPack & { cards: Array<MysteryPackCard & { card: InventoryCard }> }>;
+  createMysteryPack(pack: InsertMysteryPack): Promise<MysteryPack>;
+  updateMysteryPack(id: string, pack: Partial<InsertMysteryPack>): Promise<MysteryPack>;
+  deleteMysteryPack(id: string): Promise<void>;
+  
+  // Mystery Pack Cards
+  addCardToMysteryPack(packId: string, cardId: string, quantity?: number): Promise<MysteryPackCard>;
+  removeCardFromMysteryPack(packId: string, cardId: string): Promise<void>;
+  updateMysteryPackCardQuantity(packId: string, mysteryPackCardId: string, quantity: number): Promise<MysteryPackCard>;
 }
 
 interface PackOpenResult {
@@ -227,39 +244,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Card operations
-  async getCards(packType?: string): Promise<Card[]> {
-    if (packType) {
-      return await db.select().from(cards).where(and(eq(cards.packType, packType), eq(cards.isActive, true)));
-    }
-    return await db.select().from(cards).where(eq(cards.isActive, true));
-  }
-
-  async getCard(id: string): Promise<Card | undefined> {
-    const [card] = await db.select().from(cards).where(eq(cards.id, id));
-    return card;
-  }
-
-  async createCard(card: InsertCard): Promise<Card> {
-    const [newCard] = await db.insert(cards).values(card).returning();
-    return newCard;
-  }
-
-  async updateCard(id: string, cardData: Partial<InsertCard>): Promise<Card> {
-    const [updatedCard] = await db.update(cards)
-      .set({ ...cardData })
-      .where(eq(cards.id, id))
-      .returning();
-    return updatedCard;
-  }
-
-  async updateCardStock(id: string, stock: number): Promise<void> {
-    await db.update(cards).set({ stock }).where(eq(cards.id, id));
-  }
-
-  async deleteCard(id: string): Promise<void> {
-    await db.update(cards).set({ isActive: false }).where(eq(cards.id, id));
-  }
+  // Card operations (using inventory instead of cards table)
 
   // Pack operations
   async getPacks(): Promise<Pack[]> {
@@ -327,14 +312,21 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(userCards)
-      .leftJoin(cards, eq(userCards.cardId, cards.id))
+      .leftJoin(inventory, eq(userCards.cardId, inventory.id))
       .where(and(eq(userCards.userId, userId), eq(userCards.isRefunded, false), eq(userCards.isShipped, false)))
       .orderBy(desc(userCards.pulledAt));
 
     return result.map(row => ({
       ...row.user_cards,
-      card: row.cards!,
-    }));
+      card: row.inventory ? {
+        ...row.inventory,
+        // Add missing fields that the old cards table had
+        isActive: true,
+        packType: 'inventory',
+        marketValue: row.inventory.credits.toString(),
+        stock: null,
+      } : null,
+    })).filter(item => item.card !== null) as UserCardWithCard[];
   }
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
@@ -347,13 +339,13 @@ export class DatabaseStorage implements IStorage {
           isShipped: userCard.isShipped ?? false,
         });
         
-        // Decrease card stock when added to vault
-        if (userCard.cardId) {
-          await tx
-            .update(cards)
-            .set({ stock: sql`${cards.stock} - ${userCard.quantity || 1}` })
-            .where(eq(cards.id, userCard.cardId));
-        }
+        // Stock management removed - using inventory system instead
+        // if (userCard.cardId) {
+        //   await tx
+        //     .update(inventory)
+        //     .set({ stock: sql`${inventory.stock} - ${userCard.quantity || 1}` })
+        //     .where(eq(inventory.id, userCard.cardId));
+        // }
         
         // Fetch the most recent card for this user  
         const [newUserCard] = await tx
@@ -384,25 +376,25 @@ export class DatabaseStorage implements IStorage {
           cardId: userCards.cardId,
           pullValue: userCards.pullValue,
           quantity: userCards.quantity,
-          marketValue: cards.marketValue,
+          marketValue: userCards.pullValue, // Use pullValue as marketValue since inventory doesn't have marketValue
         })
         .from(userCards)
-        .leftJoin(cards, eq(userCards.cardId, cards.id))
+        .leftJoin(inventory, eq(userCards.cardId, inventory.id))
         .where(and(inArray(userCards.id, cardIds), eq(userCards.userId, userId)));
 
       let totalRefund = 0;
       for (const card of cardsToRefund) {
         // Use 100% of current market value for refund (as per documentation)
-        const refundAmount = card.marketValue ? parseFloat(card.marketValue.toString()) : parseFloat(card.pullValue);
+        const refundAmount = parseFloat(card.pullValue);
         totalRefund += refundAmount;
         
-        // Restore card stock when refunded
-        if (card.cardId) {
-          await tx
-            .update(cards)
-            .set({ stock: sql`${cards.stock} + ${card.quantity}` })
-            .where(eq(cards.id, card.cardId));
-        }
+        // Stock management removed - using inventory system instead
+        // if (card.cardId) {
+        //   await tx
+        //     .update(inventory)
+        //     .set({ stock: sql`${inventory.stock} + ${card.quantity}` })
+        //     .where(eq(inventory.id, card.cardId));
+        // }
       }
 
       // Mark cards as refunded
@@ -490,11 +482,9 @@ export class DatabaseStorage implements IStorage {
       // Get cards of the selected tier
       const availableCards = await tx
         .select()
-        .from(cards)
+        .from(inventory)
         .where(and(
-          eq(cards.tier, fullTierName),
-          eq(cards.isActive, true),
-          sql`${cards.stock} > 0`
+          eq(inventory.tier, fullTierName)
         ));
 
       if (availableCards.length === 0) {
@@ -507,11 +497,9 @@ export class DatabaseStorage implements IStorage {
       // Get 8 random D-tier cards (guaranteed base cards)
       const commonCards = await tx
         .select()
-        .from(cards)
+        .from(inventory)
         .where(and(
-          eq(cards.tier, 'D'),
-          eq(cards.isActive, true),
-          sql`${cards.stock} > 0`
+          eq(inventory.tier, 'D')
         ));
       
       if (commonCards.length === 0) {
@@ -525,7 +513,7 @@ export class DatabaseStorage implements IStorage {
           name: randomCommon.name,
           tier: randomCommon.tier,
           imageUrl: randomCommon.imageUrl || undefined,
-          marketValue: randomCommon.marketValue,
+          marketValue: randomCommon.credits.toString(),
           isHit: false,
           position: i
         });
@@ -538,7 +526,7 @@ export class DatabaseStorage implements IStorage {
         name: hitCard.name,
         tier: hitCard.tier,
         imageUrl: hitCard.imageUrl || undefined,
-        marketValue: hitCard.marketValue,
+        marketValue: hitCard.credits.toString(),
         isHit: true,
         position: 8
       });
@@ -583,11 +571,11 @@ export class DatabaseStorage implements IStorage {
             })
             .where(eq(userCards.id, existingCard.id));
           
-          // Reduce stock for existing card quantity update
-          await tx
-            .update(cards)
-            .set({ stock: sql`${cards.stock} - ${count}` })
-            .where(eq(cards.id, card.id));
+          // Stock management removed - using inventory system instead
+          // await tx
+          //   .update(inventory)
+          //   .set({ stock: sql`${inventory.stock} - ${count}` })
+          //   .where(eq(inventory.id, card.id));
         } else {
           // Insert new card with quantity
           userCardInserts.push({
@@ -626,17 +614,17 @@ export class DatabaseStorage implements IStorage {
           .returning();
         newUserCard = updatedCards[0];
         
-        // Reduce stock for existing hit card quantity update
-        await tx
-          .update(cards)
-          .set({ stock: sql`${cards.stock} - 1` })
-          .where(eq(cards.id, hitCard.id));
+        // Stock management removed - using inventory system instead
+        // await tx
+        //   .update(inventory)
+        //   .set({ stock: sql`${inventory.stock} - 1` })
+        //   .where(eq(inventory.id, hitCard.id));
       } else {
         // Insert new hit card
         userCardInserts.push({
           userId,
           cardId: hitCard.id,
-          pullValue: hitCard.marketValue,
+          pullValue: hitCard.credits.toString(),
           quantity: 1,
           isRefunded: false,
           isShipped: false,
@@ -651,13 +639,13 @@ export class DatabaseStorage implements IStorage {
             newUserCard = insertedCards.find(c => c.cardId === hitCard.id) || insertedCards[0];
           }
           
-          // Reduce stock for all newly inserted cards
-          for (const userCardInsert of userCardInserts) {
-            await tx
-              .update(cards)
-              .set({ stock: sql`${cards.stock} - ${userCardInsert.quantity}` })
-              .where(eq(cards.id, userCardInsert.cardId!));
-          }
+          // Stock management removed - using inventory system instead
+          // for (const userCardInsert of userCardInserts) {
+          //   await tx
+          //     .update(inventory)
+          //     .set({ stock: sql`${inventory.stock} - ${userCardInsert.quantity}` })
+          //     .where(eq(inventory.id, userCardInsert.cardId!));
+          // }
         } catch (error) {
           console.error('Failed to insert user cards:', error);
           throw new Error('Failed to add cards to vault - please try again');
@@ -732,12 +720,12 @@ export class DatabaseStorage implements IStorage {
         createdAt: globalFeed.createdAt,
         username: users.username,
         email: users.email,
-        cardName: cards.name,
-        cardImageUrl: cards.imageUrl,
+        cardName: inventory.name,
+        cardImageUrl: inventory.imageUrl,
       })
       .from(globalFeed)
       .leftJoin(users, eq(globalFeed.userId, users.id))
-      .leftJoin(cards, eq(globalFeed.cardId, cards.id))
+      .leftJoin(inventory, eq(globalFeed.cardId, inventory.id))
       .where(inArray(globalFeed.tier, tierFilter))
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
@@ -900,7 +888,7 @@ export class DatabaseStorage implements IStorage {
       sum: sql<string>`coalesce(sum(${transactions.amount}), 0)` 
     }).from(transactions).where(eq(transactions.type, 'purchase'));
     
-    const [cardCount] = await db.select({ count: sql<number>`count(*)` }).from(cards);
+    const [cardCount] = await db.select({ count: sql<number>`count(*)` }).from(inventory);
 
     return {
       totalUsers: userCount.count,
@@ -1023,15 +1011,89 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Special Packs
-  async getSpecialPacks(): Promise<Array<SpecialPack>> {
-    const packs = await db.select().from(specialPacks);
-    return packs;
+  async getSpecialPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>> {
+    try {
+      const packs = await db.select().from(specialPacks).where(eq(specialPacks.packType, 'special'));
+      console.log('Fetched special packs:', packs);
+      
+      // Get cards for each pack
+      const packsWithCards = await Promise.all(
+        packs.map(async (pack) => {
+          try {
+            const packCards = await db
+              .select({
+                id: specialPackCards.id,
+                packId: specialPackCards.packId,
+                cardId: specialPackCards.cardId,
+                quantity: specialPackCards.quantity,
+                createdAt: specialPackCards.createdAt,
+                card: {
+                  id: inventory.id,
+                  name: inventory.name,
+                  imageUrl: inventory.imageUrl,
+                  credits: inventory.credits,
+                  tier: inventory.tier,
+                  createdAt: inventory.createdAt,
+                  updatedAt: inventory.updatedAt,
+                }
+              })
+              .from(specialPackCards)
+              .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
+              .where(eq(specialPackCards.packId, pack.id));
+            
+            console.log(`Pack ${pack.id} cards:`, packCards);
+            return { ...pack, cards: packCards };
+          } catch (error) {
+            console.error(`Error fetching cards for pack ${pack.id}:`, error);
+            return { ...pack, cards: [] };
+          }
+        })
+      );
+      
+      return packsWithCards;
+    } catch (error) {
+      console.error('Error in getSpecialPacks:', error);
+      throw error;
+    }
+  }
+
+  async getSpecialPackById(id: string): Promise<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }> {
+    const [pack] = await db.select().from(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'special')));
+    if (!pack) {
+      throw new Error('Special pack not found');
+    }
+
+    // Get cards for this special pack
+    const packCards = await db
+      .select({
+        id: specialPackCards.id,
+        packId: specialPackCards.packId,
+        cardId: specialPackCards.cardId,
+        quantity: specialPackCards.quantity,
+        createdAt: specialPackCards.createdAt,
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
+      .from(specialPackCards)
+      .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
+      .where(eq(specialPackCards.packId, id));
+
+    return { ...pack, cards: packCards };
   }
 
   async createSpecialPack(pack: InsertSpecialPack): Promise<SpecialPack> {
     try {
       
-      const [newPack] = await db.insert(specialPacks).values(pack).returning();
+      const packWithType = { ...pack, packType: 'special' };
+      const [newPack] = await db.insert(specialPacks).values(packWithType).returning();
+      console.log('Storage: Created special pack:', newPack);
       return newPack;
     } catch (error: any) {
       console.error('Storage: Error creating special pack:', error);
@@ -1042,62 +1104,310 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateSpecialPack(id: string, pack: Partial<InsertSpecialPack>): Promise<SpecialPack> {
+    const packWithType = { ...pack, packType: 'special' };
     const [updatedPack] = await db
       .update(specialPacks)
-      .set({ ...pack, updatedAt: new Date() })
-      .where(eq(specialPacks.id, id))
+      .set(packWithType)
+      .where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'special')))
       .returning();
     return updatedPack;
   }
 
   async deleteSpecialPack(id: string): Promise<void> {
-    await db.delete(specialPacks).where(eq(specialPacks.id, id));
+    await db.delete(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'special')));
   }
 
   // Special Pack Cards
   async addCardToSpecialPack(packId: string, cardId: string, quantity: number = 1): Promise<SpecialPackCard> {
+    console.log('Storage: addCardToSpecialPack called with:', { packId, cardId, quantity });
+    
     const existingCard = await db
       .select()
       .from(specialPackCards)
       .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)))
       .limit(1);
 
+    console.log('Storage: existing card check result:', existingCard);
+
     if (existingCard.length > 0) {
       // Update existing card quantity
+      console.log('Storage: updating existing card quantity');
       const [updatedCard] = await db
         .update(specialPackCards)
         .set({ quantity: existingCard[0].quantity + quantity })
         .where(eq(specialPackCards.id, existingCard[0].id))
         .returning();
+      console.log('Storage: updated card:', updatedCard);
       return updatedCard;
     } else {
       // Create new card entry
+      console.log('Storage: creating new card entry');
+      const newCardData = {
+        id: `spc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        packId,
+        cardId,
+        quantity
+      };
+      console.log('Storage: new card data:', newCardData);
+      
       const [newCard] = await db
         .insert(specialPackCards)
-        .values({
-          id: `spc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          packId,
-          cardId,
-          quantity
-        })
+        .values(newCardData)
         .returning();
+      console.log('Storage: created new card:', newCard);
       return newCard;
     }
   }
 
-  async removeCardFromSpecialPack(packId: string, cardId: string): Promise<void> {
-    await db
-      .delete(specialPackCards)
-      .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)));
+  async removeCardFromSpecialPack(packId: string, specialPackCardId: string): Promise<void> {
+    try {
+      console.log('Removing card from special pack:', { packId, specialPackCardId });
+      const result = await db
+        .delete(specialPackCards)
+        .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.id, specialPackCardId)));
+      console.log('Delete result:', result);
+    } catch (error) {
+      console.error('Error in removeCardFromSpecialPack:', error);
+      throw error;
+    }
   }
 
-  async updateSpecialPackCardQuantity(packId: string, cardId: string, quantity: number): Promise<SpecialPackCard> {
+  async updateSpecialPackCardQuantity(packId: string, specialPackCardId: string, quantity: number): Promise<SpecialPackCard> {
     const [updatedCard] = await db
       .update(specialPackCards)
       .set({ quantity })
-      .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)))
+      .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.id, specialPackCardId)))
       .returning();
     return updatedCard;
+  }
+
+  // Mystery Packs
+  async getMysteryPacks(): Promise<Array<MysteryPack & { cards: Array<MysteryPackCard & { card: InventoryCard }> }>> {
+    const packs = await db.select().from(mysteryPacks);
+    // For now, return packs with empty cards array
+    // TODO: Implement proper join with mysteryPackCards and inventory tables
+    return packs.map(pack => ({ ...pack, cards: [] }));
+  }
+
+  async getMysteryPackById(id: string): Promise<MysteryPack & { cards: Array<MysteryPackCard & { card: InventoryCard }> }> {
+    const [pack] = await db.select().from(mysteryPacks).where(eq(mysteryPacks.id, id));
+    if (!pack) {
+      throw new Error('Mystery pack not found');
+    }
+
+    // Get cards for this mystery pack
+    const packCards = await db
+      .select({
+        id: mysteryPackCards.id,
+        packId: mysteryPackCards.packId,
+        cardId: mysteryPackCards.cardId,
+        quantity: mysteryPackCards.quantity,
+        createdAt: mysteryPackCards.createdAt,
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
+      .from(mysteryPackCards)
+      .innerJoin(inventory, eq(mysteryPackCards.cardId, inventory.id))
+      .where(eq(mysteryPackCards.packId, id));
+
+    return { ...pack, cards: packCards };
+  }
+
+  async createMysteryPack(pack: InsertMysteryPack): Promise<MysteryPack> {
+    try {
+      console.log('Storage: Creating mystery pack with data:', pack);
+
+      const [newPack] = await db
+        .insert(mysteryPacks)
+        .values(pack)
+        .returning();
+
+      console.log('Storage: Created mystery pack:', newPack);
+      return newPack;
+    } catch (error: any) {
+      console.error('Storage: Error creating mystery pack:', error);
+      console.error('Storage: Error message:', error.message);
+      console.error('Storage: Error code:', error.code);
+      throw new Error(`Failed to create mystery pack: ${error.message}`);
+    }
+  }
+
+  async updateMysteryPack(id: string, pack: Partial<InsertMysteryPack>): Promise<MysteryPack> {
+    const [updatedPack] = await db
+      .update(mysteryPacks)
+      .set(pack)
+      .where(eq(mysteryPacks.id, id))
+      .returning();
+    return updatedPack;
+  }
+
+  async deleteMysteryPack(id: string): Promise<void> {
+    await db.delete(mysteryPacks).where(eq(mysteryPacks.id, id));
+  }
+
+  async addCardToMysteryPack(packId: string, cardId: string, quantity: number = 1): Promise<MysteryPackCard> {
+    console.log('Storage: addCardToMysteryPack called with:', { packId, cardId, quantity });
+
+    // Check if card already exists in pack
+    const existingCard = await db
+      .select()
+      .from(mysteryPackCards)
+      .where(and(eq(mysteryPackCards.packId, packId), eq(mysteryPackCards.cardId, cardId)));
+
+    console.log('Storage: existing card check result:', existingCard);
+
+    if (existingCard.length > 0) {
+      // Update existing card quantity
+      console.log('Storage: updating existing card quantity');
+      const [updatedCard] = await db
+        .update(mysteryPackCards)
+        .set({ quantity: existingCard[0].quantity + quantity })
+        .where(and(eq(mysteryPackCards.packId, packId), eq(mysteryPackCards.cardId, cardId)))
+        .returning();
+      
+      console.log('Storage: updated card:', updatedCard);
+      return updatedCard;
+    } else {
+      // Create new card entry
+      console.log('Storage: creating new card entry');
+      const newCardData = {
+        id: `mpc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        packId,
+        cardId,
+        quantity
+      };
+      
+      console.log('Storage: new card data:', newCardData);
+      
+      const [newCard] = await db
+        .insert(mysteryPackCards)
+        .values(newCardData)
+        .returning();
+      
+      console.log('Storage: created new card:', newCard);
+      return newCard;
+    }
+  }
+
+  async removeCardFromMysteryPack(packId: string, cardId: string): Promise<void> {
+    await db
+      .delete(mysteryPackCards)
+      .where(and(eq(mysteryPackCards.packId, packId), eq(mysteryPackCards.cardId, cardId)));
+  }
+
+  async updateMysteryPackCardQuantity(packId: string, mysteryPackCardId: string, quantity: number): Promise<MysteryPackCard> {
+    const [updatedCard] = await db
+      .update(mysteryPackCards)
+      .set({ quantity })
+      .where(and(eq(mysteryPackCards.packId, packId), eq(mysteryPackCards.id, mysteryPackCardId)))
+      .returning();
+    return updatedCard;
+  }
+
+  // Classic Packs (separate from special packs)
+  async getClassicPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>> {
+    try {
+      const packs = await db.select().from(specialPacks).where(eq(specialPacks.packType, 'classic'));
+      console.log('Fetched classic packs:', packs);
+      
+      // Get cards for each pack
+      const packsWithCards = await Promise.all(
+        packs.map(async (pack) => {
+          try {
+            const packCards = await db
+              .select({
+                id: specialPackCards.id,
+                packId: specialPackCards.packId,
+                cardId: specialPackCards.cardId,
+                quantity: specialPackCards.quantity,
+                createdAt: specialPackCards.createdAt,
+                card: {
+                  id: inventory.id,
+                  name: inventory.name,
+                  imageUrl: inventory.imageUrl,
+                  credits: inventory.credits,
+                  tier: inventory.tier,
+                  createdAt: inventory.createdAt,
+                  updatedAt: inventory.updatedAt,
+                }
+              })
+              .from(specialPackCards)
+              .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
+              .where(eq(specialPackCards.packId, pack.id));
+            
+            console.log(`Classic pack ${pack.id} cards:`, packCards);
+            return { ...pack, cards: packCards };
+          } catch (error) {
+            console.error(`Error fetching cards for classic pack ${pack.id}:`, error);
+            return { ...pack, cards: [] };
+          }
+        })
+      );
+      
+      return packsWithCards;
+    } catch (error) {
+      console.error('Error in getClassicPacks:', error);
+      throw error;
+    }
+  }
+
+  async getClassicPackById(id: string): Promise<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }> {
+    const [pack] = await db.select().from(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')));
+    
+    if (!pack) {
+      throw new Error('Classic pack not found');
+    }
+
+    // Get cards for this classic pack
+    const packCards = await db
+      .select({
+        id: specialPackCards.id,
+        packId: specialPackCards.packId,
+        cardId: specialPackCards.cardId,
+        quantity: specialPackCards.quantity,
+        createdAt: specialPackCards.createdAt,
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
+      .from(specialPackCards)
+      .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
+      .where(eq(specialPackCards.packId, id));
+
+    return { ...pack, cards: packCards };
+  }
+
+  async createClassicPack(packData: any): Promise<SpecialPack> {
+    const packWithType = { ...packData, packType: 'classic' };
+    const [newPack] = await db.insert(specialPacks).values(packWithType).returning();
+    return newPack;
+  }
+
+  async updateClassicPack(id: string, packData: any): Promise<SpecialPack> {
+    const packWithType = { ...packData, packType: 'classic' };
+    const [updatedPack] = await db
+      .update(specialPacks)
+      .set(packWithType)
+      .where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')))
+      .returning();
+    return updatedPack;
+  }
+
+  async deleteClassicPack(id: string): Promise<void> {
+    await db.delete(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')));
   }
 
   private getSettingDescription(settingKey: string): string {

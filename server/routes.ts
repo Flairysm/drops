@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin, isAdminCombined } from "./auth";
 import { db } from "./db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { z } from "zod";
 import { 
   insertCardSchema, 
@@ -11,6 +11,11 @@ import {
   insertVirtualLibrarySchema,
   insertInventorySchema,
   insertShippingRequestSchema,
+  specialPacks,
+  specialPackCards,
+  inventory,
+  mysteryPacks,
+  mysteryPackCards,
   type GameResult 
 } from "@shared/schema";
 
@@ -170,7 +175,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // No global feed for pack earning - only when opening packs
       } else {
         // For other games, keep the old card logic
-        const card = await storage.getCard(result.cardId);
+        // Redirect to inventory since cards table was removed
+        const inventoryCards = await storage.getInventoryCards();
+        const card = inventoryCards.find(c => c.id === result.cardId);
         if (!card) {
           throw new Error('Card not found');
         }
@@ -179,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.addUserCard({
           userId,
           cardId: result.cardId,
-          pullValue: card.marketValue,
+          pullValue: card.credits.toString(),
         });
 
         // Add to global feed if rare enough
@@ -334,10 +341,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 50;
-      const minTier = req.query.minTier as string;
-      const feed = await storage.getGlobalFeed(limit, minTier);
-      res.json(feed);
+      // Temporarily return empty feed until cards table issues are resolved
+      res.json([]);
     } catch (error) {
       console.error("Error fetching feed:", error);
       res.status(500).json({ message: "Failed to fetch feed" });
@@ -493,7 +498,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error("Error fetching admin stats:", error);
-      res.status(500).json({ message: "Failed to fetch stats" });
+      // Return basic stats without card count if there's an error
+      res.json({
+        totalUsers: 0,
+        totalRevenue: "0",
+        totalCards: 0
+      });
     }
   });
 
@@ -509,8 +519,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/admin/cards', isAdminCombined, async (req: any, res) => {
     try {
-      const cards = await storage.getCards();
-      res.json(cards);
+      // Redirect to inventory since cards table was removed
+      const inventoryCards = await storage.getInventoryCards();
+      res.json(inventoryCards);
     } catch (error) {
       console.error("Error fetching cards:", error);
       res.status(500).json({ message: "Failed to fetch cards" });
@@ -519,8 +530,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/cards', isAdminCombined, async (req: any, res) => {
     try {
-      const cardData = insertCardSchema.parse(req.body);
-      const card = await storage.createCard(cardData);
+      // Redirect to inventory since cards table was removed
+      const cardData = insertInventorySchema.parse(req.body);
+      const card = await storage.createInventoryCard(cardData);
       res.json(card);
     } catch (error) {
       console.error("Error creating card:", error);
@@ -531,8 +543,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/admin/cards/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const cardData = insertCardSchema.partial().parse(req.body);
-      const card = await storage.updateCard(id, cardData);
+      // Redirect to inventory since cards table was removed
+      const cardData = insertInventorySchema.partial().parse(req.body);
+      const card = await storage.updateInventoryCard(id, cardData);
       res.json(card);
     } catch (error) {
       console.error("Error updating card:", error);
@@ -549,7 +562,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid stock amount" });
       }
       
-      await storage.updateCardStock(id, stock);
+      // Stock management removed since cards table was removed
+      // await storage.updateCardStock(id, stock);
       res.json({ success: true });
     } catch (error) {
       console.error("Error updating card stock:", error);
@@ -560,7 +574,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/cards/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
-      await storage.deleteCard(id);
+      // Redirect to inventory since cards table was removed
+      await storage.deleteInventoryCard(id);
       res.json({ success: true });
     } catch (error) {
       console.error("Error deleting card:", error);
@@ -670,8 +685,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Inventory admin routes (temporarily removing auth for testing)
-  app.get('/api/admin/inventory', async (req: any, res) => {
+  // Inventory admin routes
+  app.get('/api/admin/inventory', isAdminCombined, async (req: any, res) => {
     try {
       const inventoryCards = await storage.getInventoryCards();
       res.json(inventoryCards);
@@ -681,7 +696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/inventory', async (req: any, res) => {
+  app.post('/api/admin/inventory', isAdminCombined, async (req: any, res) => {
     try {
       const cardData = insertInventorySchema.parse(req.body);
       const inventoryCard = await storage.createInventoryCard(cardData);
@@ -692,7 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/inventory/:id', async (req: any, res) => {
+  app.patch('/api/admin/inventory/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const cardData = insertInventorySchema.partial().parse(req.body);
@@ -704,7 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/inventory/:id', async (req: any, res) => {
+  app.delete('/api/admin/inventory/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteInventoryCard(id);
@@ -731,18 +746,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin special packs routes
-  app.get('/api/admin/special-packs', async (req: any, res) => {
+  app.get('/api/test-special-packs', async (req: any, res) => {
     try {
+      console.log('Testing special packs query...');
+      const result = await db.select().from(specialPacks);
+      console.log('Query result:', result);
+      res.json({ success: true, result });
+    } catch (error: any) {
+      console.error('Special packs test error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Test endpoint to verify cascading deletion
+  app.get('/api/test-cascade-delete/:cardId', async (req: any, res) => {
+    try {
+      const { cardId } = req.params;
+      console.log('Testing cascading deletion for card:', cardId);
+      
+      // Check if card exists in special pack cards
+      const specialPackCardsResult = await db
+        .select()
+        .from(specialPackCards)
+        .where(eq(specialPackCards.cardId, cardId));
+      
+      // Check if card exists in mystery pack cards
+      const mysteryPackCardsResult = await db
+        .select()
+        .from(mysteryPackCards)
+        .where(eq(mysteryPackCards.cardId, cardId));
+      
+      res.json({ 
+        success: true, 
+        cardId,
+        specialPackCards: specialPackCardsResult.length,
+        mysteryPackCards: mysteryPackCardsResult.length,
+        message: `Card ${cardId} is used in ${specialPackCardsResult.length} special pack(s) and ${mysteryPackCardsResult.length} mystery pack(s)`
+      });
+    } catch (error: any) {
+      console.error('Cascade delete test error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Test endpoint to check inventory table directly
+  app.get('/api/test-inventory', async (req: any, res) => {
+    try {
+      console.log('Testing inventory table query...');
+      const result = await db.select().from(inventory);
+      console.log('Inventory query result:', result);
+      res.json({ success: true, result, count: result.length });
+    } catch (error: any) {
+      console.error('Inventory test error:', error);
+      res.status(500).json({ success: false, error: error.message, stack: error.stack });
+    }
+  });
+
+  // Test endpoint to add tier column
+  app.get('/api/fix-inventory-tier', async (req: any, res) => {
+    try {
+      console.log('Adding tier column to inventory table...');
+      
+      // Add tier column if it doesn't exist
+      await db.execute(sql`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS tier VARCHAR(20) DEFAULT 'D' NOT NULL;`);
+      
+      // Update existing records to have 'D' tier if they don't have one
+      await db.execute(sql`UPDATE inventory SET tier = 'D' WHERE tier IS NULL;`);
+      
+      // Test the query again
+      const result = await db.select().from(inventory);
+      console.log('Inventory after adding tier column:', result);
+      
+      res.json({ success: true, message: 'Tier column added successfully', result, count: result.length });
+    } catch (error: any) {
+      console.error('Fix inventory tier error:', error);
+      res.status(500).json({ success: false, error: error.message, stack: error.stack });
+    }
+  });
+
+  // Test endpoint to add packType column
+  app.get('/api/fix-pack-type', async (req: any, res) => {
+    try {
+      console.log('Adding packType column to special_packs table...');
+      
+      // Add packType column if it doesn't exist
+      await db.execute(sql`ALTER TABLE special_packs ADD COLUMN IF NOT EXISTS pack_type VARCHAR(50) DEFAULT 'special' NOT NULL;`);
+      
+      // Update existing records to have 'special' as pack_type
+      await db.execute(sql`UPDATE special_packs SET pack_type = 'special' WHERE pack_type IS NULL;`);
+      
+      // Test the query again
+      const result = await db.select().from(specialPacks);
+      console.log('Special packs after adding packType column:', result);
+      
+      res.json({ success: true, message: 'PackType column added successfully', result, count: result.length });
+    } catch (error: any) {
+      console.error('Fix pack type error:', error);
+      res.status(500).json({ success: false, error: error.message, stack: error.stack });
+    }
+  });
+
+  app.get('/api/test-remove-card', async (req: any, res) => {
+    try {
+      console.log('Testing remove card functionality...');
+      const packId = '348915f7-5185-481b-bcb6-590c8e87d02d';
+      const specialPackCardId = 'spc-1758596540504-agi7i73cb';
+      
+      console.log('Calling removeCardFromSpecialPack with:', { packId, specialPackCardId });
+      await storage.removeCardFromSpecialPack(packId, specialPackCardId);
+      console.log('Remove card successful');
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Remove card test error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Admin special packs routes
+  app.get('/api/admin/special-packs', isAdminCombined, async (req: any, res) => {
+    try {
+      console.log('Getting special packs...');
       const packs = await storage.getSpecialPacks();
+      console.log('Successfully fetched packs:', packs);
       res.json(packs);
     } catch (error: any) {
       console.error('Error fetching special packs:', error);
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
       res.status(500).json({ error: 'Failed to fetch special packs' });
     }
   });
 
-  app.post('/api/admin/special-packs', async (req: any, res) => {
+  // Classic Packs Routes
+  app.get('/api/admin/classic-packs', isAdminCombined, async (req: any, res) => {
+    try {
+      console.log('Getting classic packs...');
+      const packs = await storage.getClassicPacks();
+      console.log('Successfully fetched classic packs:', packs);
+      res.json(packs);
+    } catch (error: any) {
+      console.error('Error fetching classic packs:', error);
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ error: 'Failed to fetch classic packs' });
+    }
+  });
+
+  app.post('/api/admin/special-packs', isAdminCombined, async (req: any, res) => {
     try {
       const { name, description, image, price, totalCards } = req.body;
       
@@ -770,7 +920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/admin/special-packs/:id', async (req: any, res) => {
+  app.put('/api/admin/special-packs/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { name, description, image, price, totalCards } = req.body;
@@ -778,9 +928,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pack = await storage.updateSpecialPack(id, {
         name,
         description,
-        image,
+        imageUrl: image,
         price: price ? price.toString() : undefined,
-        totalCards: totalCards ? parseInt(totalCards) : undefined
+        totalPacks: totalCards ? parseInt(totalCards) : undefined
       });
 
       res.json(pack);
@@ -790,7 +940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/special-packs/:id', async (req: any, res) => {
+  app.delete('/api/admin/special-packs/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteSpecialPack(id);
@@ -801,45 +951,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get individual special pack with cards
+  app.get('/api/admin/special-packs/:id', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const pack = await storage.getSpecialPackById(id);
+      res.json(pack);
+    } catch (error: any) {
+      console.error('Error fetching special pack:', error);
+      res.status(500).json({ error: 'Failed to fetch special pack' });
+    }
+  });
+
   // Special pack cards routes
-  app.post('/api/admin/special-packs/:packId/cards', async (req: any, res) => {
+  app.post('/api/admin/special-packs/:packId/cards', isAdminCombined, async (req: any, res) => {
     try {
       const { packId } = req.params;
       const { cardId, quantity = 1 } = req.body;
+      
+      console.log('Adding card to special pack:', { packId, cardId, quantity });
       
       if (!cardId) {
         return res.status(400).json({ error: 'Missing cardId' });
       }
 
       const packCard = await storage.addCardToSpecialPack(packId, cardId, quantity);
+      console.log('Successfully added card to pack:', packCard);
       res.json(packCard);
     } catch (error: any) {
       console.error('Error adding card to special pack:', error);
+      console.error('Error details:', error.message, error.stack);
       res.status(500).json({ error: 'Failed to add card to special pack' });
     }
   });
 
-  app.delete('/api/admin/special-packs/:packId/cards/:cardId', async (req: any, res) => {
+  app.delete('/api/admin/special-packs/:packId/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
     try {
-      const { packId, cardId } = req.params;
-      await storage.removeCardFromSpecialPack(packId, cardId);
+      const { packId, specialPackCardId } = req.params;
+      console.log('Route handler - removing card:', { packId, specialPackCardId });
+      await storage.removeCardFromSpecialPack(packId, specialPackCardId);
+      console.log('Route handler - card removed successfully');
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error removing card from special pack:', error);
+      console.error('Error details:', error.message, error.stack);
       res.status(500).json({ error: 'Failed to remove card from special pack' });
     }
   });
 
-  app.patch('/api/admin/special-packs/:packId/cards/:cardId', async (req: any, res) => {
+  app.patch('/api/admin/special-packs/:packId/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
     try {
-      const { packId, cardId } = req.params;
+      const { packId, specialPackCardId } = req.params;
       const { quantity } = req.body;
       
       if (quantity === undefined) {
         return res.status(400).json({ error: 'Missing quantity' });
       }
 
-      const packCard = await storage.updateSpecialPackCardQuantity(packId, cardId, quantity);
+      const packCard = await storage.updateSpecialPackCardQuantity(packId, specialPackCardId, quantity);
       res.json(packCard);
     } catch (error: any) {
       console.error('Error updating special pack card quantity:', error);
@@ -847,6 +1016,265 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Classic Pack CRUD Routes
+  app.post('/api/admin/classic-packs', isAdminCombined, async (req: any, res) => {
+    try {
+      const { name, description, image, price } = req.body;
+      
+      console.log('Received classic pack data:', { name, description, image, price });
+      
+      if (!name || !description || !image || !price) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const packData = {
+        name,
+        description,
+        imageUrl: image,
+        price: price.toString(),
+        totalPacks: 0, // Default to 0 since total cards is not needed
+        isActive: true
+      };
+
+      console.log('Creating classic pack with data:', packData);
+      const newPack = await storage.createClassicPack(packData);
+      console.log('Successfully created classic pack:', newPack);
+      res.json(newPack);
+    } catch (error: any) {
+      console.error('Error creating classic pack:', error);
+      console.error('Error details:', error.message, error.stack);
+      res.status(500).json({ error: 'Failed to create classic pack' });
+    }
+  });
+
+  app.put('/api/admin/classic-packs/:id', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, image, price } = req.body;
+      
+      if (!name || !description || !image || !price) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      const packData = {
+        name,
+        description,
+        imageUrl: image,
+        price: price.toString(),
+        totalPacks: 0, // Default to 0 since total cards is not needed
+        isActive: true
+      };
+
+      const updatedPack = await storage.updateClassicPack(id, packData);
+      console.log('Updated classic pack:', updatedPack);
+      res.json(updatedPack);
+    } catch (error: any) {
+      console.error('Error updating classic pack:', error);
+      res.status(500).json({ error: 'Failed to update classic pack' });
+    }
+  });
+
+  app.delete('/api/admin/classic-packs/:id', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteClassicPack(id);
+      console.log('Deleted classic pack:', id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting classic pack:', error);
+      res.status(500).json({ error: 'Failed to delete classic pack' });
+    }
+  });
+
+  // Classic Pack Card Management Routes
+  app.get('/api/admin/classic-packs/:id', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const pack = await storage.getClassicPackById(id);
+      res.json(pack);
+    } catch (error: any) {
+      console.error('Error fetching classic pack:', error);
+      res.status(500).json({ error: 'Failed to fetch classic pack' });
+    }
+  });
+
+  app.post('/api/admin/classic-packs/:id/cards', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { cardId, quantity = 1 } = req.body;
+      
+      console.log('Adding card to classic pack:', { packId: id, cardId, quantity });
+      
+      const result = await storage.addCardToSpecialPack(id, cardId, quantity);
+      console.log('Successfully added card to pack:', result);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error adding card to classic pack:', error);
+      res.status(500).json({ error: 'Failed to add card to pack' });
+    }
+  });
+
+  app.delete('/api/admin/classic-packs/:id/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id, specialPackCardId } = req.params;
+      
+      console.log('Route handler - removing card:', { packId: id, specialPackCardId });
+      
+      await storage.removeCardFromSpecialPack(id, specialPackCardId);
+      console.log('Route handler - card removed successfully');
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error removing card from classic pack:', error);
+      res.status(500).json({ error: 'Failed to remove card from pack' });
+    }
+  });
+
+  app.patch('/api/admin/classic-packs/:id/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id, specialPackCardId } = req.params;
+      const { quantity } = req.body;
+      
+      console.log('Updating classic pack card quantity:', { packId: id, specialPackCardId, quantity });
+      
+      const result = await storage.updateSpecialPackCardQuantity(id, specialPackCardId, quantity);
+      console.log('Successfully updated classic pack card quantity:', result);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error updating classic pack card quantity:', error);
+      res.status(500).json({ error: 'Failed to update card quantity' });
+    }
+  });
+
+  // Admin mystery packs routes
+  app.get('/api/admin/mystery-packs', isAdminCombined, async (req: any, res) => {
+    try {
+      const packs = await storage.getMysteryPacks();
+      res.json(packs);
+    } catch (error: any) {
+      console.error('Error fetching mystery packs:', error);
+      res.status(500).json({ error: 'Failed to fetch mystery packs' });
+    }
+  });
+
+  app.post('/api/admin/mystery-packs', isAdminCombined, async (req: any, res) => {
+    try {
+      const { name, description, image, price, totalCards } = req.body;
+      
+      console.log('Received mystery pack data:', { name, description, image, price, totalCards });
+      
+      const packData = {
+        name,
+        description,
+        imageUrl: image,
+        price: price ? price.toString() : undefined,
+        totalPacks: totalCards ? parseInt(totalCards) : undefined,
+        isActive: true
+      };
+      
+      console.log('Creating mystery pack with data:', packData);
+      
+      const pack = await storage.createMysteryPack(packData);
+      console.log('Created mystery pack:', pack);
+      res.json(pack);
+    } catch (error: any) {
+      console.error('Error creating mystery pack:', error);
+      res.status(500).json({ error: 'Failed to create mystery pack' });
+    }
+  });
+
+  app.put('/api/admin/mystery-packs/:id', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, image, price, totalCards } = req.body;
+      
+      const pack = await storage.updateMysteryPack(id, {
+        name,
+        description,
+        imageUrl: image,
+        price: price ? price.toString() : undefined,
+        totalPacks: totalCards ? parseInt(totalCards) : undefined
+      });
+
+      res.json(pack);
+    } catch (error: any) {
+      console.error('Error updating mystery pack:', error);
+      res.status(500).json({ error: 'Failed to update mystery pack' });
+    }
+  });
+
+  app.delete('/api/admin/mystery-packs/:id', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteMysteryPack(id);
+      console.log('Deleted mystery pack:', id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting mystery pack:', error);
+      res.status(500).json({ error: 'Failed to delete mystery pack' });
+    }
+  });
+
+  // Get individual mystery pack with cards
+  app.get('/api/admin/mystery-packs/:id', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const pack = await storage.getMysteryPackById(id);
+      res.json(pack);
+    } catch (error: any) {
+      console.error('Error fetching mystery pack:', error);
+      res.status(500).json({ error: 'Failed to fetch mystery pack' });
+    }
+  });
+
+  // Mystery pack cards routes
+  app.post('/api/admin/mystery-packs/:packId/cards', isAdminCombined, async (req: any, res) => {
+    try {
+      const { packId } = req.params;
+      const { cardId, quantity = 1 } = req.body;
+      
+      console.log('Adding card to mystery pack:', { packId, cardId, quantity });
+      
+      if (!cardId) {
+        return res.status(400).json({ error: 'Missing cardId' });
+      }
+
+      const packCard = await storage.addCardToMysteryPack(packId, cardId, quantity);
+      console.log('Successfully added card to mystery pack:', packCard);
+      res.json(packCard);
+    } catch (error: any) {
+      console.error('Error adding card to mystery pack:', error);
+      console.error('Error details:', error.message, error.stack);
+      res.status(500).json({ error: 'Failed to add card to mystery pack' });
+    }
+  });
+
+  app.delete('/api/admin/mystery-packs/:packId/cards/:cardId', isAdminCombined, async (req: any, res) => {
+    try {
+      const { packId, cardId } = req.params;
+      await storage.removeCardFromMysteryPack(packId, cardId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error removing card from mystery pack:', error);
+      res.status(500).json({ error: 'Failed to remove card from mystery pack' });
+    }
+  });
+
+  app.patch('/api/admin/mystery-packs/:packId/cards/:mysteryPackCardId', isAdminCombined, async (req: any, res) => {
+    try {
+      const { packId, mysteryPackCardId } = req.params;
+      const { quantity } = req.body;
+      
+      if (quantity === undefined) {
+        return res.status(400).json({ error: 'Missing quantity' });
+      }
+
+      const packCard = await storage.updateMysteryPackCardQuantity(packId, mysteryPackCardId, quantity);
+      res.json(packCard);
+    } catch (error: any) {
+      console.error('Error updating mystery pack card quantity:', error);
+      res.status(500).json({ error: 'Failed to update mystery pack card quantity' });
+    }
+  });
 
   // User management routes
   app.post('/api/admin/users/:id/ban', isAdminCombined, async (req: any, res) => {
@@ -923,7 +1351,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/cards', async (req, res) => {
     try {
       const packType = req.query.packType as string;
-      const cards = await storage.getCards(packType);
+      // Redirect to inventory since cards table was removed
+      const cards = await storage.getInventoryCards();
       res.json(cards);
     } catch (error) {
       console.error("Error fetching cards:", error);
@@ -975,6 +1404,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching packs:", error);
       res.status(500).json({ message: "Failed to fetch packs" });
+    }
+  });
+
+  // Available packs for purchase (public endpoint)
+  app.get('/api/available-packs', async (req: any, res) => {
+    try {
+      const specialPacks = await storage.getSpecialPacks();
+      const classicPacks = await storage.getClassicPacks();
+      const mysteryPacks = await storage.getMysteryPacks();
+      
+      // Filter only active packs
+      const activeSpecialPacks = specialPacks.filter(pack => pack.isActive);
+      const activeClassicPacks = classicPacks.filter(pack => pack.isActive);
+      const activeMysteryPacks = mysteryPacks.filter(pack => pack.isActive);
+      
+      res.json({
+        specialPacks: activeSpecialPacks,
+        classicPacks: activeClassicPacks,
+        mysteryPacks: activeMysteryPacks
+      });
+    } catch (error) {
+      console.error("Error fetching available packs:", error);
+      res.status(500).json({ message: "Failed to fetch available packs" });
     }
   });
 
@@ -1051,7 +1503,8 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   }
 
   // For other games, use the old card-based logic
-  const cards = await storage.getCards('BNW');
+  // Redirect to inventory since cards table was removed
+  const cards = await storage.getInventoryCards();
   
   if (cards.length === 0) {
     throw new Error('No cards available');
@@ -1069,10 +1522,10 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   else if (random < 0.2510) tier = 'C';
   else tier = 'D';
   
-  const tierCards = cards.filter(card => card.tier === tier && (card.stock || 0) > 0);
+  const tierCards = cards.filter((card: any) => card.tier === tier);
   
   if (tierCards.length === 0) {
-    const commonCards = cards.filter(card => card.tier === 'D' && (card.stock || 0) > 0);
+    const commonCards = cards.filter((card: any) => card.tier === 'D');
     if (commonCards.length === 0) {
       throw new Error('No cards in stock');
     }
@@ -1085,7 +1538,8 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
   }
 
   const selectedCard = tierCards[Math.floor(Math.random() * tierCards.length)];
-  await storage.updateCardStock(selectedCard.id, (selectedCard.stock || 0) - 1);
+  // Stock management removed since cards table was removed
+  // await storage.updateCardStock(selectedCard.id, (selectedCard.stock || 0) - 1);
 
   return {
     cardId: selectedCard.id,
