@@ -1462,18 +1462,15 @@ export class DatabaseStorage implements IStorage {
       // Create 8 cards: 7 commons + 1 hit
       const selectedCards = [];
       
-      // Create common card placeholder with proper UUID
-      const commonCardPlaceholder = {
-        id: randomUUID(),
-        name: "Common Card",
-        imageUrl: "/card-images/random-common-card.png",
-        tier: "D",
-        marketValue: 10
-      };
-
-      // Add 7 common cards
+      // Add 7 common cards with unique UUIDs
       for (let i = 0; i < 7; i++) {
-        selectedCards.push(commonCardPlaceholder);
+        selectedCards.push({
+          id: randomUUID(),
+          name: "Common Card",
+          imageUrl: "/card-images/random-common-card.png",
+          tier: "D",
+          marketValue: 10
+        });
       }
 
       // Add 1 hit card from the pack
@@ -1503,8 +1500,14 @@ export class DatabaseStorage implements IStorage {
           });
         }
       } else {
-        // Final fallback
-        selectedCards.push(commonCardPlaceholder);
+        // Final fallback - create a common card
+        selectedCards.push({
+          id: randomUUID(),
+          name: "Common Card",
+          imageUrl: "/card-images/random-common-card.png",
+          tier: "D",
+          marketValue: 10
+        });
       }
 
       // Add cards to user's vault

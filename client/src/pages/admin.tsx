@@ -1118,20 +1118,15 @@ export default function Admin() {
     const apiEndpoint = isClassicPack ? 'classic-packs' : 'special-packs';
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}/cards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          cardId: card.id,
-          quantity: 1
-        }),
+      const response = await apiRequest('POST', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards`, {
+        cardId: card.id,
+        quantity: 1
       });
 
       if (response.ok) {
         // Refresh the editing pool data
-        const updatedPool = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
+        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+        const updatedPool = await updatedPoolResponse.json();
         const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
           id: card.id,
           name: card.card?.name || card.name,
