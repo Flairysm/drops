@@ -29,7 +29,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   const [showHitCardBack, setShowHitCardBack] = useState(false);
   const [showContinueButton, setShowContinueButton] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   // Fetch detailed pack data when popup opens
   useEffect(() => {
@@ -70,73 +70,58 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
     setRevealedCards(0);
     setShowTapToReveal(false);
     
-    // Simulate pack opening delay
-    setTimeout(() => {
-      // Classic pack structure: 8 cards total
-      // 7 random commons (D tier) + 1 hit card (C to SSS tier)
-      const selectedCards = [];
+    try {
+      // Call the API to purchase and open the classic pack
+      const response = await apiRequest('POST', `/api/classic-packs/purchase/${pack.id}`);
       
-      // Get all available cards from the pack
-      const allCards = packData.cards.flatMap(packCard => 
-        Array(packCard.quantity || 1).fill(packCard)
-      );
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to open pack');
+      }
       
-      // Separate cards by tier from the original pack
-      const commonCards = allCards.filter(card => 
-        card.card?.tier === 'D' || !card.card?.tier
-      );
-      const hitCards = allCards.filter(card => 
-        card.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.card.tier)
-      );
+      const result = await response.json();
       
-      // Create common card placeholder
-      const commonCardPlaceholder = {
-        card: {
-          name: "Common Card",
-          imageUrl: "/card-images/random-common-card.png",
-          tier: "D",
-          credits: 10
+      // Simulate pack opening delay
+      setTimeout(() => {
+        // Use the cards from the API response
+        const selectedCards = result.packCards.map((card: any) => ({
+          card: {
+            name: card.name,
+            imageUrl: card.imageUrl,
+            tier: card.tier,
+            credits: card.marketValue
+          }
+        }));
+        
+        setOpenedCards(selectedCards);
+        setShowResults(true);
+        setIsOpening(false);
+        
+        // Start revealing the first 7 cards
+        revealCardsProgressively(selectedCards);
+        
+        // Show success toast
+        toast({
+          title: "Pack Purchased!",
+          description: `Successfully opened ${pack.name} for ${pack.price} credits!`,
+        });
+        
+        // Refresh user data to update credits
+        if (refreshUser) {
+          refreshUser();
         }
-      };
+        
+      }, 1000); // Reduced from 2000ms to 1000ms for faster start
       
-      // Always select 7 common cards (D tier) - these will be revealed first
-      for (let i = 0; i < 7; i++) {
-        // Always use common card placeholder for the 7 common cards
-        selectedCards.push(commonCardPlaceholder);
-      }
-      
-      // Always select 1 hit card (C to SSS tier) - this will be revealed last
-      if (hitCards.length > 0) {
-        const randomIndex = Math.floor(Math.random() * hitCards.length);
-        selectedCards.push(hitCards[randomIndex]);
-      } else if (allCards.length > 0) {
-        // Fallback: use any available card as hit card
-        const randomIndex = Math.floor(Math.random() * allCards.length);
-        selectedCards.push(allCards[randomIndex]);
-      } else {
-        // Final fallback: use common card placeholder
-        selectedCards.push(commonCardPlaceholder);
-      }
-      
-      // We now have exactly 8 cards (7 commons + 1 hit)
-      // Ensure the hit card is always in the last position (index 7)
-      const hitCardIndex = selectedCards.findIndex(card => 
-        card.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.card.tier)
-      );
-      
-      if (hitCardIndex !== -1 && hitCardIndex !== 7) {
-        // Move the hit card to the last position
-        const hitCard = selectedCards.splice(hitCardIndex, 1)[0];
-        selectedCards.push(hitCard);
-      }
-      
-      setOpenedCards(selectedCards);
-      setShowResults(true);
+    } catch (error: any) {
+      console.error('Error opening pack:', error);
       setIsOpening(false);
-      
-      // Start revealing the first 7 cards
-      revealCardsProgressively(selectedCards);
-    }, 1000); // Reduced from 2000ms to 1000ms for faster start
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open pack. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const revealCardsProgressively = (cards: any[]) => {
