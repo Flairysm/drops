@@ -1549,6 +1549,24 @@ export class DatabaseStorage implements IStorage {
 
       // Add cards to user's vault
       for (const card of selectedCards) {
+        // First, ensure the card exists in inventory
+        const existingInventoryCard = await tx
+          .select()
+          .from(inventory)
+          .where(eq(inventory.id, card.id))
+          .limit(1);
+
+        if (existingInventoryCard.length === 0) {
+          // Create the card in inventory if it doesn't exist
+          await tx.insert(inventory).values({
+            id: card.id,
+            name: card.name,
+            imageUrl: card.imageUrl,
+            credits: card.marketValue,
+            tier: card.tier
+          });
+        }
+
         const existingCard = await tx
           .select()
           .from(userCards)
