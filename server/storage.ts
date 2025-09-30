@@ -313,7 +313,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(userCards)
-      .leftJoin(inventory, eq(userCards.cardId, inventory.id))
+      .leftJoin(inventory, eq(sql`${userCards.cardId}::uuid`, inventory.id))
       .where(and(eq(userCards.userId, userId), eq(userCards.isRefunded, false), eq(userCards.isShipped, false)))
       .orderBy(desc(userCards.pulledAt));
 
