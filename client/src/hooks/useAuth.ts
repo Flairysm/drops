@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 
 export function useAuth() {
+  const queryClient = useQueryClient();
+  
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
@@ -17,6 +19,11 @@ export function useAuth() {
   const isActuallyLoading = isLoading && !error && !user;
   const isAuthenticated = !!user && !error;
 
+  // Function to manually refresh user data
+  const refreshUser = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+  };
+
   // Debug logging
   console.log('🔍 useAuth state:', { user, isLoading, error, isAuthenticated });
 
@@ -25,5 +32,6 @@ export function useAuth() {
     isLoading: isActuallyLoading,
     isAuthenticated,
     isAdmin: !!user && (user as any).role === 'admin',
+    refreshUser,
   };
 }

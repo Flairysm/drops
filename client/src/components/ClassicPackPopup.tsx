@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Package, BarChart3, Gift, Play, Sparkles, X, Coins } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +29,8 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   const [showHitCardBack, setShowHitCardBack] = useState(false);
   const [showContinueButton, setShowContinueButton] = useState(false);
   const { toast } = useToast();
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch detailed pack data when popup opens
   useEffect(() => {
@@ -82,9 +83,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
       const result = await response.json();
       
       // Refresh user data to update credits immediately after successful purchase
-      if (refreshUser) {
-        refreshUser();
-      }
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       // Simulate pack opening delay
       setTimeout(() => {
