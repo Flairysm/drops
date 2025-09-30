@@ -1411,6 +1411,12 @@ export class DatabaseStorage implements IStorage {
     await db.delete(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')));
   }
 
+  // Helper function to validate UUID format
+  private isValidUUID(uuid: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  }
+
   async purchaseAndOpenClassicPack(userId: string, packId: string): Promise<{ packCards: any[], hitCardPosition: number }> {
     return await db.transaction(async (tx) => {
       // Get the pack details
@@ -1481,8 +1487,9 @@ export class DatabaseStorage implements IStorage {
         
         if (hitCards.length > 0) {
           const randomHitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
+          const cardId = randomHitCard.card?.id;
           selectedCards.push({
-            id: randomHitCard.card?.id || randomUUID(),
+            id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
             name: randomHitCard.card?.name || 'Hit Card',
             imageUrl: randomHitCard.card?.imageUrl || '/card-images/random-common-card.png',
             tier: randomHitCard.card?.tier || 'C',
@@ -1491,8 +1498,9 @@ export class DatabaseStorage implements IStorage {
         } else {
           // Fallback to any available card
           const randomCard = packCards[Math.floor(Math.random() * packCards.length)];
+          const cardId = randomCard.card?.id;
           selectedCards.push({
-            id: randomCard.card?.id || randomUUID(),
+            id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
             name: randomCard.card?.name || 'Hit Card',
             imageUrl: randomCard.card?.imageUrl || '/card-images/random-common-card.png',
             tier: randomCard.card?.tier || 'C',
