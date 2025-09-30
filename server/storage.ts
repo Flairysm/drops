@@ -1485,7 +1485,7 @@ export class DatabaseStorage implements IStorage {
         if (hitCards.length > 0) {
           const randomHitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
           selectedCards.push({
-            id: randomHitCard.cardId,
+            id: randomHitCard.card?.id || randomUUID(),
             name: randomHitCard.card?.name || 'Hit Card',
             imageUrl: randomHitCard.card?.imageUrl || '/card-images/random-common-card.png',
             tier: randomHitCard.card?.tier || 'C',
@@ -1495,7 +1495,7 @@ export class DatabaseStorage implements IStorage {
           // Fallback to any available card
           const randomCard = packCards[Math.floor(Math.random() * packCards.length)];
           selectedCards.push({
-            id: randomCard.cardId,
+            id: randomCard.card?.id || randomUUID(),
             name: randomCard.card?.name || 'Hit Card',
             imageUrl: randomCard.card?.imageUrl || '/card-images/random-common-card.png',
             tier: randomCard.card?.tier || 'C',
