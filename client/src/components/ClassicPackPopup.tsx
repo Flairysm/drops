@@ -81,6 +81,11 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
       
       const result = await response.json();
       
+      // Refresh user data to update credits immediately after successful purchase
+      if (refreshUser) {
+        refreshUser();
+      }
+      
       // Simulate pack opening delay
       setTimeout(() => {
         // Use the cards from the API response
@@ -105,11 +110,6 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
           title: "Pack Purchased!",
           description: `Successfully opened ${pack.name} for ${pack.price} credits!`,
         });
-        
-        // Refresh user data to update credits
-        if (refreshUser) {
-          refreshUser();
-        }
         
       }, 1000); // Reduced from 2000ms to 1000ms for faster start
       
