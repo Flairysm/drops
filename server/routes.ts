@@ -1145,6 +1145,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Classic Pack Purchase Route (Public)
+  app.post('/api/classic-packs/purchase/:packId', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { packId } = req.params;
+      
+      console.log('Purchasing classic pack:', { userId, packId });
+      
+      const result = await storage.purchaseAndOpenClassicPack(userId, packId);
+      console.log('Successfully purchased classic pack:', result);
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error purchasing classic pack:', error);
+      res.status(400).json({ error: error.message || 'Failed to purchase pack' });
+    }
+  });
+
   // Admin mystery packs routes
   app.get('/api/admin/mystery-packs', isAdminCombined, async (req: any, res) => {
     try {

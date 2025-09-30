@@ -1410,6 +1410,158 @@ export class DatabaseStorage implements IStorage {
     await db.delete(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')));
   }
 
+  async purchaseAndOpenClassicPack(userId: string, packId: string): Promise<{ packCards: any[], hitCardPosition: number }> {
+    return await db.transaction(async (tx) => {
+      // Get the pack details
+      const [pack] = await tx
+        .select()
+        .from(specialPacks)
+        .where(and(eq(specialPacks.id, packId), eq(specialPacks.packType, 'classic')));
+      
+      if (!pack) {
+        throw new Error('Pack not found');
+      }
+
+      // Get user details
+      const [user] = await tx.select().from(users).where(eq(users.id, userId));
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const packPrice = parseFloat(pack.price);
+      const userCredits = parseFloat(user.credits || '0');
+      if (userCredits < packPrice) {
+        throw new Error('Insufficient credits');
+      }
+
+      // Deduct credits
+      await tx
+        .update(users)
+        .set({ credits: (userCredits - packPrice).toString() })
+        .where(eq(users.id, userId));
+
+      // Get pack cards
+      const packCards = await tx
+        .select({
+          id: specialPackCards.id,
+          cardId: specialPackCards.cardId,
+          quantity: specialPackCards.quantity,
+          card: {
+            id: inventory.id,
+            name: inventory.name,
+            imageUrl: inventory.imageUrl,
+            credits: inventory.credits,
+            tier: inventory.tier
+          }
+        })
+        .from(specialPackCards)
+        .leftJoin(inventory, eq(specialPackCards.cardId, inventory.id))
+        .where(eq(specialPackCards.packId, packId));
+
+      // Create 8 cards: 7 commons + 1 hit
+      const selectedCards = [];
+      
+      // Create common card placeholder
+      const commonCardPlaceholder = {
+        id: `common-${Date.now()}-${Math.random()}`,
+        name: "Common Card",
+        imageUrl: "/card-images/random-common-card.png",
+        tier: "D",
+        marketValue: 10
+      };
+
+      // Add 7 common cards
+      for (let i = 0; i < 7; i++) {
+        selectedCards.push(commonCardPlaceholder);
+      }
+
+      // Add 1 hit card from the pack
+      if (packCards.length > 0) {
+        const hitCards = packCards.filter(pc => 
+          pc.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier)
+        );
+        
+        if (hitCards.length > 0) {
+          const randomHitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
+          selectedCards.push({
+            id: randomHitCard.cardId,
+            name: randomHitCard.card?.name || 'Hit Card',
+            imageUrl: randomHitCard.card?.imageUrl || '/card-images/random-common-card.png',
+            tier: randomHitCard.card?.tier || 'C',
+            marketValue: randomHitCard.card?.credits || 100
+          });
+        } else {
+          // Fallback to any available card
+          const randomCard = packCards[Math.floor(Math.random() * packCards.length)];
+          selectedCards.push({
+            id: randomCard.cardId,
+            name: randomCard.card?.name || 'Hit Card',
+            imageUrl: randomCard.card?.imageUrl || '/card-images/random-common-card.png',
+            tier: randomCard.card?.tier || 'C',
+            marketValue: randomCard.card?.credits || 100
+          });
+        }
+      } else {
+        // Final fallback
+        selectedCards.push(commonCardPlaceholder);
+      }
+
+      // Add cards to user's vault
+      for (const card of selectedCards) {
+        const existingCard = await tx
+          .select()
+          .from(userCards)
+          .where(and(eq(userCards.userId, userId), eq(userCards.cardId, card.id)))
+          .limit(1);
+
+        if (existingCard.length > 0) {
+          // Update quantity
+          await tx
+            .update(userCards)
+            .set({ quantity: existingCard[0].quantity + 1 })
+            .where(and(eq(userCards.userId, userId), eq(userCards.cardId, card.id)));
+        } else {
+          // Insert new card
+          await tx.insert(userCards).values({
+            userId,
+            cardId: card.id,
+            pullValue: card.marketValue.toString(),
+            quantity: 1,
+            isRefunded: false,
+            isShipped: false
+          });
+        }
+      }
+
+      // Record transaction
+      await tx.insert(transactions).values({
+        userId,
+        type: 'pack_purchase',
+        amount: (-packPrice).toString(),
+        description: `Purchased ${pack.name} pack`
+      });
+
+      // Add hit cards to global feed
+      const hitCards = selectedCards.filter(card => 
+        card.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.tier)
+      );
+      
+      for (const hitCard of hitCards) {
+        await tx.insert(globalFeed).values({
+          userId,
+          cardId: hitCard.id,
+          tier: hitCard.tier,
+          gameType: 'pack_opening'
+        });
+      }
+
+      return {
+        packCards: selectedCards,
+        hitCardPosition: 7 // The hit card is always in the last position (index 7)
+      };
+    });
+  }
+
   private getSettingDescription(settingKey: string): string {
     const descriptions: Record<string, string> = {
       'maintenance_mode': 'When enabled, displays maintenance message to users and restricts access',
