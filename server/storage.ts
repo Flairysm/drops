@@ -61,6 +61,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export interface IStorage {
   // User operations
@@ -1461,9 +1462,9 @@ export class DatabaseStorage implements IStorage {
       // Create 8 cards: 7 commons + 1 hit
       const selectedCards = [];
       
-      // Create common card placeholder
+      // Create common card placeholder with proper UUID
       const commonCardPlaceholder = {
-        id: `common-${Date.now()}-${Math.random()}`,
+        id: randomUUID(),
         name: "Common Card",
         imageUrl: "/card-images/random-common-card.png",
         tier: "D",
