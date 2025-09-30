@@ -310,21 +310,42 @@ export class DatabaseStorage implements IStorage {
 
   // Vault operations
   async getUserCards(userId: string): Promise<UserCardWithCard[]> {
-    const result = await db
+    // First get all user cards
+    const userCardsResult = await db
       .select()
       .from(userCards)
-      .leftJoin(inventory, eq(sql`${userCards.cardId}::uuid`, inventory.id))
       .where(and(eq(userCards.userId, userId), eq(userCards.isRefunded, false), eq(userCards.isShipped, false)))
       .orderBy(desc(userCards.pulledAt));
 
+    // Then get inventory details for valid UUIDs only
+    const validCardIds = userCardsResult
+      .map(card => card.cardId)
+      .filter((cardId): cardId is string => cardId !== null && this.isValidUUID(cardId));
+
+    const inventoryResult = validCardIds.length > 0 
+      ? await db
+          .select()
+          .from(inventory)
+          .where(inArray(inventory.id, validCardIds))
+      : [];
+
+    // Create a map for quick lookup
+    const inventoryMap = new Map(inventoryResult.map(item => [item.id, item]));
+
+    // Combine the results
+    const result = userCardsResult.map(userCard => ({
+      ...userCard,
+      card: userCard.cardId ? inventoryMap.get(userCard.cardId) || null : null
+    }));
+
     return result.map(row => ({
-      ...row.user_cards,
-      card: row.inventory ? {
-        ...row.inventory,
+      ...row,
+      card: row.card ? {
+        ...row.card,
         // Add missing fields that the old cards table had
         isActive: true,
         packType: 'inventory',
-        marketValue: row.inventory.credits.toString(),
+        marketValue: row.card.credits.toString(),
         stock: null,
       } : null,
     })).filter(item => item.card !== null) as UserCardWithCard[];
@@ -1446,6 +1467,14 @@ export class DatabaseStorage implements IStorage {
         .update(users)
         .set({ credits: (userCredits - packPrice).toString() })
         .where(eq(users.id, userId));
+
+      // Deduct pack quantity if totalPacks is set
+      if (pack.totalPacks && pack.totalPacks > 0) {
+        await tx
+          .update(specialPacks)
+          .set({ totalPacks: pack.totalPacks - 1 })
+          .where(eq(specialPacks.id, packId));
+      }
 
       // Get pack cards
       const packCards = await tx
