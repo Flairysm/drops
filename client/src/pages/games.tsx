@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { ClassicPackPopup } from "@/components/ClassicPackPopup";
 
 // Game data structure
 interface GameItem {
@@ -56,6 +57,22 @@ const gameData = {
 export default function Play() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const [selectedClassicPack, setSelectedClassicPack] = useState<any>(null);
+  const [isClassicPackPopupOpen, setIsClassicPackPopupOpen] = useState(false);
+
+  // Handle classic pack click
+  const handleClassicPackClick = (game: any) => {
+    // Find the original pack data from availablePacks
+    const originalPack = availablePacks?.classicPacks?.find((pack: any) => pack.id === game.id);
+    setSelectedClassicPack(originalPack);
+    setIsClassicPackPopupOpen(true);
+  };
+
+  // Handle pack opening (no longer needed since animation is in popup)
+  const handleOpenPack = (packId: string) => {
+    // This function is no longer used since pack opening is handled in the popup
+    console.log('Pack opening handled in popup:', packId);
+  };
 
   // Fetch available packs
   const { data: availablePacks, isLoading: packsLoading } = useQuery({
@@ -95,8 +112,19 @@ export default function Play() {
   }
 
   // Game Card Component
-  const GameCard = ({ game, isLarge = false, delay = 0 }: { game: GameItem, isLarge?: boolean, delay?: number }) => {
+  const GameCard = ({ game, isLarge = false, delay = 0, onClassicPackClick }: { game: GameItem, isLarge?: boolean, delay?: number, onClassicPackClick?: (pack: any) => void }) => {
     const cardSize = isLarge ? "w-72 h-64" : "w-56 h-48";
+    
+    const handleClick = () => {
+      if (game.comingSoon) return;
+      
+      // Check if this is a classic pack
+      if (game.badge === "Classic" && onClassicPackClick) {
+        onClassicPackClick(game);
+      } else {
+        window.location.href = game.route;
+      }
+    };
     
     return (
       <motion.div
@@ -109,7 +137,7 @@ export default function Play() {
       >
         <Card 
           className={`rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] overflow-hidden ${game.comingSoon ? 'opacity-50' : ''}`}
-          onClick={() => game.comingSoon ? null : window.location.href = game.route}
+          onClick={handleClick}
         >
           <CardContent className="p-0 h-full relative">
             {/* Game Image or Gradient Background */}
@@ -348,7 +376,8 @@ export default function Play() {
                         badge: "Classic",
                         badgeColor: "bg-orange-500"
                       }} 
-                      delay={0.7 + index * 0.1} 
+                      delay={0.7 + index * 0.1}
+                      onClassicPackClick={handleClassicPackClick}
                     />
                   ))}
                 </div>
@@ -359,6 +388,17 @@ export default function Play() {
         </div>
       </main>
       <NavigationFooter />
+
+      {/* Classic Pack Popup */}
+      <ClassicPackPopup
+        pack={selectedClassicPack}
+        isOpen={isClassicPackPopupOpen}
+        onClose={() => {
+          setIsClassicPackPopupOpen(false);
+          setSelectedClassicPack(null);
+        }}
+        onOpenPack={handleOpenPack}
+      />
     </div>
   );
 }

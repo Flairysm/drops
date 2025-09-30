@@ -28,8 +28,9 @@ export async function setupVite(app: Express, server: Server) {
     try {
       const url = req.originalUrl;
       
-      // Transform the HTML template
-      let template = await vite.transformIndexHtml(url, '');
+      // Read the HTML template file
+      const templatePath = path.resolve(__dirname, '../client/index.html');
+      const template = await vite.transformIndexHtml(url, await import('fs').then(fs => fs.promises.readFile(templatePath, 'utf-8')));
       
       // For SPA, just serve the template
       res.status(200).set({ 'Content-Type': 'text/html' }).end(template);

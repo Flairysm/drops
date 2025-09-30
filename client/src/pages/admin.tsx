@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Users, 
   Package, 
@@ -183,15 +184,9 @@ export default function Admin() {
   const fetchAdminStats = async () => {
     setIsLoadingStats(true);
     try {
-      const response = await fetch('http://localhost:3000/api/admin/stats', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const stats = await response.json();
-        setAdminStats(stats);
-      } else {
-        console.error('Failed to fetch admin stats');
-      }
+      const response = await apiRequest('GET', '/api/admin/stats');
+      const stats = await response.json();
+      setAdminStats(stats);
     } catch (error) {
       console.error('Error fetching admin stats:', error);
     } finally {
@@ -203,15 +198,9 @@ export default function Admin() {
   const fetchUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      const response = await fetch('http://localhost:3000/api/admin/users', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const usersData = await response.json();
-        setUsers(usersData);
-      } else {
-        console.error('Failed to fetch users');
-      }
+      const response = await apiRequest('GET', '/api/admin/users');
+      const usersData = await response.json();
+      setUsers(usersData);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -223,15 +212,9 @@ export default function Admin() {
   const fetchSystemSettings = async () => {
     setIsLoadingSettings(true);
     try {
-      const response = await fetch('http://localhost:3000/api/admin/system-settings', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const settingsData = await response.json();
-        setSystemSettings(settingsData);
-      } else {
-        console.error('Failed to fetch system settings');
-      }
+      const response = await apiRequest('GET', '/api/admin/system-settings');
+      const settingsData = await response.json();
+      setSystemSettings(settingsData);
     } catch (error) {
       console.error('Error fetching system settings:', error);
     } finally {
@@ -242,14 +225,7 @@ export default function Admin() {
   // Update system setting
   const updateSystemSetting = async (settingKey: string, settingValue: boolean) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/system-settings/${settingKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ settingValue })
-      });
+      const response = await apiRequest('POST', `/api/admin/system-settings/${settingKey}`, { settingValue });
       if (response.ok) {
         // Refresh settings after update
         fetchSystemSettings();
@@ -276,7 +252,7 @@ export default function Admin() {
   const fetchInventoryCards = async () => {
     try {
       setIsLoadingInventory(true);
-      const response = await fetch('http://localhost:3000/api/admin/inventory');
+      const response = await apiRequest('GET', '/api/admin/inventory');
       
       if (response.ok) {
         const cards = await response.json();
@@ -296,7 +272,7 @@ export default function Admin() {
   const fetchMysteryPacks = async () => {
     try {
       console.log('Fetching mystery packs...');
-      const response = await fetch('http://localhost:3000/api/admin/mystery-packs');
+      const response = await apiRequest('GET', '/api/admin/mystery-packs');
       console.log('Mystery packs fetch response status:', response.status);
       
       if (response.ok) {
@@ -312,7 +288,7 @@ export default function Admin() {
         if (packs.length > 0) {
           const pokeballPack = packs.find((pack: any) => pack.subtype === 'pokeball') || packs[0];
           console.log('Auto-loading mystery pack cards for:', pokeballPack.id);
-          const cardResponse = await fetch(`http://localhost:3000/api/admin/mystery-packs/${pokeballPack.id}`);
+          const cardResponse = await apiRequest('GET', `/api/admin/mystery-packs/${pokeballPack.id}`);
           if (cardResponse.ok) {
             const packData = await cardResponse.json();
             console.log('Auto-loaded mystery pack cards:', packData.cards);
@@ -1493,7 +1469,7 @@ export default function Admin() {
   // Fetch special packs from API
   const fetchSpecialPacks = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/admin/special-packs');
+      const response = await apiRequest('GET', '/api/admin/special-packs');
       if (response.ok) {
         const packs = await response.json();
         setSpecialPools(packs);
@@ -1508,7 +1484,7 @@ export default function Admin() {
   // Fetch classic packs from API
   const fetchClassicPacks = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/admin/classic-packs');
+      const response = await apiRequest('GET', '/api/admin/classic-packs');
       if (response.ok) {
         const packs = await response.json();
         setClassicPools(packs);

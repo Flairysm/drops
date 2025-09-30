@@ -19,6 +19,7 @@ import MyPacks from "@/pages/my-packs";
 import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
 import Reload from "@/pages/reload";
+import Purchase from "@/pages/purchase";
 import NotFound from "@/pages/not-found";
 
 function RouterComponent() {
@@ -86,6 +87,7 @@ function RouterComponent() {
           <Route path="/vault" component={Vault} />
           <Route path="/reload" component={Reload} />
           <Route path="/admin" component={Admin} />
+          <Route path="/purchase/:type/:id" component={Purchase} />
         </>
       )}
       <Route component={NotFound} />
