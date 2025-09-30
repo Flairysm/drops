@@ -1075,12 +1075,8 @@ export default function Admin() {
         // Update quantity
         console.log(`Updating card quantity in ${isClassicPack ? 'classic' : 'special'} pack:`, { packId: editingContentPool.id, specialPackCardId: cardId, quantity: newQuantity });
         
-        const response = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ quantity: newQuantity }),
+        const response = await apiRequest('PATCH', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
+          quantity: newQuantity
         });
 
         if (response.ok) {
@@ -1088,7 +1084,7 @@ export default function Admin() {
           alert('Card quantity updated successfully!');
           
           // Refresh the pack data
-          const updatedPack = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+          const updatedPack = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
           if (updatedPack.ok) {
             const packData = await updatedPack.json();
             setEditingContentPool(packData);
