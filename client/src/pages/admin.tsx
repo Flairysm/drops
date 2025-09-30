@@ -464,9 +464,7 @@ export default function Admin() {
 
     if (confirm(warningMessage)) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/inventory/${cardId}`, {
-          method: 'DELETE',
-        });
+        const response = await apiRequest('DELETE', `/api/admin/inventory/${cardId}`);
 
         if (response.ok) {
           // Refresh inventory
@@ -926,24 +924,26 @@ export default function Admin() {
   };
 
   const handleEditClassicPool = (pool: any) => {
-    setEditingPool(pool);
+    // Map the pool properties to match the editingPool structure
+    setEditingPool({
+      id: pool.id,
+      name: pool.name,
+      description: pool.description,
+      image: pool.imageUrl || pool.image, // Handle both imageUrl and image properties
+      price: parseFloat(pool.price),
+      totalCards: pool.totalCards || 0
+    });
     setShowEditPoolDialog(true);
   };
 
   const handleUpdateClassicPool = async () => {
     if (editingPool && editingPool.name.trim() && editingPool.description.trim() && editingPool.image.trim() && editingPool.price) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingPool.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: editingPool.name.trim(),
-            description: editingPool.description.trim(),
-            image: editingPool.image.trim(),
-            price: parseFloat(editingPool.price.toString())
-          }),
+        const response = await apiRequest('PUT', `/api/admin/classic-packs/${editingPool.id}`, {
+          name: editingPool.name.trim(),
+          description: editingPool.description.trim(),
+          image: editingPool.image.trim(),
+          price: parseFloat(editingPool.price.toString())
         });
 
         if (response.ok) {
@@ -1188,9 +1188,7 @@ export default function Admin() {
     console.log('Current editingContentPool.cards:', editingContentPool.cards);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
-        method: 'DELETE',
-      });
+      const response = await apiRequest('DELETE', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`);
 
       if (response.ok) {
         // Show success message first
@@ -1375,9 +1373,7 @@ export default function Admin() {
     if (!editingContentPool) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}/cards/${cardId}`, {
-        method: 'DELETE'
-      });
+      const response = await apiRequest('DELETE', `/api/admin/classic-packs/${editingContentPool.id}/cards/${cardId}`);
 
       if (!response.ok) {
         throw new Error('Failed to remove card from pack');
