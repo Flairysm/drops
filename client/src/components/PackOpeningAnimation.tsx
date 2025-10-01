@@ -220,16 +220,16 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   onClick={revealedCards >= 8 ? handleRevealHit : undefined}
                 >
                   {revealedCards >= 8 ? (
-                    /* Hit Card - Show HIT CARD image with tier glow */
+                    /* Hit Card - Show hit.png first, then actual card after click */
                     <div>
                       <div className={`w-12 h-16 mx-auto rounded overflow-hidden border-2 ${getHitCardGlow(hitCard.tier).borderGlow} ${getHitCardGlow(hitCard.tier).glow} ${getHitCardGlow(hitCard.tier).animate}`}>
                         <img 
-                          src={hitCard.imageUrl || hitCardImage} 
-                          alt="Hit Card" 
+                          src={showHitCard ? (hitCard.imageUrl || hitCardImage) : "/assets/hit.png"} 
+                          alt={showHitCard ? "Hit Card" : "Hit Card Back"} 
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = hitCardImage;
+                            target.src = showHitCard ? hitCardImage : "/assets/hit.png";
                           }}
                         />
                       </div>
