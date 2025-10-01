@@ -1,14 +1,18 @@
-import { db } from '../database/db';
+import { db } from '../db';
 import { sql } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { trackError } from '../monitoring/errorTracker';
-import { addBackupJob } from '../jobs/jobQueue';
+import { ErrorTracker } from '../monitoring/errorTracker';
+import { JobQueue } from '../jobs/jobQueue';
 import config from '../config';
 
 const execAsync = promisify(exec);
+
+// Create instances for backup jobs and error tracking
+const jobQueue = new JobQueue();
+const errorTracker = new ErrorTracker();
 
 export interface BackupConfig {
   enabled: boolean;
@@ -140,7 +144,7 @@ export class BackupManager {
       backupInfo.status = 'failed';
       backupInfo.error = error.message;
       
-      trackError(error, { backupId, type: 'full' }, 'high');
+      errorTracker.trackError(error, { backupId, type: 'full' }, 'high');
       console.error(`❌ Full backup failed: ${error.message}`);
       
       throw error;
@@ -206,7 +210,7 @@ export class BackupManager {
       backupInfo.status = 'failed';
       backupInfo.error = error.message;
       
-      trackError(error, { backupId, type: 'incremental' }, 'high');
+      errorTracker.trackError(error, { backupId, type: 'incremental' }, 'high');
       console.error(`❌ Incremental backup failed: ${error.message}`);
       
       throw error;
@@ -258,7 +262,7 @@ export class BackupManager {
       backupInfo.status = 'failed';
       backupInfo.error = error.message;
       
-      trackError(error, { backupId, type: 'schema' }, 'high');
+      errorTracker.trackError(error, { backupId, type: 'schema' }, 'high');
       console.error(`❌ Schema backup failed: ${error.message}`);
       
       throw error;
@@ -296,7 +300,7 @@ export class BackupManager {
 
       console.log(`✅ Restore completed from: ${backup.filename}`);
     } catch (error: any) {
-      trackError(error, { backupId, operation: 'restore' }, 'critical');
+      errorTracker.trackError(error, { backupId, operation: 'restore' }, 'critical');
       console.error(`❌ Restore failed: ${error.message}`);
       throw error;
     }
@@ -330,7 +334,7 @@ export class BackupManager {
 
       return backups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
-      trackError(error as Error, { operation: 'listBackups' }, 'medium');
+      errorTracker.trackError(error as Error, { operation: 'listBackups' }, 'medium');
       return [];
     }
   }
@@ -349,7 +353,7 @@ export class BackupManager {
         }
       }
     } catch (error) {
-      trackError(error as Error, { operation: 'cleanupOldBackups' }, 'medium');
+      errorTracker.trackError(error as Error, { operation: 'cleanupOldBackups' }, 'medium');
     }
   }
 
@@ -391,13 +395,13 @@ export class BackupManager {
     console.log(`📅 Scheduling backups with cron: ${this.config.schedule}`);
     
     // Schedule full backup
-    await addBackupJob('full', this.config.schedule);
+    await jobQueue.addJob('backup', { type: 'full', schedule: this.config.schedule });
     
     // Schedule incremental backup (every 6 hours)
-    await addBackupJob('incremental', '0 */6 * * *');
+    await jobQueue.addJob('backup', { type: 'incremental', schedule: '0 */6 * * *' });
     
     // Schedule schema backup (weekly)
-    await addBackupJob('schema', '0 3 * * 0');
+    await jobQueue.addJob('backup', { type: 'schema', schedule: '0 3 * * 0' });
   }
 
   // Get last backup
@@ -420,7 +424,7 @@ export class BackupManager {
 
       return result.rows.map((row: any) => row.table_name);
     } catch (error) {
-      trackError(error as Error, { operation: 'getModifiedTables' }, 'medium');
+      errorTracker.trackError(error as Error, { operation: 'getModifiedTables' }, 'medium');
       return [];
     }
   }
