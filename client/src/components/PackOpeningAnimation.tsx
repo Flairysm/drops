@@ -39,25 +39,25 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const hitCardIndex = packCards.findIndex(card => card.isHit);
   const nonHitCards = packCards.filter(card => !card.isHit);
 
-  // Start sequential card reveal animation - just like Black Bolt virtual packs
+  // Start sequential card reveal animation - 8 commons + 1 hit card
   useEffect(() => {
     if (showCommons) {
       // Reset revealed cards
       setRevealedCards(0);
       
-      // Reveal ALL 9 cards one by one (8 commons + 1 hit card back)
-      packCards.forEach((_, index) => {
+      // Reveal 8 common cards first, then hit card back
+      for (let i = 0; i < 8; i++) {
         setTimeout(() => {
-          setRevealedCards(index + 1);
-        }, 500 + (index * 150)); // Start after 500ms, then 150ms intervals
-      });
+          setRevealedCards(i + 1);
+        }, 500 + (i * 150)); // Start after 500ms, then 150ms intervals
+      }
       
-      // After all cards are revealed, enable hit card interaction
+      // After 8 commons, show hit card back with a small delay
       setTimeout(() => {
-        // All cards revealed, hit card is ready to tap
-      }, 500 + (packCards.length * 150) + 500);
+        setRevealedCards(9); // Show hit card back
+      }, 500 + (8 * 150) + 500);
     }
-  }, [showCommons, packCards.length]);
+  }, [showCommons]);
 
   const handleRevealHit = () => {
     if (showCommons) {
@@ -172,87 +172,74 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
         </div>
 
         {showCommons ? (
-          /* All 9 Cards Grid with Hit Card Peek */
+          /* 3x3 Grid - 8 commons + 1 hit card */
           <div className="mb-6">
-            <h3 className="text-center text-white mb-4">Your Pack Contents</h3>
-            <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mb-6">
-              {packCards.map((card, index) => {
-                const isHitCard = card.isHit;
+            <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto mb-6">
+              {/* Show 8 common cards first */}
+              {nonHitCards.slice(0, 8).map((card, index) => {
                 const isCardRevealed = index < revealedCards;
-                const canRevealHit = isHitCard && revealedCards >= packCards.length;
-                const hitGlow = isHitCard ? getHitCardGlow(card.tier || '') : null;
-                
-                // Show empty slot until card is revealed
-                if (!isCardRevealed) {
-                  return (
-                    <div 
-                      key={index} 
-                      className="gaming-card p-3 text-center opacity-30"
-                    >
-                      <div className="w-12 h-16 mx-auto bg-gray-700/20 rounded mb-2"></div>
-                    </div>
-                  );
-                }
-                
+
                 return (
-                  <div 
-                    key={index} 
-                    className={`gaming-card p-3 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2 ${
-                      canRevealHit
-                        ? `${hitGlow?.glow} ${hitGlow?.animate} border-2 border-yellow-400 cursor-pointer hover:scale-105 animate-pulse`
-                        : ''
-                    }`}
-                    onClick={canRevealHit ? handleRevealHit : undefined}
+                  <div
+                    key={card.id}
+                    className="gaming-card p-2 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
                   >
-                    {isHitCard ? (
-                      /* Hit Card - Show HIT CARD image with tier glow */
-                      <div className="space-y-1">
-                        <div className={`w-12 h-16 mx-auto rounded overflow-hidden border-2 ${hitGlow?.borderGlow} ${hitGlow?.glow} ${hitGlow?.animate}`}>
-                          <img 
-                            src={hitCardImage} 
-                            alt="Hit Card" 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="text-xs">{hitGlow?.particles}</div>
-                        <p className="text-xs font-bold text-yellow-300">{canRevealHit ? 'TAP!' : 'HIT'}</p>
-                        <p className="text-xs text-yellow-200">{card.tier?.toUpperCase()}</p>
-                      </div>
-                    ) : isCardRevealed ? (
-                      /* Regular Card - Revealed */
+                    {isCardRevealed ? (
+                      /* Common Card - Revealed */
                       <div>
-                        {card.imageUrl ? (
-                          <img
-                            src={card.imageUrl}
-                            alt={card.name}
-                            className="w-12 h-16 mx-auto rounded object-cover mb-2"
-                            onError={(e) => {
-                              // Fallback to default image if the imageUrl fails to load
-                              const target = e.target as HTMLImageElement;
-                              target.src = "/card-images/random-common-card.png";
-                            }}
-                          />
-                        ) : (
-                          <img
-                            src="/card-images/random-common-card.png"
-                            alt={card.name}
-                            className="w-12 h-16 mx-auto rounded object-cover mb-2"
-                          />
-                        )}
-                        <p className="text-xs font-medium truncate">{card.name}</p>
+                        <img
+                          src={card.imageUrl || "/card-images/random-common-card.png"}
+                          alt={card.name}
+                          className="w-12 h-16 mx-auto rounded object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/card-images/random-common-card.png";
+                          }}
+                        />
                       </div>
                     ) : (
-                      /* Regular Card - Hidden */
+                      /* Common Card - Hidden */
                       <div>
-                        <div className="w-12 h-16 mx-auto bg-gray-200 rounded flex items-center justify-center mb-2">
+                        <div className="w-12 h-16 mx-auto bg-gray-200 rounded flex items-center justify-center">
                           <span className="text-xs text-gray-400">?</span>
                         </div>
-                        <p className="text-xs text-gray-400">???</p>
                       </div>
                     )}
                   </div>
                 );
               })}
+              
+              {/* Hit card in the center (9th position) */}
+              {hitCard && (
+                <div
+                  className={`gaming-card p-2 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2 ${
+                    revealedCards >= 8
+                      ? `${getHitCardGlow(hitCard.tier).glow} ${getHitCardGlow(hitCard.tier).animate} border-2 border-yellow-400 cursor-pointer hover:scale-105 animate-pulse`
+                      : ''
+                  }`}
+                  onClick={revealedCards >= 8 ? handleRevealHit : undefined}
+                >
+                  {revealedCards >= 8 ? (
+                    /* Hit Card - Show HIT CARD image with tier glow */
+                    <div>
+                      <div className={`w-12 h-16 mx-auto rounded overflow-hidden border-2 ${getHitCardGlow(hitCard.tier).borderGlow} ${getHitCardGlow(hitCard.tier).glow} ${getHitCardGlow(hitCard.tier).animate}`}>
+                        <img 
+                          src={hitCardImage} 
+                          alt="Hit Card" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Hit Card - Hidden */
+                    <div>
+                      <div className="w-12 h-16 mx-auto bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-xs text-gray-400">?</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : showHitCard ? (
@@ -347,7 +334,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             data-testid="button-reveal-card"
           >
             {showCommons 
-              ? revealedCards >= packCards.length ? "Click Hit Card!" : "Revealing Cards..."
+              ? revealedCards >= 8 ? "Click Hit Card!" : "Revealing Cards..."
               : !isHitRevealed 
               ? "Tap to Reveal" 
               : "Complete Opening"
@@ -356,7 +343,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           
           <p className="text-sm text-gray-400 mt-2">
             {showCommons 
-              ? revealedCards >= packCards.length 
+              ? revealedCards >= 8 
                 ? "All cards revealed! Click the glowing hit card to reveal it!" 
                 : "Watch as your cards pop up one by one..."
               : !isHitRevealed 
