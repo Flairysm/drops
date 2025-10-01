@@ -538,31 +538,105 @@ export class DatabaseStorage implements IStorage {
       throw new Error('No cards available in mystery pack');
     }
 
-    // Create a weighted pool based on quantities
-    const weightedPool: any[] = [];
-    for (const packCard of packCards) {
-      for (let i = 0; i < packCard.quantity; i++) {
-        weightedPool.push(packCard.card);
+    // Create 8 cards: 7 commons + 1 hit (same format as Black Bolt classic pack)
+    const selectedCards = [];
+    const cardsToDeduct: { mysteryPackCardId: string; quantity: number }[] = [];
+    
+    // Add 7 common cards
+    const commonCards = packCards.filter(pc => pc.card?.tier === 'D');
+    
+    if (commonCards.length > 0) {
+      for (let i = 0; i < 7; i++) {
+        const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
+        if (randomCommon.card) {
+          selectedCards.push({
+            id: randomCommon.card.id,
+            name: randomCommon.card.name || "Common Card",
+            imageUrl: randomCommon.card.imageUrl || "/card-images/random-common-card.png",
+            tier: randomCommon.card.tier || "D",
+            marketValue: randomCommon.card.credits || 10,
+            isHit: false,
+            position: i
+          });
+          
+          const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === randomCommon.id);
+          if (existingDeduction) {
+            existingDeduction.quantity++;
+          } else {
+            cardsToDeduct.push({ mysteryPackCardId: randomCommon.id, quantity: 1 });
+          }
+        }
       }
+    } else {
+      throw new Error('No common cards found in mystery pack pool');
     }
 
-    // Select a random card from the weighted pool
-    const selectedCard = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+    // Add 1 hit card
+    const hitCards = packCards.filter(pc => pc.card && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
+    
+    if (hitCards.length > 0) {
+      const randomHit = hitCards[Math.floor(Math.random() * hitCards.length)];
+      if (randomHit.card) {
+        selectedCards.push({
+          id: randomHit.card.id,
+          name: randomHit.card.name || 'Hit Card',
+          imageUrl: randomHit.card.imageUrl || '/card-images/random-common-card.png',
+          tier: randomHit.card.tier || 'C',
+          marketValue: randomHit.card.credits || 100,
+          isHit: true,
+          position: 7
+        });
+        
+        const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === randomHit.id);
+        if (existingDeduction) {
+          existingDeduction.quantity++;
+        } else {
+          cardsToDeduct.push({ mysteryPackCardId: randomHit.id, quantity: 1 });
+        }
+      }
+    } else if (commonCards.length > 0) {
+      // Fallback: if no hit cards, pick another common
+      const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
+      if (randomCommon.card) {
+        selectedCards.push({
+          id: randomCommon.card.id,
+          name: randomCommon.card.name || 'Common Card',
+          imageUrl: randomCommon.card.imageUrl || '/card-images/random-common-card.png',
+          tier: randomCommon.card.tier || 'D',
+          marketValue: randomCommon.card.credits || 10,
+          isHit: false,
+          position: 7
+        });
+        
+        const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === randomCommon.id);
+        if (existingDeduction) {
+          existingDeduction.quantity++;
+        } else {
+          cardsToDeduct.push({ mysteryPackCardId: randomCommon.id, quantity: 1 });
+        }
+      }
+    } else {
+      throw new Error('No cards available for mystery pack');
+    }
 
-    // Create user card entry
-    const [userCard] = await tx
-      .insert(userCards)
-      .values({
-        userId,
-        cardId: selectedCard.id,
-        pullValue: selectedCard.credits.toString(),
-        quantity: 1,
-        earnedFrom: userPack.earnedFrom,
-        earnedAt: new Date(),
-      })
-      .returning();
+    if (selectedCards.length === 0) {
+      throw new Error('Could not select any cards from the mystery pack pool');
+    }
 
-    // Mark pack as opened
+    // Deduct quantities from mysteryPackCards
+    for (const deduction of cardsToDeduct) {
+      await tx
+        .update(mysteryPackCards)
+        .set({ quantity: sql`${mysteryPackCards.quantity} - ${deduction.quantity}` })
+        .where(eq(mysteryPackCards.id, deduction.mysteryPackCardId));
+    }
+
+    // Add cards to user's vault
+    for (const card of selectedCards) {
+      await this.addUserCard(tx, userId, card.id, 1);
+    }
+
+    // Mark user pack as opened
     await tx
       .update(userPacks)
       .set({ 
@@ -574,23 +648,19 @@ export class DatabaseStorage implements IStorage {
     // Add to global feed
     await tx.insert(globalFeed).values({
       userId,
-      cardId: selectedCard.id,
-      tier: selectedCard.tier,
+      cardId: selectedCards[7]?.id || selectedCards[0].id, // Use hit card or first card
+      tier: selectedCards[7]?.tier || selectedCards[0].tier,
       gameType: userPack.earnedFrom,
     });
 
     return {
-      userCard,
-      packCards: [{
-        id: selectedCard.id,
-        name: selectedCard.name,
-        tier: selectedCard.tier,
-        imageUrl: selectedCard.imageUrl,
-        marketValue: selectedCard.credits.toString(),
-        isHit: true,
-        position: 0
-      }],
-      hitCardPosition: 0
+      userCard: null, // Not used in new format
+      packCards: selectedCards,
+      hitCardPosition: 7, // The 8th card (index 7) is the hit card
+      newCards: selectedCards,
+      creditsDeducted: 0, // Mystery packs are earned, not purchased with credits
+      packId: userPack.id,
+      packType: 'mystery',
     };
   }
 
