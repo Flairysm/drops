@@ -32,11 +32,6 @@ interface GameState {
   currentRound: number;
 }
 
-interface PackAward {
-  tier: string;
-  message: string;
-  show: boolean;
-}
 
 const FIND_PIKACHU_COST = 300; // 300 credits per game (RM 15)
 
@@ -100,11 +95,6 @@ export function FindPikachuGame() {
     currentRound: 0,
   });
 
-  const [packAward, setPackAward] = useState<PackAward>({
-    tier: '',
-    message: '',
-    show: false,
-  });
 
   const [gameStarted, setGameStarted] = useState(false);
   const [showShuffleAnimation, setShowShuffleAnimation] = useState(false);
@@ -201,12 +191,8 @@ export function FindPikachuGame() {
         currentRound: data.currentRound,
       }));
       
-      // Show pack award popup
-      setPackAward({
-        tier: data.packTier,
-        message: data.message,
-        show: true,
-      });
+      // Show game over popup (no separate pack award popup)
+      setShowGameOverPopup(true);
       
       // Invalidate user credits query
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -221,12 +207,6 @@ export function FindPikachuGame() {
     },
   });
 
-  // Close pack award popup and reset game
-  const closePackAward = () => {
-    setPackAward({ tier: '', message: '', show: false });
-    setGameStarted(false);
-    initializeGame();
-  };
 
   // Initialize new game (just sets up the board, doesn't deduct credits)
   const initializeGame = useCallback(() => {
@@ -378,46 +358,6 @@ export function FindPikachuGame() {
       
       <Navigation />
       
-      {/* Pack Award Popup */}
-      {packAward.show && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-in fade-in duration-300 p-4">
-          <Card className="gaming-card w-full max-w-sm sm:max-w-md animate-in zoom-in-95 duration-300 bg-gray-900 border-gray-700">
-            <CardHeader className="text-center px-4 sm:px-6">
-              <CardTitle className="font-gaming text-xl sm:text-2xl text-white">
-                Pack Awarded!
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-3 sm:space-y-4 px-4 sm:px-6 pb-6">
-              {/* Pack Image */}
-              <div className="flex justify-center">
-                <div className="relative">
-                  <PackImage packType={packAward.tier} size="large" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg opacity-20 animate-pulse"></div>
-                </div>
-              </div>
-              
-              <div className="text-base sm:text-lg font-semibold text-white">
-                {packAward.tier.charAt(0).toUpperCase() + packAward.tier.slice(1)} Pack!
-              </div>
-              
-              <div className="text-sm text-gray-300">
-                {packAward.message}
-              </div>
-              
-              <div className="text-xs text-gray-400">
-                Check your "My Packs" section to open it!
-              </div>
-              
-              <Button 
-                onClick={closePackAward}
-                className="w-full py-3"
-              >
-                Back
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
       
       <main className="pt-20 sm:pt-20 pb-12 sm:pb-12 relative z-10">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
@@ -865,17 +805,25 @@ export function FindPikachuGame() {
               </div>
               
               {/* Content */}
-              <div className="space-y-3">
-                <p className="text-xl text-gray-200">
-                  You have won a <span className="font-bold text-green-400">{getRewardTier(gameState.pikachusFound).name}</span> pack!
-                </p>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-xl text-gray-200 mb-2">
+                    {gameState.gameWon ? "Congratulations! You won!" : "Hunt ended!"}
+                  </p>
+                  <p className="text-lg text-gray-300">
+                    You found <span className="font-bold text-yellow-400">{gameState.pikachusFound}/4</span> Pikachus
+                  </p>
+                  <p className="text-lg text-gray-200 mt-2">
+                    You earned a <span className="font-bold text-green-400">{getRewardTier(gameState.pikachusFound).name}</span> pack!
+                  </p>
+                </div>
                 
                 <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-                  <p className="text-sm text-gray-300">
-                    Go to My Packs to open it
+                  <p className="text-sm text-gray-300 text-center">
+                    🎁 Pack has been added to your collection
                   </p>
-                  <p className="text-sm text-gray-300">
-                    Click New Hunt for a new game
+                  <p className="text-sm text-gray-300 text-center">
+                    Go to "My Packs" to open it
                   </p>
                 </div>
               </div>
@@ -885,7 +833,7 @@ export function FindPikachuGame() {
                 onClick={() => setShowGameOverPopup(false)}
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
               >
-                OK
+                Continue
               </Button>
             </div>
           </motion.div>
