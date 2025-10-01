@@ -354,7 +354,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Award mystery pack to user
-      await storage.addUserPack({
+      console.log('Awarding mystery pack to user:', { userId, packId: pack.id, packType: 'mystery', tier: packTier, earnedFrom: 'find-pikachu' });
+      const userPack = await storage.addUserPack({
         userId,
         packId: pack.id,
         packType: 'mystery',
@@ -362,6 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         earnedFrom: 'find-pikachu',
         isOpened: false,
       });
+      console.log('Successfully added user pack:', userPack);
 
       // Create transaction record
       await storage.addTransaction({

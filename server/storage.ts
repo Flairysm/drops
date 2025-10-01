@@ -492,7 +492,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addUserPack(userPack: InsertUserPack): Promise<UserPack> {
+    console.log('Storage: addUserPack called with:', userPack);
     const [newUserPack] = await db.insert(userPacks).values(userPack).returning();
+    console.log('Storage: addUserPack result:', newUserPack);
     return newUserPack;
   }
 
