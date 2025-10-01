@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   Users, 
   Package, 
@@ -25,6 +26,7 @@ import {
 
 export default function Admin() {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
@@ -604,6 +606,11 @@ export default function Admin() {
         console.log('Calling fetchMysteryPackCards to refresh UI after adding...');
         await fetchMysteryPackCards();
         console.log('fetchMysteryPackCards completed after adding');
+        
+        // Force refresh by invalidating the query cache
+        console.log('Invalidating query cache to force refresh after adding...');
+        queryClient.invalidateQueries({ queryKey: ['mystery-pack-cards'] });
+        console.log('Query cache invalidated after adding');
       } else {
         const errorText = await response.text();
         console.error('Failed to add card to mystery pack pool:', errorText);
@@ -649,6 +656,11 @@ export default function Admin() {
         console.log('Calling fetchMysteryPackCards to refresh UI after direct removal...');
         await fetchMysteryPackCards();
         console.log('fetchMysteryPackCards completed after direct removal');
+        
+        // Force refresh by invalidating the query cache
+        console.log('Invalidating query cache to force refresh after direct removal...');
+        queryClient.invalidateQueries({ queryKey: ['mystery-pack-cards'] });
+        console.log('Query cache invalidated after direct removal');
       } else {
         const errorText = await response.text();
         console.error('Failed to remove card from mystery pack pool:', errorText);
@@ -712,6 +724,11 @@ export default function Admin() {
           console.log('Calling fetchMysteryPackCards to refresh UI after removal...');
           await fetchMysteryPackCards();
           console.log('fetchMysteryPackCards completed after removal');
+          
+          // Force refresh by invalidating the query cache
+          console.log('Invalidating query cache to force refresh after removal...');
+          queryClient.invalidateQueries({ queryKey: ['mystery-pack-cards'] });
+          console.log('Query cache invalidated after removal');
         } else {
           const errorText = await response.text();
           console.error('Failed to remove card from mystery pack pool:', errorText);
@@ -733,6 +750,11 @@ export default function Admin() {
           console.log('Calling fetchMysteryPackCards to refresh UI...');
           await fetchMysteryPackCards();
           console.log('fetchMysteryPackCards completed');
+          
+          // Force refresh by invalidating the query cache
+          console.log('Invalidating query cache to force refresh...');
+          queryClient.invalidateQueries({ queryKey: ['mystery-pack-cards'] });
+          console.log('Query cache invalidated');
         } else {
           const errorText = await response.text();
           console.error('Failed to update card quantity in mystery pack pool:', errorText);
