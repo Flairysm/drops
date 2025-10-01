@@ -5,6 +5,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from 'url';
+import { getAdminEnhancements } from "./integration/adminEnhancements";
 
 // Fixed import.meta.dirname issue for production builds
 const __filename = fileURLToPath(import.meta.url);
@@ -140,6 +141,12 @@ app.use((req, res, next) => {
     
     const server = await registerRoutes(app);
     console.log('✅ Routes registered successfully');
+
+    // Initialize admin enhancements
+    console.log('🔧 Initializing admin enhancements...');
+    const adminEnhancements = getAdminEnhancements(app);
+    await adminEnhancements.initialize();
+    console.log('✅ Admin enhancements initialized');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
