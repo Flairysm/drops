@@ -636,7 +636,13 @@ export class DatabaseStorage implements IStorage {
 
     // Add cards to user's vault
     for (const card of selectedCards) {
-      await this.addUserCard(tx, userId, card.id, 1);
+      await this.addUserCard({
+        userId,
+        cardId: card.id,
+        quantity: 1,
+        isRefunded: false,
+        isShipped: false,
+      });
     }
 
     // Mark user pack as opened
