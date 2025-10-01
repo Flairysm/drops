@@ -362,7 +362,7 @@ export default function Admin() {
       const pokeballPack = mysteryPacks.find(pack => pack.subtype === 'pokeball') || mysteryPacks[0];
       console.log('Fetching cards for mystery pack pool:', pokeballPack.id);
       
-      const response = await fetch(`http://localhost:3000/api/admin/mystery-packs/${pokeballPack.id}`);
+      const response = await apiRequest('GET', `/api/admin/mystery-packs/${pokeballPack.id}`);
       if (response.ok) {
         const packData = await response.json();
         console.log('Fetched mystery pack cards:', packData.cards);
@@ -589,15 +589,9 @@ export default function Admin() {
     try {
       console.log('Adding card to mystery pack pool:', { packId: pokeballPack.id, cardId: card.id });
       
-      const response = await fetch(`http://localhost:3000/api/admin/mystery-packs/${pokeballPack.id}/cards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          cardId: card.id,
-          quantity: 1
-        }),
+      const response = await apiRequest('POST', `/api/admin/mystery-packs/${pokeballPack.id}/cards`, {
+        cardId: card.id,
+        quantity: 1
       });
 
       if (response.ok) {
@@ -642,12 +636,7 @@ export default function Admin() {
     try {
       console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, cardId: cardToRemove.cardId });
       
-      const response = await fetch(`http://localhost:3000/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToRemove.cardId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToRemove.cardId}`);
 
       if (response.ok) {
         console.log('Successfully removed card from mystery pack pool');
@@ -708,12 +697,7 @@ export default function Admin() {
         // Remove card if quantity is 0
         console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, cardId: cardToUpdate.cardId });
         
-        const response = await fetch(`http://localhost:3000/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.cardId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.cardId}`);
 
         if (response.ok) {
           console.log('Successfully removed card from mystery pack pool');
@@ -730,14 +714,8 @@ export default function Admin() {
         // Update quantity
         console.log('Updating card quantity in mystery pack pool:', { packId: pokeballPack.id, cardId: cardToUpdate.cardId, quantity: newQuantity });
         
-        const response = await fetch(`http://localhost:3000/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.cardId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            quantity: newQuantity
-          }),
+        const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.cardId}`, {
+          quantity: newQuantity
         });
 
         if (response.ok) {
