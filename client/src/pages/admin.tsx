@@ -707,9 +707,9 @@ export default function Admin() {
     try {
       if (newQuantity === 0) {
         // Remove card if quantity is 0
-        console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, cardId: cardToUpdate.cardId });
+        console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id });
         
-        const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.cardId}`);
+        const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`);
 
         if (response.ok) {
           console.log('Successfully removed card from mystery pack pool');
@@ -726,9 +726,9 @@ export default function Admin() {
         }
       } else {
         // Update quantity
-        console.log('Updating card quantity in mystery pack pool:', { packId: pokeballPack.id, cardId: cardToUpdate.cardId, quantity: newQuantity });
+        console.log('Updating card quantity in mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id, quantity: newQuantity });
         
-        const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.cardId}`, {
+        const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`, {
           quantity: newQuantity
         });
 
