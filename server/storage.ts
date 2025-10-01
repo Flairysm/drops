@@ -354,9 +354,19 @@ export class DatabaseStorage implements IStorage {
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
     return await db.transaction(async (tx) => {
       try {
+        // Get the card's current market value for pull_value
+        const [card] = await tx
+          .select({ credits: inventory.credits })
+          .from(inventory)
+          .where(eq(inventory.id, userCard.cardId))
+          .limit(1);
+
+        const pullValue = card?.credits || 0;
+
         // Insert user card into vault
         await tx.insert(userCards).values({
           ...userCard,
+          pullValue: pullValue.toString(),
           isRefunded: userCard.isRefunded ?? false,
           isShipped: userCard.isShipped ?? false,
         });
