@@ -430,9 +430,32 @@ export class DatabaseStorage implements IStorage {
         const refundAmount = parseFloat(card.pullValue);
         totalRefund += refundAmount;
         
-        // Note: We don't add cards back to prize pool on refund
-        // The inventory is a static database and prize pools should remain as configured
-        // Refunds only restore credits to the user
+        // Add cards back to prize pool on refund
+        if (card.inventoryCard) {
+          // Find which pack this card belongs to and add it back
+          // We need to find the pack card entry that matches the user's card by inventory card ID
+          const packCard = await tx
+            .select()
+            .from(specialPackCards)
+            .where(eq(specialPackCards.cardId, card.inventoryCard.id))
+            .limit(1);
+
+          if (packCard.length > 0) {
+            // Add the card back to the pack's prize pool
+            await tx
+              .update(specialPackCards)
+              .set({ 
+                quantity: sql`${specialPackCards.quantity} + ${card.quantity || 1}` 
+              })
+              .where(eq(specialPackCards.id, packCard[0].id));
+            
+            console.log(`✅ Added ${card.quantity || 1} ${card.inventoryCard.name} back to pack ${packCard[0].packId}`);
+          } else {
+            console.log(`❌ No pack card found for inventory card: ${card.inventoryCard.id} (${card.inventoryCard.name})`);
+          }
+        } else {
+          console.log(`❌ No inventory card found for user card: ${card.cardId}`);
+        }
       }
 
       // Mark cards as refunded
@@ -1520,13 +1543,16 @@ export class DatabaseStorage implements IStorage {
       
       const selectedCommonCards = [];
       if (commonCards.length > 0) {
-        // Use existing common cards from the pack
+        // Use existing common cards from the pack - ALWAYS use the existing card ID
         for (let i = 0; i < 7; i++) {
           const randomCommonCard = commonCards[Math.floor(Math.random() * commonCards.length)];
           const cardId = randomCommonCard.card?.id;
+          if (!cardId) {
+            throw new Error('Common card missing ID in pack prize pool');
+          }
           selectedCommonCards.push(randomCommonCard);
           selectedCards.push({
-            id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
+            id: cardId, // Always use the existing card ID from the pack
             name: randomCommonCard.card?.name || "Common Card",
             imageUrl: randomCommonCard.card?.imageUrl || "/card-images/random-common-card.png",
             tier: randomCommonCard.card?.tier || "D",
@@ -1534,16 +1560,7 @@ export class DatabaseStorage implements IStorage {
           });
         }
       } else {
-        // Fallback: create 7 common cards with unique UUIDs if no common cards in pack
-        for (let i = 0; i < 7; i++) {
-          selectedCards.push({
-            id: randomUUID(),
-            name: "Common Card",
-            imageUrl: "/card-images/random-common-card.png",
-            tier: "D",
-            marketValue: 10
-          });
-        }
+        throw new Error('No common cards found in pack prize pool');
       }
 
       // Add 1 hit card from the pack
@@ -1556,9 +1573,12 @@ export class DatabaseStorage implements IStorage {
         if (hitCards.length > 0) {
           const randomHitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
           const cardId = randomHitCard.card?.id;
+          if (!cardId) {
+            throw new Error('Hit card missing ID in pack prize pool');
+          }
           selectedHitCard = randomHitCard;
           selectedCards.push({
-            id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
+            id: cardId, // Always use the existing card ID from the pack
             name: randomHitCard.card?.name || 'Hit Card',
             imageUrl: randomHitCard.card?.imageUrl || '/card-images/random-common-card.png',
             tier: randomHitCard.card?.tier || 'C',
@@ -1568,9 +1588,12 @@ export class DatabaseStorage implements IStorage {
           // Fallback to any available card
           const randomCard = packCards[Math.floor(Math.random() * packCards.length)];
           const cardId = randomCard.card?.id;
+          if (!cardId) {
+            throw new Error('Card missing ID in pack prize pool');
+          }
           selectedHitCard = randomCard;
           selectedCards.push({
-            id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
+            id: cardId, // Always use the existing card ID from the pack
             name: randomCard.card?.name || 'Hit Card',
             imageUrl: randomCard.card?.imageUrl || '/card-images/random-common-card.png',
             tier: randomCard.card?.tier || 'C',
@@ -1578,19 +1601,12 @@ export class DatabaseStorage implements IStorage {
           });
         }
       } else {
-        // Final fallback - create a common card
-        selectedCards.push({
-          id: randomUUID(),
-          name: "Common Card",
-          imageUrl: "/card-images/random-common-card.png",
-          tier: "D",
-          marketValue: 10
-        });
+        throw new Error('No cards found in pack prize pool');
       }
 
-      // Add cards to user's vault
+      // Add cards to user's vault (only if they exist in inventory)
       for (const card of selectedCards) {
-        // First, ensure the card exists in inventory
+        // Verify the card exists in inventory (it should, since we're using existing card IDs)
         const existingInventoryCard = await tx
           .select()
           .from(inventory)
@@ -1598,14 +1614,7 @@ export class DatabaseStorage implements IStorage {
           .limit(1);
 
         if (existingInventoryCard.length === 0) {
-          // Create the card in inventory if it doesn't exist
-          await tx.insert(inventory).values({
-            id: card.id,
-            name: card.name,
-            imageUrl: card.imageUrl,
-            credits: card.marketValue,
-            tier: card.tier
-          });
+          throw new Error(`Card ${card.id} not found in inventory - this should not happen`);
         }
 
         const existingCard = await tx
@@ -1663,7 +1672,7 @@ export class DatabaseStorage implements IStorage {
       // Deduct common cards - count occurrences and deduct accordingly
       const commonCardCounts = new Map<string, number>();
       for (const commonCard of selectedCommonCards) {
-        const key = commonCard.id;
+        const key = commonCard.cardId; // Use cardId (inventory ID) not pack card entry ID
         commonCardCounts.set(key, (commonCardCounts.get(key) || 0) + 1);
       }
       
@@ -1671,7 +1680,10 @@ export class DatabaseStorage implements IStorage {
         await tx
           .update(specialPackCards)
           .set({ quantity: sql`${specialPackCards.quantity} - ${count}` })
-          .where(eq(specialPackCards.id, cardId));
+          .where(and(
+            eq(specialPackCards.packId, packId),
+            eq(specialPackCards.cardId, cardId)
+          ));
       }
       
       // Deduct hit card from prize pool if it was selected from the pack
@@ -1679,7 +1691,10 @@ export class DatabaseStorage implements IStorage {
         await tx
           .update(specialPackCards)
           .set({ quantity: selectedHitCard.quantity - 1 })
-          .where(eq(specialPackCards.id, selectedHitCard.id));
+          .where(and(
+            eq(specialPackCards.packId, packId),
+            eq(specialPackCards.cardId, selectedHitCard.cardId)
+          ));
       }
 
       return {
