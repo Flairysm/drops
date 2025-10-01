@@ -153,24 +153,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateGameSession(gameSession.id, result, 'completed');
 
       if (gameType === 'plinko' || gameType === 'wheel') {
-        // For Plinko and Wheel, award packs based on outcome
+        // For Plinko and Wheel, award mystery packs based on outcome
         const packType = result.tier;
         
-        const packs = await storage.getActivePacks();
-        const targetPack = packs.find(p => p.type === packType);
+        const mysteryPacks = await storage.getMysteryPacks();
+        const targetPack = mysteryPacks.find(p => p.subtype === packType);
         
         if (!targetPack) {
-          throw new Error(`Pack type ${packType} not found`);
+          // If specific pack type doesn't exist, use the first available pack
+          const fallbackPack = mysteryPacks[0];
+          if (!fallbackPack) {
+            throw new Error(`No mystery packs available`);
+          }
+          
+          // Award fallback pack to user
+          await storage.addUserPack({
+            userId,
+            packId: fallbackPack.id,
+            tier: packType, // Store pack type directly
+            earnedFrom: gameType,
+            isOpened: false,
+          });
+        } else {
+          // Award pack to user - store the pack type as tier for display
+          await storage.addUserPack({
+            userId,
+            packId: targetPack.id,
+            tier: packType, // Store pack type directly
+            earnedFrom: gameType,
+            isOpened: false,
+          });
         }
-
-        // Award pack to user - store the pack type as tier for display
-        await storage.addUserPack({
-          userId,
-          packId: targetPack.id,
-          tier: packType, // Store pack type directly
-          earnedFrom: gameType,
-          isOpened: false,
-        });
 
         // No global feed for pack earning - only when opening packs
       } else {
@@ -244,12 +257,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       else if (greensFound === 4) packTier = "masterball";
       else packTier = "pokeball";
 
-      // Get the pack by type
-      const packs = await storage.getPacks();
-      let pack = packs.find(p => p.type === packTier);
+      // Get the mystery pack by tier
+      const mysteryPacks = await storage.getMysteryPacks();
+      let pack = mysteryPacks.find(p => p.subtype === packTier);
       if (!pack) {
-        // If pack doesn't exist, use a default pack or return error
-        return res.status(500).json({ message: `Pack type ${packTier} not available` });
+        // If pack doesn't exist, use the first available pack
+        pack = mysteryPacks[0];
+        if (!pack) {
+          return res.status(500).json({ message: `No mystery packs available` });
+        }
       }
 
       // Award pack to user
