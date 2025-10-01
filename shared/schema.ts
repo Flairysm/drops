@@ -199,7 +199,8 @@ export const userCards = pgTable("user_cards", {
 export const userPacks = pgTable("user_packs", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: varchar("user_id").references(() => users.id),
-  packId: uuid("pack_id").references(() => packs.id),
+  packId: uuid("pack_id").notNull(), // No foreign key constraint to allow mystery packs
+  packType: varchar("pack_type", { length: 20 }).notNull(), // 'mystery', 'special', 'classic'
   tier: varchar("tier", { length: 10 }).notNull(), // The tier earned from Plinko
   earnedFrom: varchar("earned_from", { length: 50 }).notNull(), // plinko, wheel, etc.
   isOpened: boolean("is_opened").default(false),

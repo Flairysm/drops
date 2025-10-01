@@ -170,6 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.addUserPack({
             userId,
             packId: fallbackPack.id,
+            packType: 'mystery',
             tier: packType, // Store pack type directly
             earnedFrom: gameType,
             isOpened: false,
@@ -179,6 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.addUserPack({
             userId,
             packId: targetPack.id,
+            packType: 'mystery',
             tier: packType, // Store pack type directly
             earnedFrom: gameType,
             isOpened: false,
@@ -272,6 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.addUserPack({
         userId,
         packId: pack.id,
+        packType: 'mystery',
         tier: packTier,
         earnedFrom: 'minesweeper',
         isOpened: false,
@@ -354,6 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.addUserPack({
         userId,
         packId: pack.id,
+        packType: 'mystery',
         tier: packTier,
         earnedFrom: 'find-pikachu',
         isOpened: false,
@@ -437,6 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.addUserPack({
         userId,
         packId: pack.id,
+        packType: 'mystery',
         tier: packTier,
         earnedFrom: 'energy-match',
         isOpened: false,
