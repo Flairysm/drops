@@ -41,7 +41,9 @@ interface OpenPackResult {
   };
   packCards: PackCard[];
   hitCardPosition: number;
+  packType: string;
 }
+
 
 export default function MyPacks() {
   const { toast } = useToast();
@@ -93,10 +95,11 @@ export default function MyPacks() {
     setPackOpenData(null);
     toast({
       title: "Pack Opened!",
-      description: "Your card has been added to your vault!",
+      description: "Your cards have been added to your vault!",
       variant: "default",
     });
   };
+
 
   const getPackTypeDisplay = (packType: string) => {
     // Now tier field directly stores the pack type (pokeball, greatball, ultraball, masterball)
@@ -634,7 +637,7 @@ export default function MyPacks() {
           packCards={packOpenData.packCards}
           hitCardPosition={packOpenData.hitCardPosition}
           onComplete={handleAnimationComplete}
-          packType={packOpenData.packCards?.[packOpenData.hitCardPosition]?.tier ? getPackTypeDisplay(packOpenData.packCards[packOpenData.hitCardPosition].tier).name : 'Unknown Pack'}
+          packType={getPackTypeDisplay(packOpenData.packType).name}
         />
       )}
     </div>
