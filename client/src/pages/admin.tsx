@@ -370,12 +370,11 @@ export default function Admin() {
         console.log('Fetched mystery pack cards:', packData.cards);
         console.log('Setting mystery pack cards state with:', packData.cards || []);
         
-        // Force a re-render by adding a timestamp to ensure state change
-        const cardsWithTimestamp = (packData.cards || []).map((card: any) => ({
-          ...card,
-          _lastUpdated: Date.now()
-        }));
-        setMysteryPackCards(cardsWithTimestamp);
+        // Force a complete state reset to ensure re-render
+        setMysteryPackCards([]);
+        setTimeout(() => {
+          setMysteryPackCards(packData.cards || []);
+        }, 0);
       } else {
         console.error('Failed to fetch mystery pack cards');
       }
