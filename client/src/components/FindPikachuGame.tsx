@@ -208,12 +208,6 @@ export function FindPikachuGame() {
         show: true,
       });
       
-      // Show success toast
-      toast({
-        title: data.won ? "Congratulations!" : "Pack Awarded!",
-        description: data.message,
-      });
-      
       // Invalidate user credits query
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },
