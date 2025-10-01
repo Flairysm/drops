@@ -379,11 +379,14 @@ export class DatabaseStorage implements IStorage {
         //     .where(eq(inventory.id, userCard.cardId));
         // }
         
-        // Fetch the most recent card for this user  
+        // Fetch the most recent card for this user and cardId
         const [newUserCard] = await tx
           .select()
           .from(userCards)
-          .where(eq(userCards.userId, userCard.userId!))
+          .where(and(
+            eq(userCards.userId, userCard.userId!),
+            eq(userCards.cardId, userCard.cardId!)
+          ))
           .orderBy(desc(userCards.pulledAt))
           .limit(1);
         
