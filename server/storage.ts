@@ -541,15 +541,15 @@ export class DatabaseStorage implements IStorage {
       throw new Error('No cards available in mystery pack');
     }
 
-    // Create 8 cards: 7 commons + 1 hit (same format as Black Bolt classic pack)
+    // Create 9 cards: 8 commons + 1 hit (same format as Black Bolt classic pack)
     const selectedCards = [];
     const cardsToDeduct: { mysteryPackCardId: string; quantity: number }[] = [];
     
-    // Add 7 common cards
+    // Add 8 common cards
     const commonCards = packCards.filter(pc => pc.card?.tier === 'D');
     
     if (commonCards.length > 0) {
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 8; i++) {
         const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
         if (randomCommon.card) {
           selectedCards.push({
@@ -587,7 +587,7 @@ export class DatabaseStorage implements IStorage {
           tier: randomHit.card.tier || 'C',
           marketValue: randomHit.card.credits || 100,
           isHit: true,
-          position: 7
+          position: 8
         });
         
         const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === randomHit.id);
@@ -608,7 +608,7 @@ export class DatabaseStorage implements IStorage {
           tier: randomCommon.card.tier || 'D',
           marketValue: randomCommon.card.credits || 10,
           isHit: false,
-          position: 7
+          position: 8
         });
         
         const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === randomCommon.id);
@@ -640,6 +640,7 @@ export class DatabaseStorage implements IStorage {
         userId,
         cardId: card.id,
         quantity: 1,
+        pullValue: card.marketValue.toString(),
         isRefunded: false,
         isShipped: false,
       });
@@ -657,15 +658,15 @@ export class DatabaseStorage implements IStorage {
     // Add to global feed
     await tx.insert(globalFeed).values({
       userId,
-      cardId: selectedCards[7]?.id || selectedCards[0].id, // Use hit card or first card
-      tier: selectedCards[7]?.tier || selectedCards[0].tier,
+      cardId: selectedCards[8]?.id || selectedCards[0].id, // Use hit card or first card
+      tier: selectedCards[8]?.tier || selectedCards[0].tier,
       gameType: userPack.earnedFrom,
     });
 
     return {
       userCard: null, // Not used in new format
       packCards: selectedCards,
-      hitCardPosition: 7, // The 8th card (index 7) is the hit card
+      hitCardPosition: 8, // The 9th card (index 8) is the hit card
       newCards: selectedCards,
       creditsDeducted: 0, // Mystery packs are earned, not purchased with credits
       packId: userPack.id,

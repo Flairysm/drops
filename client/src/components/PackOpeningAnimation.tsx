@@ -224,9 +224,13 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     <div>
                       <div className={`w-12 h-16 mx-auto rounded overflow-hidden border-2 ${getHitCardGlow(hitCard.tier).borderGlow} ${getHitCardGlow(hitCard.tier).glow} ${getHitCardGlow(hitCard.tier).animate}`}>
                         <img 
-                          src={hitCardImage} 
+                          src={hitCard.imageUrl || hitCardImage} 
                           alt="Hit Card" 
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = hitCardImage;
+                          }}
                         />
                       </div>
                     </div>
