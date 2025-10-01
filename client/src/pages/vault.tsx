@@ -45,7 +45,32 @@ export default function Vault() {
 
   const refundMutation = useMutation({
     mutationFn: async (cardIds: string[]) => {
-      await apiRequest("POST", "/api/vault/refund", { cardIds });
+      // For common cards (D tier), collect all individual common card IDs
+      const allCardIds: string[] = [];
+      
+      for (const cardId of cardIds) {
+        const selectedCard = vaultCards?.find(c => c.id === cardId);
+        if (selectedCard?.card?.tier === 'D') {
+          // For common cards, find all individual common cards with the same properties
+          const commonCards = vaultCards?.filter(c => 
+            c.card?.tier === 'D' && 
+            c.card?.name === selectedCard.card?.name &&
+            c.card?.imageUrl === selectedCard.card?.imageUrl &&
+            c.card?.credits === selectedCard.card?.credits
+          ) || [];
+          
+          // Add all individual common card IDs
+          commonCards.forEach(card => allCardIds.push(card.id));
+        } else {
+          // For C-SSS cards, add the individual card ID
+          allCardIds.push(cardId);
+        }
+      }
+      
+      // Remove duplicates
+      const uniqueCardIds = [...new Set(allCardIds)];
+      
+      await apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
@@ -116,31 +141,39 @@ export default function Vault() {
     return filterValue; // Direct mapping since database now uses D, C, B, A, S, SS, SSS
   };
 
-  // Function to condense duplicate cards
+  // Function to condense only common cards (D tier)
   const condenseCards = (cards: UserCardWithCard[]) => {
-    const cardMap = new Map<string, UserCardWithCard>();
+    const condensedCards: UserCardWithCard[] = [];
+    const commonCardMap = new Map<string, UserCardWithCard>();
     
     cards.forEach(userCard => {
       if (!userCard.card) return;
       
-      // Create a unique key based on card properties
-      const key = `${userCard.card.name}-${userCard.card.imageUrl}-${userCard.card.tier}-${userCard.card.credits}`;
-      
-      if (cardMap.has(key)) {
-        // If card already exists, add to quantity
-        const existingCard = cardMap.get(key)!;
-        existingCard.quantity += userCard.quantity;
+      // Only condense common cards (D tier)
+      if (userCard.card.tier === 'D') {
+        // Create a unique key based on card properties for commons
+        const key = `${userCard.card.name}-${userCard.card.imageUrl}-${userCard.card.tier}-${userCard.card.credits}`;
+        
+        if (commonCardMap.has(key)) {
+          // If common card already exists, add to quantity
+          const existingCard = commonCardMap.get(key)!;
+          existingCard.quantity += userCard.quantity;
+        } else {
+          // Create new condensed common card entry
+          commonCardMap.set(key, {
+            ...userCard,
+            // Use the first card's ID as the representative ID
+            id: userCard.id
+          });
+        }
       } else {
-        // Create new condensed card entry
-        cardMap.set(key, {
-          ...userCard,
-          // Use the first card's ID as the representative ID
-          id: userCard.id
-        });
+        // Keep C to SSS cards separate (no condensation)
+        condensedCards.push(userCard);
       }
     });
     
-    return Array.from(cardMap.values());
+    // Add all condensed common cards and individual C-SSS cards
+    return [...condensedCards, ...Array.from(commonCardMap.values())];
   };
 
   const filteredCards = condenseCards(
