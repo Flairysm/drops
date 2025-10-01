@@ -496,6 +496,88 @@ export class DatabaseStorage implements IStorage {
     return newUserPack;
   }
 
+  private async openMysteryPack(tx: any, userPack: any, mysteryPack: any, userId: string): Promise<PackOpenResult> {
+    // Get all cards in the mystery pack pool
+    const packCards = await tx
+      .select({
+        id: mysteryPackCards.id,
+        packId: mysteryPackCards.packId,
+        cardId: mysteryPackCards.cardId,
+        quantity: mysteryPackCards.quantity,
+        createdAt: mysteryPackCards.createdAt,
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
+      .from(mysteryPackCards)
+      .innerJoin(inventory, eq(mysteryPackCards.cardId, inventory.id))
+      .where(eq(mysteryPackCards.packId, mysteryPack.id));
+
+    if (packCards.length === 0) {
+      throw new Error('No cards available in mystery pack');
+    }
+
+    // Create a weighted pool based on quantities
+    const weightedPool: any[] = [];
+    for (const packCard of packCards) {
+      for (let i = 0; i < packCard.quantity; i++) {
+        weightedPool.push(packCard.card);
+      }
+    }
+
+    // Select a random card from the weighted pool
+    const selectedCard = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+
+    // Create user card entry
+    const [userCard] = await tx
+      .insert(userCards)
+      .values({
+        userId,
+        cardId: selectedCard.id,
+        quantity: 1,
+        earnedFrom: userPack.earnedFrom,
+        earnedAt: new Date(),
+      })
+      .returning();
+
+    // Mark pack as opened
+    await tx
+      .update(userPacks)
+      .set({ 
+        isOpened: true, 
+        openedAt: new Date() 
+      })
+      .where(eq(userPacks.id, userPack.id));
+
+    // Add to global feed
+    await tx.insert(globalFeed).values({
+      userId,
+      cardId: selectedCard.id,
+      tier: selectedCard.tier,
+      gameType: userPack.earnedFrom,
+    });
+
+    return {
+      userCard,
+      packCards: [{
+        id: selectedCard.id,
+        name: selectedCard.name,
+        tier: selectedCard.tier,
+        imageUrl: selectedCard.imageUrl,
+        marketValue: selectedCard.credits.toString(),
+        isHit: true,
+        position: 0
+      }],
+      hitCardPosition: 0
+    };
+  }
+
   async openUserPack(packId: string, userId: string): Promise<PackOpenResult> {
     return await db.transaction(async (tx) => {
       try {
@@ -514,16 +596,33 @@ export class DatabaseStorage implements IStorage {
           throw new Error('Pack not found or already opened');
         }
 
-      // Get pack pull rates for this pack type
-      const rates = await tx
-        .select()
-        .from(pullRates)
-        .where(and(eq(pullRates.packType, userPack.tier), eq(pullRates.isActive, true)))
-        .orderBy(pullRates.cardTier);
+        // Check if this is a mystery pack by looking up the pack in mysteryPacks table
+        if (!userPack.packId) {
+          throw new Error('Pack ID is missing');
+        }
+        
+        const mysteryPack = await tx
+          .select()
+          .from(mysteryPacks)
+          .where(eq(mysteryPacks.id, userPack.packId))
+          .limit(1);
 
-      if (rates.length === 0) {
-        throw new Error('No pull rates configured for this pack type');
-      }
+        if (mysteryPack.length > 0) {
+          // This is a mystery pack - handle it differently
+          return await this.openMysteryPack(tx, userPack, mysteryPack[0], userId);
+        }
+
+        // Regular pack logic continues below
+        // Get pack pull rates for this pack type
+        const rates = await tx
+          .select()
+          .from(pullRates)
+          .where(and(eq(pullRates.packType, userPack.tier), eq(pullRates.isActive, true)))
+          .orderBy(pullRates.cardTier);
+
+        if (rates.length === 0) {
+          throw new Error('No pull rates configured for this pack type');
+        }
 
       // Weighted random selection based on percentages
       const random = Math.random() * 100; // 0-100

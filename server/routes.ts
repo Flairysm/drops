@@ -300,6 +300,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Find Pikachu game endpoint
+  app.post('/api/games/find-pikachu', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { pikachusFound, won } = req.body;
+
+      // Validate input
+      if (typeof pikachusFound !== 'number' || pikachusFound < 0 || pikachusFound > 4) {
+        return res.status(400).json({ message: "Invalid pikachus found count" });
+      }
+
+      if (typeof won !== 'boolean') {
+        return res.status(400).json({ message: "Invalid win status" });
+      }
+
+      // Determine mystery pack tier based on pikachus found
+      let packTier: string;
+      if (pikachusFound === 0 || pikachusFound === 1) packTier = "pokeball";
+      else if (pikachusFound === 2) packTier = "greatball";
+      else if (pikachusFound === 3) packTier = "ultraball";
+      else if (pikachusFound === 4) packTier = "masterball";
+      else packTier = "pokeball";
+
+      // Get the mystery pack by tier
+      const mysteryPacks = await storage.getMysteryPacks();
+      let pack = mysteryPacks.find(p => p.subtype === packTier);
+      if (!pack) {
+        // If pack doesn't exist, use the first available pack
+        pack = mysteryPacks[0];
+        if (!pack) {
+          return res.status(500).json({ message: `No mystery packs available` });
+        }
+      }
+
+      // Award mystery pack to user
+      await storage.addUserPack({
+        userId,
+        packId: pack.id,
+        tier: packTier,
+        earnedFrom: 'find-pikachu',
+        isOpened: false,
+      });
+
+      // Create transaction record
+      await storage.addTransaction({
+        userId,
+        type: 'game_play',
+        amount: "0", // No additional cost since credits were already deducted
+        description: `Find Pikachu game completed - ${pikachusFound} pikachus found`,
+      });
+
+      // Create game session
+      await storage.createGameSession({
+        userId,
+        gameType: 'find-pikachu',
+        gameData: { pikachusFound, won, timestamp: Date.now() },
+        status: 'completed',
+      });
+
+      // Prepare response message
+      let message: string;
+      if (won) {
+        message = `Congratulations! You found all ${pikachusFound} Pikachus and won a ${packTier.charAt(0).toUpperCase() + packTier.slice(1)} mystery pack!`;
+      } else {
+        message = `Game over! You found ${pikachusFound} Pikachus and earned a ${packTier.charAt(0).toUpperCase() + packTier.slice(1)} mystery pack!`;
+      }
+
+      res.json({
+        success: true,
+        won,
+        pikachusFound,
+        packTier,
+        message,
+        currentRound: 1,
+      });
+
+    } catch (error) {
+      console.error("Error in Find Pikachu game:", error);
+      res.status(500).json({ message: "Find Pikachu game error occurred" });
+    }
+  });
+
+  // Energy Match game endpoint
+  app.post('/api/games/energy-match', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { matches, selectedEnergy } = req.body;
+
+      // Validate input
+      if (typeof matches !== 'number' || matches < 0 || matches > 5) {
+        return res.status(400).json({ message: "Invalid matches count" });
+      }
+
+      if (typeof selectedEnergy !== 'string') {
+        return res.status(400).json({ message: "Invalid selected energy" });
+      }
+
+      // Determine mystery pack tier based on matches
+      let packTier: string;
+      if (matches <= 1) packTier = "pokeball";
+      else if (matches === 2) packTier = "greatball";
+      else if (matches === 3) packTier = "ultraball";
+      else if (matches === 4) packTier = "masterball";
+      else if (matches === 5) packTier = "luxuryball";
+      else packTier = "pokeball";
+
+      // Get the mystery pack by tier
+      const mysteryPacks = await storage.getMysteryPacks();
+      let pack = mysteryPacks.find(p => p.subtype === packTier);
+      if (!pack) {
+        // If pack doesn't exist, use the first available pack
+        pack = mysteryPacks[0];
+        if (!pack) {
+          return res.status(500).json({ message: `No mystery packs available` });
+        }
+      }
+
+      // Award mystery pack to user
+      await storage.addUserPack({
+        userId,
+        packId: pack.id,
+        tier: packTier,
+        earnedFrom: 'energy-match',
+        isOpened: false,
+      });
+
+      // Create transaction record
+      await storage.addTransaction({
+        userId,
+        type: 'game_play',
+        amount: "0", // No additional cost since credits were already deducted
+        description: `Energy Match game completed - ${matches} matches with ${selectedEnergy} energy`,
+      });
+
+      // Create game session
+      await storage.createGameSession({
+        userId,
+        gameType: 'energy-match',
+        gameData: { matches, selectedEnergy, timestamp: Date.now() },
+        status: 'completed',
+      });
+
+      // Prepare response message
+      const message = `Great job! You matched ${matches} ${selectedEnergy} energy cards and earned a ${packTier.charAt(0).toUpperCase() + packTier.slice(1)} mystery pack!`;
+
+      res.json({
+        success: true,
+        matches,
+        selectedEnergy,
+        packTier,
+        message,
+        currentRound: 1,
+      });
+
+    } catch (error) {
+      console.error("Error in Energy Match game:", error);
+      res.status(500).json({ message: "Energy Match game error occurred" });
+    }
+  });
+
   // Vault routes
   app.get('/api/vault', isAuthenticatedCombined, async (req: any, res) => {
     try {
