@@ -555,6 +555,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         userId,
         cardId: selectedCard.id,
+        pullValue: selectedCard.credits.toString(),
         quantity: 1,
         earnedFrom: userPack.earnedFrom,
         earnedAt: new Date(),
