@@ -430,21 +430,9 @@ export class DatabaseStorage implements IStorage {
         const refundAmount = parseFloat(card.pullValue);
         totalRefund += refundAmount;
         
-        // Add card back to prize pool if it exists in any pack and has valid UUID
-        if (card.cardId && this.isValidUUID(card.cardId)) {
-          // Find which pack contains this card and add it back to the prize pool
-          const packCardEntries = await tx
-            .select()
-            .from(specialPackCards)
-            .where(eq(specialPackCards.cardId, card.cardId));
-          
-          for (const packCard of packCardEntries) {
-            await tx
-              .update(specialPackCards)
-              .set({ quantity: sql`${specialPackCards.quantity} + ${card.quantity}` })
-              .where(eq(specialPackCards.id, packCard.id));
-          }
-        }
+        // Note: We don't add cards back to prize pool on refund
+        // The inventory is a static database and prize pools should remain as configured
+        // Refunds only restore credits to the user
       }
 
       // Mark cards as refunded
@@ -1667,6 +1655,10 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
+      // Note: We don't deduct from inventory as it's a static database
+      // We only deduct from the pack's prize pool (specialPackCards) which represents
+      // the available cards in that specific pack, not the global inventory
+      
       // Deduct selected cards from prize pool
       // Deduct common cards - count occurrences and deduct accordingly
       const commonCardCounts = new Map<string, number>();
