@@ -308,31 +308,31 @@ export default function MyPacks() {
         </div>
       </div>
 
-      <div className="min-h-screen pt-24 pb-24 px-6 sm:px-8 lg:px-10 relative z-10">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <div className="min-h-screen pt-20 pb-20 px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
           <motion.div 
-            className="text-center space-y-6"
+            className="text-center space-y-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="flex items-center justify-center gap-3">
-              <Gift className="h-8 w-8 text-[#22D3EE]" />
-              <h1 className="text-4xl sm:text-5xl font-bold">
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
+              <Gift className="h-6 w-6 sm:h-8 sm:w-8 text-[#22D3EE]" />
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
                 <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
                   My Packs
                 </span>
               </h1>
             </div>
-            <p className="text-lg text-[#E5E7EB] max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base lg:text-lg text-[#E5E7EB] max-w-2xl mx-auto">
               Open your earned packs to discover amazing cards! Higher tier packs have better odds for rare cards.
             </p>
             {!noPacks && (
-              <div className="flex justify-center mt-6">
-                <div className="text-center bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl px-6 py-4">
-                  <p className="text-2xl font-bold text-[#22D3EE]">{(userPacks as any[] || []).length}</p>
-                  <p className="text-sm text-[#9CA3AF]">Total Packs</p>
+              <div className="flex justify-center mt-4">
+                <div className="text-center bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl px-4 sm:px-6 py-3 sm:py-4">
+                  <p className="text-xl sm:text-2xl font-bold text-[#22D3EE]">{(userPacks as any[] || []).length}</p>
+                  <p className="text-xs sm:text-sm text-[#9CA3AF]">Total Packs</p>
                 </div>
               </div>
             )}
@@ -359,9 +359,9 @@ export default function MyPacks() {
               </div>
             </motion.div>
           ) : (
-            /* 4 Pack Types Inline */
+            /* Mobile-Optimized Pack Grid */
             <motion.div 
-              className="flex justify-center items-start gap-16 flex-wrap py-8"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 py-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -377,20 +377,20 @@ export default function MyPacks() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <div className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
-                      <h3 className="text-xl font-bold mb-4 text-[#E5E7EB]">
+                    <div className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)] h-full flex flex-col">
+                      <h3 className="text-sm sm:text-base lg:text-xl font-bold mb-2 sm:mb-3 lg:mb-4 text-[#E5E7EB]">
                         {packDisplay.name}
                       </h3>
-                      <div className="mb-6">
-                        <PackImage packType={tier} size="large" />
+                      <div className="mb-3 sm:mb-4 lg:mb-6 flex-1 flex items-center justify-center">
+                        <PackImage packType={tier} size="small" />
                       </div>
                       
                       {packs.length > 0 && (
-                        <div className="space-y-3">
-                          <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0 text-sm px-3 py-1">
+                        <div className="space-y-2 sm:space-y-3">
+                          <Badge className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0 text-xs sm:text-sm px-2 sm:px-3 py-1">
                             {packs.length} available
                           </Badge>
                           
@@ -398,19 +398,21 @@ export default function MyPacks() {
                             <Button 
                               onClick={() => handleOpenPack(tier)}
                               disabled={openingPack !== null}
-                              className="w-full bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] shadow-[0_0_15px_rgba(124,58,237,0.4)] text-white hover:opacity-90 transition-opacity"
+                              className="w-full bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] shadow-[0_0_15px_rgba(124,58,237,0.4)] text-white hover:opacity-90 transition-opacity text-xs sm:text-sm"
                               data-testid={`button-open-pack-${tier}`}
                               size="sm"
                             >
                               {openingPack ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                  Opening...
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <div className="w-2 h-2 sm:w-3 sm:h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  <span className="hidden sm:inline">Opening...</span>
+                                  <span className="sm:hidden">...</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 sm:gap-2">
                                   <Package2 className="h-3 w-3" />
-                                  Open Pack
+                                  <span className="hidden sm:inline">Open Pack</span>
+                                  <span className="sm:hidden">Open</span>
                                 </div>
                               )}
                             </Button>
@@ -419,8 +421,8 @@ export default function MyPacks() {
                       )}
                       
                       {packs.length === 0 && (
-                        <div className="mt-4">
-                          <p className="text-sm text-[#9CA3AF]">No packs available</p>
+                        <div className="mt-2 sm:mt-4">
+                          <p className="text-xs sm:text-sm text-[#9CA3AF]">No packs</p>
                         </div>
                       )}
                     </div>
@@ -432,38 +434,38 @@ export default function MyPacks() {
 
         </div>
 
-        {/* Pack Odds Section */}
+        {/* Compact Pack Odds Section */}
         <motion.div 
-          className="max-w-4xl mx-auto mt-16 mb-8"
+          className="max-w-4xl mx-auto mt-8 mb-6"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">
+          <div className="text-center mb-4">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1">
               <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
                 Pack Odds
               </span>
             </h2>
-            <p className="text-[#9CA3AF]">Probability of pulling each tier from different pack types</p>
+            <p className="text-sm sm:text-base text-[#9CA3AF]">Probability of pulling each tier</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {/* Pokeball Pack */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
               whileHover={{ scale: 1.02 }}
             >
-              <div className="text-center mb-4">
-                <div className="flex justify-center mb-3">
-                  <PackImage packType="pokeball" size="large" />
+              <div className="text-center mb-3">
+                <div className="flex justify-center mb-2">
+                  <PackImage packType="pokeball" size="small" />
                 </div>
-                <h3 className="font-bold text-lg text-[#E5E7EB]">Pokeball Pack</h3>
+                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Pokeball Pack</h3>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span className="text-[#10b981]">C Tier:</span>
                   <span className="font-semibold text-[#E5E7EB]">84.8%</span>
@@ -493,19 +495,19 @@ export default function MyPacks() {
 
             {/* Greatball Pack */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
               whileHover={{ scale: 1.02 }}
             >
-              <div className="text-center mb-4">
-                <div className="flex justify-center mb-3">
-                  <PackImage packType="greatball" size="large" />
+              <div className="text-center mb-3">
+                <div className="flex justify-center mb-2">
+                  <PackImage packType="greatball" size="small" />
                 </div>
-                <h3 className="font-bold text-lg text-[#E5E7EB]">Great Ball Pack</h3>
+                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Great Ball Pack</h3>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span className="text-[#10b981]">C Tier:</span>
                   <span className="font-semibold text-[#E5E7EB]">50.0%</span>
@@ -535,19 +537,19 @@ export default function MyPacks() {
 
             {/* Ultraball Pack */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
               whileHover={{ scale: 1.02 }}
             >
-              <div className="text-center mb-4">
-                <div className="flex justify-center mb-3">
-                  <PackImage packType="ultraball" size="large" />
+              <div className="text-center mb-3">
+                <div className="flex justify-center mb-2">
+                  <PackImage packType="ultraball" size="small" />
                 </div>
-                <h3 className="font-bold text-lg text-[#E5E7EB]">Ultra Ball Pack</h3>
+                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Ultra Ball Pack</h3>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span className="text-[#10b981]">C Tier:</span>
                   <span className="font-semibold text-[#E5E7EB]">20.0%</span>
@@ -577,19 +579,19 @@ export default function MyPacks() {
 
             {/* Masterball Pack */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.8 }}
               whileHover={{ scale: 1.02 }}
             >
-              <div className="text-center mb-4">
-                <div className="flex justify-center mb-3">
-                  <PackImage packType="masterball" size="large" />
+              <div className="text-center mb-3">
+                <div className="flex justify-center mb-2">
+                  <PackImage packType="masterball" size="small" />
                 </div>
-                <h3 className="font-bold text-lg text-[#E5E7EB]">Master Ball Pack</h3>
+                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Master Ball Pack</h3>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span className="text-[#6b7280]">D Tier:</span>
                   <span className="font-semibold text-[#E5E7EB]">0.0%</span>
