@@ -369,7 +369,13 @@ export default function Admin() {
         const packData = await response.json();
         console.log('Fetched mystery pack cards:', packData.cards);
         console.log('Setting mystery pack cards state with:', packData.cards || []);
-        setMysteryPackCards(packData.cards || []);
+        
+        // Force a re-render by adding a timestamp to ensure state change
+        const cardsWithTimestamp = (packData.cards || []).map((card: any) => ({
+          ...card,
+          _lastUpdated: Date.now()
+        }));
+        setMysteryPackCards(cardsWithTimestamp);
       } else {
         console.error('Failed to fetch mystery pack cards');
       }
@@ -606,11 +612,6 @@ export default function Admin() {
         console.log('Calling fetchMysteryPackCards to refresh UI after adding...');
         await fetchMysteryPackCards();
         console.log('fetchMysteryPackCards completed after adding');
-        
-        // Force a re-render by updating a dummy state
-        console.log('Forcing re-render after adding...');
-        setMysteryPackCards(prev => [...prev]);
-        console.log('Re-render forced after adding');
       } else {
         const errorText = await response.text();
         console.error('Failed to add card to mystery pack pool:', errorText);
@@ -656,11 +657,6 @@ export default function Admin() {
         console.log('Calling fetchMysteryPackCards to refresh UI after direct removal...');
         await fetchMysteryPackCards();
         console.log('fetchMysteryPackCards completed after direct removal');
-        
-        // Force a re-render by updating a dummy state
-        console.log('Forcing re-render after direct removal...');
-        setMysteryPackCards(prev => [...prev]);
-        console.log('Re-render forced after direct removal');
       } else {
         const errorText = await response.text();
         console.error('Failed to remove card from mystery pack pool:', errorText);
@@ -724,11 +720,6 @@ export default function Admin() {
           console.log('Calling fetchMysteryPackCards to refresh UI after removal...');
           await fetchMysteryPackCards();
           console.log('fetchMysteryPackCards completed after removal');
-          
-          // Force a re-render by updating a dummy state
-          console.log('Forcing re-render after removal...');
-          setMysteryPackCards(prev => [...prev]);
-          console.log('Re-render forced after removal');
         } else {
           const errorText = await response.text();
           console.error('Failed to remove card from mystery pack pool:', errorText);
@@ -750,11 +741,6 @@ export default function Admin() {
           console.log('Calling fetchMysteryPackCards to refresh UI...');
           await fetchMysteryPackCards();
           console.log('fetchMysteryPackCards completed');
-          
-          // Force a re-render by updating a dummy state
-          console.log('Forcing re-render...');
-          setMysteryPackCards(prev => [...prev]);
-          console.log('Re-render forced');
         } else {
           const errorText = await response.text();
           console.error('Failed to update card quantity in mystery pack pool:', errorText);
