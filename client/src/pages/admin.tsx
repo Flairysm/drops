@@ -366,6 +366,7 @@ export default function Admin() {
       if (response.ok) {
         const packData = await response.json();
         console.log('Fetched mystery pack cards:', packData.cards);
+        console.log('Setting mystery pack cards state with:', packData.cards || []);
         setMysteryPackCards(packData.cards || []);
       } else {
         console.error('Failed to fetch mystery pack cards');
@@ -600,7 +601,9 @@ export default function Admin() {
         alert(`${card.name} added to mystery pack pool!`);
         
         // Refresh the mystery pack cards display
-        fetchMysteryPackCards();
+        console.log('Calling fetchMysteryPackCards to refresh UI after adding...');
+        await fetchMysteryPackCards();
+        console.log('fetchMysteryPackCards completed after adding');
       } else {
         const errorText = await response.text();
         console.error('Failed to add card to mystery pack pool:', errorText);
@@ -643,7 +646,9 @@ export default function Admin() {
         alert(`${cardName} removed from mystery pack pool!`);
         
         // Refresh the mystery pack cards display
-        fetchMysteryPackCards();
+        console.log('Calling fetchMysteryPackCards to refresh UI after direct removal...');
+        await fetchMysteryPackCards();
+        console.log('fetchMysteryPackCards completed after direct removal');
       } else {
         const errorText = await response.text();
         console.error('Failed to remove card from mystery pack pool:', errorText);
@@ -704,7 +709,9 @@ export default function Admin() {
           alert('Card removed from mystery pack!');
           
           // Refresh the mystery pack cards display
-          fetchMysteryPackCards();
+          console.log('Calling fetchMysteryPackCards to refresh UI after removal...');
+          await fetchMysteryPackCards();
+          console.log('fetchMysteryPackCards completed after removal');
         } else {
           const errorText = await response.text();
           console.error('Failed to remove card from mystery pack pool:', errorText);
@@ -723,7 +730,9 @@ export default function Admin() {
           alert('Quantity updated!');
           
           // Refresh the mystery pack cards display
-          fetchMysteryPackCards();
+          console.log('Calling fetchMysteryPackCards to refresh UI...');
+          await fetchMysteryPackCards();
+          console.log('fetchMysteryPackCards completed');
         } else {
           const errorText = await response.text();
           console.error('Failed to update card quantity in mystery pack pool:', errorText);
