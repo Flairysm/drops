@@ -391,18 +391,38 @@ export class DatabaseStorage implements IStorage {
 
   async refundCards(cardIds: string[], userId: string): Promise<void> {
     await db.transaction(async (tx) => {
-      // Get cards to refund with card details including current market value
-      const cardsToRefund = await tx
+      // First get all user cards to refund
+      const userCardsToRefund = await tx
         .select({
           id: userCards.id,
           cardId: userCards.cardId,
           pullValue: userCards.pullValue,
           quantity: userCards.quantity,
-          marketValue: userCards.pullValue, // Use pullValue as marketValue since inventory doesn't have marketValue
         })
         .from(userCards)
-        .leftJoin(inventory, eq(userCards.cardId, inventory.id))
         .where(and(inArray(userCards.id, cardIds), eq(userCards.userId, userId)));
+
+      // Filter for valid UUIDs and get inventory details
+      const validCardIds = userCardsToRefund
+        .map(card => card.cardId)
+        .filter((cardId): cardId is string => cardId !== null && this.isValidUUID(cardId));
+
+      const inventoryDetails = validCardIds.length > 0
+        ? await tx
+            .select()
+            .from(inventory)
+            .where(inArray(inventory.id, validCardIds))
+        : [];
+
+      // Create a map for quick lookup
+      const inventoryMap = new Map(inventoryDetails.map(item => [item.id, item]));
+
+      // Combine the results
+      const cardsToRefund = userCardsToRefund.map(userCard => ({
+        ...userCard,
+        marketValue: userCard.pullValue, // Use pullValue as marketValue
+        inventoryCard: userCard.cardId ? inventoryMap.get(userCard.cardId) || null : null
+      }));
 
       let totalRefund = 0;
       for (const card of cardsToRefund) {
@@ -410,8 +430,8 @@ export class DatabaseStorage implements IStorage {
         const refundAmount = parseFloat(card.pullValue);
         totalRefund += refundAmount;
         
-        // Add card back to prize pool if it exists in any pack
-        if (card.cardId) {
+        // Add card back to prize pool if it exists in any pack and has valid UUID
+        if (card.cardId && this.isValidUUID(card.cardId)) {
           // Find which pack contains this card and add it back to the prize pool
           const packCardEntries = await tx
             .select()
