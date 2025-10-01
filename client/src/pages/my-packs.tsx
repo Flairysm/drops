@@ -385,7 +385,7 @@ export default function MyPacks() {
                         {packDisplay.name}
                       </h3>
                       <div className="mb-3 sm:mb-4 lg:mb-6 flex-1 flex items-center justify-center">
-                        <PackImage packType={tier} size="small" />
+                        <PackImage packType={tier} size="large" />
                       </div>
                       
                       {packs.length > 0 && (
@@ -450,7 +450,7 @@ export default function MyPacks() {
             <p className="text-sm sm:text-base text-[#9CA3AF]">Probability of pulling each tier</p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {/* Pokeball Pack */}
             <motion.div 
               className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
@@ -461,7 +461,7 @@ export default function MyPacks() {
             >
               <div className="text-center mb-3">
                 <div className="flex justify-center mb-2">
-                  <PackImage packType="pokeball" size="small" />
+                  <PackImage packType="pokeball" size="large" />
                 </div>
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Pokeball Pack</h3>
               </div>
@@ -503,7 +503,7 @@ export default function MyPacks() {
             >
               <div className="text-center mb-3">
                 <div className="flex justify-center mb-2">
-                  <PackImage packType="greatball" size="small" />
+                  <PackImage packType="greatball" size="large" />
                 </div>
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Great Ball Pack</h3>
               </div>
@@ -545,7 +545,7 @@ export default function MyPacks() {
             >
               <div className="text-center mb-3">
                 <div className="flex justify-center mb-2">
-                  <PackImage packType="ultraball" size="small" />
+                  <PackImage packType="ultraball" size="large" />
                 </div>
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Ultra Ball Pack</h3>
               </div>
@@ -587,7 +587,7 @@ export default function MyPacks() {
             >
               <div className="text-center mb-3">
                 <div className="flex justify-center mb-2">
-                  <PackImage packType="masterball" size="small" />
+                  <PackImage packType="masterball" size="large" />
                 </div>
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Master Ball Pack</h3>
               </div>
