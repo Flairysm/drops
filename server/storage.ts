@@ -1505,15 +1505,37 @@ export class DatabaseStorage implements IStorage {
       // Create 8 cards: 7 commons + 1 hit
       const selectedCards = [];
       
-      // Add 7 common cards with unique UUIDs
-      for (let i = 0; i < 7; i++) {
-        selectedCards.push({
-          id: randomUUID(),
-          name: "Common Card",
-          imageUrl: "/card-images/random-common-card.png",
-          tier: "D",
-          marketValue: 10
-        });
+      // Add 7 common cards from the pack's prize pool
+      const commonCards = packCards.filter(pc => 
+        pc.card?.tier === 'D' || pc.card?.name === 'Common Card'
+      );
+      
+      const selectedCommonCards = [];
+      if (commonCards.length > 0) {
+        // Use existing common cards from the pack
+        for (let i = 0; i < 7; i++) {
+          const randomCommonCard = commonCards[Math.floor(Math.random() * commonCards.length)];
+          const cardId = randomCommonCard.card?.id;
+          selectedCommonCards.push(randomCommonCard);
+          selectedCards.push({
+            id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
+            name: randomCommonCard.card?.name || "Common Card",
+            imageUrl: randomCommonCard.card?.imageUrl || "/card-images/random-common-card.png",
+            tier: randomCommonCard.card?.tier || "D",
+            marketValue: randomCommonCard.card?.credits || 10
+          });
+        }
+      } else {
+        // Fallback: create 7 common cards with unique UUIDs if no common cards in pack
+        for (let i = 0; i < 7; i++) {
+          selectedCards.push({
+            id: randomUUID(),
+            name: "Common Card",
+            imageUrl: "/card-images/random-common-card.png",
+            tier: "D",
+            marketValue: 10
+          });
+        }
       }
 
       // Add 1 hit card from the pack
@@ -1625,6 +1647,17 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
+      // Deduct selected cards from prize pool
+      // Deduct common cards
+      for (const commonCard of selectedCommonCards) {
+        if (commonCard.quantity > 0) {
+          await tx
+            .update(specialPackCards)
+            .set({ quantity: commonCard.quantity - 1 })
+            .where(eq(specialPackCards.id, commonCard.id));
+        }
+      }
+      
       // Deduct hit card from prize pool if it was selected from the pack
       if (selectedHitCard && selectedHitCard.quantity > 0) {
         await tx
