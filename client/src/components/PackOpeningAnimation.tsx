@@ -60,11 +60,10 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   }, [showCommons]);
 
   const handleRevealHit = () => {
-    console.log('handleRevealHit called, showCommons:', showCommons, 'showHitCard:', showHitCard);
     if (showCommons) {
       setShowHitCard(true);
       setIsHitRevealed(true); // Immediately reveal the hit card
-      console.log('Set showHitCard to true');
+      setShowCommons(false); // Set to false so next click will close
       return;
     }
 
@@ -230,11 +229,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            console.log('Image error:', target.src, 'showHitCard:', showHitCard);
                             target.src = showHitCard ? hitCardImage : "/assets/hit.png";
-                          }}
-                          onLoad={() => {
-                            console.log('Image loaded:', showHitCard ? 'actual card' : 'hit.png');
                           }}
                         />
                       </div>
