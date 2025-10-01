@@ -410,13 +410,21 @@ export class DatabaseStorage implements IStorage {
         const refundAmount = parseFloat(card.pullValue);
         totalRefund += refundAmount;
         
-        // Stock management removed - using inventory system instead
-        // if (card.cardId) {
-        //   await tx
-        //     .update(inventory)
-        //     .set({ stock: sql`${inventory.stock} + ${card.quantity}` })
-        //     .where(eq(inventory.id, card.cardId));
-        // }
+        // Add card back to prize pool if it exists in any pack
+        if (card.cardId) {
+          // Find which pack contains this card and add it back to the prize pool
+          const packCardEntries = await tx
+            .select()
+            .from(specialPackCards)
+            .where(eq(specialPackCards.cardId, card.cardId));
+          
+          for (const packCard of packCardEntries) {
+            await tx
+              .update(specialPackCards)
+              .set({ quantity: sql`${specialPackCards.quantity} + ${card.quantity}` })
+              .where(eq(specialPackCards.id, packCard.id));
+          }
+        }
       }
 
       // Mark cards as refunded
@@ -1509,6 +1517,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Add 1 hit card from the pack
+      let selectedHitCard = null;
       if (packCards.length > 0) {
         const hitCards = packCards.filter(pc => 
           pc.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier)
@@ -1517,6 +1526,7 @@ export class DatabaseStorage implements IStorage {
         if (hitCards.length > 0) {
           const randomHitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
           const cardId = randomHitCard.card?.id;
+          selectedHitCard = randomHitCard;
           selectedCards.push({
             id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
             name: randomHitCard.card?.name || 'Hit Card',
@@ -1528,6 +1538,7 @@ export class DatabaseStorage implements IStorage {
           // Fallback to any available card
           const randomCard = packCards[Math.floor(Math.random() * packCards.length)];
           const cardId = randomCard.card?.id;
+          selectedHitCard = randomCard;
           selectedCards.push({
             id: (cardId && this.isValidUUID(cardId)) ? cardId : randomUUID(),
             name: randomCard.card?.name || 'Hit Card',
@@ -1612,6 +1623,14 @@ export class DatabaseStorage implements IStorage {
           tier: hitCard.tier,
           gameType: 'pack_opening'
         });
+      }
+
+      // Deduct hit card from prize pool if it was selected from the pack
+      if (selectedHitCard && selectedHitCard.quantity > 0) {
+        await tx
+          .update(specialPackCards)
+          .set({ quantity: selectedHitCard.quantity - 1 })
+          .where(eq(specialPackCards.id, selectedHitCard.id));
       }
 
       return {
