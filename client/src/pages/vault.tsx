@@ -116,20 +116,49 @@ export default function Vault() {
     return filterValue; // Direct mapping since database now uses D, C, B, A, S, SS, SSS
   };
 
-  const filteredCards = vaultCards?.filter(card => 
-    card.card && (filterTier === "all" || card.card.tier === getTierMapping(filterTier))
-  ) || [];
+  // Function to condense duplicate cards
+  const condenseCards = (cards: UserCardWithCard[]) => {
+    const cardMap = new Map<string, UserCardWithCard>();
+    
+    cards.forEach(userCard => {
+      if (!userCard.card) return;
+      
+      // Create a unique key based on card properties
+      const key = `${userCard.card.name}-${userCard.card.imageUrl}-${userCard.card.tier}-${userCard.card.credits}`;
+      
+      if (cardMap.has(key)) {
+        // If card already exists, add to quantity
+        const existingCard = cardMap.get(key)!;
+        existingCard.quantity += userCard.quantity;
+      } else {
+        // Create new condensed card entry
+        cardMap.set(key, {
+          ...userCard,
+          // Use the first card's ID as the representative ID
+          id: userCard.id
+        });
+      }
+    });
+    
+    return Array.from(cardMap.values());
+  };
 
-  const tierCounts = vaultCards?.reduce((acc, card) => {
+  const filteredCards = condenseCards(
+    vaultCards?.filter(card => 
+      card.card && (filterTier === "all" || card.card.tier === getTierMapping(filterTier))
+    ) || []
+  );
+
+  const tierCounts = filteredCards?.reduce((acc, card) => {
     // Database now uses direct tier codes (D, C, B, A, S, SS, SSS)
     if (card.card && card.card.tier) {
-      acc[card.card.tier] = (acc[card.card.tier] || 0) + 1;
+      acc[card.card.tier] = (acc[card.card.tier] || 0) + card.quantity;
     }
     return acc;
   }, {} as Record<string, number>) || {};
 
   const tiers = [
-    { value: "all", label: "All Cards", count: vaultCards?.length || 0 },
+    { value: "all", label: "All Cards", count: filteredCards?.reduce((sum, card) => sum + card.quantity, 0) || 0 },
     { value: "SSS", label: "SSS", count: tierCounts.SSS || 0, color: "legendary" },
     { value: "SS", label: "SS", count: tierCounts.SS || 0, color: "superrare" },
     { value: "S", label: "S", count: tierCounts.S || 0, color: "rare" },
@@ -259,7 +288,7 @@ export default function Vault() {
               <div className="flex items-center justify-between gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#22D3EE]" data-testid="text-total-cards">
-                    {vaultCards?.length || 0}
+                    {filteredCards?.reduce((sum, card) => sum + card.quantity, 0) || 0}
                   </div>
                   <div className="text-sm text-[#9CA3AF]">Total Cards</div>
                 </div>
