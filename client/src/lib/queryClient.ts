@@ -13,8 +13,8 @@ const getApiBaseUrl = () => {
     // In production, use Railway backend
     return 'https://drops-backend-production-b145.up.railway.app';
   }
-  // In development, use local backend on port 3000
-  return 'http://localhost:3000';
+  // In development, use local backend on port 3001
+  return 'http://localhost:3001';
 };
 
 export async function apiRequest(

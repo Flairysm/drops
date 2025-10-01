@@ -411,7 +411,7 @@ export default function Admin() {
         };
 
 
-        const response = await fetch('http://localhost:3000/api/admin/inventory', {
+        const response = await fetch('http://localhost:3001/api/admin/inventory', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -530,7 +530,7 @@ export default function Admin() {
         };
 
 
-        const response = await fetch(`http://localhost:3000/api/admin/inventory/${editingCard.id}`, {
+        const response = await fetch(`http://localhost:3001/api/admin/inventory/${editingCard.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -616,7 +616,7 @@ export default function Admin() {
         console.error('Failed to add card to mystery pack pool:', errorText);
         alert('Failed to add card to mystery pack pool. Please try again.');
       }
-    } catch (error) {
+        } catch (error) {
       console.error('Error adding card to mystery pack pool:', error);
       alert('Error adding card to mystery pack pool. Please try again.');
     }
@@ -772,7 +772,7 @@ export default function Admin() {
   const handleAddPool = async () => {
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim() && newPool.totalCards.trim()) {
       try {
-        const response = await fetch('http://localhost:3000/api/admin/special-packs', {
+        const response = await fetch('http://localhost:3001/api/admin/special-packs', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -807,7 +807,7 @@ export default function Admin() {
 
   const handleRemovePool = async (poolId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/special-packs/${poolId}`, {
+      const response = await fetch(`http://localhost:3001/api/admin/special-packs/${poolId}`, {
         method: 'DELETE',
       });
 
@@ -839,7 +839,7 @@ export default function Admin() {
   const handleUpdatePool = async () => {
     if (editingPool && editingPool.name.trim() && editingPool.description.trim() && editingPool.image.trim()) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/special-packs/${editingPool.id}`, {
+        const response = await fetch(`http://localhost:3001/api/admin/special-packs/${editingPool.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -885,7 +885,7 @@ export default function Admin() {
   const handleAddClassicPool = async () => {
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim()) {
       try {
-        const response = await fetch('http://localhost:3000/api/admin/classic-packs', {
+        const response = await fetch('http://localhost:3001/api/admin/classic-packs', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -962,7 +962,7 @@ export default function Admin() {
   const handleDeleteClassicPool = async (poolId: string) => {
     if (confirm('Are you sure you want to delete this classic pack? This action cannot be undone.')) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${poolId}`, {
+        const response = await fetch(`http://localhost:3001/api/admin/classic-packs/${poolId}`, {
           method: 'DELETE',
         });
 
@@ -1034,7 +1034,7 @@ export default function Admin() {
         // Remove card if quantity is 0
         console.log(`Removing card from ${isClassicPack ? 'classic' : 'special'} pack:`, { packId: editingContentPool.id, specialPackCardId: cardId });
         
-        const response = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
+        const response = await fetch(`http://localhost:3001/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -1046,7 +1046,7 @@ export default function Admin() {
           alert(`Card removed from ${isClassicPack ? 'classic' : 'special'} pack!`);
           
           // Refresh the pack data
-          const updatedPack = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+          const updatedPack = await fetch(`http://localhost:3001/api/admin/${apiEndpoint}/${editingContentPool.id}`);
           if (updatedPack.ok) {
             const packData = await updatedPack.json();
             setEditingContentPool(packData);
@@ -1201,7 +1201,7 @@ export default function Admin() {
         }
         
         // Then refresh from server to ensure consistency
-        const updatedPool = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
+        const updatedPool = await fetch(`http://localhost:3001/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
         console.log('Updated pool data:', updatedPool);
         console.log('Updated pool cards:', updatedPool.cards);
         
@@ -1237,7 +1237,7 @@ export default function Admin() {
     if (!editingContentPool || newQuantity < 1) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/special-packs/${editingContentPool.id}/cards/${cardId}`, {
+      const response = await fetch(`http://localhost:3001/api/admin/special-packs/${editingContentPool.id}/cards/${cardId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1249,7 +1249,7 @@ export default function Admin() {
 
       if (response.ok) {
         // Refresh the editing pool data
-        const updatedPool = await fetch(`http://localhost:3000/api/admin/special-packs/${editingContentPool.id}`).then(res => res.json());
+        const updatedPool = await fetch(`http://localhost:3001/api/admin/special-packs/${editingContentPool.id}`).then(res => res.json());
         setEditingContentPool(prev => prev ? {
           ...prev,
           cards: updatedPool.cards || []
@@ -1312,7 +1312,7 @@ export default function Admin() {
     if (!editingContentPool) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}/cards`, {
+      const response = await fetch(`http://localhost:3001/api/admin/classic-packs/${editingContentPool.id}/cards`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1328,7 +1328,7 @@ export default function Admin() {
       }
 
       // Refresh the pack data
-      const updatedPack = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}`);
+      const updatedPack = await fetch(`http://localhost:3001/api/admin/classic-packs/${editingContentPool.id}`);
       const packData = await updatedPack.json();
       
       // Update the editing content pool with fresh data
@@ -1387,7 +1387,7 @@ export default function Admin() {
     if (!editingContentPool) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}/cards/${cardId}`, {
+      const response = await fetch(`http://localhost:3001/api/admin/classic-packs/${editingContentPool.id}/cards/${cardId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1400,7 +1400,7 @@ export default function Admin() {
       }
 
       // Refresh the pack data
-      const updatedPack = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}`);
+      const updatedPack = await fetch(`http://localhost:3001/api/admin/classic-packs/${editingContentPool.id}`);
       const packData = await updatedPack.json();
       
       // Update the editing content pool with fresh data
@@ -1454,7 +1454,7 @@ export default function Admin() {
       if (response.ok) {
         const packs = await response.json();
         setSpecialPools(packs);
-      } else {
+    } else {
         console.error('Failed to fetch special packs');
       }
     } catch (error: any) {
@@ -1693,7 +1693,7 @@ export default function Admin() {
                         <div className="text-muted-foreground">Loading users...</div>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                    <div className="space-y-4">
                     {users.map((user) => (
                         <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
                           <div className="flex items-center space-x-4">
@@ -1727,8 +1727,8 @@ export default function Admin() {
                           </div>
                         </div>
                     ))}
-                      </div>
-                    )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1816,8 +1816,8 @@ export default function Admin() {
                                           <div>Cards Added: {pool.cards?.length || 0}</div>
                                         </div>
                                       </div>
-                                    </div>
-                                      
+                            </div>
+
                                     {/* Action Buttons */}
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
                                       <Button
@@ -1856,7 +1856,7 @@ export default function Admin() {
                                         <X className="w-4 h-4 mr-2" />
                                         Remove Content
                                       </Button>
-                                    </div>
+                              </div>
                                   </CardContent>
                                 </Card>
                               ))}
@@ -1894,7 +1894,7 @@ export default function Admin() {
                                   placeholder="Enter image URL"
                                   required
                                 />
-                              </div>
+                            </div>
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="classicPackDescription">Description</Label>
@@ -2497,9 +2497,9 @@ export default function Admin() {
                           <div key={setting.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
                             <div className="flex-1">
                               <div className="font-medium">{setting.settingKey}</div>
-                              <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-muted-foreground">
                                 {setting.description || 'No description available'}
-                              </div>
+                        </div>
                               <div className="text-xs text-muted-foreground mt-1">
                                 Last updated: {new Date(setting.updatedAt).toLocaleString()}
                               </div>
@@ -2508,13 +2508,13 @@ export default function Admin() {
                               <span className="text-sm font-medium">
                                 {setting.settingValue ? 'Enabled' : 'Disabled'}
                               </span>
-                              <Button
+                      <Button
                                 variant={setting.settingValue ? "destructive" : "default"}
                                 size="sm"
                                 onClick={() => updateSystemSetting(setting.settingKey, !setting.settingValue)}
                               >
                                 {setting.settingValue ? 'Disable' : 'Enable'}
-                              </Button>
+                      </Button>
                             </div>
                           </div>
                         ))}
@@ -3018,7 +3018,7 @@ export default function Admin() {
                       placeholder="Enter pack description"
                       required
                     />
-                  </div>
+                </div>
                 </div>
               </div>
             )}
