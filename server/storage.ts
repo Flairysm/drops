@@ -1648,14 +1648,18 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Deduct selected cards from prize pool
-      // Deduct common cards
+      // Deduct common cards - count occurrences and deduct accordingly
+      const commonCardCounts = new Map<string, number>();
       for (const commonCard of selectedCommonCards) {
-        if (commonCard.quantity > 0) {
-          await tx
-            .update(specialPackCards)
-            .set({ quantity: commonCard.quantity - 1 })
-            .where(eq(specialPackCards.id, commonCard.id));
-        }
+        const key = commonCard.id;
+        commonCardCounts.set(key, (commonCardCounts.get(key) || 0) + 1);
+      }
+      
+      for (const [cardId, count] of Array.from(commonCardCounts.entries())) {
+        await tx
+          .update(specialPackCards)
+          .set({ quantity: sql`${specialPackCards.quantity} - ${count}` })
+          .where(eq(specialPackCards.id, cardId));
       }
       
       // Deduct hit card from prize pool if it was selected from the pack
