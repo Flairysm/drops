@@ -484,11 +484,14 @@ export class DatabaseStorage implements IStorage {
 
   // User pack operations
   async getUserPacks(userId: string): Promise<UserPack[]> {
-    return await db
+    console.log('Storage: getUserPacks called for userId:', userId);
+    const packs = await db
       .select()
       .from(userPacks)
       .where(and(eq(userPacks.userId, userId), eq(userPacks.isOpened, false)))
       .orderBy(desc(userPacks.earnedAt));
+    console.log('Storage: getUserPacks result:', packs.length, 'packs found');
+    return packs;
   }
 
   async addUserPack(userPack: InsertUserPack): Promise<UserPack> {
