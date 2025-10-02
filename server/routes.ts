@@ -767,6 +767,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(parseInt(limit as string));
       
       console.log(`📰 Found ${feedData.length} feed entries`);
+      if (feedData.length > 0) {
+        console.log('📰 Sample feed entry:', JSON.stringify(feedData[0], null, 2));
+      }
       
       res.json(feedData);
     } catch (error) {
@@ -1882,22 +1885,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const packResult = await storage.openUserPack(packId, userId);
       
-      // Add to global feed for rare cards (A tier and above)
+      // Add to global feed for all cards (temporarily for testing)
       const hitCard = packResult.packCards.find(card => card.isHit);
       if (hitCard && hitCard.tier) {
-        const tierOrder = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
-        const hitTierIndex = tierOrder.indexOf(hitCard.tier);
-        const aTierIndex = tierOrder.indexOf('A');
-        
-        if (hitTierIndex >= aTierIndex) {
-          console.log(`📰 Adding pack pull to global feed: ${hitCard.tier} tier card`);
-          await storage.addGlobalFeedEntry({
-            userId,
-            cardId: hitCard.id,
-            tier: hitCard.tier,
-            gameType: 'pack',
-          });
-        }
+        console.log(`📰 Adding pack pull to global feed: ${hitCard.tier} tier card - ${hitCard.name}`);
+        await storage.addGlobalFeedEntry({
+          userId,
+          cardId: hitCard.id,
+          tier: hitCard.tier,
+          gameType: 'pack',
+        });
       }
       
       res.json({ 
