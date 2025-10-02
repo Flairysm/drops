@@ -12,7 +12,14 @@ interface RecentPullsProps {
 
 export function RecentPulls({ limit = 5 }: RecentPullsProps) {
   const { data: feedData, isLoading, error } = useQuery<GlobalFeedWithDetails[]>({
-    queryKey: [`/api/feed?limit=${limit}&minTier=A`], // Only A+ tier cards
+    queryKey: ["/api/feed", { limit, minTier: 'A' }],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/feed?limit=${limit}&minTier=A`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch recent pulls");
+      }
+      return response.json();
+    },
     refetchInterval: 15000, // Refresh every 15 seconds
   });
 
