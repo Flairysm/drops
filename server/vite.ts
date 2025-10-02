@@ -22,17 +22,21 @@ export async function setupVite(app: Express, server: Server) {
     },
   });
 
-  // Only apply Vite middleware to non-API routes
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api/')) {
-      return next();
-    }
-    return vite.middlewares(req, res, next);
-  });
+  // Apply Vite middleware only to specific routes, not as a catch-all
+  app.use('/src', vite.middlewares);
+  app.use('/@vite', vite.middlewares);
+  app.use('/@react-refresh', vite.middlewares);
+  app.use('/@fs', vite.middlewares);
+  app.use('/@id', vite.middlewares);
+  app.use('/node_modules', vite.middlewares);
   
-  app.use('*', async (req, res, next) => {
+  // Handle static assets
+  app.use('/assets', vite.middlewares);
+  
+  // Catch-all for SPA routes (but NOT API routes)
+  app.get('*', async (req, res, next) => {
     try {
-      // Skip API routes - let them be handled by the API middleware
+      // Skip API routes completely
       if (req.path.startsWith('/api/')) {
         return next();
       }
