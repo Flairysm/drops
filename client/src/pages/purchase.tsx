@@ -337,15 +337,24 @@ export default function Purchase() {
 
       <NavigationFooter />
 
-      {/* Pack Opening Animation */}
-      {showAnimation && packResult && (
-        <PackOpeningAnimation
-          packCards={packResult.packCards || []}
-          hitCardPosition={packResult.hitCardPosition || 7}
-          onComplete={handleAnimationComplete}
-          packType={packData?.name || 'Pack'}
-        />
-      )}
+          {/* Pack Opening Animation */}
+          {showAnimation && packResult && (
+            <>
+              {console.log('🎬 Rendering PackOpeningAnimation with:', {
+                showAnimation,
+                packResult,
+                packCards: packResult.packCards,
+                hitCardPosition: packResult.hitCardPosition,
+                packType: packData?.name
+              })}
+              <PackOpeningAnimation
+                packCards={packResult.packCards || []}
+                hitCardPosition={packResult.hitCardPosition || 7}
+                onComplete={handleAnimationComplete}
+                packType={packData?.name || 'Pack'}
+              />
+            </>
+          )}
     </div>
   );
 }
