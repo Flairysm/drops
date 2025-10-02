@@ -105,74 +105,83 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
         </Button>
       </div>
 
-      {/* Recent Pulls List */}
-      <div className="space-y-3">
-        {feedData.map((pull, index) => (
-          <motion.div
-            key={pull.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <Card className="w-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-4">
-                  {/* Card Image */}
-                  <div className="relative flex-shrink-0">
-                    <div className="w-16 h-24 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg">
-                      {pull.card.imageUrl ? (
-                        <img 
-                          src={pull.card.imageUrl} 
-                          alt={pull.card.name}
-                          className="w-full h-full object-cover rounded-lg"
-                          loading="lazy"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/card-images/random-common-card.png";
-                          }}
-                        />
-                      ) : (
-                        <img 
-                          src="/card-images/random-common-card.png" 
-                          alt={pull.card.name}
-                          className="w-full h-full object-cover rounded-lg"
-                          loading="lazy"
-                        />
-                      )}
-                    </div>
-                    
-                    {/* Tier Badge */}
-                    <div className="absolute -top-1 -right-1">
-                      <Badge className={`${getTierColor(pull.tier)} font-bold text-xs px-2 py-0.5 border`}>
-                        {pull.tier}
-                      </Badge>
+      {/* Recent Pulls Carousel */}
+      <div className="relative">
+        <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
+          {feedData.map((pull, index) => (
+            <motion.div
+              key={pull.id}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="flex-shrink-0"
+            >
+              <Card className="w-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-3">
+                  {/* Card Image Container */}
+                  <div className="flex justify-center mb-3">
+                    <div className="relative">
+                      {/* Card Image */}
+                      <div className="w-36 h-54 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg">
+                        {pull.card.imageUrl ? (
+                          <img 
+                            src={pull.card.imageUrl} 
+                            alt={pull.card.name}
+                            className="w-full h-full object-cover rounded-lg"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "/card-images/random-common-card.png";
+                            }}
+                          />
+                        ) : (
+                          <img 
+                            src="/card-images/random-common-card.png" 
+                            alt={pull.card.name}
+                            className="w-full h-full object-cover rounded-lg"
+                            loading="lazy"
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Tier Badge */}
+                      <div className="absolute -top-1 -right-1">
+                        <Badge className={`${getTierColor(pull.tier)} font-bold text-xs px-2 py-0.5 border`}>
+                          {pull.tier}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
 
                   {/* Card Details */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white mb-1 truncate">
+                  <div className="text-center mb-2">
+                    <h3 className="text-sm font-bold text-white mb-1">
                       {pull.card.name}
                     </h3>
-                    <p className="text-gray-400 text-sm mb-1">
+                    <p className="text-gray-400 text-xs mb-1">
                       {pull.tier} Tier Card
                     </p>
-                    <p className="text-gray-300 text-sm">
+                    <p className="text-gray-300 text-xs">
                       pulled by {pull.user?.username || 'Unknown'}
                     </p>
                   </div>
 
                   {/* Time */}
-                  <div className="flex-shrink-0 text-right">
-                    <div className="text-xs text-gray-400">
-                      {getTimeAgo(pull.createdAt || new Date())}
+                  <div className="flex items-center justify-end text-xs text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <span>{getTimeAgo(pull.createdAt || new Date())}</span>
+                      <ChevronRight className="w-3 h-3" />
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+        
+        {/* Scroll indicators */}
+        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-gradient-to-l from-gray-900 to-transparent w-8 h-full pointer-events-none"></div>
+        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-gray-900 to-transparent w-8 h-full pointer-events-none"></div>
       </div>
     </div>
   );
