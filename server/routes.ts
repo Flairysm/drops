@@ -1950,22 +1950,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get classic pack details
+      console.log('📦 Getting classic packs...');
       const classicPacks = await storage.getClassicPacks();
+      console.log('📦 Classic packs retrieved:', classicPacks.length);
       const classicPack = classicPacks.find(p => p.id === packId);
+      console.log('📦 Found classic pack:', classicPack ? 'YES' : 'NO');
       
       if (!classicPack) {
         return res.status(404).json({ message: 'Classic pack not found' });
       }
 
       const packPrice = parseFloat(classicPack.price);
+      console.log('📦 Pack price:', packPrice, 'User credits:', user.credits);
       if (!user.credits || parseFloat(user.credits) < packPrice) {
+        console.log('📦 Insufficient credits error');
         return res.status(400).json({ message: 'Insufficient credits' });
       }
 
       // Deduct credits
+      console.log('📦 Deducting credits...');
       await storage.updateUserCredits(userId, (-packPrice).toString());
+      console.log('📦 Credits deducted successfully');
 
       // Create user pack
+      console.log('📦 Creating user pack...');
       const userPack = await storage.addUserPack({
         userId,
         packId: classicPack.id,
@@ -1974,8 +1982,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         earnedFrom: 'purchase',
         isOpened: false,
       });
+      console.log('📦 User pack created:', userPack.id);
 
       // Open the pack immediately
+      console.log('📦 Opening pack...');
       const packResult = await storage.openUserPack(userPack.id, userId);
       console.log('📦 Black Bolt pack opening result:', JSON.stringify(packResult, null, 2));
 
