@@ -107,7 +107,21 @@ export default function Vault() {
         .then(response => {
           console.log("✅ Async refund request successful:", response);
           console.log("✅ Response status:", response.status);
-          return response.json();
+          console.log("✅ Response headers:", response.headers);
+          
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          console.log("✅ Content type:", contentType);
+          
+          if (contentType && contentType.includes('application/json')) {
+            return response.json();
+          } else {
+            // If not JSON, get text to see what we're getting
+            return response.text().then(text => {
+              console.log("❌ Non-JSON response:", text);
+              throw new Error(`Expected JSON but got: ${text.substring(0, 100)}...`);
+            });
+          }
         })
         .then(data => {
           console.log("✅ Async refund response data:", data);

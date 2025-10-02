@@ -526,6 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("🔥 ASYNC REFUND ENDPOINT HIT!");
     console.log("🔥 Request body:", req.body);
     console.log("🔥 User:", req.user);
+    console.log("🔥 Request headers:", req.headers);
     
     try {
       const userId = req.user.id;
@@ -614,6 +615,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error in test refund:", error);
       res.status(500).json({ message: "Test refund failed", error: error.message });
     }
+  });
+
+  // Simple test endpoint to verify routing
+  app.post('/api/vault/test-simple', isAuthenticatedCombined, async (req: any, res) => {
+    console.log("🧪 SIMPLE TEST ENDPOINT HIT!");
+    res.json({ success: true, message: "Simple test endpoint working" });
   });
 
   // Global feed routes
