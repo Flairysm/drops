@@ -1887,7 +1887,11 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Add cards to user's vault (only if they exist in inventory)
+      console.log('🎯 Adding cards to user vault:', selectedCards.map(card => ({ id: card.id, name: card.name, tier: card.tier })));
+      
       for (const card of selectedCards) {
+        console.log(`🎯 Processing card: ${card.name} (${card.id})`);
+        
         // Verify the card exists in inventory (it should, since we're using existing card IDs)
         const existingInventoryCard = await tx
           .select()
@@ -1896,8 +1900,11 @@ export class DatabaseStorage implements IStorage {
           .limit(1);
 
         if (existingInventoryCard.length === 0) {
+          console.error(`❌ Card ${card.id} not found in inventory`);
           throw new Error(`Card ${card.id} not found in inventory - this should not happen`);
         }
+
+        console.log(`✅ Card ${card.id} exists in inventory`);
 
         const existingCard = await tx
           .select()
@@ -1907,12 +1914,14 @@ export class DatabaseStorage implements IStorage {
 
         if (existingCard.length > 0) {
           // Update quantity
+          console.log(`🔄 Updating existing card quantity for ${card.name}`);
           await tx
             .update(userCards)
             .set({ quantity: existingCard[0].quantity + 1 })
             .where(and(eq(userCards.userId, userId), eq(userCards.cardId, card.id)));
         } else {
           // Insert new card
+          console.log(`➕ Inserting new card to vault: ${card.name}`);
           await tx.insert(userCards).values({
             userId,
             cardId: card.id,
@@ -1923,6 +1932,8 @@ export class DatabaseStorage implements IStorage {
           });
         }
       }
+      
+      console.log('✅ All cards added to user vault successfully');
 
       // Record transaction
       await tx.insert(transactions).values({
@@ -1937,7 +1948,10 @@ export class DatabaseStorage implements IStorage {
         card.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.tier)
       );
       
+      console.log('📰 Hit cards for global feed:', hitCards.map(card => ({ name: card.name, tier: card.tier })));
+      
       for (const hitCard of hitCards) {
+        console.log(`📰 Adding to global feed: ${hitCard.name} (${hitCard.tier} tier)`);
         await tx.insert(globalFeed).values({
           userId,
           cardId: hitCard.id,
@@ -1945,6 +1959,8 @@ export class DatabaseStorage implements IStorage {
           gameType: 'pack_opening'
         });
       }
+      
+      console.log('✅ All hit cards added to global feed successfully');
 
       // Note: We don't deduct from inventory as it's a static database
       // We only deduct from the pack's prize pool (specialPackCards) which represents
