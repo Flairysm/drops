@@ -312,6 +312,8 @@ export class DatabaseStorage implements IStorage {
 
   // Vault operations
   async getUserCards(userId: string): Promise<UserCardWithCard[]> {
+    console.log('🔍 getUserCards called for userId:', userId);
+    
     // First get all user cards
     const userCardsResult = await db
       .select()
@@ -319,10 +321,17 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(userCards.userId, userId), eq(userCards.isRefunded, false), eq(userCards.isShipped, false)))
       .orderBy(desc(userCards.pulledAt));
 
+    console.log('🔍 Raw userCardsResult:', userCardsResult.length, 'cards found');
+    console.log('🔍 Card IDs:', userCardsResult.map(card => ({ id: card.id, cardId: card.cardId, quantity: card.quantity })));
+
     // Then get inventory details for valid UUIDs only
     const validCardIds = userCardsResult
       .map(card => card.cardId)
-      .filter((cardId): cardId is string => cardId !== null && this.isValidUUID(cardId));
+      .filter((cardId): cardId is string => {
+        const isValid = cardId !== null && this.isValidUUID(cardId);
+        console.log(`🔍 Card ID ${cardId} is valid UUID: ${isValid}`);
+        return isValid;
+      });
 
     const inventoryResult = validCardIds.length > 0 
       ? await db
@@ -340,7 +349,7 @@ export class DatabaseStorage implements IStorage {
       card: userCard.cardId ? inventoryMap.get(userCard.cardId) || null : null
     }));
 
-    return result.map(row => ({
+    const finalResult = result.map(row => ({
       ...row,
       card: row.card ? {
         ...row.card,
@@ -351,6 +360,11 @@ export class DatabaseStorage implements IStorage {
         stock: null,
       } : null,
     })).filter(item => item.card !== null) as UserCardWithCard[];
+
+    console.log('🔍 Final getUserCards result:', finalResult.length, 'cards');
+    console.log('🔍 Final cards:', finalResult.map(card => ({ id: card.id, name: card.card?.name, quantity: card.quantity })));
+
+    return finalResult;
   }
 
   async addUserCard(userCard: InsertUserCard): Promise<UserCard> {
