@@ -1052,6 +1052,8 @@ export class DatabaseStorage implements IStorage {
         email: users.email,
         cardName: inventory.name,
         cardImageUrl: inventory.imageUrl,
+        cardMarketValue: inventory.marketValue,
+        cardTier: inventory.tier,
       })
       .from(globalFeed)
       .leftJoin(users, eq(globalFeed.userId, users.id))
@@ -1080,8 +1082,10 @@ export class DatabaseStorage implements IStorage {
         card: {
           id: row.cardId,
           name: row.cardName || 'Unknown Card',
+          tier: row.cardTier,
           imageUrl: row.cardImageUrl,
-        } as Card,
+          marketValue: row.cardMarketValue,
+        } as InventoryCard,
       };
     });
   }

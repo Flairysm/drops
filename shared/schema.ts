@@ -212,7 +212,7 @@ export const userPacks = pgTable("user_packs", {
 export const globalFeed = pgTable("global_feed", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: varchar("user_id").references(() => users.id),
-  cardId: uuid("card_id").references(() => cards.id),
+  cardId: uuid("card_id").references(() => inventory.id),
   tier: varchar("tier", { length: 10 }).notNull(),
   gameType: varchar("game_type", { length: 50 }).notNull(), // plinko, wheel, pack
   createdAt: timestamp("created_at").defaultNow(),
@@ -279,7 +279,6 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const cardsRelations = relations(cards, ({ many }) => ({
   userCards: many(userCards),
-  globalFeedEntries: many(globalFeed),
 }));
 
 export const packsRelations = relations(packs, ({ many }) => ({
@@ -303,9 +302,9 @@ export const globalFeedRelations = relations(globalFeed, ({ one }) => ({
     fields: [globalFeed.userId],
     references: [users.id],
   }),
-  card: one(cards, {
+  card: one(inventory, {
     fields: [globalFeed.cardId],
-    references: [cards.id],
+    references: [inventory.id],
   }),
 }));
 
@@ -500,7 +499,7 @@ export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 
 // Extended types for API responses
 export type UserCardWithCard = UserCard & { card: Card };
-export type GlobalFeedWithDetails = GlobalFeed & { user: Pick<User, 'username'>, card: Card };
+export type GlobalFeedWithDetails = GlobalFeed & { user: Pick<User, 'username'>, card: InventoryCard };
 export type GameResult = {
   cardId: string;
   tier: string;
