@@ -71,7 +71,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % Math.min(feedData.length, 8));
-    }, 4000); // Change every 4 seconds
+    }, 3000); // Change every 3 seconds for faster auto-scroll
 
     return () => clearInterval(interval);
   }, [feedData]);
@@ -154,20 +154,21 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
             </div>
           </div>
 
-          <div className="relative h-48 overflow-hidden">
+          <div className="relative h-40 overflow-hidden">
             <div 
-              className="flex transition-transform duration-500 ease-in-out h-full"
-              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+              className="flex transition-transform duration-1000 ease-in-out h-full gap-4"
+              style={{ transform: `translateX(-${currentIndex * 280}px)` }}
             >
+              {/* Duplicate cards for seamless looping */}
               {displayPulls.map((pull, index) => (
-                <div key={pull.id} className="min-w-full flex flex-col items-center space-y-3">
+                <div key={pull.id} className="min-w-[260px] flex flex-col items-center space-y-2 bg-secondary/20 rounded-xl p-3 border border-primary/10">
                   {/* Card Image */}
-                  <div className="w-24 h-32 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-xl flex items-center justify-center flex-shrink-0 border-2 border-primary/20 shadow-lg">
+                  <div className="w-20 h-28 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-primary/20 shadow-md">
                     {pull.card.imageUrl ? (
                       <img 
                         src={pull.card.imageUrl} 
                         alt={pull.card.name}
-                        className="w-full h-full object-cover rounded-xl"
+                        className="w-full h-full object-cover rounded-lg"
                         loading="lazy"
                         onError={(e) => {
                           // Fallback to default image if the imageUrl fails to load
@@ -179,37 +180,37 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                       <img 
                         src="/card-images/random-common-card.png" 
                         alt={pull.card.name}
-                        className="w-full h-full object-cover rounded-xl"
+                        className="w-full h-full object-cover rounded-lg"
                         loading="lazy"
                       />
                     )}
                   </div>
 
                   {/* Pull Details Below Image */}
-                  <div className="text-center space-y-2">
-                    <div className="flex items-center justify-center space-x-2">
-                      <span className="font-gaming font-bold text-lg" data-testid={`text-puller-${index}`}>
+                  <div className="text-center space-y-1 w-full">
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="font-gaming font-bold text-sm truncate" data-testid={`text-puller-${index}`}>
                         {pull.user?.username || 'Unknown'}
                       </span>
-                      <span className="text-muted-foreground text-sm">pulled</span>
+                      <span className="text-muted-foreground text-xs">pulled</span>
                     </div>
                     
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center">
                       <Badge 
                         variant="secondary" 
-                        className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold`}
+                        className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold text-xs`}
                         data-testid={`badge-tier-${index}`}
                       >
                         {tierNames[pull.tier as keyof typeof tierNames] || pull.tier}
                       </Badge>
                     </div>
 
-                    <div className="font-semibold text-lg" data-testid={`text-card-name-${index}`}>
+                    <div className="font-semibold text-sm truncate" data-testid={`text-card-name-${index}`}>
                       {pull.card.name}
                     </div>
 
-                    <div className="flex items-center justify-center space-x-2">
-                      <Badge variant="outline" className="text-xs">
+                    <div className="flex items-center justify-center space-x-1">
+                      <Badge variant="outline" className="text-xs px-1 py-0">
                         {pull.gameType.toUpperCase()}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
