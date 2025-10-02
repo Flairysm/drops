@@ -41,6 +41,14 @@ export default function Vault() {
   const { data: vaultCards, isLoading: vaultLoading } = useQuery<UserCardWithCard[]>({
     queryKey: ["/api/vault"],
     enabled: isAuthenticated,
+    queryFn: async () => {
+      console.log('🔍 Vault query function called');
+      const response = await apiRequest("GET", "/api/vault");
+      const data = await response.json();
+      console.log('🔍 Vault query response:', data);
+      console.log('🔍 Vault cards count:', data?.length || 0);
+      return data;
+    },
   });
 
   const refundMutation = useMutation({
@@ -149,6 +157,10 @@ export default function Vault() {
       });
     },
   });
+
+  console.log('🔍 Vault component render - vaultCards:', vaultCards);
+  console.log('🔍 Vault component render - vaultLoading:', vaultLoading);
+  console.log('🔍 Vault component render - vaultCards length:', vaultCards?.length || 0);
 
   if (isLoading) {
     return (
