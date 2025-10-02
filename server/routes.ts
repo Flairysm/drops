@@ -635,8 +635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "Simple test endpoint working" });
   });
 
-  // Image upload endpoint
-  app.post('/api/upload/image', isAuthenticatedCombined, async (req: any, res) => {
+  // Image upload endpoint - using different path to avoid Vite interference
+  app.post('/api/admin/upload-image', isAuthenticatedCombined, async (req: any, res) => {
     console.log("🖼️ IMAGE UPLOAD ENDPOINT HIT!");
     console.log("🖼️ Request body keys:", Object.keys(req.body || {}));
     console.log("🖼️ Request files keys:", Object.keys(req.files || {}));
@@ -729,12 +729,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "Basic test endpoint working" });
   });
 
-  // Test image upload endpoint without file upload
-  app.post('/api/upload/test', isAuthenticatedCombined, async (req: any, res) => {
-    console.log("🖼️ TEST UPLOAD ENDPOINT HIT!");
-    console.log("🖼️ User:", req.user);
-    res.json({ success: true, message: "Upload endpoint accessible" });
-  });
 
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
