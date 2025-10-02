@@ -20,6 +20,9 @@ import {
   mysteryPacks,
   mysteryPackCards,
   userCards,
+  globalFeed,
+  users,
+  cards,
   type GameResult 
 } from "@shared/schema";
 
@@ -733,10 +736,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {
-      // Temporarily return empty feed until cards table issues are resolved
-      res.json([]);
+      const { limit = 50, minTier } = req.query;
+      
+      console.log('📰 Fetching global feed with params:', { limit, minTier });
+      
+      // Build the query with joins
+      const feedData = await db
+        .select({
+          id: globalFeed.id,
+          userId: globalFeed.userId,
+          cardId: globalFeed.cardId,
+          tier: globalFeed.tier,
+          gameType: globalFeed.gameType,
+          createdAt: globalFeed.createdAt,
+          user: {
+            username: users.username,
+          },
+          card: {
+            id: cards.id,
+            name: cards.name,
+            imageUrl: cards.imageUrl,
+            marketValue: cards.marketValue,
+            tier: cards.tier,
+          }
+        })
+        .from(globalFeed)
+        .leftJoin(users, eq(globalFeed.userId, users.id))
+        .leftJoin(cards, eq(globalFeed.cardId, cards.id))
+        .orderBy(sql`${globalFeed.createdAt} DESC`)
+        .limit(parseInt(limit as string));
+      
+      console.log(`📰 Found ${feedData.length} feed entries`);
+      
+      res.json(feedData);
     } catch (error) {
-      console.error("Error fetching feed:", error);
+      console.error("❌ Error fetching feed:", error);
       res.status(500).json({ message: "Failed to fetch feed" });
     }
   });
@@ -1847,6 +1881,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
 
       const packResult = await storage.openUserPack(packId, userId);
+      
+      // Add to global feed for rare cards (A tier and above)
+      const hitCard = packResult.packCards.find(card => card.isHit);
+      if (hitCard && hitCard.tier) {
+        const tierOrder = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+        const hitTierIndex = tierOrder.indexOf(hitCard.tier);
+        const aTierIndex = tierOrder.indexOf('A');
+        
+        if (hitTierIndex >= aTierIndex) {
+          console.log(`📰 Adding pack pull to global feed: ${hitCard.tier} tier card`);
+          await storage.addGlobalFeedEntry({
+            userId,
+            cardId: hitCard.id,
+            tier: hitCard.tier,
+            gameType: 'pack',
+          });
+        }
+      }
       
       res.json({ 
         success: true,
