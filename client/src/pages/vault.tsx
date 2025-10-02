@@ -103,6 +103,16 @@ export default function Vault() {
       console.log("🚀 Starting async refund processing for card IDs:", uniqueCardIds);
       console.log("🚀 Making API request to /api/vault/refund-async");
       
+      // First test the basic endpoint to verify routing is working
+      apiRequest("POST", "/api/vault/test-basic", {})
+        .then(response => response.json())
+        .then(data => {
+          console.log("🧪 Basic test endpoint response:", data);
+        })
+        .catch(error => {
+          console.error("🧪 Basic test endpoint failed:", error);
+        });
+      
       apiRequest("POST", "/api/vault/refund-async", { cardIds: uniqueCardIds })
         .then(response => {
           console.log("✅ Async refund request successful:", response);
