@@ -595,6 +595,172 @@ export class DatabaseStorage implements IStorage {
     return newUserPack;
   }
 
+  private async openClassicPack(tx: any, userPack: any, classicPack: any, userId: string): Promise<PackOpenResult> {
+    // Get all cards in the classic pack pool
+    const packCards = await tx
+      .select({
+        id: specialPackCards.id,
+        packId: specialPackCards.packId,
+        cardId: specialPackCards.cardId,
+        quantity: specialPackCards.quantity,
+        createdAt: specialPackCards.createdAt,
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
+      .from(specialPackCards)
+      .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
+      .where(eq(specialPackCards.packId, classicPack.id));
+
+    if (packCards.length === 0) {
+      throw new Error('No cards available in classic pack');
+    }
+
+    // Create 8 cards: 7 commons + 1 hit (4x2 grid format)
+    const selectedCards = [];
+    const cardsToDeduct: { specialPackCardId: string; quantity: number }[] = [];
+    
+    // Add 7 common cards
+    const commonCards = packCards.filter((pc: any) => pc.card?.tier === 'D');
+    
+    if (commonCards.length > 0) {
+      for (let i = 0; i < 7; i++) {
+        const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
+        if (randomCommon.card) {
+          selectedCards.push({
+            id: randomCommon.card.id,
+            name: randomCommon.card.name || "Common Card",
+            imageUrl: randomCommon.card.imageUrl || "/card-images/random-common-card.png",
+            tier: randomCommon.card.tier || "D",
+            marketValue: randomCommon.card.credits || 10,
+            isHit: false,
+            position: i
+          });
+          
+          const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === randomCommon.id);
+          if (existingDeduction) {
+            existingDeduction.quantity++;
+          } else {
+            cardsToDeduct.push({ specialPackCardId: randomCommon.id, quantity: 1 });
+          }
+        }
+      }
+    } else {
+      throw new Error('No common cards found in classic pack pool');
+    }
+
+    // Add 1 hit card
+    const hitCards = packCards.filter((pc: any) => pc.card && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
+    
+    if (hitCards.length > 0) {
+      const randomHit = hitCards[Math.floor(Math.random() * hitCards.length)];
+      if (randomHit.card) {
+        selectedCards.push({
+          id: randomHit.card.id,
+          name: randomHit.card.name || 'Hit Card',
+          imageUrl: randomHit.card.imageUrl || '/card-images/random-common-card.png',
+          tier: randomHit.card.tier || 'C',
+          marketValue: randomHit.card.credits || 100,
+          isHit: true,
+          position: 7
+        });
+        
+        const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === randomHit.id);
+        if (existingDeduction) {
+          existingDeduction.quantity++;
+        } else {
+          cardsToDeduct.push({ specialPackCardId: randomHit.id, quantity: 1 });
+        }
+      }
+    } else if (commonCards.length > 0) {
+      // Fallback: if no hit cards, pick another common
+      const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
+      if (randomCommon.card) {
+        selectedCards.push({
+          id: randomCommon.card.id,
+          name: randomCommon.card.name || 'Common Card',
+          imageUrl: randomCommon.card.imageUrl || '/card-images/random-common-card.png',
+          tier: randomCommon.card.tier || 'D',
+          marketValue: randomCommon.card.credits || 10,
+          isHit: false,
+          position: 7
+        });
+        
+        const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === randomCommon.id);
+        if (existingDeduction) {
+          existingDeduction.quantity++;
+        } else {
+          cardsToDeduct.push({ specialPackCardId: randomCommon.id, quantity: 1 });
+        }
+      }
+    } else {
+      throw new Error('No cards available for classic pack');
+    }
+
+    if (selectedCards.length === 0) {
+      throw new Error('Could not select any cards from the classic pack pool');
+    }
+
+    // Deduct quantities from specialPackCards
+    for (const deduction of cardsToDeduct) {
+      await tx
+        .update(specialPackCards)
+        .set({ quantity: sql`${specialPackCards.quantity} - ${deduction.quantity}` })
+        .where(eq(specialPackCards.id, deduction.specialPackCardId));
+    }
+
+    // Add cards to user's vault
+    for (const card of selectedCards) {
+      await this.addUserCard({
+        userId,
+        cardId: card.id,
+        quantity: 1,
+        pullValue: card.marketValue.toString(),
+        isRefunded: false,
+        isShipped: false,
+      });
+    }
+
+    // Mark user pack as opened
+    await tx
+      .update(userPacks)
+      .set({ 
+        isOpened: true, 
+        openedAt: new Date() 
+      })
+      .where(eq(userPacks.id, userPack.id));
+
+    // Add to global feed
+    await tx.insert(globalFeed).values({
+      userId,
+      cardId: selectedCards[7]?.id || selectedCards[0].id, // Use hit card or first card
+      tier: selectedCards[7]?.tier || selectedCards[0].tier,
+      gameType: 'classic_pack',
+    });
+
+    return {
+      userCard: {
+        id: '',
+        userId: null,
+        cardId: null,
+        pullValue: '0',
+        quantity: 0,
+        pulledAt: null,
+        isRefunded: null,
+        isShipped: null,
+      }, // Not used in new format
+      packCards: selectedCards,
+      hitCardPosition: 7, // The 8th card (index 7) is the hit card
+      packType: 'classic', // Use classic as the pack type
+    };
+  }
+
   private async openMysteryPack(tx: any, userPack: any, mysteryPack: any, userId: string): Promise<PackOpenResult> {
     // Get all cards in the mystery pack pool
     const packCards = await tx
@@ -779,11 +945,12 @@ export class DatabaseStorage implements IStorage {
           throw new Error('Pack not found or already opened');
         }
 
-        // Check if this is a mystery pack by looking up the pack in mysteryPacks table
+        // Check if this is a mystery pack or classic pack by looking up the pack in respective tables
         if (!userPack.packId) {
           throw new Error('Pack ID is missing');
         }
         
+        // Check if it's a mystery pack
         const mysteryPack = await tx
           .select()
           .from(mysteryPacks)
@@ -793,6 +960,18 @@ export class DatabaseStorage implements IStorage {
         if (mysteryPack.length > 0) {
           // This is a mystery pack - handle it with the new logic
           return await this.openMysteryPack(tx, userPack, mysteryPack[0], userId);
+        }
+
+        // Check if it's a classic pack
+        const classicPack = await tx
+          .select()
+          .from(specialPacks)
+          .where(and(eq(specialPacks.id, userPack.packId), eq(specialPacks.packType, 'classic')))
+          .limit(1);
+
+        if (classicPack.length > 0) {
+          // This is a classic pack - handle it with the new logic
+          return await this.openClassicPack(tx, userPack, classicPack[0], userId);
         }
 
         // Regular pack logic continues below

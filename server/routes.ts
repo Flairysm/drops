@@ -1932,6 +1932,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Black Bolt pack purchase and opening endpoint
+  app.post('/api/classic-packs/purchase/:packId', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { packId } = req.params;
+
+      console.log('Purchasing Black Bolt pack:', {
+        userId,
+        packId
+      });
+
+      // Get user to check credits
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Get classic pack details
+      const classicPacks = await storage.getClassicPacks();
+      const classicPack = classicPacks.find(p => p.id === packId);
+      
+      if (!classicPack) {
+        return res.status(404).json({ message: 'Classic pack not found' });
+      }
+
+      const packPrice = parseFloat(classicPack.price);
+      if (!user.credits || parseFloat(user.credits) < packPrice) {
+        return res.status(400).json({ message: 'Insufficient credits' });
+      }
+
+      // Deduct credits
+      await storage.updateUserCredits(userId, (-packPrice).toString());
+
+      // Create user pack
+      const userPack = await storage.addUserPack({
+        userId,
+        packId: classicPack.id,
+        packType: 'classic',
+        tier: 'classic',
+        earnedFrom: 'purchase',
+        isOpened: false,
+      });
+
+      // Open the pack immediately
+      const packResult = await storage.openUserPack(userPack.id, userId);
+      console.log('📦 Black Bolt pack opening result:', JSON.stringify(packResult, null, 2));
+
+      res.json({ 
+        success: true,
+        ...packResult
+      });
+
+    } catch (error: any) {
+      console.error("Error purchasing Black Bolt pack:", error);
+      res.status(500).json({ message: error.message || "Failed to purchase pack" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

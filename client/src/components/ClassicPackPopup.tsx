@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { PackOpeningAnimation } from "@/components/PackOpeningAnimation";
 
 interface ClassicPackPopupProps {
   pack: any;
@@ -28,6 +29,8 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   const [showTapToReveal, setShowTapToReveal] = useState(false);
   const [showHitCardBack, setShowHitCardBack] = useState(false);
   const [showContinueButton, setShowContinueButton] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [packResult, setPackResult] = useState<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -58,11 +61,43 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   };
 
   const handleOpenPack = async () => {
-    // Black Bolt pack opening - REMOVED FOR REBUILD
+    if (!pack?.id) return;
+    
+    setIsOpening(true);
+    try {
+      const response = await apiRequest('POST', `/api/classic-packs/purchase/${pack.id}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        // Set the pack result and show animation
+        setPackResult(result);
+        setShowAnimation(true);
+        
+        // Invalidate queries to refresh user data
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      } else {
+        throw new Error(result.message || 'Failed to open pack');
+      }
+    } catch (error: any) {
+      console.error('Error opening pack:', error);
+      toast({
+        title: "Error Opening Pack",
+        description: error.message || "Failed to open pack",
+        variant: "destructive",
+      });
+    } finally {
+      setIsOpening(false);
+    }
+  };
+
+  const handleAnimationComplete = () => {
+    setShowAnimation(false);
+    setPackResult(null);
     toast({
-      title: "Pack Opening Disabled",
-      description: "Black Bolt pack opening is being rebuilt. Please try again later.",
-      variant: "destructive",
+      title: "Pack Opened!",
+      description: "Your cards have been added to your vault!",
+      variant: "default",
     });
   };
 
@@ -114,8 +149,19 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   if (!pack) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#0B0B12] border-[#26263A]">
+    <>
+      {/* Pack Opening Animation */}
+      {showAnimation && packResult && (
+        <PackOpeningAnimation
+          packCards={packResult.packCards}
+          hitCardPosition={packResult.hitCardPosition}
+          onComplete={handleAnimationComplete}
+          packType="classic"
+        />
+      )}
+
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#0B0B12] border-[#26263A]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#E5E7EB] flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
@@ -467,5 +513,6 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
