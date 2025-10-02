@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
-import { GlobalFeed } from "@/components/GlobalFeed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -552,16 +551,6 @@ export default function Home() {
             </div>
           </motion.section>
 
-          {/* Recent Pulls */}
-          <motion.section 
-            className="mb-12"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Recent Pulls</h2>
-            <GlobalFeed />
-          </motion.section>
 
         </div>
       </main>
