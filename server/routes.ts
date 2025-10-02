@@ -756,6 +756,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to manually add a feed entry
+  app.post('/api/feed/test-add', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      console.log('🧪 TEST: Adding manual feed entry for user:', userId);
+      
+      // Get a random card from inventory
+      const inventoryCards = await storage.getInventoryCards();
+      if (inventoryCards.length === 0) {
+        return res.status(400).json({ message: "No cards in inventory" });
+      }
+      
+      const randomCard = inventoryCards[0];
+      console.log('🧪 Using card:', randomCard);
+      
+      await storage.addGlobalFeedEntry({
+        userId,
+        cardId: randomCard.id,
+        tier: randomCard.tier,
+        gameType: 'test',
+      });
+      
+      console.log('✅ Test feed entry added successfully');
+      res.json({ success: true, message: "Test feed entry added" });
+    } catch (error) {
+      console.error("❌ Error adding test feed entry:", error);
+      res.status(500).json({ message: "Failed to add test entry" });
+    }
+  });
+
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {
@@ -1907,17 +1937,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
 
       const packResult = await storage.openUserPack(packId, userId);
+      console.log('📦 Pack opening result:', JSON.stringify(packResult, null, 2));
       
       // Add to global feed for all cards (temporarily for testing)
       const hitCard = packResult.packCards.find(card => card.isHit);
+      console.log('🎯 Hit card found:', hitCard);
+      
       if (hitCard && hitCard.tier) {
         console.log(`📰 Adding pack pull to global feed: ${hitCard.tier} tier card - ${hitCard.name}`);
-        await storage.addGlobalFeedEntry({
-          userId,
-          cardId: hitCard.id,
-          tier: hitCard.tier,
-          gameType: 'pack',
-        });
+        try {
+          await storage.addGlobalFeedEntry({
+            userId,
+            cardId: hitCard.id,
+            tier: hitCard.tier,
+            gameType: 'pack',
+          });
+          console.log('✅ Successfully added to global feed');
+        } catch (error) {
+          console.error('❌ Failed to add to global feed:', error);
+        }
+      } else {
+        console.log('❌ No hit card found or missing tier');
       }
       
       res.json({ 
