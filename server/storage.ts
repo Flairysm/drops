@@ -1022,23 +1022,28 @@ export class DatabaseStorage implements IStorage {
 
   // Global feed operations
   async getGlobalFeed(limit = 500, minTier?: string): Promise<GlobalFeedWithDetails[]> {
-    // Define tier hierarchy for filtering (higher index = rarer tier)
-    const tierHierarchy = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+    console.log('📰 getGlobalFeed called with:', { limit, minTier });
     
-    let tierFilter: string[];
-    if (minTier) {
-      const minIndex = tierHierarchy.indexOf(minTier);
-      if (minIndex >= 0) {
-        // Include all tiers from minTier and above
-        tierFilter = tierHierarchy.slice(minIndex);
+    try {
+      // Define tier hierarchy for filtering (higher index = rarer tier)
+      const tierHierarchy = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+      
+      let tierFilter: string[];
+      if (minTier) {
+        const minIndex = tierHierarchy.indexOf(minTier);
+        if (minIndex >= 0) {
+          // Include all tiers from minTier and above
+          tierFilter = tierHierarchy.slice(minIndex);
+        } else {
+          // Invalid minTier, default to all non-D tiers
+          tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
+        }
       } else {
-        // Invalid minTier, default to all non-D tiers
+        // No filter, show all non-D tiers
         tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
       }
-    } else {
-      // No filter, show all non-D tiers
-      tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
-    }
+      
+      console.log('📰 Using tier filter:', tierFilter);
 
     const result = await db
       .select({
@@ -1052,7 +1057,7 @@ export class DatabaseStorage implements IStorage {
         email: users.email,
         cardName: inventory.name,
         cardImageUrl: inventory.imageUrl,
-        cardMarketValue: inventory.marketValue,
+        cardCredits: inventory.credits,
         cardTier: inventory.tier,
       })
       .from(globalFeed)
@@ -1084,10 +1089,14 @@ export class DatabaseStorage implements IStorage {
           name: row.cardName || 'Unknown Card',
           tier: row.cardTier,
           imageUrl: row.cardImageUrl,
-          marketValue: row.cardMarketValue,
+          credits: row.cardCredits,
         } as InventoryCard,
       };
     });
+    } catch (error) {
+      console.error('❌ Error in getGlobalFeed:', error);
+      throw error;
+    }
   }
 
   async addGlobalFeedEntry(entry: { userId: string; cardId: string; tier: string; gameType: string }): Promise<void> {

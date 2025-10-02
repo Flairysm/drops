@@ -212,7 +212,7 @@ export const userPacks = pgTable("user_packs", {
 export const globalFeed = pgTable("global_feed", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: varchar("user_id").references(() => users.id),
-  cardId: uuid("card_id").references(() => inventory.id),
+  cardId: varchar("card_id").references(() => inventory.id),
   tier: varchar("tier", { length: 10 }).notNull(),
   gameType: varchar("game_type", { length: 50 }).notNull(), // plinko, wheel, pack
   createdAt: timestamp("created_at").defaultNow(),

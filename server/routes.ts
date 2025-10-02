@@ -793,31 +793,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('📰 Fetching global feed with params:', { limit, minTier });
       
-      // Build the query with joins
-      const feedData = await db
-        .select({
-          id: globalFeed.id,
-          userId: globalFeed.userId,
-          cardId: globalFeed.cardId,
-          tier: globalFeed.tier,
-          gameType: globalFeed.gameType,
-          createdAt: globalFeed.createdAt,
-          user: {
-            username: users.username,
-          },
-          card: {
-            id: cards.id,
-            name: cards.name,
-            imageUrl: cards.imageUrl,
-            marketValue: cards.marketValue,
-            tier: cards.tier,
-          }
-        })
-        .from(globalFeed)
-        .leftJoin(users, eq(globalFeed.userId, users.id))
-        .leftJoin(cards, eq(globalFeed.cardId, cards.id))
-        .orderBy(sql`${globalFeed.createdAt} DESC`)
-        .limit(parseInt(limit as string));
+      // Use the storage method instead of direct query
+      const feedData = await storage.getGlobalFeed(parseInt(limit as string), minTier as string);
       
       console.log(`📰 Found ${feedData.length} feed entries`);
       if (feedData.length > 0) {
