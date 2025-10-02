@@ -1886,6 +1886,46 @@ export class DatabaseStorage implements IStorage {
         throw new Error('No cards found in pack prize pool');
       }
 
+      // CRITICAL: Deduct quantities from pack cards BEFORE adding to user vault
+      console.log('🎯 Deducting quantities from pack cards...');
+      
+      // Create a map to track how many of each card we're taking
+      const cardQuantityMap = new Map<string, number>();
+      for (const card of selectedCards) {
+        const currentCount = cardQuantityMap.get(card.id) || 0;
+        cardQuantityMap.set(card.id, currentCount + 1);
+      }
+      
+      // Deduct quantities from specialPackCards
+      for (const [cardId, quantityToDeduct] of cardQuantityMap.entries()) {
+        console.log(`🎯 Deducting ${quantityToDeduct} of card ${cardId} from pack`);
+        
+        const packCardEntry = await tx
+          .select()
+          .from(specialPackCards)
+          .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)))
+          .limit(1);
+        
+        if (packCardEntry.length === 0) {
+          console.error(`❌ Pack card entry not found for card ${cardId} in pack ${packId}`);
+          throw new Error(`Pack card entry not found for card ${cardId}`);
+        }
+        
+        const currentQuantity = packCardEntry[0].quantity;
+        const newQuantity = currentQuantity - quantityToDeduct;
+        
+        if (newQuantity < 0) {
+          console.error(`❌ Insufficient quantity in pack: ${currentQuantity} - ${quantityToDeduct} = ${newQuantity}`);
+          throw new Error(`Insufficient quantity in pack for card ${cardId}. Available: ${currentQuantity}, Required: ${quantityToDeduct}`);
+        }
+        
+        console.log(`✅ Updating pack quantity: ${currentQuantity} -> ${newQuantity}`);
+        await tx
+          .update(specialPackCards)
+          .set({ quantity: newQuantity })
+          .where(and(eq(specialPackCards.packId, packId), eq(specialPackCards.cardId, cardId)));
+      }
+
       // Add cards to user's vault (only if they exist in inventory)
       console.log('🎯 Adding cards to user vault:', selectedCards.map(card => ({ id: card.id, name: card.name, tier: card.tier })));
       
