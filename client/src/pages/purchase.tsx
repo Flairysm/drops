@@ -12,7 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Package, ArrowLeft, Play } from "lucide-react";
 import { Link } from "wouter";
-import { PackOpeningAnimation } from "@/components/PackOpeningAnimation";
+// import { PackOpeningAnimation } from "@/components/PackOpeningAnimation"; // REMOVED FOR REBUILD
 
 export default function Purchase() {
   const { toast } = useToast();
@@ -54,81 +54,19 @@ export default function Purchase() {
     }
   };
 
-  // Pack opening mutation
-  const openPackMutation = useMutation({
-    mutationFn: async () => {
-      // Use the correct endpoint based on pack type
-      const endpoint = packType === 'classic' 
-        ? `/api/classic-packs/purchase/${packId}`
-        : `/api/packs/open/${packId}`;
-      
-      console.log('🎮 Making API request to:', endpoint);
-      console.log('🎮 Pack type:', packType);
-      
-      const response = await apiRequest("POST", endpoint);
-      console.log('🎮 API response status:', response.status);
-      console.log('🎮 API response ok:', response.ok);
-      
-      const result = await response.json();
-      console.log('🎮 API response data:', result);
-      
-      return result;
-    },
-    onSuccess: (result) => {
-      console.log('Pack opening result:', result);
-      
-      // Transform the result to match PackOpeningAnimation expectations
-      const transformedResult = {
-        ...result,
-        packCards: result.packCards.map((card: any, index: number) => ({
-          ...card,
-          isHit: index === result.hitCardPosition,
-          position: index
-        }))
-      };
-      
-      console.log('Transformed result for animation:', transformedResult);
-      console.log('Hit card position:', result.hitCardPosition);
-      console.log('Cards with isHit:', transformedResult.packCards.map((card: any) => ({ name: card.name, tier: card.tier, isHit: card.isHit })));
-      
-      setPackResult(transformedResult);
-      setShowAnimation(true);
-      
-      // Invalidate queries to refresh user data and vault
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
-    },
-    onError: (error: Error) => {
-      console.error('Error opening pack:', error);
-      toast({
-        title: "Pack Opening Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      setIsOpening(false);
-    },
-  });
+  // Pack opening mutation - REMOVED FOR REBUILD
 
   const handleOpenPack = async () => {
-    if (!packData) return;
-    
-    console.log('🎮 Starting pack opening for:', packData.name);
-    console.log('🎮 Pack type:', packType);
-    console.log('🎮 Pack ID:', packId);
-    
-    setIsOpening(true);
-    openPackMutation.mutate();
+    // Pack opening functionality - REMOVED FOR REBUILD
+    toast({
+      title: "Pack Opening Disabled",
+      description: "Black Bolt pack opening is being rebuilt. Please try again later.",
+      variant: "destructive",
+    });
   };
 
   const handleAnimationComplete = () => {
-    setShowAnimation(false);
-    setIsOpening(false);
-    setPackResult(null);
-    
-    toast({
-      title: "Pack Opened!",
-      description: "Your cards have been added to your vault!",
-    });
+    // Animation completion - REMOVED FOR REBUILD
   };
 
   if (isLoading) {
@@ -337,24 +275,7 @@ export default function Purchase() {
 
       <NavigationFooter />
 
-          {/* Pack Opening Animation */}
-          {showAnimation && packResult && (
-            <>
-              {console.log('🎬 Rendering PackOpeningAnimation with:', {
-                showAnimation,
-                packResult,
-                packCards: packResult.packCards,
-                hitCardPosition: packResult.hitCardPosition,
-                packType: packData?.name
-              })}
-              <PackOpeningAnimation
-                packCards={packResult.packCards || []}
-                hitCardPosition={packResult.hitCardPosition || 7}
-                onComplete={handleAnimationComplete}
-                packType={packData?.name || 'Pack'}
-              />
-            </>
-          )}
+          {/* Pack Opening Animation - REMOVED FOR REBUILD */}
     </div>
   );
 }

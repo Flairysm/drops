@@ -58,69 +58,12 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   };
 
   const handleOpenPack = async () => {
-    if (!packData || !packData.cards || packData.cards.length === 0) {
-      toast({
-        title: "Error",
-        description: "No cards available in this pack",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsOpening(true);
-    setRevealedCards(0);
-    setShowTapToReveal(false);
-    
-    try {
-      // Call the API to purchase and open the classic pack
-      const response = await apiRequest('POST', `/api/classic-packs/purchase/${pack.id}`);
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to open pack');
-      }
-      
-      const result = await response.json();
-      
-      // Refresh user data to update credits immediately after successful purchase
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      
-      // Simulate pack opening delay
-      setTimeout(() => {
-        // Use the cards from the API response
-        const selectedCards = result.packCards.map((card: any) => ({
-          card: {
-            name: card.name,
-            imageUrl: card.imageUrl,
-            tier: card.tier,
-            credits: card.marketValue
-          }
-        }));
-        
-        setOpenedCards(selectedCards);
-        setShowResults(true);
-        setIsOpening(false);
-        
-        // Start revealing the first 7 cards
-        revealCardsProgressively(selectedCards);
-        
-        // Show success toast
-        toast({
-          title: "Pack Purchased!",
-          description: `Successfully opened ${pack.name} for ${pack.price} credits!`,
-        });
-        
-      }, 1000); // Reduced from 2000ms to 1000ms for faster start
-      
-    } catch (error: any) {
-      console.error('Error opening pack:', error);
-      setIsOpening(false);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to open pack. Please try again.",
-        variant: "destructive",
-      });
-    }
+    // Black Bolt pack opening - REMOVED FOR REBUILD
+    toast({
+      title: "Pack Opening Disabled",
+      description: "Black Bolt pack opening is being rebuilt. Please try again later.",
+      variant: "destructive",
+    });
   };
 
   const revealCardsProgressively = (cards: any[]) => {
