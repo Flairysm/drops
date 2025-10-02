@@ -521,6 +521,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Async refund endpoint - processes refunds in background
+  app.post('/api/vault/refund-async', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { cardIds } = req.body;
+
+      if (!Array.isArray(cardIds) || cardIds.length === 0) {
+        return res.status(400).json({ message: "Invalid card IDs" });
+      }
+
+      // Immediately respond to client
+      res.json({ success: true, message: "Refund processing started" });
+
+      // Process refund in background (don't await)
+      storage.refundCardsAsync(cardIds, userId).catch(error => {
+        console.error("Async refund processing failed:", error);
+        // Could add error notification here if needed
+      });
+      
+    } catch (error) {
+      console.error("Error starting async refund:", error);
+      res.status(500).json({ message: "Failed to start refund processing" });
+    }
+  });
+
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {

@@ -93,6 +93,7 @@ export interface IStorage {
   getUserCards(userId: string): Promise<UserCardWithCard[]>;
   addUserCard(userCard: InsertUserCard): Promise<UserCard>;
   refundCards(cardIds: string[], userId: string): Promise<void>;
+  refundCardsAsync(cardIds: string[], userId: string): Promise<void>;
   
   // User pack operations
   getUserPacks(userId: string): Promise<UserPack[]>;
@@ -515,6 +516,35 @@ export class DatabaseStorage implements IStorage {
         description: `Refunded ${cardsToRefund.length} cards`,
       });
     });
+  }
+
+  // Async refund function - processes refunds in background without blocking
+  async refundCardsAsync(cardIds: string[], userId: string): Promise<void> {
+    console.log(`🔄 Starting async refund processing for ${cardIds.length} cards for user ${userId}`);
+    
+    try {
+      // Use the same optimized refund logic but without blocking the response
+      await this.refundCards(cardIds, userId);
+      console.log(`✅ Async refund processing completed for ${cardIds.length} cards for user ${userId}`);
+      
+      // Add notification about successful processing
+      await this.addNotification({
+        userId,
+        type: 'refund',
+        title: 'Refund Processing Complete',
+        message: `Successfully processed refund for ${cardIds.length} cards`,
+      });
+    } catch (error) {
+      console.error(`❌ Async refund processing failed for user ${userId}:`, error);
+      
+      // Add error notification
+      await this.addNotification({
+        userId,
+        type: 'error',
+        title: 'Refund Processing Error',
+        message: `Failed to process refund for ${cardIds.length} cards. Please contact support.`,
+      });
+    }
   }
 
   // User pack operations

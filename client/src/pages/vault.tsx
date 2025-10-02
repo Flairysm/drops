@@ -47,6 +47,7 @@ export default function Vault() {
     mutationFn: async (cardIds: string[]) => {
       // For common cards (D tier), collect all individual common card IDs
       const allCardIds: string[] = [];
+      let totalRefundAmount = 0;
       
       for (const cardId of cardIds) {
         const selectedCard = vaultCards?.find(c => c.id === cardId);
@@ -59,38 +60,58 @@ export default function Vault() {
             c.card?.credits === selectedCard.card?.credits
           ) || [];
           
-          // Add all individual common card IDs
-          commonCards.forEach(card => allCardIds.push(card.id));
+          // Add all individual common card IDs and calculate total refund
+          commonCards.forEach(card => {
+            allCardIds.push(card.id);
+            totalRefundAmount += parseFloat(card.pullValue || '0');
+          });
         } else {
           // For C-SSS cards, add the individual card ID
           allCardIds.push(cardId);
+          totalRefundAmount += parseFloat(selectedCard?.pullValue || '0');
         }
       }
       
       // Remove duplicates
       const uniqueCardIds = [...new Set(allCardIds)];
       
-      // Show progress toast for large batches
-      if (uniqueCardIds.length > 50) {
-        toast({
-          title: "Processing Refund",
-          description: `Refunding ${uniqueCardIds.length} cards... This may take a moment for large batches.`,
-        });
-      }
+      // OPTIMISTIC UPDATE: Immediately update the UI
+      // 1. Remove cards from vault cache
+      queryClient.setQueryData<UserCardWithCard[]>(["/api/vault"], (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.filter(card => !uniqueCardIds.includes(card.id));
+      });
       
-      // Use longer timeout for large batches (30 seconds for 100+ cards, 60 seconds for 500+ cards)
-      const timeout = uniqueCardIds.length > 500 ? 60000 : uniqueCardIds.length > 100 ? 30000 : undefined;
+      // 2. Update user credits optimistically
+      queryClient.setQueryData<any>(["/api/auth/user"], (oldData) => {
+        if (!oldData) return oldData;
+        const currentCredits = parseFloat(oldData.credits || '0');
+        return {
+          ...oldData,
+          credits: (currentCredits + totalRefundAmount).toFixed(2)
+        };
+      });
       
-      await apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds }, { timeout });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // 3. Clear selected cards and show success message immediately
       setSelectedCards([]);
       toast({
         title: "Cards Refunded",
-        description: `Successfully refunded ${selectedCards.length} cards`,
+        description: `Successfully refunded ${uniqueCardIds.length} cards for ${totalRefundAmount.toFixed(2)} credits`,
       });
+      
+      // 4. Start async backend processing (don't wait for it)
+      apiRequest("POST", "/api/vault/refund-async", { cardIds: uniqueCardIds })
+        .catch(error => {
+          console.error("Async refund processing failed:", error);
+          // Could add a notification here, but don't rollback the optimistic update
+          // since the user already got their credits
+        });
+      
+      return { success: true, refundedCards: uniqueCardIds.length, totalRefund: totalRefundAmount };
+    },
+    onSuccess: () => {
+      // No need to invalidate queries since we did optimistic updates
+      // The async backend processing will handle the actual database updates
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -104,6 +125,11 @@ export default function Vault() {
         }, 500);
         return;
       }
+      
+      // Rollback optimistic updates on error
+      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Refund Failed",
         description: error.message,
