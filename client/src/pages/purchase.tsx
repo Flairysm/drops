@@ -57,12 +57,27 @@ export default function Purchase() {
   // Pack opening mutation
   const openPackMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/packs/open/${packId}`);
+      // Use the correct endpoint based on pack type
+      const endpoint = packType === 'classic' 
+        ? `/api/classic-packs/purchase/${packId}`
+        : `/api/packs/open/${packId}`;
+      const response = await apiRequest("POST", endpoint);
       return await response.json();
     },
     onSuccess: (result) => {
       console.log('Pack opening result:', result);
-      setPackResult(result);
+      
+      // Transform the result to match PackOpeningAnimation expectations
+      const transformedResult = {
+        ...result,
+        packCards: result.packCards.map((card: any, index: number) => ({
+          ...card,
+          isHit: index === result.hitCardPosition,
+          position: index
+        }))
+      };
+      
+      setPackResult(transformedResult);
       setShowAnimation(true);
       
       // Invalidate queries to refresh user data and vault
