@@ -98,6 +98,19 @@ export function ImageUpload({
     fileInputRef.current?.click();
   };
 
+  const testUploadEndpoint = async () => {
+    try {
+      console.log('🧪 Testing upload endpoint...');
+      const response = await apiRequest('POST', '/api/upload/test', {});
+      const data = await response.json();
+      console.log('🧪 Test endpoint response:', data);
+      alert(`Test successful: ${data.message}`);
+    } catch (error) {
+      console.error('🧪 Test endpoint failed:', error);
+      alert(`Test failed: ${error.message}`);
+    }
+  };
+
   const clearImage = () => {
     onChange('');
   };
@@ -124,6 +137,15 @@ export function ImageUpload({
             className="h-7 px-2 text-xs"
           >
             Upload
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={testUploadEndpoint}
+            className="h-7 px-2 text-xs"
+          >
+            Test
           </Button>
         </div>
       </div>

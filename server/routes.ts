@@ -729,6 +729,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "Basic test endpoint working" });
   });
 
+  // Test image upload endpoint without file upload
+  app.post('/api/upload/test', isAuthenticatedCombined, async (req: any, res) => {
+    console.log("🖼️ TEST UPLOAD ENDPOINT HIT!");
+    console.log("🖼️ User:", req.user);
+    res.json({ success: true, message: "Upload endpoint accessible" });
+  });
+
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {
