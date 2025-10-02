@@ -61,8 +61,18 @@ export default function Purchase() {
       const endpoint = packType === 'classic' 
         ? `/api/classic-packs/purchase/${packId}`
         : `/api/packs/open/${packId}`;
+      
+      console.log('🎮 Making API request to:', endpoint);
+      console.log('🎮 Pack type:', packType);
+      
       const response = await apiRequest("POST", endpoint);
-      return await response.json();
+      console.log('🎮 API response status:', response.status);
+      console.log('🎮 API response ok:', response.ok);
+      
+      const result = await response.json();
+      console.log('🎮 API response data:', result);
+      
+      return result;
     },
     onSuccess: (result) => {
       console.log('Pack opening result:', result);
@@ -101,6 +111,10 @@ export default function Purchase() {
 
   const handleOpenPack = async () => {
     if (!packData) return;
+    
+    console.log('🎮 Starting pack opening for:', packData.name);
+    console.log('🎮 Pack type:', packType);
+    console.log('🎮 Pack ID:', packId);
     
     setIsOpening(true);
     openPackMutation.mutate();
