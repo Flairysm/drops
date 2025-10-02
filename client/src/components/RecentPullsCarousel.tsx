@@ -89,17 +89,15 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
 
   return (
     <div className="relative w-full">
-      <Card className="gaming-card overflow-hidden border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
+      <Card className="gaming-card overflow-hidden border-2 border-gray-700/50 bg-gradient-to-r from-gray-900/80 to-gray-800/80">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-white">Recent Pulls</h3>
+              <div className="flex items-center space-x-2 mt-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm text-white">Live Feed (A+ Tier Only)</span>
               </div>
-              <h3 className="font-gaming font-bold text-xl">Recent Pulls </h3>
-              <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                Live
-              </Badge>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -108,17 +106,18 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                 size="sm"
                 onClick={() => setShowAllModal(true)}
                 data-testid="button-see-all-pulls"
+                className="bg-black text-white border-gray-600 hover:bg-gray-800"
               >
                 See All
               </Button>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {displayPulls.map((pull, index) => (
-              <div key={pull.id} className="flex items-center space-x-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div key={pull.id} className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
                 {/* Card Image - Left side */}
-                <div className="w-16 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-600 shadow-sm flex-shrink-0">
+                <div className="w-14 h-18 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-sm flex-shrink-0">
                   {pull.card.imageUrl ? (
                     <img 
                       src={pull.card.imageUrl} 
@@ -141,33 +140,29 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                   )}
                 </div>
 
-                {/* Pull Details - Right side */}
+                {/* Pull Details - Center */}
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-white" data-testid={`text-puller-${index}`}>
+                    <span className="font-bold text-white text-sm" data-testid={`text-puller-${index}`}>
                       {pull.user?.username || 'Unknown'}
                     </span>
-                    <span className="text-white">pulled</span>
-                    <Badge 
-                      variant="secondary" 
-                      className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold text-xs`}
-                      data-testid={`badge-tier-${index}`}
-                    >
-                      {tierNames[pull.tier as keyof typeof tierNames] || pull.tier}
-                    </Badge>
+                    <span className="text-white text-sm">pulled</span>
+                    <span className="font-bold text-white text-sm bg-gray-700 px-2 py-0.5 rounded" data-testid={`badge-tier-${index}`}>
+                      {pull.tier}
+                    </span>
                   </div>
                   
-                  <div className="text-white font-medium" data-testid={`text-card-name-${index}`}>
+                  <div className="text-white text-sm" data-testid={`text-card-name-${index}`}>
                     {pull.card.name}
                   </div>
 
-                  <div className="text-gray-400 text-sm">
+                  <div className="text-gray-400 text-xs">
                     from {pull.gameType.replace('_', ' ')} game
                   </div>
                 </div>
 
                 {/* Timestamp - Far right */}
-                <div className="text-gray-400 text-sm flex-shrink-0">
+                <div className="text-gray-400 text-xs flex-shrink-0">
                   {getTimeAgo(pull.createdAt || new Date())}
                 </div>
               </div>
