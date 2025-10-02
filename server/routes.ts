@@ -527,7 +527,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { cardIds } = req.body;
 
+      console.log(`🚀 Async refund endpoint called for user ${userId} with ${cardIds?.length || 0} cards`);
+
       if (!Array.isArray(cardIds) || cardIds.length === 0) {
+        console.log("❌ Invalid card IDs provided");
         return res.status(400).json({ message: "Invalid card IDs" });
       }
 
@@ -543,6 +546,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error starting async refund:", error);
       res.status(500).json({ message: "Failed to start refund processing" });
+    }
+  });
+
+  // Debug endpoint to check refund status
+  app.get('/api/vault/debug/:userId', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.params.userId;
+      const { cardIds } = req.query;
+      
+      if (!cardIds) {
+        return res.status(400).json({ message: "cardIds query parameter required" });
+      }
+      
+      const cardIdArray = Array.isArray(cardIds) ? cardIds : [cardIds];
+      
+      // Check the current status of these cards
+      const cards = await db
+        .select()
+        .from(userCards)
+        .where(and(inArray(userCards.id, cardIdArray), eq(userCards.userId, userId)));
+      
+      res.json({
+        userId,
+        cardIds: cardIdArray,
+        cards: cards.map(card => ({
+          id: card.id,
+          isRefunded: card.isRefunded,
+          isShipped: card.isShipped,
+          pullValue: card.pullValue
+        }))
+      });
+    } catch (error) {
+      console.error("Error in debug endpoint:", error);
+      res.status(500).json({ message: "Debug endpoint error" });
     }
   });
 
