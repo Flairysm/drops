@@ -16,10 +16,15 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
   const [showAllModal, setShowAllModal] = useState(false);
 
   // Show all tiers temporarily for testing
-  const { data: feedData, isLoading } = useQuery<GlobalFeedWithDetails[]>({
+  const { data: feedData, isLoading, error } = useQuery<GlobalFeedWithDetails[]>({
     queryKey: [`/api/feed?limit=${limit}`],
     refetchInterval: 15000, // Refresh every 15 seconds
   });
+
+  // Debug logging
+  console.log('📰 RecentPullsCarousel - isLoading:', isLoading);
+  console.log('📰 RecentPullsCarousel - error:', error);
+  console.log('📰 RecentPullsCarousel - feedData:', feedData);
 
   // Separate query for all recent pulls in the modal
   const { data: allFeedData, isLoading: isLoadingAll } = useQuery<GlobalFeedWithDetails[]>({

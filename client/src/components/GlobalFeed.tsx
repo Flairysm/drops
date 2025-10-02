@@ -13,10 +13,15 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
   const [showCount, setShowCount] = useState(limit);
   const [showAllTiers, setShowAllTiers] = useState(false);
 
-  const { data: feedData, isLoading, refetch } = useQuery<GlobalFeedWithDetails[]>({
-    queryKey: [`/api/feed?limit=${showCount}${showAllTiers ? '' : '&minTier=A'}`],
+  const { data: feedData, isLoading, refetch, error } = useQuery<GlobalFeedWithDetails[]>({
+    queryKey: [`/api/feed?limit=${showCount}`], // Show all tiers for testing
     refetchInterval: 10000, // Refresh every 10 seconds
   });
+
+  // Debug logging
+  console.log('📰 GlobalFeed - isLoading:', isLoading);
+  console.log('📰 GlobalFeed - error:', error);
+  console.log('📰 GlobalFeed - feedData:', feedData);
 
   const tierColors = {
     D: "d",

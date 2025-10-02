@@ -733,6 +733,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  // Test endpoint to check global feed table
+  app.get('/api/feed/debug', async (req, res) => {
+    try {
+      console.log('🔍 DEBUG: Checking global_feed table...');
+      
+      // Check total count
+      const totalCount = await db.select({ count: sql<number>`count(*)` }).from(globalFeed);
+      console.log('🔍 Total entries in global_feed:', totalCount[0]?.count || 0);
+      
+      // Get all entries
+      const allEntries = await db.select().from(globalFeed).limit(10);
+      console.log('🔍 Sample entries:', allEntries);
+      
+      res.json({
+        totalCount: totalCount[0]?.count || 0,
+        sampleEntries: allEntries
+      });
+    } catch (error) {
+      console.error("❌ Error in debug endpoint:", error);
+      res.status(500).json({ message: "Debug endpoint error" });
+    }
+  });
+
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {
