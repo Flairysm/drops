@@ -22,7 +22,8 @@ import {
   History,
   Plus,
   X,
-  Eye
+  Eye,
+  Save
 } from "lucide-react";
 
 export default function Admin() {
@@ -565,11 +566,20 @@ export default function Admin() {
     card.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filter cards for mystery pack search
-  const mysteryFilteredCards = inventoryCards.filter(card => 
-    card.name.toLowerCase().includes(mysterySearchQuery.toLowerCase()) ||
-    card.id.toLowerCase().includes(mysterySearchQuery.toLowerCase())
-  );
+  // Filter cards for mystery pack search (exclude cards already in mystery pack)
+  const mysteryFilteredCards = inventoryCards.filter(card => {
+    // Check if card is already in mystery pack
+    const isAlreadyInMysteryPack = mysteryPackCards.some(mysteryCard => mysteryCard.cardId === card.id);
+    
+    // If already in mystery pack, exclude it
+    if (isAlreadyInMysteryPack) {
+      return false;
+    }
+    
+    // Apply search filter
+    return card.name.toLowerCase().includes(mysterySearchQuery.toLowerCase()) ||
+           card.id.toLowerCase().includes(mysterySearchQuery.toLowerCase());
+  });
 
   // Debug logging
 
@@ -755,6 +765,96 @@ export default function Admin() {
       delete newState[cardId];
       return newState;
     });
+  };
+
+  // Save all quantity changes for Mystery Packs
+  const handleSaveAllQuantities = async () => {
+    if (Object.keys(editingQuantity).length === 0) {
+      alert('No changes to save.');
+      return;
+    }
+
+    if (mysteryPacks.length === 0) {
+      alert('No mystery packs available. Please try again later.');
+      return;
+    }
+
+    // Always use the first mystery pack (pokeball) for the shared card pool
+    const pokeballPack = mysteryPacks.find(pack => pack.subtype === 'pokeball') || mysteryPacks[0];
+    
+    console.log('handleSaveAllQuantities (Mystery) called with:', editingQuantity);
+    
+    try {
+      // Save all changes in parallel
+      const savePromises = Object.entries(editingQuantity).map(async ([cardId, newQuantity]) => {
+        if (newQuantity === undefined || newQuantity < 0) return;
+        
+        // Find the card to get the actual cardId
+        const cardToUpdate = mysteryPackCards.find(card => card.id === cardId);
+        if (!cardToUpdate) {
+          console.warn(`Card not found for id: ${cardId}`);
+          return;
+        }
+
+        if (newQuantity === 0) {
+          // Remove card if quantity is 0
+          console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id });
+          
+          const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to remove ${cardToUpdate.card.name}: ${errorText}`);
+          }
+          
+          return { action: 'removed', name: cardToUpdate.card.name };
+        } else {
+          // Update quantity
+          console.log('Updating card quantity in mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id, quantity: newQuantity });
+          
+          const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`, {
+            quantity: newQuantity
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update ${cardToUpdate.card.name}: ${errorText}`);
+          }
+          
+          return { action: 'updated', name: cardToUpdate.card.name };
+        }
+      });
+
+      const results = await Promise.all(savePromises);
+      const successfulUpdates = results.filter(Boolean);
+      
+      const updatedCards = successfulUpdates.filter(r => r && r.action === 'updated').map(r => r!.name);
+      const removedCards = successfulUpdates.filter(r => r && r.action === 'removed').map(r => r!.name);
+      
+      console.log('Successfully processed mystery pack card changes:', successfulUpdates);
+      
+      let message = `Successfully processed ${successfulUpdates.length} card(s):`;
+      if (updatedCards.length > 0) {
+        message += `\nUpdated: ${updatedCards.join(', ')}`;
+      }
+      if (removedCards.length > 0) {
+        message += `\nRemoved: ${removedCards.join(', ')}`;
+      }
+      
+      alert(message);
+      
+      // Clear all editing states
+      setEditingQuantity({});
+      
+      // Refresh the mystery pack cards display
+      console.log('Calling fetchMysteryPackCards to refresh UI after updating...');
+      await fetchMysteryPackCards();
+      console.log('fetchMysteryPackCards completed after updating');
+    } catch (error) {
+      console.error('Error updating mystery pack card quantities:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Error updating quantities: ${errorMessage}`);
+    }
   };
 
   // Special Pool Management
@@ -2101,6 +2201,16 @@ export default function Admin() {
                                 <p className="text-sm text-muted-foreground">
                                   {mysteryPackCards.length} card(s) in mystery pack prize pool
                                 </p>
+                                {Object.keys(editingQuantity).length > 0 && (
+                                  <Button
+                                    onClick={handleSaveAllQuantities}
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save All ({Object.keys(editingQuantity).length})
+                                  </Button>
+                                )}
                                     </div>
                               {mysteryPackCards.map((card) => (
                                 <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
@@ -2126,13 +2236,6 @@ export default function Admin() {
                                           onChange={(e) => handleQuantityChange(card.id, parseInt(e.target.value) || 0)}
                                           className="w-20 h-8"
                                         />
-                                    <Button
-                                          onClick={() => handleSaveQuantity(card.id)}
-                                      size="sm"
-                                          className="h-8"
-                                        >
-                                          Save
-                                    </Button>
                                     <Button
                                           onClick={() => handleCancelQuantity(card.id)}
                                           variant="outline"
@@ -2204,7 +2307,12 @@ export default function Admin() {
                             />
                             {mysterySearchQuery && (
                               <p className="text-sm text-muted-foreground mt-2">
-                                Showing {mysteryFilteredCards.length} of {inventoryCards.length} cards
+                                Showing {mysteryFilteredCards.length} available cards (excluding {mysteryPackCards.length} already in mystery pack)
+                              </p>
+                            )}
+                            {!mysterySearchQuery && mysteryPackCards.length > 0 && (
+                              <p className="text-sm text-muted-foreground mt-2">
+                                {mysteryPackCards.length} cards already in mystery pack pool
                               </p>
                             )}
                                           </div>
@@ -2215,12 +2323,19 @@ export default function Admin() {
                               <div className="text-center py-8">
                                 <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                 <h3 className="text-lg font-medium mb-2">
-                                  {mysterySearchQuery ? "No cards found" : "No cards in inventory"}
+                                  {mysterySearchQuery 
+                                    ? "No cards found" 
+                                    : mysteryPackCards.length > 0 
+                                      ? "All cards already in mystery pack" 
+                                      : "No cards in inventory"
+                                  }
                                 </h3>
                                 <p className="text-muted-foreground">
                                   {mysterySearchQuery 
                                     ? "Try adjusting your search terms"
-                                    : "Add some cards to inventory first"
+                                    : mysteryPackCards.length > 0
+                                      ? "All available cards have been added to the mystery pack pool"
+                                      : "Add some cards to inventory first"
                                   }
                                 </p>
                                       </div>

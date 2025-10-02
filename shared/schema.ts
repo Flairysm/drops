@@ -125,6 +125,31 @@ export const specialPackCards = pgTable("special_pack_cards", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Classic packs table - separate from special packs
+export const classicPacks = pgTable("classic_packs", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  imageUrl: varchar("image_url", { length: 500 }),
+  price: varchar("price", { length: 20 }).notNull(),
+  guarantee: varchar("guarantee", { length: 255 }),
+  totalPacks: integer("total_packs"),
+  prizePool: varchar("prize_pool", { length: 255 }),
+  odds: varchar("odds", { length: 255 }),
+  pulledStatus: varchar("pulled_status", { length: 255 }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Classic pack cards table
+export const classicPackCards = pgTable("classic_pack_cards", {
+  id: varchar("id").primaryKey(),
+  packId: varchar("pack_id").notNull().references(() => classicPacks.id, { onDelete: "cascade" }),
+  cardId: varchar("card_id").notNull().references(() => inventory.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Mystery packs table - one pack with 4 subtypes
 export const mysteryPacks = pgTable("mystery_packs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -187,7 +212,7 @@ export const pullRates = pgTable("pull_rates", {
 export const userCards = pgTable("user_cards", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: varchar("user_id").references(() => users.id),
-  cardId: uuid("card_id").references(() => cards.id),
+  cardId: varchar("card_id").references(() => inventory.id), // Changed from uuid to varchar to match inventory.id
   pullValue: decimal("pull_value", { precision: 10, scale: 2 }).notNull(), // Locked market value at pull time
   quantity: integer("quantity").default(1).notNull(), // Number of copies of this card
   pulledAt: timestamp("pulled_at").defaultNow(),
@@ -331,6 +356,8 @@ export const virtualLibraryRelations = relations(virtualLibrary, ({ many }) => (
 
 export const inventoryRelations = relations(inventory, ({ many }) => ({
   specialPackCards: many(specialPackCards),
+  classicPackCards: many(classicPackCards),
+  mysteryPackCards: many(mysteryPackCards),
 }));
 
 export const specialPacksRelations = relations(specialPacks, ({ many }) => ({
@@ -344,6 +371,21 @@ export const specialPackCardsRelations = relations(specialPackCards, ({ one }) =
   }),
   card: one(inventory, {
     fields: [specialPackCards.cardId],
+    references: [inventory.id],
+  }),
+}));
+
+export const classicPacksRelations = relations(classicPacks, ({ many }) => ({
+  cards: many(classicPackCards),
+}));
+
+export const classicPackCardsRelations = relations(classicPackCards, ({ one }) => ({
+  pack: one(classicPacks, {
+    fields: [classicPackCards.packId],
+    references: [classicPacks.id],
+  }),
+  card: one(inventory, {
+    fields: [classicPackCards.cardId],
     references: [inventory.id],
   }),
 }));
@@ -453,6 +495,14 @@ export const insertMysteryPackCardSchema = createInsertSchema(mysteryPackCards).
   createdAt: true,
 });
 
+export const insertClassicPackSchema = createInsertSchema(classicPacks).omit({
+  createdAt: true,
+});
+
+export const insertClassicPackCardSchema = createInsertSchema(classicPackCards).omit({
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -482,6 +532,10 @@ export type MysteryPack = typeof mysteryPacks.$inferSelect;
 export type InsertMysteryPack = z.infer<typeof insertMysteryPackSchema>;
 export type MysteryPackCard = typeof mysteryPackCards.$inferSelect;
 export type InsertMysteryPackCard = z.infer<typeof insertMysteryPackCardSchema>;
+export type ClassicPack = typeof classicPacks.$inferSelect;
+export type InsertClassicPack = z.infer<typeof insertClassicPackSchema>;
+export type ClassicPackCard = typeof classicPackCards.$inferSelect;
+export type InsertClassicPackCard = z.infer<typeof insertClassicPackCardSchema>;
 export type InsertUserCard = z.infer<typeof insertUserCardSchema>;
 export type InsertUserPack = z.infer<typeof insertUserPackSchema>;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;

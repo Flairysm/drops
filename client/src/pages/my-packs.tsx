@@ -59,10 +59,14 @@ export default function MyPacks() {
 
   const openPackMutation = useMutation({
     mutationFn: async (packId: string) => {
+      console.log('🚀 Starting pack opening for ID:', packId);
       const response = await apiRequest("POST", `/api/packs/open/${packId}`);
-      return await response.json();
+      const result = await response.json();
+      console.log('✅ Pack opening successful:', result);
+      return result;
     },
-    onSuccess: (result) => {
+    onSuccess: (result, packId) => {
+      console.log('🎉 Pack opening mutation success for ID:', packId);
       setPackOpenData(result);
       setShowAnimation(true);
       setOpeningPack(null);
@@ -70,7 +74,8 @@ export default function MyPacks() {
       queryClient.invalidateQueries({ queryKey: ["/api/packs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
     },
-    onError: (error: any) => {
+    onError: (error: any, packId) => {
+      console.error('❌ Pack opening mutation error for ID:', packId, error);
       toast({
         title: "Error Opening Pack",
         description: error.message || "Failed to open pack",
@@ -81,10 +86,17 @@ export default function MyPacks() {
   });
 
   const handleOpenPack = (packType: string) => {
+    // Prevent double-clicks and multiple openings
+    if (openingPack || openPackMutation.isPending) {
+      console.log('Pack opening already in progress, ignoring click');
+      return;
+    }
+
     // Find the first available pack of this type
     const availablePacks = groupedPacks[packType] || [];
     if (availablePacks.length > 0) {
       const packToOpen = availablePacks[0];
+      console.log('Opening pack:', packToOpen.id, 'of type:', packType);
       setOpeningPack(packToOpen.id);
       openPackMutation.mutate(packToOpen.id);
     }
@@ -160,7 +172,10 @@ export default function MyPacks() {
     if (!acc[tier]) {
       acc[tier] = [];
     }
-    acc[tier].push(pack);
+    // Only include packs that are not currently being opened
+    if (pack.id !== openingPack) {
+      acc[tier].push(pack);
+    }
     return acc;
   }, {});
 
@@ -470,28 +485,32 @@ export default function MyPacks() {
               </div>
               <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
+                  <span className="text-[#6b7280]">D Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">60%</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-[#10b981]">C Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">84.8%</span>
+                  <span className="font-semibold text-[#E5E7EB]">20%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">7.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">10%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8b5cf6]">A Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">5.2%</span>
+                  <span className="font-semibold text-[#E5E7EB]">5%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#f59e0b]">S Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">2.8%</span>
+                  <span className="font-semibold text-[#E5E7EB]">3%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">0.15%</span>
+                  <span className="font-semibold text-[#E5E7EB]">1.5%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ef4444]">SSS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">0.05%</span>
+                  <span className="font-semibold text-[#E5E7EB]">0.5%</span>
                 </div>
               </div>
             </motion.div>
@@ -512,28 +531,32 @@ export default function MyPacks() {
               </div>
               <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
+                  <span className="text-[#6b7280]">D Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">12%</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-[#10b981]">C Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">50.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">30%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">22.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">25%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8b5cf6]">A Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">15.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">20%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#f59e0b]">S Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">9.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">8%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">3.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">3%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ef4444]">SSS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">1.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">2%</span>
                 </div>
               </div>
             </motion.div>
@@ -554,28 +577,32 @@ export default function MyPacks() {
               </div>
               <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
+                  <span className="text-[#6b7280]">D Tier:</span>
+                  <span className="font-semibold text-[#E5E7EB]">7%</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-[#10b981]">C Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">20.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">20%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">32.5%</span>
+                  <span className="font-semibold text-[#E5E7EB]">30%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8b5cf6]">A Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">27.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">25%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#f59e0b]">S Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">12.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">10%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">6.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">5%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ef4444]">SSS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">2.5%</span>
+                  <span className="font-semibold text-[#E5E7EB]">3%</span>
                 </div>
               </div>
             </motion.div>
@@ -597,31 +624,31 @@ export default function MyPacks() {
               <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span className="text-[#6b7280]">D Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">0.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">5%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#10b981]">C Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">0.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">15%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">39.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">25%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8b5cf6]">A Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">34.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">30%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#f59e0b]">S Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">15.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">12%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">8.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">8%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#ef4444]">SSS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">4.0%</span>
+                  <span className="font-semibold text-[#E5E7EB]">5%</span>
                 </div>
               </div>
             </motion.div>

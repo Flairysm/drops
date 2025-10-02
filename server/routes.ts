@@ -2002,6 +2002,386 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cache stats endpoint
+  app.get('/api/debug/cache-stats', async (req, res) => {
+    try {
+      const { SimpleCache } = await import('./cache/simpleCache');
+      const cache = SimpleCache.getInstance();
+      const stats = cache.getStats();
+      res.json({
+        cache: stats,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Error getting cache stats:', error);
+      res.status(500).json({ error: 'Failed to get cache stats' });
+    }
+  });
+
+  // Debug mystery packs endpoint
+  app.get('/api/debug/mystery-packs', async (req, res) => {
+    try {
+      console.log('🔍 DEBUG: Checking mystery_packs table...');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          id,
+          name,
+          subtype,
+          odds,
+          is_active
+        FROM mystery_packs
+        ORDER BY subtype
+      `);
+      
+      console.log('🔍 Mystery packs found:', result.rows.length);
+      console.log('🔍 All mystery packs:', result.rows);
+      
+      res.json({
+        totalCount: result.rows.length,
+        packs: result.rows
+      });
+    } catch (error) {
+      console.error('❌ Error in mystery packs debug endpoint:', error);
+      res.status(500).json({ error: 'Failed to check mystery_packs table' });
+    }
+  });
+
+  // Debug endpoint to update mystery pack odds
+  app.post('/api/debug/update-mystery-pack-odds', async (req, res) => {
+    try {
+      console.log('🔧 DEBUG: Updating mystery pack odds...');
+      
+      // Update Pokeball Mystery Pack odds
+      await db.execute(sql`
+        UPDATE mystery_packs 
+        SET odds = '{
+          "SSS": 0.01,
+          "SS": 0.02, 
+          "S": 0.05,
+          "A": 0.15,
+          "B": 0.20,
+          "C": 0.25,
+          "D": 0.32
+        }'::jsonb
+        WHERE id = 'e140f1bd-8277-436c-aa03-14bdc354da46'
+      `);
+      
+      // Update Greatball Mystery Pack odds
+      await db.execute(sql`
+        UPDATE mystery_packs 
+        SET odds = '{
+          "SSS": 0.02,
+          "SS": 0.03, 
+          "S": 0.08,
+          "A": 0.20,
+          "B": 0.25,
+          "C": 0.30,
+          "D": 0.12
+        }'::jsonb
+        WHERE id = 'fc1479fc-0254-4cec-a81b-a84509d4f0b6'
+      `);
+      
+      // Update Ultraball Mystery Pack odds
+      await db.execute(sql`
+        UPDATE mystery_packs 
+        SET odds = '{
+          "SSS": 0.03,
+          "SS": 0.05, 
+          "S": 0.10,
+          "A": 0.25,
+          "B": 0.30,
+          "C": 0.20,
+          "D": 0.07
+        }'::jsonb
+        WHERE id = '1a373648-35ba-42a7-a0be-294cec7efb16'
+      `);
+      
+      // Update Masterball Mystery Pack odds
+      await db.execute(sql`
+        UPDATE mystery_packs 
+        SET odds = '{
+          "SSS": 0.05,
+          "SS": 0.08, 
+          "S": 0.12,
+          "A": 0.30,
+          "B": 0.25,
+          "C": 0.15,
+          "D": 0.05
+        }'::jsonb
+        WHERE id = '35f87706-28e3-452b-ab85-1cca72dfc32a'
+      `);
+      
+      console.log('✅ Successfully updated mystery pack odds');
+      
+      res.json({
+        success: true,
+        message: 'Successfully updated mystery pack odds'
+      });
+    } catch (error) {
+      console.error('❌ Error updating mystery pack odds:', error);
+      res.status(500).json({ error: 'Failed to update mystery pack odds' });
+    }
+  });
+
+  // Debug endpoint to add packs to user account
+  app.post('/api/debug/add-packs', async (req, res) => {
+    try {
+      const { userId, packType, packId, quantity = 1 } = req.body;
+      
+      if (!userId || !packType || !packId) {
+        return res.status(400).json({ error: 'Missing required fields: userId, packType, packId' });
+      }
+      
+      console.log(`🔧 DEBUG: Adding ${quantity} ${packType} packs to user ${userId}...`);
+      
+      // Use the existing storage method to add packs
+      for (let i = 0; i < quantity; i++) {
+        // Determine the correct tier based on pack ID for mystery packs
+        let tier = packType;
+        if (packType === 'mystery') {
+          if (packId === 'e140f1bd-8277-436c-aa03-14bdc354da46') tier = 'pokeball';
+          else if (packId === 'fc1479fc-0254-4cec-a81b-a84509d4f0b6') tier = 'greatball';
+          else if (packId === '1a373648-35ba-42a7-a0be-294cec7efb16') tier = 'ultraball';
+          else if (packId === '35f87706-28e3-452b-ab85-1cca72dfc32a') tier = 'masterball';
+          else tier = 'pokeball'; // fallback
+        }
+        
+        await storage.addUserPack({
+          userId,
+          packId,
+          packType,
+          tier,
+          earnedFrom: 'debug',
+          isOpened: false,
+          earnedAt: new Date(),
+          openedAt: null
+        });
+      }
+      
+      console.log(`✅ Successfully added ${quantity} ${packType} packs to user ${userId}`);
+      
+      res.json({
+        success: true,
+        message: `Successfully added ${quantity} ${packType} packs to user ${userId}`,
+        packsAdded: quantity
+      });
+    } catch (error) {
+      console.error('❌ Error adding packs:', error);
+      res.status(500).json({ error: 'Failed to add packs' });
+    }
+  });
+
+  // Debug endpoint to clear user packs
+  app.post('/api/debug/clear-user-packs/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      console.log(`🔧 DEBUG: Clearing all packs for user ${userId}...`);
+      
+      await db.execute(sql`DELETE FROM user_packs WHERE user_id = ${userId}`);
+      
+      console.log(`✅ Successfully cleared all packs for user ${userId}`);
+      
+      res.json({
+        success: true,
+        message: `Successfully cleared all packs for user ${userId}`
+      });
+    } catch (error) {
+      console.error('❌ Error clearing user packs:', error);
+      res.status(500).json({ error: 'Failed to clear user packs' });
+    }
+  });
+
+  // Debug endpoint to check user packs
+  app.get('/api/debug/user-packs/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      console.log(`🔍 DEBUG: Checking packs for user ${userId}...`);
+      
+      const packs = await storage.getUserPacks(userId);
+      
+      console.log(`🔍 Found ${packs.length} packs for user ${userId}`);
+      
+      res.json({
+        success: true,
+        userId,
+        packCount: packs.length,
+        packs: packs
+      });
+    } catch (error) {
+      console.error('❌ Error checking user packs:', error);
+      res.status(500).json({ error: 'Failed to check user packs' });
+    }
+  });
+
+  // Update mystery pack odds endpoint
+  app.post('/api/debug/update-pokeball-odds', async (req, res) => {
+    try {
+      console.log('🔧 DEBUG: Updating Pokeball pack odds to be more realistic...');
+      
+      // Update Pokeball Mystery Pack odds to be more realistic for a common pack
+      await db.execute(sql`
+        UPDATE mystery_packs 
+        SET odds = '{
+          "SSS": 0.005,
+          "SS": 0.015, 
+          "S": 0.03,
+          "A": 0.05,
+          "B": 0.10,
+          "C": 0.20,
+          "D": 0.60
+        }'::jsonb
+        WHERE id = 'e140f1bd-8277-436c-aa03-14bdc354da46'
+      `);
+      
+      console.log('✅ Successfully updated Pokeball pack odds');
+      
+      res.json({
+        success: true,
+        message: 'Successfully updated Pokeball pack odds to be more realistic'
+      });
+    } catch (error) {
+      console.error('❌ Error updating Pokeball pack odds:', error);
+      res.status(500).json({ error: 'Failed to update Pokeball pack odds' });
+    }
+  });
+
+  // Fix mystery pack cards endpoint
+  app.post('/api/debug/fix-mystery-pack-cards', async (req, res) => {
+    try {
+      console.log('🔧 FIXING: Moving all mystery pack cards to base pack...');
+      
+      // Move all cards to the base mystery pack
+      const result = await db.execute(sql`
+        UPDATE mystery_pack_cards 
+        SET pack_id = '00000000-0000-0000-0000-000000000001'
+        WHERE pack_id != '00000000-0000-0000-0000-000000000001'
+      `);
+      
+      console.log('🔧 Updated rows:', result.rowCount);
+      
+      // Show the result
+      const cardsResult = await db.execute(sql`
+        SELECT 
+          mpc.id,
+          mpc.pack_id,
+          mp.name as pack_name,
+          mp.subtype,
+          i.name as card_name,
+          i.tier,
+          mpc.quantity
+        FROM mystery_pack_cards mpc
+        LEFT JOIN mystery_packs mp ON mpc.pack_id = mp.id
+        LEFT JOIN inventory i ON mpc.card_id = i.id
+        ORDER BY mp.subtype, i.tier
+      `);
+      
+      console.log('🔧 Cards after fix:', cardsResult.rows);
+      
+      res.json({
+        success: true,
+        updatedRows: result.rowCount,
+        cards: cardsResult.rows
+      });
+    } catch (error) {
+      console.error('❌ Error fixing mystery pack cards:', error);
+      res.status(500).json({ error: 'Failed to fix mystery pack cards' });
+    }
+  });
+
+  // Debug user cards endpoint
+  app.get('/api/debug/user-cards/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      console.log('🔍 DEBUG: Checking user_cards table for userId:', userId);
+      
+      const result = await db.execute(sql`
+        SELECT 
+          id,
+          user_id,
+          card_id,
+          pull_value,
+          quantity,
+          pulled_at,
+          is_refunded,
+          is_shipped
+        FROM user_cards 
+        WHERE user_id = ${userId}
+        ORDER BY pulled_at DESC
+      `);
+      
+      console.log('🔍 Total user card entries:', result.rows.length);
+      console.log('🔍 All entries:', result.rows);
+      
+      // Group by status
+      const active = result.rows.filter((row: any) => !row.is_refunded && !row.is_shipped);
+      const refunded = result.rows.filter((row: any) => row.is_refunded);
+      const shipped = result.rows.filter((row: any) => row.is_shipped);
+      
+      res.json({
+        totalCount: result.rows.length,
+        active: active.length,
+        refunded: refunded.length,
+        shipped: shipped.length,
+        entries: result.rows,
+        summary: {
+          active,
+          refunded,
+          shipped
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error in user cards debug endpoint:', error);
+      res.status(500).json({ error: 'Failed to check user_cards table' });
+    }
+  });
+
+  // Mystery pack cards debug endpoint
+  app.get('/api/debug/mystery-pack-cards', async (req, res) => {
+    try {
+      console.log('🔍 DEBUG: Checking mystery_pack_cards table...');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          mpc.id,
+          mpc.pack_id,
+          mpc.card_id,
+          mpc.quantity,
+          mpc.created_at,
+          mp.name as pack_name,
+          i.name as card_name,
+          i.tier
+        FROM mystery_pack_cards mpc
+        LEFT JOIN mystery_packs mp ON mpc.pack_id = mp.id
+        LEFT JOIN inventory i ON mpc.card_id = i.id
+        ORDER BY mpc.created_at DESC
+      `);
+      
+      console.log('🔍 Total mystery pack card entries:', result.rows.length);
+      console.log('🔍 All entries:', result.rows);
+      
+      // Group by pack
+      const packGroups = {};
+      result.rows.forEach((row: any) => {
+        if (!packGroups[row.pack_name]) {
+          packGroups[row.pack_name] = [];
+        }
+        packGroups[row.pack_name].push(row);
+      });
+      
+      res.json({
+        totalCount: result.rows.length,
+        entries: result.rows,
+        groupedByPack: packGroups
+      });
+    } catch (error) {
+      console.error('❌ Error in mystery pack cards debug endpoint:', error);
+      res.status(500).json({ error: 'Failed to check mystery_pack_cards table' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

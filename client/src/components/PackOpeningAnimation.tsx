@@ -26,7 +26,6 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const [revealedCards, setRevealedCards] = useState(0);
   const [showHitCard, setShowHitCard] = useState(false);
   const [isHitRevealed, setIsHitRevealed] = useState(false);
-  const [showCommons, setShowCommons] = useState(true);
 
   // Function to get tier glow color
   const getTierGlowColor = (tier: string) => {
@@ -85,23 +84,21 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
   // Start sequential card reveal animation - 7 commons + 1 hit card
   useEffect(() => {
-    if (showCommons) {
-      // Reset revealed cards
-      setRevealedCards(0);
-      
-      // Reveal 7 common cards first, then hit card back
-      for (let i = 0; i < 7; i++) {
-        setTimeout(() => {
-          setRevealedCards(i + 1);
-        }, 500 + (i * 150)); // Start after 500ms, then 150ms intervals
-      }
-      
-      // After 7 commons, show hit card back with a small delay
+    // Reset revealed cards
+    setRevealedCards(0);
+    
+    // Reveal 7 common cards first, then hit card back
+    for (let i = 0; i < 7; i++) {
       setTimeout(() => {
-        setRevealedCards(7); // Show hit card back at position 7
-      }, 500 + (7 * 150) + 500);
+        setRevealedCards(i + 1);
+      }, 500 + (i * 150)); // Start after 500ms, then 150ms intervals
     }
-  }, [showCommons]);
+    
+    // After 7 commons, show hit card back with a small delay
+    setTimeout(() => {
+      setRevealedCards(7); // Show hit card back at position 7
+    }, 500 + (7 * 150) + 500);
+  }, []); // Run once when component mounts
 
   const handleRevealHit = () => {
     if (revealedCards >= 7 && !isHitRevealed) {

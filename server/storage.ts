@@ -6,6 +6,8 @@ import {
   inventory,
   specialPacks,
   specialPackCards,
+  classicPacks,
+  classicPackCards,
   mysteryPacks,
   mysteryPackCards,
   userCards,
@@ -29,6 +31,10 @@ import {
   type InsertSpecialPack,
   type SpecialPackCard,
   type InsertSpecialPackCard,
+  type ClassicPack,
+  type InsertClassicPack,
+  type ClassicPackCard,
+  type InsertClassicPackCard,
   type MysteryPack,
   type InsertMysteryPack,
   type MysteryPackCard,
@@ -62,6 +68,7 @@ import {
 import { db } from "./db";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { SimpleCache, CacheKeys, CacheTTL } from "./cache/simpleCache";
 
 export interface IStorage {
   // User operations
@@ -162,11 +169,16 @@ export interface IStorage {
   deleteSpecialPack(id: string): Promise<void>;
   
   // Classic Packs
-  getClassicPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>>;
-  getClassicPackById(id: string): Promise<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>;
-  createClassicPack(pack: any): Promise<SpecialPack>;
-  updateClassicPack(id: string, pack: any): Promise<SpecialPack>;
+  getClassicPacks(): Promise<Array<ClassicPack & { cards: Array<ClassicPackCard & { card: InventoryCard }> }>>;
+  getClassicPackById(id: string): Promise<ClassicPack & { cards: Array<ClassicPackCard & { card: InventoryCard }> }>;
+  createClassicPack(pack: InsertClassicPack): Promise<ClassicPack>;
+  updateClassicPack(id: string, pack: Partial<InsertClassicPack>): Promise<ClassicPack>;
   deleteClassicPack(id: string): Promise<void>;
+  
+  // Classic Pack Cards
+  addCardToClassicPack(packId: string, cardId: string, quantity?: number): Promise<ClassicPackCard>;
+  removeCardFromClassicPack(packId: string, classicPackCardId: string): Promise<void>;
+  updateClassicPackCardQuantity(packId: string, classicPackCardId: string, quantity: number): Promise<ClassicPackCard>;
   
   // Special Pack Cards
   addCardToSpecialPack(packId: string, cardId: string, quantity?: number): Promise<SpecialPackCard>;
@@ -202,9 +214,41 @@ interface PackOpenResult {
 }
 
 export class DatabaseStorage implements IStorage {
+  private cache = SimpleCache.getInstance();
+
+  // Cache invalidation methods
+  private invalidateInventoryCache(): void {
+    this.cache.delete(CacheKeys.inventoryAll());
+    // Invalidate tier-specific caches
+    ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'].forEach(tier => {
+      this.cache.delete(CacheKeys.inventoryByTier(tier));
+    });
+  }
+
+  private invalidatePackCache(): void {
+    this.cache.delete(CacheKeys.specialPacks());
+    this.cache.delete(CacheKeys.classicPacks());
+    this.cache.delete(CacheKeys.mysteryPacks());
+  }
+
+  private invalidateGlobalFeedCache(): void {
+    // Invalidate all global feed variations
+    this.cache.delete(CacheKeys.globalFeed(10));
+    this.cache.delete(CacheKeys.globalFeed(5));
+    this.cache.delete(CacheKeys.globalFeed(10, 'A'));
+    this.cache.delete(CacheKeys.globalFeed(5, 'A'));
+  }
+
   // User operations
   async getUser(id: string): Promise<User | undefined> {
+    const cacheKey = `user:${id}`;
+    const cached = this.cache.get<User>(cacheKey);
+    if (cached) return cached;
+
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    if (user) {
+      this.cache.set(cacheKey, user, CacheTTL.MEDIUM);
+    }
     return user;
   }
 
@@ -312,45 +356,53 @@ export class DatabaseStorage implements IStorage {
 
   // Vault operations
   async getUserCards(userId: string): Promise<UserCardWithCard[]> {
+    const cacheKey = CacheKeys.userCards(userId);
+    const cached = this.cache.get<UserCardWithCard[]>(cacheKey);
+    if (cached) return cached;
+
     console.log('🔍 getUserCards called for userId:', userId);
     
-    // First get all user cards
-    const userCardsResult = await db
-      .select()
+    // Single optimized query with JOIN - eliminates N+1 query issue
+    const result = await db
+      .select({
+        // User card fields
+        id: userCards.id,
+        userId: userCards.userId,
+        cardId: userCards.cardId,
+        pullValue: userCards.pullValue,
+        quantity: userCards.quantity,
+        pulledAt: userCards.pulledAt,
+        isRefunded: userCards.isRefunded,
+        isShipped: userCards.isShipped,
+        // Inventory card fields
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
       .from(userCards)
-      .where(and(eq(userCards.userId, userId), eq(userCards.isRefunded, false), eq(userCards.isShipped, false)))
+      .innerJoin(inventory, eq(userCards.cardId, inventory.id))
+      .where(and(
+        eq(userCards.userId, userId),
+        eq(userCards.isRefunded, false),
+        eq(userCards.isShipped, false)
+      ))
       .orderBy(desc(userCards.pulledAt));
 
-    console.log('🔍 Raw userCardsResult:', userCardsResult.length, 'cards found');
-    console.log('🔍 Card IDs:', userCardsResult.map(card => ({ id: card.id, cardId: card.cardId, quantity: card.quantity })));
-
-    // Then get inventory details for valid UUIDs only
-    const validCardIds = userCardsResult
-      .map(card => card.cardId)
-      .filter((cardId): cardId is string => {
-        const isValid = cardId !== null && this.isValidUUID(cardId);
-        console.log(`🔍 Card ID ${cardId} is valid UUID: ${isValid}`);
-        return isValid;
-      });
-
-    const inventoryResult = validCardIds.length > 0 
-      ? await db
-          .select()
-          .from(inventory)
-          .where(inArray(inventory.id, validCardIds))
-      : [];
-
-    // Create a map for quick lookup
-    const inventoryMap = new Map(inventoryResult.map(item => [item.id, item]));
-
-    // Combine the results
-    const result = userCardsResult.map(userCard => ({
-      ...userCard,
-      card: userCard.cardId ? inventoryMap.get(userCard.cardId) || null : null
-    }));
-
     const finalResult = result.map(row => ({
-      ...row,
+      id: row.id,
+      userId: row.userId,
+      cardId: row.cardId,
+      pullValue: row.pullValue,
+      quantity: row.quantity,
+      pulledAt: row.pulledAt,
+      isRefunded: row.isRefunded,
+      isShipped: row.isShipped,
       card: row.card ? {
         ...row.card,
         // Add missing fields that the old cards table had
@@ -359,11 +411,12 @@ export class DatabaseStorage implements IStorage {
         marketValue: row.card.credits.toString(),
         stock: null,
       } : null,
-    })).filter(item => item.card !== null) as UserCardWithCard[];
+    })) as UserCardWithCard[];
 
     console.log('🔍 Final getUserCards result:', finalResult.length, 'cards');
     console.log('🔍 Final cards:', finalResult.map(card => ({ id: card.id, name: card.card?.name, quantity: card.quantity })));
-
+    
+    this.cache.set(cacheKey, finalResult, CacheTTL.SHORT);
     return finalResult;
   }
 
@@ -413,6 +466,9 @@ export class DatabaseStorage implements IStorage {
         if (!newUserCard) {
           throw new Error('Failed to fetch inserted user card');
         }
+        
+        // Invalidate user cards cache
+        this.cache.delete(CacheKeys.userCards(userCard.userId || ''));
         
         return newUserCard;
       } catch (error) {
@@ -532,6 +588,9 @@ export class DatabaseStorage implements IStorage {
         amount: totalRefund.toFixed(2),
         description: `Refunded ${cardsToRefund.length} cards`,
       });
+
+      // Invalidate user cards cache
+      this.cache.delete(CacheKeys.userCards(userId));
     });
   }
 
@@ -578,6 +637,10 @@ export class DatabaseStorage implements IStorage {
 
   // User pack operations
   async getUserPacks(userId: string): Promise<UserPack[]> {
+    const cacheKey = CacheKeys.userPacks(userId);
+    const cached = this.cache.get<UserPack[]>(cacheKey);
+    if (cached) return cached;
+
     console.log('Storage: getUserPacks called for userId:', userId);
     const packs = await db
       .select()
@@ -585,6 +648,8 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(userPacks.userId, userId), eq(userPacks.isOpened, false)))
       .orderBy(desc(userPacks.earnedAt));
     console.log('Storage: getUserPacks result:', packs.length, 'packs found');
+    
+    this.cache.set(cacheKey, packs, CacheTTL.SHORT);
     return packs;
   }
 
@@ -592,6 +657,10 @@ export class DatabaseStorage implements IStorage {
     console.log('Storage: addUserPack called with:', userPack);
     const [newUserPack] = await db.insert(userPacks).values(userPack).returning();
     console.log('Storage: addUserPack result:', newUserPack);
+    
+    // Invalidate user packs cache
+    this.cache.delete(CacheKeys.userPacks(userPack.userId || ''));
+    
     return newUserPack;
   }
 
@@ -599,11 +668,11 @@ export class DatabaseStorage implements IStorage {
     // Get all cards in the classic pack pool
     const packCards = await tx
       .select({
-        id: specialPackCards.id,
-        packId: specialPackCards.packId,
-        cardId: specialPackCards.cardId,
-        quantity: specialPackCards.quantity,
-        createdAt: specialPackCards.createdAt,
+        id: classicPackCards.id,
+        packId: classicPackCards.packId,
+        cardId: classicPackCards.cardId,
+        quantity: classicPackCards.quantity,
+        createdAt: classicPackCards.createdAt,
         card: {
           id: inventory.id,
           name: inventory.name,
@@ -614,9 +683,9 @@ export class DatabaseStorage implements IStorage {
           updatedAt: inventory.updatedAt,
         }
       })
-      .from(specialPackCards)
-      .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
-      .where(eq(specialPackCards.packId, classicPack.id));
+      .from(classicPackCards)
+      .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
+      .where(eq(classicPackCards.packId, classicPack.id));
 
     if (packCards.length === 0) {
       throw new Error('No cards available in classic pack');
@@ -624,7 +693,7 @@ export class DatabaseStorage implements IStorage {
 
     // Create 8 cards: 7 commons + 1 hit (4x2 grid format)
     const selectedCards = [];
-    const cardsToDeduct: { specialPackCardId: string; quantity: number }[] = [];
+    const cardsToDeduct: { classicPackCardId: string; quantity: number }[] = [];
     
     // Add 7 common cards
     const commonCards = packCards.filter((pc: any) => pc.card?.tier === 'D');
@@ -643,11 +712,11 @@ export class DatabaseStorage implements IStorage {
             position: i
           });
           
-          const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === randomCommon.id);
+          const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === randomCommon.id);
           if (existingDeduction) {
             existingDeduction.quantity++;
           } else {
-            cardsToDeduct.push({ specialPackCardId: randomCommon.id, quantity: 1 });
+            cardsToDeduct.push({ classicPackCardId: randomCommon.id, quantity: 1 });
           }
         }
       }
@@ -671,11 +740,11 @@ export class DatabaseStorage implements IStorage {
           position: 7
         });
         
-        const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === randomHit.id);
+        const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === randomHit.id);
         if (existingDeduction) {
           existingDeduction.quantity++;
         } else {
-          cardsToDeduct.push({ specialPackCardId: randomHit.id, quantity: 1 });
+          cardsToDeduct.push({ classicPackCardId: randomHit.id, quantity: 1 });
         }
       }
     } else if (commonCards.length > 0) {
@@ -692,11 +761,11 @@ export class DatabaseStorage implements IStorage {
           position: 7
         });
         
-        const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === randomCommon.id);
+        const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === randomCommon.id);
         if (existingDeduction) {
           existingDeduction.quantity++;
         } else {
-          cardsToDeduct.push({ specialPackCardId: randomCommon.id, quantity: 1 });
+          cardsToDeduct.push({ classicPackCardId: randomCommon.id, quantity: 1 });
         }
       }
     } else {
@@ -707,21 +776,32 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Could not select any cards from the classic pack pool');
     }
 
-    // Deduct quantities from specialPackCards
+    // Deduct quantities from classicPackCards
     for (const deduction of cardsToDeduct) {
       await tx
-        .update(specialPackCards)
-        .set({ quantity: sql`${specialPackCards.quantity} - ${deduction.quantity}` })
-        .where(eq(specialPackCards.id, deduction.specialPackCardId));
+        .update(classicPackCards)
+        .set({ quantity: sql`${classicPackCards.quantity} - ${deduction.quantity}` })
+        .where(eq(classicPackCards.id, deduction.classicPackCardId));
     }
 
-    // Add cards to user's vault
+    // Add cards to user's vault (consolidate by card type)
+    const cardQuantities = new Map<string, number>();
+    const cardValues = new Map<string, string>();
+    
+    // Count quantities and track values for each card type
     for (const card of selectedCards) {
+      const currentQuantity = cardQuantities.get(card.id) || 0;
+      cardQuantities.set(card.id, currentQuantity + 1);
+      cardValues.set(card.id, card.marketValue.toString());
+    }
+    
+    // Add consolidated cards to vault
+    for (const [cardId, quantity] of Array.from(cardQuantities.entries())) {
       await this.addUserCard({
         userId,
-        cardId: card.id,
-        quantity: 1,
-        pullValue: card.marketValue.toString(),
+        cardId,
+        quantity,
+        pullValue: cardValues.get(cardId) || '0',
         isRefunded: false,
         isShipped: false,
       });
@@ -735,6 +815,9 @@ export class DatabaseStorage implements IStorage {
         openedAt: new Date() 
       })
       .where(eq(userPacks.id, userPack.id));
+
+    // Invalidate user packs cache
+    this.cache.delete(CacheKeys.userPacks(userId));
 
     // Add to global feed
     await tx.insert(globalFeed).values({
@@ -762,7 +845,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async openMysteryPack(tx: any, userPack: any, mysteryPack: any, userId: string): Promise<PackOpenResult> {
-    // Get all cards in the mystery pack pool
+    console.log('🎲 Opening mystery pack:', mysteryPack.subtype);
+    
+    // Use the base mystery pack ID to get cards from the shared pool
+    const basePackId = '00000000-0000-0000-0000-000000000001';
+    console.log('🎲 Using base mystery pack ID for shared cards:', basePackId);
+    console.log('🎲 Pack subtype for odds:', mysteryPack.subtype);
+    
+    // Get all cards in the shared mystery pack pool
     const packCards = await tx
       .select({
         id: mysteryPackCards.id,
@@ -780,40 +870,67 @@ export class DatabaseStorage implements IStorage {
           updatedAt: inventory.updatedAt,
         }
       })
-      .from(mysteryPackCards)
-      .innerJoin(inventory, eq(mysteryPackCards.cardId, inventory.id))
-      .where(eq(mysteryPackCards.packId, mysteryPack.id));
+        .from(mysteryPackCards)
+        .innerJoin(inventory, eq(mysteryPackCards.cardId, inventory.id))
+        .where(eq(mysteryPackCards.packId, basePackId));
+
+    console.log('🎲 Found pack cards:', packCards.length);
+    console.log('🎲 Pack cards details:', packCards.map((pc: any) => ({ id: pc.id, cardName: pc.card?.name, quantity: pc.quantity })));
 
     if (packCards.length === 0) {
       throw new Error('No cards available in mystery pack');
     }
 
+    console.log('🎲 Available cards in shared pool:', packCards.map((pc: any) => ({ name: pc.card.name, tier: pc.card.tier, quantity: pc.quantity })));
+
+    // Fetch the latest odds from the database to ensure we have the most up-to-date values
+    const [latestMysteryPack] = await tx
+      .select({ odds: mysteryPacks.odds })
+      .from(mysteryPacks)
+      .where(eq(mysteryPacks.id, mysteryPack.id));
+    
+    // Parse odds from the latest mystery pack data
+    const odds = latestMysteryPack?.odds || {};
+    console.log('🎲 Pack odds (latest from DB):', odds);
+
     // Create 8 cards: 7 commons + 1 hit (4x2 grid format)
     const selectedCards = [];
     const cardsToDeduct: { mysteryPackCardId: string; quantity: number }[] = [];
     
-    // Add 7 common cards
+    // Add 7 common cards using odds
     const commonCards = packCards.filter((pc: any) => pc.card?.tier === 'D');
+    const commonOdds = parseFloat(odds.D || '0.85'); // Default 85% for common
     
     if (commonCards.length > 0) {
       for (let i = 0; i < 7; i++) {
-        const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
-        if (randomCommon.card) {
+        // Use weighted selection based on odds
+        const random = Math.random();
+        let selectedCard;
+        
+        if (random < commonOdds && commonCards.length > 0) {
+          // Select common card
+          selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
+        } else {
+          // Fallback to common card only (never select higher tier cards for common positions)
+          selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
+        }
+        
+        if (selectedCard.card) {
           selectedCards.push({
-            id: randomCommon.card.id,
-            name: randomCommon.card.name || "Common Card",
-            imageUrl: randomCommon.card.imageUrl || "/card-images/random-common-card.png",
-            tier: randomCommon.card.tier || "D",
-            marketValue: randomCommon.card.credits || 10,
+            id: selectedCard.card.id,
+            name: selectedCard.card.name || "Common Card",
+            imageUrl: selectedCard.card.imageUrl || "/card-images/random-common-card.png",
+            tier: selectedCard.card.tier || "D",
+            marketValue: selectedCard.card.credits || 10,
             isHit: false,
             position: i
           });
           
-          const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === randomCommon.id);
+          const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === selectedCard.id);
           if (existingDeduction) {
             existingDeduction.quantity++;
           } else {
-            cardsToDeduct.push({ mysteryPackCardId: randomCommon.id, quantity: 1 });
+            cardsToDeduct.push({ mysteryPackCardId: selectedCard.id, quantity: 1 });
           }
         }
       }
@@ -821,29 +938,187 @@ export class DatabaseStorage implements IStorage {
       throw new Error('No common cards found in mystery pack pool');
     }
 
-    // Add 1 hit card
-    const hitCards = packCards.filter((pc: any) => pc.card && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
-    
-    if (hitCards.length > 0) {
-      const randomHit = hitCards[Math.floor(Math.random() * hitCards.length)];
-      if (randomHit.card) {
-        selectedCards.push({
-          id: randomHit.card.id,
-          name: randomHit.card.name || 'Hit Card',
-          imageUrl: randomHit.card.imageUrl || '/card-images/random-common-card.png',
-          tier: randomHit.card.tier || 'C',
-          marketValue: randomHit.card.credits || 100,
-          isHit: true,
-          position: 7
-        });
+      // Add 1 hit card using weighted random selection based on all odds
+      const allHitCards = packCards.filter((pc: any) => pc.card && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
+      
+      if (allHitCards.length > 0) {
+        // Hit card is ALWAYS C tier or above (never D tier)
+        // D tier cards are only for the 7 common positions
+        console.log(`🎯 Selecting hit card (C tier or above) using weighted odds`);
         
-        const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === randomHit.id);
-        if (existingDeduction) {
-          existingDeduction.quantity++;
+        // Special logic for Masterball packs - guarantee A tier or higher
+        if (mysteryPack.subtype === 'masterball') {
+          console.log(`🎯 Masterball pack detected - guaranteeing A tier or higher for hit card`);
+          const masterballHitCards = packCards.filter((pc: any) => pc.card && ['A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
+          
+          if (masterballHitCards.length > 0) {
+            // Create weighted selection for Masterball (A, S, SS, SSS only)
+            const masterballTierWeights = {
+              'A': parseFloat(odds.A || '0.3'),
+              'S': parseFloat(odds.S || '0.12'),
+              'SS': parseFloat(odds.SS || '0.08'),
+              'SSS': parseFloat(odds.SSS || '0.05')
+            };
+            
+            console.log(`🎲 Masterball hit card tier weights:`, masterballTierWeights);
+            
+            // Group cards by tier for Masterball
+            const masterballCardsByTier: { [key: string]: any[] } = {};
+            masterballHitCards.forEach((pc: any) => {
+              const tier = pc.card.tier;
+              if (!masterballCardsByTier[tier]) masterballCardsByTier[tier] = [];
+              masterballCardsByTier[tier].push(pc);
+            });
+            
+            console.log(`🎲 Available Masterball hit cards by tier:`, Object.keys(masterballCardsByTier).map(tier => `${tier}: ${masterballCardsByTier[tier].length} cards`));
+
+            // Calculate total weight for Masterball hit cards only
+            const totalMasterballWeight = Object.values(masterballTierWeights).reduce((sum, weight) => sum + weight, 0);
+            console.log(`🎲 Total Masterball hit card weight: ${totalMasterballWeight.toFixed(4)}`);
+
+            // Use random number for Masterball hit card tier selection (normalized to total weight)
+            const masterballRandom = Math.random() * totalMasterballWeight;
+            console.log(`🎲 Random number for Masterball hit card tier selection: ${masterballRandom.toFixed(4)} (normalized to total weight)`);
+            
+            let cumulativeWeight = 0;
+            let selectedTier = 'A'; // fallback
+            let selectedHitCard;
+
+            // Find which tier to select based on cumulative weights (in descending rarity order)
+            for (const tier of ['SSS', 'SS', 'S', 'A']) {
+              const weight = masterballTierWeights[tier as keyof typeof masterballTierWeights];
+              if (weight > 0 && masterballCardsByTier[tier] && masterballCardsByTier[tier].length > 0) {
+                cumulativeWeight += weight;
+                console.log(`🎲 Checking ${tier} tier: cumulative weight = ${cumulativeWeight.toFixed(4)}, random = ${masterballRandom.toFixed(4)}`);
+                
+                if (masterballRandom <= cumulativeWeight) {
+                  selectedTier = tier;
+                  selectedHitCard = masterballCardsByTier[tier][Math.floor(Math.random() * masterballCardsByTier[tier].length)];
+                  console.log(`🎯 Selected ${tier} tier hit card for Masterball!`);
+                  break;
+                }
+              }
+            }
+            
+            // Fallback if no tier was selected
+            if (!selectedHitCard) {
+              console.warn('No Masterball hit card tier selected by weight, using fallback');
+              const availableTiers = Object.keys(masterballCardsByTier).filter(tier => masterballCardsByTier[tier].length > 0);
+              if (availableTiers.length > 0) {
+                selectedTier = availableTiers[0];
+                selectedHitCard = masterballCardsByTier[selectedTier][Math.floor(Math.random() * masterballCardsByTier[selectedTier].length)];
+              } else {
+                selectedHitCard = masterballHitCards[0];
+              }
+            }
+            
+            console.log(`🎯 Selected Masterball card for hit position:`, selectedHitCard.card?.name);
+            
+            if (selectedHitCard.card) {
+              selectedCards.push({
+                id: selectedHitCard.card.id,
+                name: selectedHitCard.card.name || 'Hit Card',
+                imageUrl: selectedHitCard.card.imageUrl || '/card-images/hit.png',
+                tier: selectedHitCard.card.tier || 'A',
+                marketValue: selectedHitCard.card.credits || 1000,
+                isHit: true,
+                position: 7
+              });
+              
+              const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === selectedHitCard.id);
+              if (existingDeduction) {
+                existingDeduction.quantity++;
+              } else {
+                cardsToDeduct.push({ mysteryPackCardId: selectedHitCard.id, quantity: 1 });
+              }
+            }
+          } else {
+            throw new Error('No A+ tier cards available for Masterball pack');
+          }
         } else {
-          cardsToDeduct.push({ mysteryPackCardId: randomHit.id, quantity: 1 });
+          // Regular logic for other pack types
+          // Create weighted selection based on hit card odds only (C, B, A, S, SS, SSS)
+          const tierWeights = {
+            'C': parseFloat(odds.C || '0.25'),
+            'B': parseFloat(odds.B || '0.20'), 
+            'A': parseFloat(odds.A || '0.15'),
+            'S': parseFloat(odds.S || '0.05'),
+            'SS': parseFloat(odds.SS || '0.02'),
+            'SSS': parseFloat(odds.SSS || '0.01')
+          };
+          
+          // Group cards by tier
+          const cardsByTier: { [key: string]: any[] } = {};
+          allHitCards.forEach((pc: any) => {
+            const tier = pc.card.tier;
+            if (!cardsByTier[tier]) cardsByTier[tier] = [];
+            cardsByTier[tier].push(pc);
+          });
+          
+          console.log(`🎲 Hit card tier weights:`, tierWeights);
+          console.log(`🎲 Available hit cards by tier:`, Object.keys(cardsByTier).map(tier => `${tier}: ${cardsByTier[tier].length} cards`));
+
+          // Calculate total weight for hit cards only
+          const totalHitWeight = Object.values(tierWeights).reduce((sum, weight) => sum + weight, 0);
+          console.log(`🎲 Total hit card weight: ${totalHitWeight.toFixed(4)}`);
+
+          // Use random number for hit card tier selection (normalized to total weight)
+          const hitRandom = Math.random() * totalHitWeight;
+          console.log(`🎲 Random number for hit card tier selection: ${hitRandom.toFixed(4)} (normalized to total weight)`);
+          
+          let cumulativeWeight = 0;
+          let selectedTier = 'A'; // fallback
+          let selectedHitCard;
+
+          // Find which tier to select based on cumulative weights (in descending rarity order)
+          for (const tier of ['SSS', 'SS', 'S', 'A', 'B', 'C']) {
+            const weight = tierWeights[tier as keyof typeof tierWeights];
+            if (weight > 0 && cardsByTier[tier] && cardsByTier[tier].length > 0) {
+              cumulativeWeight += weight;
+              console.log(`🎲 Checking ${tier} tier: cumulative weight = ${cumulativeWeight.toFixed(4)}, random = ${hitRandom.toFixed(4)}`);
+              
+              if (hitRandom <= cumulativeWeight) {
+                selectedTier = tier;
+                selectedHitCard = cardsByTier[tier][Math.floor(Math.random() * cardsByTier[tier].length)];
+                console.log(`🎯 Selected ${tier} tier hit card!`);
+                break;
+              }
+            }
+          }
+          
+          // Fallback if no tier was selected
+          if (!selectedHitCard) {
+            console.warn('No hit card tier selected by weight, using fallback');
+            const availableTiers = Object.keys(cardsByTier).filter(tier => cardsByTier[tier].length > 0);
+            if (availableTiers.length > 0) {
+              selectedTier = availableTiers[0];
+              selectedHitCard = cardsByTier[selectedTier][Math.floor(Math.random() * cardsByTier[selectedTier].length)];
+            } else {
+              selectedHitCard = allHitCards[0];
+            }
+          }
+          
+          console.log(`🎯 Selected card for hit position:`, selectedHitCard.card?.name);
+          
+          if (selectedHitCard.card) {
+            selectedCards.push({
+              id: selectedHitCard.card.id,
+              name: selectedHitCard.card.name || 'Hit Card',
+              imageUrl: selectedHitCard.card.imageUrl || '/card-images/hit.png',
+              tier: selectedHitCard.card.tier || 'A',
+              marketValue: selectedHitCard.card.credits || 1000,
+              isHit: true,
+              position: 7
+            });
+            
+            const existingDeduction = cardsToDeduct.find(d => d.mysteryPackCardId === selectedHitCard.id);
+            if (existingDeduction) {
+              existingDeduction.quantity++;
+            } else {
+              cardsToDeduct.push({ mysteryPackCardId: selectedHitCard.id, quantity: 1 });
+            }
+          }
         }
-      }
     } else if (commonCards.length > 0) {
       // Fallback: if no hit cards, pick another common
       const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
@@ -873,21 +1148,45 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Could not select any cards from the mystery pack pool');
     }
 
-    // Deduct quantities from mysteryPackCards
+    // Deduct quantities from shared mystery pack cards
+    console.log('🎯 Deducting quantities from shared mystery pack cards...');
     for (const deduction of cardsToDeduct) {
+      const [packCard] = await tx
+        .select()
+        .from(mysteryPackCards)
+        .where(eq(mysteryPackCards.id, deduction.mysteryPackCardId))
+        .for('update');
+
+      if (packCard && packCard.quantity >= deduction.quantity) {
+        console.log(`🎯 Deducting ${deduction.quantity} of card ${packCard.cardId} from shared mystery pack`);
       await tx
         .update(mysteryPackCards)
-        .set({ quantity: sql`${mysteryPackCards.quantity} - ${deduction.quantity}` })
+          .set({ quantity: packCard.quantity - deduction.quantity })
         .where(eq(mysteryPackCards.id, deduction.mysteryPackCardId));
+        console.log(`✅ Updated shared mystery pack quantity: ${packCard.quantity} -> ${packCard.quantity - deduction.quantity}`);
+      } else {
+        throw new Error(`Insufficient quantity for card ${deduction.mysteryPackCardId}`);
+      }
     }
 
-    // Add cards to user's vault
+    // Add cards to user's vault (consolidate by card type)
+    const cardQuantities = new Map<string, number>();
+    const cardValues = new Map<string, string>();
+    
+    // Count quantities and track values for each card type
     for (const card of selectedCards) {
+      const currentQuantity = cardQuantities.get(card.id) || 0;
+      cardQuantities.set(card.id, currentQuantity + 1);
+      cardValues.set(card.id, card.marketValue.toString());
+    }
+    
+    // Add consolidated cards to vault
+    for (const [cardId, quantity] of Array.from(cardQuantities.entries())) {
       await this.addUserCard({
         userId,
-        cardId: card.id,
-        quantity: 1,
-        pullValue: card.marketValue.toString(),
+        cardId,
+        quantity,
+        pullValue: cardValues.get(cardId) || '0',
         isRefunded: false,
         isShipped: false,
       });
@@ -901,6 +1200,9 @@ export class DatabaseStorage implements IStorage {
         openedAt: new Date() 
       })
       .where(eq(userPacks.id, userPack.id));
+
+    // Invalidate user packs cache
+    this.cache.delete(CacheKeys.userPacks(userId));
 
     // Add to global feed
     await tx.insert(globalFeed).values({
@@ -965,8 +1267,8 @@ export class DatabaseStorage implements IStorage {
         // Check if it's a classic pack
         const classicPack = await tx
           .select()
-          .from(specialPacks)
-          .where(and(eq(specialPacks.id, userPack.packId), eq(specialPacks.packType, 'classic')))
+          .from(classicPacks)
+          .where(eq(classicPacks.id, userPack.packId))
           .limit(1);
 
         if (classicPack.length > 0) {
@@ -1180,6 +1482,9 @@ export class DatabaseStorage implements IStorage {
         .set({ isOpened: true, openedAt: new Date() })
         .where(eq(userPacks.id, packId));
 
+      // Invalidate user packs cache
+      this.cache.delete(CacheKeys.userPacks(userId));
+
       // Stock reduction is now handled above for all cards
 
       // Add to global feed for all hit cards (C-tier and above)
@@ -1215,26 +1520,30 @@ export class DatabaseStorage implements IStorage {
 
   // Global feed operations
   async getGlobalFeed(limit = 500, minTier?: string): Promise<GlobalFeedWithDetails[]> {
+    const cacheKey = CacheKeys.globalFeed(limit, minTier);
+    const cached = this.cache.get<GlobalFeedWithDetails[]>(cacheKey);
+    if (cached) return cached;
+
     console.log('📰 getGlobalFeed called with:', { limit, minTier });
     
     try {
-      // Define tier hierarchy for filtering (higher index = rarer tier)
-      const tierHierarchy = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
-      
-      let tierFilter: string[];
-      if (minTier) {
-        const minIndex = tierHierarchy.indexOf(minTier);
-        if (minIndex >= 0) {
-          // Include all tiers from minTier and above
-          tierFilter = tierHierarchy.slice(minIndex);
-        } else {
-          // Invalid minTier, default to all non-D tiers
-          tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
-        }
+    // Define tier hierarchy for filtering (higher index = rarer tier)
+    const tierHierarchy = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+    
+    let tierFilter: string[];
+    if (minTier) {
+      const minIndex = tierHierarchy.indexOf(minTier);
+      if (minIndex >= 0) {
+        // Include all tiers from minTier and above
+        tierFilter = tierHierarchy.slice(minIndex);
       } else {
-        // No filter, show all non-D tiers
+        // Invalid minTier, default to all non-D tiers
         tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
       }
+    } else {
+      // No filter, show all non-D tiers
+      tierFilter = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
+    }
       
       console.log('📰 Using tier filter:', tierFilter);
 
@@ -1260,7 +1569,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(globalFeed.createdAt))
       .limit(limit);
 
-    return result.map(row => {
+    const feedEntries = result.map(row => {
       // Create a display name from username or email prefix
       let displayName = row.username;
       if (!displayName && row.email) {
@@ -1286,6 +1595,9 @@ export class DatabaseStorage implements IStorage {
         } as InventoryCard,
       };
     });
+
+    this.cache.set(cacheKey, feedEntries, CacheTTL.SHORT);
+    return feedEntries;
     } catch (error) {
       console.error('❌ Error in getGlobalFeed:', error);
       throw error;
@@ -1294,6 +1606,7 @@ export class DatabaseStorage implements IStorage {
 
   async addGlobalFeedEntry(entry: { userId: string; cardId: string; tier: string; gameType: string }): Promise<void> {
     await db.insert(globalFeed).values(entry);
+    this.invalidateGlobalFeedCache();
   }
 
   // Transaction operations
@@ -1525,11 +1838,18 @@ export class DatabaseStorage implements IStorage {
 
   // Inventory operations
   async getInventoryCards(): Promise<InventoryCard[]> {
-    return await db.select().from(inventory).orderBy(desc(inventory.createdAt));
+    const cacheKey = CacheKeys.inventoryAll();
+    const cached = this.cache.get<InventoryCard[]>(cacheKey);
+    if (cached) return cached;
+
+    const cards = await db.select().from(inventory).orderBy(desc(inventory.createdAt));
+    this.cache.set(cacheKey, cards, CacheTTL.LONG);
+    return cards;
   }
 
   async createInventoryCard(card: InsertInventoryCard): Promise<InventoryCard> {
     const [newCard] = await db.insert(inventory).values(card).returning();
+    this.invalidateInventoryCache();
     return newCard;
   }
 
@@ -1539,15 +1859,21 @@ export class DatabaseStorage implements IStorage {
       .set({ ...card, updatedAt: new Date() })
       .where(eq(inventory.id, id))
       .returning();
+    this.invalidateInventoryCache();
     return updatedCard;
   }
 
   async deleteInventoryCard(id: string): Promise<void> {
     await db.delete(inventory).where(eq(inventory.id, id));
+    this.invalidateInventoryCache();
   }
 
   // Special Packs
   async getSpecialPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>> {
+    const cacheKey = CacheKeys.specialPacks();
+    const cached = this.cache.get<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>>(cacheKey);
+    if (cached) return cached;
+
     try {
       const packs = await db.select().from(specialPacks).where(eq(specialPacks.packType, 'special'));
       console.log('Fetched special packs:', packs);
@@ -1586,6 +1912,7 @@ export class DatabaseStorage implements IStorage {
         })
       );
       
+      this.cache.set(cacheKey, packsWithCards, CacheTTL.MEDIUM);
       return packsWithCards;
     } catch (error) {
       console.error('Error in getSpecialPacks:', error);
@@ -1720,9 +2047,34 @@ export class DatabaseStorage implements IStorage {
   // Mystery Packs
   async getMysteryPacks(): Promise<Array<MysteryPack & { cards: Array<MysteryPackCard & { card: InventoryCard }> }>> {
     const packs = await db.select().from(mysteryPacks);
-    // For now, return packs with empty cards array
-    // TODO: Implement proper join with mysteryPackCards and inventory tables
-    return packs.map(pack => ({ ...pack, cards: [] }));
+
+    // For the shared prize pool system, all cards are stored under the base mystery pack ID
+    const basePackId = '00000000-0000-0000-0000-000000000001';
+    
+    // Get all cards from the shared pool
+    const allCards = await db
+      .select({
+        id: mysteryPackCards.id,
+        packId: mysteryPackCards.packId,
+        cardId: mysteryPackCards.cardId,
+        quantity: mysteryPackCards.quantity,
+        createdAt: mysteryPackCards.createdAt,
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
+      .from(mysteryPackCards)
+      .innerJoin(inventory, eq(mysteryPackCards.cardId, inventory.id))
+      .where(eq(mysteryPackCards.packId, basePackId));
+
+    // Return all packs with the shared cards
+    return packs.map(pack => ({ ...pack, cards: allCards }));
   }
 
   async getMysteryPackById(id: string): Promise<MysteryPack & { cards: Array<MysteryPackCard & { card: InventoryCard }> }> {
@@ -1731,7 +2083,11 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Mystery pack not found');
     }
 
-    // Get cards for this mystery pack
+    // For the shared prize pool system, all cards are stored under the base mystery pack ID
+    // Use the base mystery pack ID to fetch cards for all mystery pack types
+    const basePackId = '00000000-0000-0000-0000-000000000001';
+    
+    // Get cards for this mystery pack (from the shared pool)
     const packCards = await db
       .select({
         id: mysteryPackCards.id,
@@ -1751,7 +2107,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(mysteryPackCards)
       .innerJoin(inventory, eq(mysteryPackCards.cardId, inventory.id))
-      .where(eq(mysteryPackCards.packId, id));
+      .where(eq(mysteryPackCards.packId, basePackId));
 
     return { ...pack, cards: packCards };
   }
@@ -1848,9 +2204,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Classic Packs (separate from special packs)
-  async getClassicPacks(): Promise<Array<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }>> {
+  async getClassicPacks(): Promise<Array<ClassicPack & { cards: Array<ClassicPackCard & { card: InventoryCard }> }>> {
+    const cacheKey = CacheKeys.classicPacks();
+    const cached = this.cache.get<Array<ClassicPack & { cards: Array<ClassicPackCard & { card: InventoryCard }> }>>(cacheKey);
+    if (cached) return cached;
+
     try {
-      const packs = await db.select().from(specialPacks).where(eq(specialPacks.packType, 'classic'));
+      const packs = await db.select().from(classicPacks);
       console.log('Fetched classic packs:', packs);
       
       // Get cards for each pack
@@ -1859,11 +2219,11 @@ export class DatabaseStorage implements IStorage {
           try {
             const packCards = await db
               .select({
-                id: specialPackCards.id,
-                packId: specialPackCards.packId,
-                cardId: specialPackCards.cardId,
-                quantity: specialPackCards.quantity,
-                createdAt: specialPackCards.createdAt,
+                id: classicPackCards.id,
+                packId: classicPackCards.packId,
+                cardId: classicPackCards.cardId,
+                quantity: classicPackCards.quantity,
+                createdAt: classicPackCards.createdAt,
                 card: {
                   id: inventory.id,
                   name: inventory.name,
@@ -1874,9 +2234,9 @@ export class DatabaseStorage implements IStorage {
                   updatedAt: inventory.updatedAt,
                 }
               })
-              .from(specialPackCards)
-              .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
-              .where(eq(specialPackCards.packId, pack.id));
+              .from(classicPackCards)
+              .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
+              .where(eq(classicPackCards.packId, pack.id));
             
             console.log(`Classic pack ${pack.id} cards:`, packCards);
             return { ...pack, cards: packCards };
@@ -1887,6 +2247,7 @@ export class DatabaseStorage implements IStorage {
         })
       );
       
+      this.cache.set(cacheKey, packsWithCards, CacheTTL.MEDIUM);
       return packsWithCards;
     } catch (error) {
       console.error('Error in getClassicPacks:', error);
@@ -1894,8 +2255,8 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getClassicPackById(id: string): Promise<SpecialPack & { cards: Array<SpecialPackCard & { card: InventoryCard }> }> {
-    const [pack] = await db.select().from(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')));
+  async getClassicPackById(id: string): Promise<ClassicPack & { cards: Array<ClassicPackCard & { card: InventoryCard }> }> {
+    const [pack] = await db.select().from(classicPacks).where(eq(classicPacks.id, id));
     
     if (!pack) {
       throw new Error('Classic pack not found');
@@ -1904,11 +2265,11 @@ export class DatabaseStorage implements IStorage {
     // Get cards for this classic pack
     const packCards = await db
       .select({
-        id: specialPackCards.id,
-        packId: specialPackCards.packId,
-        cardId: specialPackCards.cardId,
-        quantity: specialPackCards.quantity,
-        createdAt: specialPackCards.createdAt,
+        id: classicPackCards.id,
+        packId: classicPackCards.packId,
+        cardId: classicPackCards.cardId,
+        quantity: classicPackCards.quantity,
+        createdAt: classicPackCards.createdAt,
         card: {
           id: inventory.id,
           name: inventory.name,
@@ -1919,31 +2280,59 @@ export class DatabaseStorage implements IStorage {
           updatedAt: inventory.updatedAt,
         }
       })
-      .from(specialPackCards)
-      .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
-      .where(eq(specialPackCards.packId, id));
+      .from(classicPackCards)
+      .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
+      .where(eq(classicPackCards.packId, id));
 
     return { ...pack, cards: packCards };
   }
 
-  async createClassicPack(packData: any): Promise<SpecialPack> {
-    const packWithType = { ...packData, packType: 'classic' };
-    const [newPack] = await db.insert(specialPacks).values(packWithType).returning();
+  async createClassicPack(packData: InsertClassicPack): Promise<ClassicPack> {
+    const [newPack] = await db.insert(classicPacks).values(packData).returning();
     return newPack;
   }
 
-  async updateClassicPack(id: string, packData: any): Promise<SpecialPack> {
-    const packWithType = { ...packData, packType: 'classic' };
+  async updateClassicPack(id: string, packData: Partial<InsertClassicPack>): Promise<ClassicPack> {
     const [updatedPack] = await db
-      .update(specialPacks)
-      .set(packWithType)
-      .where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')))
+      .update(classicPacks)
+      .set(packData)
+      .where(eq(classicPacks.id, id))
       .returning();
     return updatedPack;
   }
 
   async deleteClassicPack(id: string): Promise<void> {
-    await db.delete(specialPacks).where(and(eq(specialPacks.id, id), eq(specialPacks.packType, 'classic')));
+    await db.delete(classicPacks).where(eq(classicPacks.id, id));
+  }
+
+  // Classic Pack Cards
+  async addCardToClassicPack(packId: string, cardId: string, quantity: number = 1): Promise<ClassicPackCard> {
+    const id = `cpc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const [newCard] = await db.insert(classicPackCards).values({
+      id,
+      packId,
+      cardId,
+      quantity,
+    }).returning();
+    return newCard;
+  }
+
+  async removeCardFromClassicPack(packId: string, classicPackCardId: string): Promise<void> {
+    await db.delete(classicPackCards).where(
+      and(
+        eq(classicPackCards.packId, packId),
+        eq(classicPackCards.id, classicPackCardId)
+      )
+    );
+  }
+
+  async updateClassicPackCardQuantity(packId: string, classicPackCardId: string, quantity: number): Promise<ClassicPackCard> {
+    const [updatedCard] = await db
+      .update(classicPackCards)
+      .set({ quantity })
+      .where(and(eq(classicPackCards.packId, packId), eq(classicPackCards.id, classicPackCardId)))
+      .returning();
+    return updatedCard;
   }
 
   // Helper function to validate UUID format
