@@ -486,55 +486,64 @@ export default function Home() {
             {/* Game Carousel */}
             <div className="relative">
               <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide">
-                {/* Plinko Game */}
+                {/* Classic Pack */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="flex-shrink-0"
                 >
-                  <Link href="/play/plinko">
+                  <Link href="/purchase">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
                       <CardContent className="p-0 h-full">
-                        {/* Plinko Game Image */}
-                        <div className="w-full h-full bg-gradient-to-br from-[#3b82f6] to-[#7C3AED] rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.4)]">
-                          <span className="text-white text-sm font-bold">TARGET</span>
-                        </div>
+                        {/* Classic Pack Image */}
+                        <div 
+                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(124,58,237,0.4)]"
+                          style={{
+                            backgroundImage: `url('/assets/classic-image.png')`
+                          }}
+                        />
                       </CardContent>
                     </Card>
                   </Link>
                 </motion.div>
 
-                {/* Minesweeper */}
+                {/* Find Pika Game */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="flex-shrink-0"
                 >
-                  <Link href="/minesweeper">
+                  <Link href="/play/findpika">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
                       <CardContent className="p-0 h-full">
-                        {/* Game Image Placeholder */}
-                        <div className="w-full h-full bg-gradient-to-br from-[#22D3EE] to-[#0891B2] rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(34,211,238,0.4)]">
-                          <span className="text-white text-sm font-bold">💣</span>
-                        </div>
+                        {/* Find Pika Game Image */}
+                        <div 
+                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(34,197,94,0.4)]"
+                          style={{
+                            backgroundImage: `url('/assets/find-pika-image.png')`
+                          }}
+                        />
                       </CardContent>
                     </Card>
                   </Link>
                 </motion.div>
 
-                {/* Wheel Game */}
+                {/* Energy Match Game */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="flex-shrink-0"
                 >
-                  <Link href="/play/wheel">
+                  <Link href="/play/energy-match">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
                       <CardContent className="p-0 h-full">
-                        {/* Wheel Game Image */}
-                        <div className="w-full h-full bg-gradient-to-br from-[#f59e0b] to-[#ef4444] rounded-2xl flex items-center justify-center shadow-[0_0_12px_rgba(245,158,11,0.4)]">
-                          <span className="text-white text-sm font-bold">🎰</span>
-                        </div>
+                        {/* Energy Match Game Image */}
+                        <div 
+                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(236,72,153,0.4)]"
+                          style={{
+                            backgroundImage: `url('/assets/energy-match.png')`
+                          }}
+                        />
                       </CardContent>
                     </Card>
                   </Link>

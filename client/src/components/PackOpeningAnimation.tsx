@@ -32,19 +32,19 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const getTierGlowColor = (tier: string) => {
     switch (tier?.toUpperCase()) {
       case 'C':
-        return 'shadow-[0_0_20px_rgba(34,197,94,0.6)]'; // Green
+        return 'shadow-[0_0_30px_rgba(59,130,246,0.9),0_0_60px_rgba(59,130,246,0.5)]'; // Blue
       case 'B':
-        return 'shadow-[0_0_20px_rgba(59,130,246,0.6)]'; // Blue
+        return 'shadow-[0_0_30px_rgba(34,197,94,0.9),0_0_60px_rgba(34,197,94,0.5)]'; // Green
       case 'A':
-        return 'shadow-[0_0_20px_rgba(168,85,247,0.6)]'; // Purple
+        return 'shadow-[0_0_30px_rgba(239,68,68,0.9),0_0_60px_rgba(239,68,68,0.5)]'; // Red
       case 'S':
-        return 'shadow-[0_0_20px_rgba(245,158,11,0.6)]'; // Orange
+        return 'shadow-[0_0_30px_rgba(236,72,153,0.9),0_0_60px_rgba(236,72,153,0.5)]'; // Pink
       case 'SS':
-        return 'shadow-[0_0_20px_rgba(239,68,68,0.6)]'; // Red
+        return 'shadow-[0_0_30px_rgba(255,215,0,0.9),0_0_60px_rgba(255,215,0,0.5)]'; // Yellow
       case 'SSS':
-        return 'shadow-[0_0_25px_rgba(255,215,0,0.8)]'; // Gold
+        return 'shadow-[0_0_35px_rgba(168,85,247,1),0_0_70px_rgba(168,85,247,0.7)]'; // Purple
       default:
-        return 'shadow-[0_0_15px_rgba(124,58,237,0.4)]'; // Default purple
+        return 'shadow-[0_0_25px_rgba(124,58,237,0.6)]'; // Default purple
     }
   };
 
@@ -210,7 +210,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`relative w-20 h-28 ${isHitRevealed ? getTierGlowColor(hitCard?.tier || '') : ''}`}
+                  className={`relative w-20 h-28 ${getTierGlowColor(hitCard?.tier || '')}`}
                 >
                   <img
                     src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/random-common-card.png") : "/card-images/hit.png"}
