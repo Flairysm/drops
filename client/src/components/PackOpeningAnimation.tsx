@@ -61,8 +61,17 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     isHitRevealed: isHitRevealed,
     hitCardTier: hitCard?.tier,
     hitCardImageUrl: hitCard?.imageUrl,
-    hitCardName: hitCard?.name
+    hitCardName: hitCard?.name,
+    packType: packType,
+    hitCardPosition: hitCardPosition
   });
+  
+  console.log('PackOpeningAnimation - All cards with isHit:', packCards.map(card => ({ 
+    name: card.name, 
+    tier: card.tier, 
+    isHit: card.isHit, 
+    position: card.position 
+  })));
 
   // Debug hit card rendering
   if (revealedCards >= 7) {

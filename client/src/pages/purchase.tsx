@@ -77,6 +77,10 @@ export default function Purchase() {
         }))
       };
       
+      console.log('Transformed result for animation:', transformedResult);
+      console.log('Hit card position:', result.hitCardPosition);
+      console.log('Cards with isHit:', transformedResult.packCards.map((card: any) => ({ name: card.name, tier: card.tier, isHit: card.isHit })));
+      
       setPackResult(transformedResult);
       setShowAnimation(true);
       
