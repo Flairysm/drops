@@ -99,45 +99,21 @@ export default function Vault() {
         description: `Successfully refunded ${uniqueCardIds.length} cards for ${totalRefundAmount.toFixed(2)} credits`,
       });
       
-      // 4. Start async backend processing (don't wait for it)
-      console.log("🚀 Starting async refund processing for card IDs:", uniqueCardIds);
-      console.log("🚀 Making API request to /api/vault/refund-async");
+      // 4. Use synchronous refund for now (since async has routing issues)
+      console.log("🚀 Starting synchronous refund processing for card IDs:", uniqueCardIds);
+      console.log("🚀 Making API request to /api/vault/refund");
       
-      // First test the basic endpoint to verify routing is working
-      apiRequest("POST", "/api/vault/test-basic", {})
-        .then(response => response.json())
-        .then(data => {
-          console.log("🧪 Basic test endpoint response:", data);
-        })
-        .catch(error => {
-          console.error("🧪 Basic test endpoint failed:", error);
-        });
-      
-      apiRequest("POST", "/api/vault/refund-async", { cardIds: uniqueCardIds })
+      apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds })
         .then(response => {
-          console.log("✅ Async refund request successful:", response);
+          console.log("✅ Refund request successful:", response);
           console.log("✅ Response status:", response.status);
-          console.log("✅ Response headers:", response.headers);
-          
-          // Check if response is JSON
-          const contentType = response.headers.get('content-type');
-          console.log("✅ Content type:", contentType);
-          
-          if (contentType && contentType.includes('application/json')) {
-            return response.json();
-          } else {
-            // If not JSON, get text to see what we're getting
-            return response.text().then(text => {
-              console.log("❌ Non-JSON response:", text);
-              throw new Error(`Expected JSON but got: ${text.substring(0, 100)}...`);
-            });
-          }
+          return response.json();
         })
         .then(data => {
-          console.log("✅ Async refund response data:", data);
+          console.log("✅ Refund response data:", data);
         })
         .catch(error => {
-          console.error("❌ Async refund processing failed:", error);
+          console.error("❌ Refund processing failed:", error);
           console.error("❌ Error details:", error.message);
           // Could add a notification here, but don't rollback the optimistic update
           // since the user already got their credits
