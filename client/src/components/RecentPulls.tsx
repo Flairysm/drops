@@ -65,10 +65,20 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
 
   if (!feedData || feedData.length === 0) {
     return (
-      <div className="w-full h-64 bg-white rounded-2xl border border-gray-200 flex flex-col items-center justify-center text-gray-500">
-        <Package className="w-12 h-12 mb-4 text-gray-400" />
-        <span className="text-lg font-medium">No recent pulls yet</span>
-        <span className="text-sm">Be the first to pull a rare card!</span>
+      <div className="w-full">
+        {/* Section Title */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-white">Recent Pulls</h2>
+          </div>
+        </div>
+        
+        <div className="w-64 h-64 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700 flex flex-col items-center justify-center text-gray-400">
+          <Package className="w-12 h-12 mb-4 text-gray-500" />
+          <span className="text-lg font-medium text-white">No recent pulls yet</span>
+          <span className="text-sm text-gray-400">Be the first to pull a rare card!</span>
+        </div>
       </div>
     );
   }
@@ -78,9 +88,12 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
   return (
     <div className="w-full">
       {/* Section Title */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Just pulled</h2>
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-3">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <h2 className="text-2xl font-bold text-white">Recent Pulls</h2>
+        </div>
+        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
           View all
           <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
@@ -92,13 +105,13 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-64 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="w-64 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300">
           <CardContent className="p-4">
             {/* Card Image Container */}
             <div className="flex justify-center mb-4">
               <div className="relative">
                 {/* Card Image */}
-                <div className="w-48 h-72 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-300 shadow-lg">
+                <div className="w-48 h-72 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center border border-gray-600 shadow-lg">
                   {latestPull.card.imageUrl ? (
                     <img 
                       src={latestPull.card.imageUrl} 
@@ -131,16 +144,16 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
 
             {/* Card Details */}
             <div className="text-center mb-3">
-              <h3 className="text-lg font-bold text-gray-900 mb-1">
+              <h3 className="text-lg font-bold text-white mb-1">
                 {latestPull.card.name}
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-400 text-sm">
                 {latestPull.tier} Tier Card
               </p>
             </div>
 
             {/* Source and Time */}
-            <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center justify-between text-sm text-gray-400">
               <div className="flex items-center space-x-2">
                 <Package className="w-4 h-4" />
                 <span>{latestPull.gameType.replace('_', ' ')} Pack</span>
