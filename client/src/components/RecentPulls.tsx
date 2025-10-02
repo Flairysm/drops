@@ -154,69 +154,6 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
         </Card>
       </motion.div>
 
-      {/* Additional Recent Pulls (if any) */}
-      {feedData.length > 1 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">More recent pulls</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {feedData.slice(1, 3).map((pull) => (
-              <motion.div
-                key={pull.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <Card className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-4">
-                      {/* Small Card Image */}
-                      <div className="w-16 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center border border-gray-300 flex-shrink-0">
-                        {pull.card.imageUrl ? (
-                          <img 
-                            src={pull.card.imageUrl} 
-                            alt={pull.card.name}
-                            className="w-full h-full object-cover rounded-lg"
-                            loading="lazy"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = "/card-images/random-common-card.png";
-                            }}
-                          />
-                        ) : (
-                          <img 
-                            src="/card-images/random-common-card.png" 
-                            alt={pull.card.name}
-                            className="w-full h-full object-cover rounded-lg"
-                            loading="lazy"
-                          />
-                        )}
-                      </div>
-
-                      {/* Card Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h4 className="font-semibold text-gray-900 truncate">
-                            {pull.card.name}
-                          </h4>
-                          <Badge className={`${getTierColor(pull.tier)} text-xs px-2 py-0.5 border`}>
-                            {pull.tier}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {pull.gameType.replace('_', ' ')} Pack
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {getTimeAgo(pull.createdAt || new Date())}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
