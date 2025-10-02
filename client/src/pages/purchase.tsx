@@ -8,10 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Package, ArrowLeft, Play } from "lucide-react";
 import { Link } from "wouter";
+import { PackOpeningAnimation } from "@/components/PackOpeningAnimation";
 
 export default function Purchase() {
   const { toast } = useToast();
@@ -23,6 +24,9 @@ export default function Purchase() {
   const [packData, setPackData] = useState<any>(null);
   const [isLoadingPack, setIsLoadingPack] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [packResult, setPackResult] = useState<any>(null);
+  const queryClient = useQueryClient();
 
   // Fetch pack data
   useEffect(() => {
@@ -50,32 +54,48 @@ export default function Purchase() {
     }
   };
 
+  // Pack opening mutation
+  const openPackMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/packs/open/${packId}`);
+      return await response.json();
+    },
+    onSuccess: (result) => {
+      console.log('Pack opening result:', result);
+      setPackResult(result);
+      setShowAnimation(true);
+      
+      // Invalidate queries to refresh user data and vault
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+    },
+    onError: (error: Error) => {
+      console.error('Error opening pack:', error);
+      toast({
+        title: "Pack Opening Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsOpening(false);
+    },
+  });
+
   const handleOpenPack = async () => {
     if (!packData) return;
     
     setIsOpening(true);
-    try {
-      // Here you would implement the actual pack opening logic
-      // For now, we'll just show a success message
-      toast({
-        title: "Pack Opened!",
-        description: "You received some amazing cards!",
-      });
-      
-      // Navigate back to games page after opening
-      setTimeout(() => {
-        window.location.href = '/play';
-      }, 2000);
-    } catch (error) {
-      console.error('Error opening pack:', error);
-      toast({
-        title: "Error",
-        description: "Failed to open pack",
-        variant: "destructive",
-      });
-    } finally {
-      setIsOpening(false);
-    }
+    openPackMutation.mutate();
+  };
+
+  const handleAnimationComplete = () => {
+    setShowAnimation(false);
+    setIsOpening(false);
+    setPackResult(null);
+    
+    toast({
+      title: "Pack Opened!",
+      description: "Your cards have been added to your vault!",
+    });
   };
 
   if (isLoading) {
@@ -283,6 +303,16 @@ export default function Purchase() {
       </main>
 
       <NavigationFooter />
+
+      {/* Pack Opening Animation */}
+      {showAnimation && packResult && (
+        <PackOpeningAnimation
+          packCards={packResult.packCards || []}
+          hitCardPosition={packResult.hitCardPosition || 7}
+          onComplete={handleAnimationComplete}
+          packType={packData?.name || 'Pack'}
+        />
+      )}
     </div>
   );
 }
