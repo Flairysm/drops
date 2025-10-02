@@ -1979,10 +1979,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const packResult = await storage.openUserPack(userPack.id, userId);
       console.log('📦 Black Bolt pack opening result:', JSON.stringify(packResult, null, 2));
 
-      res.json({ 
+      const response = { 
         success: true,
         ...packResult
-      });
+      };
+      console.log('📦 Sending response:', JSON.stringify(response, null, 2));
+      res.json(response);
 
     } catch (error: any) {
       console.error("Error purchasing Black Bolt pack:", error);

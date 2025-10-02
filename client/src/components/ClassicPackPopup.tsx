@@ -70,6 +70,8 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
       console.log('🎮 Response status:', response.status);
       const result = await response.json();
       console.log('🎮 Response result:', result);
+      console.log('🎮 Response result keys:', Object.keys(result));
+      console.log('🎮 Response result.success:', result.success);
       
       if (result.success) {
         console.log('🎮 Pack opening successful, showing animation');
