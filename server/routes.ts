@@ -637,45 +637,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Image upload endpoint
   app.post('/api/upload/image', isAuthenticatedCombined, async (req: any, res) => {
+    console.log("🖼️ IMAGE UPLOAD ENDPOINT HIT!");
+    console.log("🖼️ Request body keys:", Object.keys(req.body || {}));
+    console.log("🖼️ Request files keys:", Object.keys(req.files || {}));
+    console.log("🖼️ User:", req.user);
+    
     try {
       const userId = req.user.id;
+      console.log("🖼️ User ID:", userId);
       
       // Check if user is admin
       const user = await storage.getUser(userId);
+      console.log("🖼️ User from DB:", user);
+      console.log("🖼️ User role:", user?.role);
+      
       if (!user || user.role !== 'admin') {
+        console.log("🖼️ ❌ Admin access denied");
         return res.status(403).json({ message: "Admin access required" });
       }
 
       // Handle file upload using multer or similar
       // For now, we'll use a simple approach with express-fileupload
+      console.log("🖼️ Checking for files...");
+      console.log("🖼️ req.files:", req.files);
+      
       if (!req.files || !req.files.image) {
+        console.log("🖼️ ❌ No image file provided");
         return res.status(400).json({ message: "No image file provided" });
       }
 
       const imageFile = req.files.image;
+      console.log("🖼️ Image file:", {
+        name: imageFile.name,
+        size: imageFile.size,
+        mimetype: imageFile.mimetype
+      });
       
       // Validate file type
       if (!imageFile.mimetype.startsWith('image/')) {
+        console.log("🖼️ ❌ Invalid file type:", imageFile.mimetype);
         return res.status(400).json({ message: "File must be an image" });
       }
 
       // Validate file size (10MB limit)
       if (imageFile.size > 10 * 1024 * 1024) {
+        console.log("🖼️ ❌ File too large:", imageFile.size);
         return res.status(400).json({ message: "File size must be less than 10MB" });
       }
 
       // Generate unique filename
       const fileExtension = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
+      console.log("🖼️ Generated filename:", fileName);
       
       // Save file to uploads directory
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
       const uploadPath = path.join(__dirname, '../client/public/uploads', fileName);
+      console.log("🖼️ Upload path:", uploadPath);
+      
+      // Ensure uploads directory exists
+      const fs = await import('fs');
+      const uploadsDir = path.join(__dirname, '../client/public/uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        console.log("🖼️ Creating uploads directory:", uploadsDir);
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
       await imageFile.mv(uploadPath);
+      console.log("🖼️ ✅ File saved successfully");
 
       // Return the public URL
       const imageUrl = `/uploads/${fileName}`;
+      console.log("🖼️ ✅ Returning image URL:", imageUrl);
       
       res.json({ 
         success: true, 
@@ -683,8 +717,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Image uploaded successfully" 
       });
     } catch (error: any) {
-      console.error("Error uploading image:", error);
-      res.status(500).json({ message: "Failed to upload image" });
+      console.error("🖼️ ❌ Error uploading image:", error);
+      console.error("🖼️ ❌ Error stack:", error.stack);
+      res.status(500).json({ message: "Failed to upload image", error: error.message });
     }
   });
 

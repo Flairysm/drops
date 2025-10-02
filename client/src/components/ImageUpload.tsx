@@ -59,24 +59,36 @@ export function ImageUpload({
   }, []);
 
   const handleFileUpload = async (file: File) => {
+    console.log('🖼️ Starting file upload:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+    
     setIsUploading(true);
     
     try {
       const formData = new FormData();
       formData.append('image', file);
       
+      console.log('🖼️ FormData created, making API request...');
       const response = await apiRequest('POST', '/api/upload/image', formData);
+      console.log('🖼️ API response received:', response);
+      
       const data = await response.json();
+      console.log('🖼️ Response data:', data);
       
       if (data.success && data.imageUrl) {
+        console.log('🖼️ ✅ Upload successful, setting image URL:', data.imageUrl);
         onChange(data.imageUrl);
         setUploadMode('url');
       } else {
+        console.log('🖼️ ❌ Upload failed:', data.message);
         throw new Error(data.message || 'Upload failed');
       }
     } catch (error) {
-      console.error('Image upload failed:', error);
-      alert('Image upload failed. Please try again.');
+      console.error('🖼️ ❌ Image upload failed:', error);
+      alert(`Image upload failed: ${error.message || 'Please try again.'}`);
     } finally {
       setIsUploading(false);
     }
