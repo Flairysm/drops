@@ -58,6 +58,35 @@ export function ImageUpload({
     }
   }, []);
 
+  const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        // Set canvas dimensions
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleFileUpload = async (file: File) => {
     console.log('🖼️ Starting file upload:', {
       name: file.name,
@@ -65,38 +94,29 @@ export function ImageUpload({
       type: file.type
     });
     
-    // Check file size (5MB limit for data URLs)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB for upload.');
+    // Check file size (10MB limit before compression)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB for upload.');
       return;
     }
     
     setIsUploading(true);
     
     try {
-      // Convert file to data URL for immediate use
-      const reader = new FileReader();
+      // Compress the image before converting to data URL
+      console.log('🖼️ Compressing image...');
+      const compressedDataUrl = await compressImage(file, 800, 0.7);
       
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        console.log('🖼️ ✅ File converted to data URL');
-        onChange(dataUrl);
-        setUploadMode('url');
-        setIsUploading(false);
-      };
+      console.log('🖼️ ✅ Image compressed and converted to data URL');
+      console.log('🖼️ Compressed size:', compressedDataUrl.length, 'characters');
       
-      reader.onerror = () => {
-        console.error('🖼️ ❌ File reading failed');
-        alert('Failed to read the image file. Please try again.');
-        setIsUploading(false);
-      };
-      
-      // Read the file as data URL
-      reader.readAsDataURL(file);
+      onChange(compressedDataUrl);
+      setUploadMode('url');
+      setIsUploading(false);
       
     } catch (error) {
-      console.error('🖼️ ❌ Image upload failed:', error);
-      alert(`Image upload failed: ${error.message || 'Please try again.'}`);
+      console.error('🖼️ ❌ Image compression failed:', error);
+      alert(`Image processing failed: ${error.message || 'Please try again.'}`);
       setIsUploading(false);
     }
   };
@@ -191,7 +211,7 @@ export function ImageUpload({
                   Drop image here or click to upload
                 </p>
                 <p className="text-xs text-gray-500">
-                  PNG, JPG, GIF up to 5MB
+                  PNG, JPG, GIF up to 10MB (auto-compressed)
                 </p>
               </div>
               <Button
