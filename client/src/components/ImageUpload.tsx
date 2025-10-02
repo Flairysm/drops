@@ -65,31 +65,38 @@ export function ImageUpload({
       type: file.type
     });
     
+    // Check file size (5MB limit for data URLs)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB for upload.');
+      return;
+    }
+    
     setIsUploading(true);
     
     try {
-      const formData = new FormData();
-      formData.append('image', file);
+      // Convert file to data URL for immediate use
+      const reader = new FileReader();
       
-      console.log('🖼️ FormData created, making API request...');
-      const response = await apiRequest('POST', '/api/admin/upload-image', formData);
-      console.log('🖼️ API response received:', response);
-      
-      const data = await response.json();
-      console.log('🖼️ Response data:', data);
-      
-      if (data.success && data.imageUrl) {
-        console.log('🖼️ ✅ Upload successful, setting image URL:', data.imageUrl);
-        onChange(data.imageUrl);
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        console.log('🖼️ ✅ File converted to data URL');
+        onChange(dataUrl);
         setUploadMode('url');
-      } else {
-        console.log('🖼️ ❌ Upload failed:', data.message);
-        throw new Error(data.message || 'Upload failed');
-      }
+        setIsUploading(false);
+      };
+      
+      reader.onerror = () => {
+        console.error('🖼️ ❌ File reading failed');
+        alert('Failed to read the image file. Please try again.');
+        setIsUploading(false);
+      };
+      
+      // Read the file as data URL
+      reader.readAsDataURL(file);
+      
     } catch (error) {
       console.error('🖼️ ❌ Image upload failed:', error);
       alert(`Image upload failed: ${error.message || 'Please try again.'}`);
-    } finally {
       setIsUploading(false);
     }
   };
@@ -184,7 +191,7 @@ export function ImageUpload({
                   Drop image here or click to upload
                 </p>
                 <p className="text-xs text-gray-500">
-                  PNG, JPG, GIF up to 10MB
+                  PNG, JPG, GIF up to 5MB
                 </p>
               </div>
               <Button
