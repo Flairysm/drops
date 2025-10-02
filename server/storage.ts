@@ -442,41 +442,58 @@ export class DatabaseStorage implements IStorage {
         inventoryCard: userCard.cardId ? inventoryMap.get(userCard.cardId) || null : null
       }));
 
+      // Calculate total refund amount
       let totalRefund = 0;
       for (const card of cardsToRefund) {
-        // Use 100% of current market value for refund (as per documentation)
         const refundAmount = parseFloat(card.pullValue);
         totalRefund += refundAmount;
-        
-        // Add cards back to prize pool on refund
-        if (card.inventoryCard) {
-          // Find which pack this card belongs to and add it back
-          // We need to find the pack card entry that matches the user's card by inventory card ID
-          const packCard = await tx
+      }
+
+      // OPTIMIZATION: Bulk operations instead of individual queries
+      if (cardsToRefund.length > 0) {
+        // Get all inventory card IDs that need to be added back to packs
+        const inventoryCardIds = cardsToRefund
+          .filter(card => card.inventoryCard)
+          .map(card => card.inventoryCard!.id);
+
+        if (inventoryCardIds.length > 0) {
+          // Bulk fetch all pack cards that match the inventory cards
+          const packCards = await tx
             .select()
             .from(specialPackCards)
-            .where(eq(specialPackCards.cardId, card.inventoryCard.id))
-            .limit(1);
+            .where(inArray(specialPackCards.cardId, inventoryCardIds));
 
-          if (packCard.length > 0) {
-            // Add the card back to the pack's prize pool
+          // Create a map for quick lookup
+          const packCardMap = new Map(packCards.map(pc => [pc.cardId, pc]));
+
+          // Group cards by pack card ID for bulk updates
+          const packUpdates = new Map<string, number>();
+          
+          for (const card of cardsToRefund) {
+            if (card.inventoryCard) {
+              const packCard = packCardMap.get(card.inventoryCard.id);
+              if (packCard) {
+                const currentQuantity = packUpdates.get(packCard.id) || 0;
+                packUpdates.set(packCard.id, currentQuantity + (card.quantity || 1));
+              }
+            }
+          }
+
+          // Bulk update pack quantities
+          for (const [packCardId, totalQuantity] of Array.from(packUpdates.entries())) {
             await tx
               .update(specialPackCards)
               .set({ 
-                quantity: sql`${specialPackCards.quantity} + ${card.quantity || 1}` 
+                quantity: sql`${specialPackCards.quantity} + ${totalQuantity}` 
               })
-              .where(eq(specialPackCards.id, packCard[0].id));
-            
-            console.log(`✅ Added ${card.quantity || 1} ${card.inventoryCard.name} back to pack ${packCard[0].packId}`);
-          } else {
-            console.log(`❌ No pack card found for inventory card: ${card.inventoryCard.id} (${card.inventoryCard.name})`);
+              .where(eq(specialPackCards.id, packCardId));
           }
-        } else {
-          console.log(`❌ No inventory card found for user card: ${card.cardId}`);
+
+          console.log(`✅ Bulk updated ${packUpdates.size} pack cards with refunded quantities`);
         }
       }
 
-      // Mark cards as refunded
+      // Mark cards as refunded (bulk operation)
       await tx
         .update(userCards)
         .set({ isRefunded: true })

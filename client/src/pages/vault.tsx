@@ -70,7 +70,18 @@ export default function Vault() {
       // Remove duplicates
       const uniqueCardIds = [...new Set(allCardIds)];
       
-      await apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds });
+      // Show progress toast for large batches
+      if (uniqueCardIds.length > 50) {
+        toast({
+          title: "Processing Refund",
+          description: `Refunding ${uniqueCardIds.length} cards... This may take a moment for large batches.`,
+        });
+      }
+      
+      // Use longer timeout for large batches (30 seconds for 100+ cards, 60 seconds for 500+ cards)
+      const timeout = uniqueCardIds.length > 500 ? 60000 : uniqueCardIds.length > 100 ? 30000 : undefined;
+      
+      await apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds }, { timeout });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });

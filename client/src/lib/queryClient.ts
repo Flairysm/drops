@@ -21,6 +21,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  options?: { timeout?: number }
 ): Promise<Response> {
   const baseUrl = getApiBaseUrl();
   const fullUrl = baseUrl + url;
@@ -41,16 +42,29 @@ export async function apiRequest(
     console.log('🔐 API Request without JWT:', { method, url: fullUrl, hasToken: false });
   }
   
-  const res = await fetch(fullUrl, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  // Create AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = options?.timeout ? setTimeout(() => controller.abort(), options.timeout) : null;
+  
+  try {
+    const res = await fetch(fullUrl, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+      signal: controller.signal,
+    });
 
-
-  await throwIfResNotOk(res);
-  return res;
+    if (timeoutId) clearTimeout(timeoutId);
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout - please try again');
+    }
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
