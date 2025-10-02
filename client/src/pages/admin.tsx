@@ -412,13 +412,7 @@ export default function Admin() {
         };
 
 
-        const response = await fetch('http://localhost:3000/api/admin/inventory', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(cardData),
-        });
+        const response = await apiRequest('POST', '/api/admin/inventory', cardData);
 
 
         if (response.ok) {
@@ -531,13 +525,7 @@ export default function Admin() {
         };
 
 
-        const response = await fetch(`http://localhost:3000/api/admin/inventory/${editingCard.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(cardData),
-        });
+        const response = await apiRequest('PATCH', `/api/admin/inventory/${editingCard.id}`, cardData);
 
 
         if (response.ok) {
@@ -773,18 +761,12 @@ export default function Admin() {
   const handleAddPool = async () => {
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim() && newPool.totalCards.trim()) {
       try {
-        const response = await fetch('http://localhost:3000/api/admin/special-packs', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: newPool.name.trim(),
-            description: newPool.description.trim(),
-            image: newPool.image.trim(),
-            price: parseFloat(newPool.price),
-            totalCards: parseInt(newPool.totalCards)
-          }),
+        const response = await apiRequest('POST', '/api/admin/special-packs', {
+          name: newPool.name.trim(),
+          description: newPool.description.trim(),
+          image: newPool.image.trim(),
+          price: parseFloat(newPool.price),
+          totalCards: parseInt(newPool.totalCards)
         });
 
         if (response.ok) {
@@ -840,37 +822,30 @@ export default function Admin() {
   const handleUpdatePool = async () => {
     if (editingPool && editingPool.name.trim() && editingPool.description.trim() && editingPool.image.trim()) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/special-packs/${editingPool.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: editingPool.name.trim(),
-            description: editingPool.description.trim(),
-            image: editingPool.image.trim(),
-            price: editingPool.price,
-            totalCards: editingPool.totalCards
-          }),
+        console.log('🔄 Updating special pack:', editingPool);
+        
+        const response = await apiRequest('PUT', `/api/admin/special-packs/${editingPool.id}`, {
+          name: editingPool.name.trim(),
+          description: editingPool.description.trim(),
+          image: editingPool.image.trim(),
+          price: editingPool.price,
+          totalCards: editingPool.totalCards
         });
 
-        if (response.ok) {
-          const updatedPack = await response.json();
-          setSpecialPools(prev => prev.map(pool => 
-            pool.id === editingPool.id 
-              ? { ...pool, ...updatedPack }
-              : pool
-          ));
-          setShowEditPoolDialog(false);
-          setEditingPool(null);
-          alert('Special pack updated successfully!');
-        } else {
-          const error = await response.json();
-          alert(`Failed to update special pack: ${error.error}`);
-        }
+        const updatedPack = await response.json();
+        console.log('✅ Special pack updated successfully:', updatedPack);
+        
+        setSpecialPools(prev => prev.map(pool => 
+          pool.id === editingPool.id 
+            ? { ...pool, ...updatedPack }
+            : pool
+        ));
+        setShowEditPoolDialog(false);
+        setEditingPool(null);
+        alert('Special pack updated successfully!');
       } catch (error: any) {
-        console.error('Error updating special pack:', error);
-        alert('Failed to update special pack. Please try again.');
+        console.error('❌ Error updating special pack:', error);
+        alert(`Failed to update special pack: ${error.message || 'Please try again.'}`);
       }
     } else {
       alert('Please fill in all required fields');
