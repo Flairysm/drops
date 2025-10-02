@@ -583,6 +583,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to manually trigger refund processing
+  app.post('/api/vault/test-refund', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { cardIds } = req.body;
+
+      console.log(`🧪 TEST: Manual refund trigger for user ${userId} with ${cardIds?.length || 0} cards`);
+
+      if (!Array.isArray(cardIds) || cardIds.length === 0) {
+        return res.status(400).json({ message: "Invalid card IDs" });
+      }
+
+      // Process refund synchronously for testing
+      await storage.refundCards(cardIds, userId);
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully processed refund for ${cardIds.length} cards`,
+        cardIds 
+      });
+    } catch (error) {
+      console.error("Error in test refund:", error);
+      res.status(500).json({ message: "Test refund failed", error: error.message });
+    }
+  });
+
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {
