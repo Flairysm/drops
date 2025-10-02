@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ImageUpload";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { 
@@ -1885,16 +1886,14 @@ export default function Admin() {
                                   required
                                 />
                               </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="classicPackImage">Image URL</Label>
-                                <Input
-                                  id="classicPackImage"
-                                  value={newPool.image}
-                                  onChange={(e) => setNewPool({ ...newPool, image: e.target.value })}
-                                  placeholder="Enter image URL"
-                                  required
-                                />
-                            </div>
+                              <ImageUpload
+                              value={newPool.image}
+                              onChange={(value) => setNewPool({ ...newPool, image: value })}
+                              placeholder="Enter image URL"
+                              label="Image URL"
+                              id="classicPackImage"
+                              required
+                            />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="classicPackDescription">Description</Label>
@@ -2651,18 +2650,14 @@ export default function Admin() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="text-sm font-medium">Image URL</Label>
-                  <Input
-                    id="imageUrl"
-                    type="url"
-                    value={newCard.imageUrl}
-                    onChange={(e) => handleNewCardChange('imageUrl', e.target.value)}
-                    placeholder="https://example.com/card-image.jpg"
-                    className="w-full"
-                    required
-                  />
-                </div>
+                <ImageUpload
+                  value={newCard.imageUrl}
+                  onChange={(value) => handleNewCardChange('imageUrl', value)}
+                  placeholder="https://example.com/card-image.jpg"
+                  label="Image URL"
+                  id="imageUrl"
+                  required
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -2736,18 +2731,14 @@ export default function Admin() {
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="editImageUrl" className="text-sm font-medium">Image URL</Label>
-                  <Input
-                    id="editImageUrl"
-                    type="url"
-                    value={editForm.imageUrl}
-                    onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })}
-                    placeholder="https://example.com/card-image.jpg"
-                    className="w-full"
-                    required
-                  />
-                </div>
+                <ImageUpload
+                  value={editForm.imageUrl}
+                  onChange={(value) => setEditForm({ ...editForm, imageUrl: value })}
+                  placeholder="https://example.com/card-image.jpg"
+                  label="Image URL"
+                  id="editImageUrl"
+                  required
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -2825,16 +2816,14 @@ export default function Admin() {
                     />
                 </div>
                 
-                  <div>
-                    <Label htmlFor="poolImage">Pack Image URL</Label>
-                    <Input
-                      id="poolImage"
-                      value={newPool.image}
-                      onChange={(e) => setNewPool({ ...newPool, image: e.target.value })}
-                      placeholder="https://example.com/pack-image.jpg"
-                      required
-                    />
-                      </div>
+                  <ImageUpload
+                    value={newPool.image}
+                    onChange={(value) => setNewPool({ ...newPool, image: value })}
+                    placeholder="https://example.com/pack-image.jpg"
+                    label="Pack Image URL"
+                    id="poolImage"
+                    required
+                  />
                   
                   <div>
                     <Label htmlFor="poolPrice">Price ($)</Label>
@@ -2968,16 +2957,14 @@ export default function Admin() {
                     />
                 </div>
 
-                  <div>
-                    <Label htmlFor="editPoolImage">Pack Image URL</Label>
-                    <Input
-                      id="editPoolImage"
-                      value={editingPool.image}
-                      onChange={(e) => setEditingPool({ ...editingPool, image: e.target.value })}
-                      placeholder="https://example.com/pack-image.jpg"
-                      required
-                    />
-                </div>
+                  <ImageUpload
+                  value={editingPool.image}
+                  onChange={(value) => setEditingPool({ ...editingPool, image: value })}
+                  placeholder="https://example.com/pack-image.jpg"
+                  label="Pack Image URL"
+                  id="editPoolImage"
+                  required
+                />
 
                   <div>
                     <Label htmlFor="editPoolPrice">Price ($)</Label>

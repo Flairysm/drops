@@ -3,8 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin, isAdminCombined } from "./auth";
 import { db } from "./db";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
+import path from "path";
+import { fileURLToPath } from 'url';
+import fileUpload from 'express-fileupload';
 import { 
   insertCardSchema, 
   insertPackSchema,
@@ -16,6 +19,7 @@ import {
   inventory,
   mysteryPacks,
   mysteryPackCards,
+  userCards,
   type GameResult 
 } from "@shared/schema";
 
@@ -25,6 +29,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CRITICAL: Session middleware must be set up BEFORE CORS
   // This ensures cookies are properly handled
   setupAuth(app);
+
+  // File upload middleware
+  app.use(fileUpload({
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    abortOnLimit: true,
+    responseOnLimit: 'File size limit has been reached',
+    createParentPath: true
+  }));
 
   // Health check endpoint
   app.get('/api/health', async (req, res) => {
@@ -611,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Successfully processed refund for ${cardIds.length} cards`,
         cardIds 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in test refund:", error);
       res.status(500).json({ message: "Test refund failed", error: error.message });
     }
@@ -621,6 +633,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/vault/test-simple', isAuthenticatedCombined, async (req: any, res) => {
     console.log("🧪 SIMPLE TEST ENDPOINT HIT!");
     res.json({ success: true, message: "Simple test endpoint working" });
+  });
+
+  // Image upload endpoint
+  app.post('/api/upload/image', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      // Check if user is admin
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Handle file upload using multer or similar
+      // For now, we'll use a simple approach with express-fileupload
+      if (!req.files || !req.files.image) {
+        return res.status(400).json({ message: "No image file provided" });
+      }
+
+      const imageFile = req.files.image;
+      
+      // Validate file type
+      if (!imageFile.mimetype.startsWith('image/')) {
+        return res.status(400).json({ message: "File must be an image" });
+      }
+
+      // Validate file size (10MB limit)
+      if (imageFile.size > 10 * 1024 * 1024) {
+        return res.status(400).json({ message: "File size must be less than 10MB" });
+      }
+
+      // Generate unique filename
+      const fileExtension = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
+      
+      // Save file to uploads directory
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      const uploadPath = path.join(__dirname, '../client/public/uploads', fileName);
+      await imageFile.mv(uploadPath);
+
+      // Return the public URL
+      const imageUrl = `/uploads/${fileName}`;
+      
+      res.json({ 
+        success: true, 
+        imageUrl,
+        message: "Image uploaded successfully" 
+      });
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  // Test endpoint without authentication to verify basic routing
+  app.post('/api/vault/test-basic', async (req: any, res) => {
+    console.log("🧪 BASIC TEST ENDPOINT HIT!");
+    res.json({ success: true, message: "Basic test endpoint working" });
   });
 
   // Global feed routes
