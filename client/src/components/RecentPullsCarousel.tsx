@@ -154,16 +154,16 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
             </div>
           </div>
 
-          <div className="relative h-24 overflow-hidden">
+          <div className="relative h-48 overflow-hidden">
             <div 
               className="flex transition-transform duration-1000 ease-in-out h-full gap-4"
-              style={{ transform: `translateX(-${currentIndex * 280}px)` }}
+              style={{ transform: `translateX(-${currentIndex * 216}px)` }}
             >
               {/* Duplicate cards for seamless looping */}
               {displayPulls.map((pull, index) => (
-                <div key={pull.id} className="min-w-[280px] flex items-center space-x-3 bg-secondary/20 rounded-xl p-3 border border-primary/10">
-                  {/* Card Image */}
-                  <div className="w-16 h-20 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-primary/20 shadow-md">
+                <div key={pull.id} className="min-w-[200px] flex flex-col items-center space-y-2 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                  {/* Card Image - Prominently displayed */}
+                  <div className="w-24 h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-600 shadow-md">
                     {pull.card.imageUrl ? (
                       <img 
                         src={pull.card.imageUrl} 
@@ -186,16 +186,13 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                     )}
                   </div>
 
-                  {/* Pull Details Next to Image */}
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center space-x-1">
-                      <span className="font-gaming font-bold text-sm" data-testid={`text-puller-${index}`}>
-                        {pull.user?.username || 'Unknown'}
-                      </span>
-                      <span className="text-muted-foreground text-xs">pulled</span>
+                  {/* Card Details Below Image */}
+                  <div className="text-center space-y-1 w-full">
+                    <div className="font-semibold text-sm text-gray-900 dark:text-white" data-testid={`text-card-name-${index}`}>
+                      {pull.card.name}
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-center space-x-2">
                       <Badge 
                         variant="secondary" 
                         className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold text-xs`}
@@ -203,17 +200,20 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                       >
                         {tierNames[pull.tier as keyof typeof tierNames] || pull.tier}
                       </Badge>
-                      <Badge variant="outline" className="text-xs px-1 py-0">
+                    </div>
+
+                    <div className="flex items-center justify-center space-x-1 text-xs text-gray-600 dark:text-gray-400">
+                      <span className="font-medium" data-testid={`text-puller-${index}`}>
+                        {pull.user?.username || 'Unknown'}
+                      </span>
+                      <span>pulled</span>
+                    </div>
+
+                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500 dark:text-gray-500">
+                      <Badge variant="outline" className="text-xs px-2 py-0">
                         {pull.gameType.toUpperCase()}
                       </Badge>
-                    </div>
-
-                    <div className="font-semibold text-sm" data-testid={`text-card-name-${index}`}>
-                      {pull.card.name}
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      {getTimeAgo(pull.createdAt || new Date())}
+                      <span>{getTimeAgo(pull.createdAt || new Date())}</span>
                     </div>
                   </div>
                 </div>
