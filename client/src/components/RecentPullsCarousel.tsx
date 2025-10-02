@@ -154,16 +154,16 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
             </div>
           </div>
 
-          <div className="relative h-40 overflow-hidden">
+          <div className="relative h-24 overflow-hidden">
             <div 
               className="flex transition-transform duration-1000 ease-in-out h-full gap-4"
               style={{ transform: `translateX(-${currentIndex * 280}px)` }}
             >
               {/* Duplicate cards for seamless looping */}
               {displayPulls.map((pull, index) => (
-                <div key={pull.id} className="min-w-[260px] flex flex-col items-center space-y-2 bg-secondary/20 rounded-xl p-3 border border-primary/10">
+                <div key={pull.id} className="min-w-[280px] flex items-center space-x-3 bg-secondary/20 rounded-xl p-3 border border-primary/10">
                   {/* Card Image */}
-                  <div className="w-20 h-28 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-primary/20 shadow-md">
+                  <div className="w-16 h-20 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-primary/20 shadow-md">
                     {pull.card.imageUrl ? (
                       <img 
                         src={pull.card.imageUrl} 
@@ -186,16 +186,16 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                     )}
                   </div>
 
-                  {/* Pull Details Below Image */}
-                  <div className="text-center space-y-1 w-full">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span className="font-gaming font-bold text-sm truncate" data-testid={`text-puller-${index}`}>
+                  {/* Pull Details Next to Image */}
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center space-x-1">
+                      <span className="font-gaming font-bold text-sm" data-testid={`text-puller-${index}`}>
                         {pull.user?.username || 'Unknown'}
                       </span>
                       <span className="text-muted-foreground text-xs">pulled</span>
                     </div>
                     
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center space-x-2">
                       <Badge 
                         variant="secondary" 
                         className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold text-xs`}
@@ -203,19 +203,17 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
                       >
                         {tierNames[pull.tier as keyof typeof tierNames] || pull.tier}
                       </Badge>
-                    </div>
-
-                    <div className="font-semibold text-sm truncate" data-testid={`text-card-name-${index}`}>
-                      {pull.card.name}
-                    </div>
-
-                    <div className="flex items-center justify-center space-x-1">
                       <Badge variant="outline" className="text-xs px-1 py-0">
                         {pull.gameType.toUpperCase()}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {getTimeAgo(pull.createdAt || new Date())}
-                      </span>
+                    </div>
+
+                    <div className="font-semibold text-sm" data-testid={`text-card-name-${index}`}>
+                      {pull.card.name}
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      {getTimeAgo(pull.createdAt || new Date())}
                     </div>
                   </div>
                 </div>
