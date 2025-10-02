@@ -12,7 +12,6 @@ interface RecentPullsCarouselProps {
 }
 
 export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [showAllModal, setShowAllModal] = useState(false);
 
   // Show all tiers temporarily for testing
@@ -65,26 +64,6 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
     return "Just now";
   };
 
-  // Auto-advance carousel
-  useEffect(() => {
-    if (!feedData || feedData.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % Math.min(feedData.length, 8));
-    }, 3000); // Change every 3 seconds for faster auto-scroll
-
-    return () => clearInterval(interval);
-  }, [feedData]);
-
-  const nextSlide = () => {
-    if (!feedData) return;
-    setCurrentIndex((prev) => (prev + 1) % Math.min(feedData.length, 8));
-  };
-
-  const prevSlide = () => {
-    if (!feedData) return;
-    setCurrentIndex((prev) => (prev - 1 + Math.min(feedData.length, 8)) % Math.min(feedData.length, 8));
-  };
 
   if (isLoading) {
     return (
@@ -106,8 +85,7 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
     );
   }
 
-  const displayPulls = feedData.slice(0, 8); // Show max 8 recent pulls
-  const currentPull = displayPulls[currentIndex];
+  const displayPulls = feedData.slice(0, limit); // Show up to limit recent pulls
 
   return (
     <div className="relative w-full">
@@ -133,109 +111,69 @@ export function RecentPullsCarousel({ limit = 10 }: RecentPullsCarouselProps) {
               >
                 See All
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={prevSlide}
-                className="w-8 h-8 p-0"
-                data-testid="button-carousel-prev"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={nextSlide}
-                className="w-8 h-8 p-0"
-                data-testid="button-carousel-next"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
             </div>
           </div>
 
-          <div className="relative h-48 overflow-hidden">
-            <div 
-              className="flex transition-transform duration-1000 ease-in-out h-full gap-4"
-              style={{ transform: `translateX(-${currentIndex * 216}px)` }}
-            >
-              {/* Duplicate cards for seamless looping */}
-              {displayPulls.map((pull, index) => (
-                <div key={pull.id} className="min-w-[200px] flex flex-col items-center space-y-2 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-                  {/* Card Image - Prominently displayed */}
-                  <div className="w-24 h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-600 shadow-md">
-                    {pull.card.imageUrl ? (
-                      <img 
-                        src={pull.card.imageUrl} 
-                        alt={pull.card.name}
-                        className="w-full h-full object-cover rounded-lg"
-                        loading="lazy"
-                        onError={(e) => {
-                          // Fallback to default image if the imageUrl fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/card-images/random-common-card.png";
-                        }}
-                      />
-                    ) : (
-                      <img 
-                        src="/card-images/random-common-card.png" 
-                        alt={pull.card.name}
-                        className="w-full h-full object-cover rounded-lg"
-                        loading="lazy"
-                      />
-                    )}
+          <div className="space-y-4">
+            {displayPulls.map((pull, index) => (
+              <div key={pull.id} className="flex items-center space-x-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                {/* Card Image - Left side */}
+                <div className="w-16 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg flex items-center justify-center border border-gray-300 dark:border-gray-600 shadow-sm flex-shrink-0">
+                  {pull.card.imageUrl ? (
+                    <img 
+                      src={pull.card.imageUrl} 
+                      alt={pull.card.name}
+                      className="w-full h-full object-cover rounded-lg"
+                      loading="lazy"
+                      onError={(e) => {
+                        // Fallback to default image if the imageUrl fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/card-images/random-common-card.png";
+                      }}
+                    />
+                  ) : (
+                    <img 
+                      src="/card-images/random-common-card.png" 
+                      alt={pull.card.name}
+                      className="w-full h-full object-cover rounded-lg"
+                      loading="lazy"
+                    />
+                  )}
+                </div>
+
+                {/* Pull Details - Right side */}
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-white" data-testid={`text-puller-${index}`}>
+                      {pull.user?.username || 'Unknown'}
+                    </span>
+                    <span className="text-white">pulled</span>
+                    <Badge 
+                      variant="secondary" 
+                      className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold text-xs`}
+                      data-testid={`badge-tier-${index}`}
+                    >
+                      {tierNames[pull.tier as keyof typeof tierNames] || pull.tier}
+                    </Badge>
+                  </div>
+                  
+                  <div className="text-white font-medium" data-testid={`text-card-name-${index}`}>
+                    {pull.card.name}
                   </div>
 
-                  {/* Card Details Below Image */}
-                  <div className="text-center space-y-1 w-full">
-                    <div className="font-semibold text-sm text-gray-900 dark:text-white" data-testid={`text-card-name-${index}`}>
-                      {pull.card.name}
-                    </div>
-                    
-                    <div className="flex items-center justify-center space-x-2">
-                      <Badge 
-                        variant="secondary" 
-                        className={`${tierColors[pull.tier as keyof typeof tierColors] || tierColors.C} font-bold text-xs`}
-                        data-testid={`badge-tier-${index}`}
-                      >
-                        {tierNames[pull.tier as keyof typeof tierNames] || pull.tier}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center justify-center space-x-1 text-xs text-gray-600 dark:text-gray-400">
-                      <span className="font-medium" data-testid={`text-puller-${index}`}>
-                        {pull.user?.username || 'Unknown'}
-                      </span>
-                      <span>pulled</span>
-                    </div>
-
-                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500 dark:text-gray-500">
-                      <Badge variant="outline" className="text-xs px-2 py-0">
-                        {pull.gameType.toUpperCase()}
-                      </Badge>
-                      <span>{getTimeAgo(pull.createdAt || new Date())}</span>
-                    </div>
+                  <div className="text-gray-400 text-sm">
+                    from {pull.gameType.replace('_', ' ')} game
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Pagination Dots */}
-          <div className="flex justify-center space-x-1 mt-4">
-            {displayPulls.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentIndex 
-                    ? 'bg-primary' 
-                    : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                }`}
-                data-testid={`button-dot-${index}`}
-              />
+                {/* Timestamp - Far right */}
+                <div className="text-gray-400 text-sm flex-shrink-0">
+                  {getTimeAgo(pull.createdAt || new Date())}
+                </div>
+              </div>
             ))}
           </div>
+
         </CardContent>
       </Card>
       {/* Modal for All Recent Pulls */}
