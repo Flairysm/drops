@@ -101,12 +101,20 @@ export default function Vault() {
       
       // 4. Start async backend processing (don't wait for it)
       console.log("🚀 Starting async refund processing for card IDs:", uniqueCardIds);
+      console.log("🚀 Making API request to /api/vault/refund-async");
+      
       apiRequest("POST", "/api/vault/refund-async", { cardIds: uniqueCardIds })
         .then(response => {
           console.log("✅ Async refund request successful:", response);
+          console.log("✅ Response status:", response.status);
+          return response.json();
+        })
+        .then(data => {
+          console.log("✅ Async refund response data:", data);
         })
         .catch(error => {
           console.error("❌ Async refund processing failed:", error);
+          console.error("❌ Error details:", error.message);
           // Could add a notification here, but don't rollback the optimistic update
           // since the user already got their credits
         });

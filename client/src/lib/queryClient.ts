@@ -42,6 +42,11 @@ export async function apiRequest(
     console.log('🔐 API Request without JWT:', { method, url: fullUrl, hasToken: false });
   }
   
+  // Special logging for refund requests
+  if (url.includes('/vault/refund-async')) {
+    console.log('🔥 REFUND ASYNC REQUEST:', { method, url: fullUrl, data, headers });
+  }
+  
   // Create AbortController for timeout
   const controller = new AbortController();
   const timeoutId = options?.timeout ? setTimeout(() => controller.abort(), options.timeout) : null;
