@@ -147,8 +147,11 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
               <h3 className="text-sm font-bold text-white mb-1">
                 {latestPull.card.name}
               </h3>
-              <p className="text-gray-400 text-xs">
+              <p className="text-gray-400 text-xs mb-1">
                 {latestPull.tier} Tier Card
+              </p>
+              <p className="text-gray-300 text-xs">
+                pulled by {latestPull.user?.username || 'Unknown'}
               </p>
             </div>
 
