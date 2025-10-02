@@ -92,10 +92,10 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+        <Card className="w-64 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
             {/* Card Image Container */}
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-4">
               <div className="relative">
                 {/* Card Image */}
                 <div className="w-48 h-72 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-300 shadow-lg">
@@ -130,8 +130,8 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
             </div>
 
             {/* Card Details */}
-            <div className="text-center mb-4">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+            <div className="text-center mb-3">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
                 {latestPull.card.name}
               </h3>
               <p className="text-gray-600 text-sm">
