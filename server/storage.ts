@@ -495,10 +495,13 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Mark cards as refunded (bulk operation)
-      await tx
+      console.log(`🔄 Marking ${cardIds.length} cards as refunded for user ${userId}`);
+      const updateResult = await tx
         .update(userCards)
         .set({ isRefunded: true })
         .where(and(inArray(userCards.id, cardIds), eq(userCards.userId, userId)));
+      
+      console.log(`✅ Update result:`, updateResult);
 
       // Add credits to user
       await tx
@@ -521,11 +524,23 @@ export class DatabaseStorage implements IStorage {
   // Async refund function - processes refunds in background without blocking
   async refundCardsAsync(cardIds: string[], userId: string): Promise<void> {
     console.log(`🔄 Starting async refund processing for ${cardIds.length} cards for user ${userId}`);
+    console.log(`🔄 Card IDs to refund:`, cardIds);
     
     try {
       // Use the same optimized refund logic but without blocking the response
       await this.refundCards(cardIds, userId);
       console.log(`✅ Async refund processing completed for ${cardIds.length} cards for user ${userId}`);
+      
+      // Verify the cards were actually marked as refunded
+      const refundedCards = await db
+        .select()
+        .from(userCards)
+        .where(and(inArray(userCards.id, cardIds), eq(userCards.userId, userId)));
+      
+      console.log(`🔍 Verification: Found ${refundedCards.length} cards after refund processing`);
+      refundedCards.forEach(card => {
+        console.log(`🔍 Card ${card.id}: isRefunded=${card.isRefunded}`);
+      });
       
       // Add notification about successful processing
       await this.addNotification({
