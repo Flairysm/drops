@@ -74,10 +74,10 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
           </div>
         </div>
         
-        <div className="w-64 h-64 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700 flex flex-col items-center justify-center text-gray-400">
-          <Package className="w-12 h-12 mb-4 text-gray-500" />
-          <span className="text-lg font-medium text-white">No recent pulls yet</span>
-          <span className="text-sm text-gray-400">Be the first to pull a rare card!</span>
+        <div className="w-48 h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 flex flex-col items-center justify-center text-gray-400">
+          <Package className="w-8 h-8 mb-3 text-gray-500" />
+          <span className="text-sm font-medium text-white">No recent pulls yet</span>
+          <span className="text-xs text-gray-400">Be the first to pull a rare card!</span>
         </div>
       </div>
     );
@@ -105,18 +105,18 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-64 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardContent className="p-4">
+        <Card className="w-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardContent className="p-3">
             {/* Card Image Container */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-3">
               <div className="relative">
                 {/* Card Image */}
-                <div className="w-48 h-72 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center border border-gray-600 shadow-lg">
+                <div className="w-36 h-54 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg">
                   {latestPull.card.imageUrl ? (
                     <img 
                       src={latestPull.card.imageUrl} 
                       alt={latestPull.card.name}
-                      className="w-full h-full object-cover rounded-xl"
+                      className="w-full h-full object-cover rounded-lg"
                       loading="lazy"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -127,15 +127,15 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
                     <img 
                       src="/card-images/random-common-card.png" 
                       alt={latestPull.card.name}
-                      className="w-full h-full object-cover rounded-xl"
+                      className="w-full h-full object-cover rounded-lg"
                       loading="lazy"
                     />
                   )}
                 </div>
                 
                 {/* Tier Badge */}
-                <div className="absolute -top-2 -right-2">
-                  <Badge className={`${getTierColor(latestPull.tier)} font-bold text-sm px-3 py-1 border`}>
+                <div className="absolute -top-1 -right-1">
+                  <Badge className={`${getTierColor(latestPull.tier)} font-bold text-xs px-2 py-0.5 border`}>
                     {latestPull.tier}
                   </Badge>
                 </div>
@@ -143,24 +143,24 @@ export function RecentPulls({ limit = 5 }: RecentPullsProps) {
             </div>
 
             {/* Card Details */}
-            <div className="text-center mb-3">
-              <h3 className="text-lg font-bold text-white mb-1">
+            <div className="text-center mb-2">
+              <h3 className="text-sm font-bold text-white mb-1">
                 {latestPull.card.name}
               </h3>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-400 text-xs">
                 {latestPull.tier} Tier Card
               </p>
             </div>
 
             {/* Source and Time */}
-            <div className="flex items-center justify-between text-sm text-gray-400">
-              <div className="flex items-center space-x-2">
-                <Package className="w-4 h-4" />
+            <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center space-x-1">
+                <Package className="w-3 h-3" />
                 <span>{latestPull.gameType.replace('_', ' ')} Pack</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
                 <span>{getTimeAgo(latestPull.createdAt || new Date())}</span>
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3 h-3" />
               </div>
             </div>
           </CardContent>
