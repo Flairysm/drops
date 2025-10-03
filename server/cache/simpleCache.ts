@@ -173,6 +173,7 @@ export const CacheKeys = {
   inventoryCard: (cardId: string) => `inventory:card:${cardId}`,
   
   // User data
+  user: (userId: string) => `user:${userId}`,
   userCards: (userId: string) => `user:cards:${userId}`,
   userPacks: (userId: string) => `user:packs:${userId}`,
   

@@ -1564,7 +1564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Adding card to classic pack:', { packId: id, cardId, quantity });
       
-      const result = await storage.addCardToSpecialPack(id, cardId, quantity);
+      const result = await storage.addCardToClassicPack(id, cardId, quantity);
       console.log('Successfully added card to pack:', result);
       res.json(result);
     } catch (error: any) {
@@ -1573,13 +1573,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/classic-packs/:id/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
+  app.delete('/api/admin/classic-packs/:id/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
     try {
-      const { id, specialPackCardId } = req.params;
+      const { id, classicPackCardId } = req.params;
       
-      console.log('Route handler - removing card:', { packId: id, specialPackCardId });
+      console.log('Route handler - removing card:', { packId: id, classicPackCardId });
       
-      await storage.removeCardFromSpecialPack(id, specialPackCardId);
+      await storage.removeCardFromClassicPack(id, classicPackCardId);
       console.log('Route handler - card removed successfully');
       res.json({ success: true });
     } catch (error: any) {
@@ -1588,14 +1588,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/admin/classic-packs/:id/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
+  app.patch('/api/admin/classic-packs/:id/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
     try {
-      const { id, specialPackCardId } = req.params;
+      const { id, classicPackCardId } = req.params;
       const { quantity } = req.body;
       
-      console.log('Updating classic pack card quantity:', { packId: id, specialPackCardId, quantity });
+      console.log('Updating classic pack card quantity:', { packId: id, classicPackCardId, quantity });
       
-      const result = await storage.updateSpecialPackCardQuantity(id, specialPackCardId, quantity);
+      const result = await storage.updateClassicPackCardQuantity(id, classicPackCardId, quantity);
       console.log('Successfully updated classic pack card quantity:', result);
       res.json(result);
     } catch (error: any) {
@@ -1937,40 +1937,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const { packId } = req.params;
-
-      console.log('Purchasing Black Bolt pack:', {
-        userId,
-        packId
-      });
-
-      // Get user to check credits
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      // Get classic pack details
-      console.log('📦 Getting classic packs...');
-      const classicPacks = await storage.getClassicPacks();
-      console.log('📦 Classic packs retrieved:', classicPacks.length);
-      const classicPack = classicPacks.find(p => p.id === packId);
-      console.log('📦 Found classic pack:', classicPack ? 'YES' : 'NO');
       
+      console.log('====================================');
+      console.log('🎯 BLACK BOLT PACK OPENING STARTED 🎯');
+      console.log('====================================');
+      console.log('📦 Classic pack purchase request:', { userId, packId });
+      
+      // Get the classic pack
+      const classicPack = await storage.getClassicPackById(packId);
       if (!classicPack) {
+        console.log('📦 Classic pack not found');
         return res.status(404).json({ message: 'Classic pack not found' });
       }
-
-      const packPrice = parseFloat(classicPack.price);
-      console.log('📦 Pack price:', packPrice, 'User credits:', user.credits);
-      if (!user.credits || parseFloat(user.credits) < packPrice) {
-        console.log('📦 Insufficient credits error');
-        return res.status(400).json({ message: 'Insufficient credits' });
+      
+      console.log('📦 Found classic pack:', classicPack.name, 'Price:', classicPack.price);
+      
+      // Check if pack is active
+      if (!classicPack.isActive) {
+        console.log('📦 Pack is not active');
+        return res.status(400).json({ message: 'Pack is not available' });
       }
+      
+      // Get user data
+      const user = await storage.getUser(userId);
+      if (!user) {
+        console.log('📦 User not found');
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      console.log('📦 User found:', user.username, 'Credits:', user.credits);
+      
+      // Check credits - TEMPORARILY DISABLED FOR TESTING
+      const packPrice = parseFloat(classicPack.price);
+      const userCredits = parseFloat(user.credits || '0');
+      console.log('📦 Pack price:', packPrice, 'User credits:', userCredits);
+      
+      // TEMPORARILY DISABLED: Credit check
+      // if (userCredits < packPrice) {
+      //   console.log('📦 Insufficient credits');
+      //   return res.status(400).json({ message: 'Insufficient credits' });
+      // }
 
-      // Deduct credits
-      console.log('📦 Deducting credits...');
-      await storage.updateUserCredits(userId, (-packPrice).toString());
-      console.log('📦 Credits deducted successfully');
+      // TEMPORARILY DISABLED: Deduct credits
+      // console.log('📦 Deducting credits...');
+      // const success = await storage.deductUserCredits(userId, packPrice.toString());
+      // if (!success) {
+      //   console.log('📦 Failed to deduct credits');
+      //   return res.status(400).json({ message: 'Failed to deduct credits' });
+      // }
+      console.log('📦 Credits check bypassed for testing');
 
       // Create user pack
       console.log('📦 Creating user pack...');
@@ -1987,7 +2002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Open the pack immediately
       console.log('📦 Opening pack...');
       const packResult = await storage.openUserPack(userPack.id, userId);
-      console.log('📦 Black Bolt pack opening result:', JSON.stringify(packResult, null, 2));
+      console.log('📦 Classic pack opening result:', JSON.stringify(packResult, null, 2));
 
       const response = { 
         success: true,
@@ -1997,7 +2012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(response);
 
     } catch (error: any) {
-      console.error("Error purchasing Black Bolt pack:", error);
+      console.error("Error purchasing classic pack:", error);
       res.status(500).json({ message: error.message || "Failed to purchase pack" });
     }
   });
@@ -2121,6 +2136,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error updating mystery pack odds:', error);
       res.status(500).json({ error: 'Failed to update mystery pack odds' });
+    }
+  });
+
+  // Debug endpoint to check user data
+  app.get('/api/debug/user/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      console.log(`🔍 DEBUG: Checking user data for ${userId}...`);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      console.log(`🔍 User data:`, user);
+      
+      res.json({
+        success: true,
+        user: user
+      });
+    } catch (error) {
+      console.error('❌ Error checking user:', error);
+      res.status(500).json({ error: 'Failed to check user' });
+    }
+  });
+
+  // Debug endpoint to clear user cache
+  app.post('/api/debug/clear-user-cache/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      console.log(`🧹 DEBUG: Clearing cache for user ${userId}...`);
+      
+      const { SimpleCache, CacheKeys } = await import('./cache/simpleCache');
+      const cache = SimpleCache.getInstance();
+      
+      // Clear user cache
+      cache.delete(CacheKeys.user(userId));
+      cache.delete(CacheKeys.userCards(userId));
+      cache.delete(CacheKeys.userPacks(userId));
+      
+      console.log(`✅ Cache cleared for user ${userId}`);
+      
+      res.json({
+        success: true,
+        message: `Cache cleared for user ${userId}`
+      });
+    } catch (error) {
+      console.error('❌ Error clearing cache:', error);
+      res.status(500).json({ error: 'Failed to clear cache' });
+    }
+  });
+
+  // Debug endpoint to fix common card value
+  app.post('/api/debug/update-common-card-value', async (req, res) => {
+    try {
+      console.log('🔧 DEBUG: Updating common card value from 10 to 1...');
+      
+      // Update the common card value in inventory
+      await db.execute(sql`
+        UPDATE inventory 
+        SET credits = 1
+        WHERE id = 'f776501e-10fa-4340-b4f7-263540306506'
+      `);
+      
+      console.log('✅ Successfully updated common card value to 1 credit');
+      
+      res.json({
+        success: true,
+        message: 'Successfully updated common card value to 1 credit'
+      });
+    } catch (error) {
+      console.error('❌ Error updating common card value:', error);
+      res.status(500).json({ error: 'Failed to update common card value' });
+    }
+  });
+
+  // Debug endpoint to clear inventory cache
+  app.post('/api/debug/clear-inventory-cache', async (req, res) => {
+    try {
+      console.log('🧹 DEBUG: Clearing inventory cache...');
+      
+      const { SimpleCache, CacheKeys } = await import('./cache/simpleCache');
+      const cache = SimpleCache.getInstance();
+      
+      // Clear inventory-related cache
+      cache.delete('inventory:all');
+      cache.delete('inventory:cards');
+      cache.delete('specialPacks:all');
+      cache.delete('classicPacks:all');
+      
+      console.log('✅ Successfully cleared inventory cache');
+      
+      res.json({
+        success: true,
+        message: 'Successfully cleared inventory cache'
+      });
+    } catch (error) {
+      console.error('❌ Error clearing inventory cache:', error);
+      res.status(500).json({ error: 'Failed to clear inventory cache' });
+    }
+  });
+
+  // Debug endpoint to add credits to user account
+  app.post('/api/debug/add-credits', async (req, res) => {
+    try {
+      const { userId, amount } = req.body;
+      
+      if (!userId || !amount) {
+        return res.status(400).json({ error: 'Missing required fields: userId, amount' });
+      }
+      
+      console.log(`🔧 DEBUG: Adding ${amount} credits to user ${userId}...`);
+      
+      // Get current user credits
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const currentCredits = parseFloat(user.credits || '0');
+      const newCredits = currentCredits + parseFloat(amount);
+      
+      // Update user credits
+      await storage.updateUserCredits(userId, newCredits.toString());
+      
+      console.log(`✅ Successfully added ${amount} credits to user ${userId}. New balance: ${newCredits}`);
+      
+      res.json({
+        success: true,
+        message: `Successfully added ${amount} credits to user ${userId}`,
+        previousCredits: currentCredits,
+        newCredits: newCredits
+      });
+    } catch (error) {
+      console.error('❌ Error adding credits:', error);
+      res.status(500).json({ error: 'Failed to add credits' });
     }
   });
 

@@ -661,6 +661,7 @@ export default function MyPacks() {
       {/* Pack Opening Animation */}
       {showAnimation && packOpenData && (
         <PackOpeningAnimation
+          key="mystery-pack-animation"
           packCards={packOpenData.packCards}
           hitCardPosition={packOpenData.hitCardPosition}
           onComplete={handleAnimationComplete}

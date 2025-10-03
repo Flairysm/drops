@@ -89,6 +89,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
         console.log('🎮 Transformed result:', transformedResult);
         
         // Set the pack result and show animation
+        console.log('🎬 Setting pack result and showing animation:', transformedResult);
         setPackResult(transformedResult);
         setShowAnimation(true);
         
@@ -114,6 +115,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   const handleAnimationComplete = () => {
     setShowAnimation(false);
     setPackResult(null);
+    // Don't close the dialog - return to the Black Bolt popup
     toast({
       title: "Pack Opened!",
       description: "Your cards have been added to your vault!",
@@ -173,6 +175,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
       {/* Pack Opening Animation */}
       {showAnimation && packResult && (
         <PackOpeningAnimation
+          key="classic-pack-animation"
           packCards={packResult.packCards}
           hitCardPosition={packResult.hitCardPosition}
           onComplete={handleAnimationComplete}
@@ -180,7 +183,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
         />
       )}
 
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={showAnimation ? undefined : onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#0B0B12] border-[#26263A]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#E5E7EB] flex items-center gap-3">
@@ -257,9 +260,9 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
           <div className="flex justify-center">
             <Button
               onClick={handleOpenPack}
-              disabled={isOpening || (user && user.credits < pack.price)}
+              disabled={isOpening || (user && parseFloat(user.credits) < parseFloat(pack.price))}
               className={`w-full max-w-md font-semibold py-3 rounded-lg transition-all duration-300 ${
-                user && user.credits < pack.price
+                user && parseFloat(user.credits) < parseFloat(pack.price)
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]'
               }`}
@@ -269,7 +272,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Opening Pack...
                 </>
-              ) : user && user.credits < pack.price ? (
+              ) : user && parseFloat(user.credits) < parseFloat(pack.price) ? (
                 <>
                   <Coins className="w-4 h-4 mr-2" />
                   Insufficient Credits

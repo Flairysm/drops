@@ -241,7 +241,7 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: string): Promise<User | undefined> {
-    const cacheKey = `user:${id}`;
+    const cacheKey = CacheKeys.user(id);
     const cached = this.cache.get<User>(cacheKey);
     if (cached) return cached;
 
@@ -516,7 +516,7 @@ export class DatabaseStorage implements IStorage {
       // Calculate total refund amount
       let totalRefund = 0;
       for (const card of cardsToRefund) {
-        const refundAmount = parseFloat(card.pullValue);
+        const refundAmount = parseFloat(card.pullValue) * card.quantity;
         totalRefund += refundAmount;
       }
 
@@ -589,8 +589,9 @@ export class DatabaseStorage implements IStorage {
         description: `Refunded ${cardsToRefund.length} cards`,
       });
 
-      // Invalidate user cards cache
+      // Invalidate user cards cache and user cache
       this.cache.delete(CacheKeys.userCards(userId));
+      this.cache.delete(CacheKeys.user(userId));
     });
   }
 
@@ -665,6 +666,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async openClassicPack(tx: any, userPack: any, classicPack: any, userId: string): Promise<PackOpenResult> {
+    console.log('🎯 Opening classic pack:', classicPack.name);
+    
     // Get all cards in the classic pack pool
     const packCards = await tx
       .select({
@@ -687,146 +690,139 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
       .where(eq(classicPackCards.packId, classicPack.id));
 
+    console.log('🎯 Available pack cards:', packCards.length);
+    
     if (packCards.length === 0) {
       throw new Error('No cards available in classic pack');
     }
 
-    // Create 8 cards: 7 commons + 1 hit (4x2 grid format)
+    // Create 8 cards: 7 commons + 1 hit
     const selectedCards = [];
     const cardsToDeduct: { classicPackCardId: string; quantity: number }[] = [];
     
-    // Add 7 common cards
+    // Add 7 common cards (D tier)
     const commonCards = packCards.filter((pc: any) => pc.card?.tier === 'D');
+    console.log('🎯 Common cards available:', commonCards.length);
     
-    if (commonCards.length > 0) {
-      for (let i = 0; i < 7; i++) {
-        const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
-        if (randomCommon.card) {
-          selectedCards.push({
-            id: randomCommon.card.id,
-            name: randomCommon.card.name || "Common Card",
-            imageUrl: randomCommon.card.imageUrl || "/card-images/random-common-card.png",
-            tier: randomCommon.card.tier || "D",
-            marketValue: randomCommon.card.credits || 10,
-            isHit: false,
-            position: i
-          });
-          
-          const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === randomCommon.id);
-          if (existingDeduction) {
-            existingDeduction.quantity++;
-          } else {
-            cardsToDeduct.push({ classicPackCardId: randomCommon.id, quantity: 1 });
-          }
-        }
+    for (let i = 0; i < 7; i++) {
+      let selectedCard;
+      
+      if (commonCards.length > 0) {
+        selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
+      } else {
+        // Fallback: use any available card
+        selectedCard = packCards[Math.floor(Math.random() * packCards.length)];
       }
-    } else {
-      throw new Error('No common cards found in classic pack pool');
-    }
-
-    // Add 1 hit card
-    const hitCards = packCards.filter((pc: any) => pc.card && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
-    
-    if (hitCards.length > 0) {
-      const randomHit = hitCards[Math.floor(Math.random() * hitCards.length)];
-      if (randomHit.card) {
-        selectedCards.push({
-          id: randomHit.card.id,
-          name: randomHit.card.name || 'Hit Card',
-          imageUrl: randomHit.card.imageUrl || '/card-images/random-common-card.png',
-          tier: randomHit.card.tier || 'C',
-          marketValue: randomHit.card.credits || 100,
-          isHit: true,
-          position: 7
-        });
-        
-        const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === randomHit.id);
-        if (existingDeduction) {
-          existingDeduction.quantity++;
-        } else {
-          cardsToDeduct.push({ classicPackCardId: randomHit.id, quantity: 1 });
-        }
-      }
-    } else if (commonCards.length > 0) {
-      // Fallback: if no hit cards, pick another common
-      const randomCommon = commonCards[Math.floor(Math.random() * commonCards.length)];
-      if (randomCommon.card) {
-        selectedCards.push({
-          id: randomCommon.card.id,
-          name: randomCommon.card.name || 'Common Card',
-          imageUrl: randomCommon.card.imageUrl || '/card-images/random-common-card.png',
-          tier: randomCommon.card.tier || 'D',
-          marketValue: randomCommon.card.credits || 10,
-          isHit: false,
-          position: 7
-        });
-        
-        const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === randomCommon.id);
-        if (existingDeduction) {
-          existingDeduction.quantity++;
-        } else {
-          cardsToDeduct.push({ classicPackCardId: randomCommon.id, quantity: 1 });
-        }
-      }
-    } else {
-      throw new Error('No cards available for classic pack');
-    }
-
-    if (selectedCards.length === 0) {
-      throw new Error('Could not select any cards from the classic pack pool');
-    }
-
-    // Deduct quantities from classicPackCards
-    for (const deduction of cardsToDeduct) {
-      await tx
-        .update(classicPackCards)
-        .set({ quantity: sql`${classicPackCards.quantity} - ${deduction.quantity}` })
-        .where(eq(classicPackCards.id, deduction.classicPackCardId));
-    }
-
-    // Add cards to user's vault (consolidate by card type)
-    const cardQuantities = new Map<string, number>();
-    const cardValues = new Map<string, string>();
-    
-    // Count quantities and track values for each card type
-    for (const card of selectedCards) {
-      const currentQuantity = cardQuantities.get(card.id) || 0;
-      cardQuantities.set(card.id, currentQuantity + 1);
-      cardValues.set(card.id, card.marketValue.toString());
-    }
-    
-    // Add consolidated cards to vault
-    for (const [cardId, quantity] of Array.from(cardQuantities.entries())) {
-      await this.addUserCard({
-        userId,
-        cardId,
-        quantity,
-        pullValue: cardValues.get(cardId) || '0',
-        isRefunded: false,
-        isShipped: false,
+      
+      selectedCards.push({
+        id: selectedCard.card.id,
+        name: selectedCard.card.name || 'Common Card',
+        imageUrl: selectedCard.card.imageUrl || '/card-images/random-common-card.png',
+        tier: selectedCard.card.tier || 'D',
+        marketValue: selectedCard.card.credits || 1,
+        isHit: false,
+        position: i
       });
+      
+      // Track quantity deduction
+      const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === selectedCard.id);
+      if (existingDeduction) {
+        existingDeduction.quantity += 1;
+      } else {
+        cardsToDeduct.push({ classicPackCardId: selectedCard.id, quantity: 1 });
+      }
     }
 
-    // Mark user pack as opened
+    // Add 1 hit card (C tier or above)
+    const hitCards = packCards.filter((pc: any) => pc.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
+    console.log('🎯 Hit cards available:', hitCards.length);
+    
+    let hitCard;
+    if (hitCards.length > 0) {
+      hitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
+    } else {
+      // Fallback: use any available card
+      hitCard = packCards[Math.floor(Math.random() * packCards.length)];
+    }
+    
+    selectedCards.push({
+      id: hitCard.card.id,
+      name: hitCard.card.name || 'Hit Card',
+      imageUrl: hitCard.card.imageUrl || '/card-images/hit.png',
+      tier: hitCard.card.tier || 'C',
+      marketValue: hitCard.card.credits || 100,
+      isHit: true,
+      position: 7
+    });
+    
+    // Track quantity deduction for hit card
+    const existingDeduction = cardsToDeduct.find(d => d.classicPackCardId === hitCard.id);
+    if (existingDeduction) {
+      existingDeduction.quantity += 1;
+    } else {
+      cardsToDeduct.push({ classicPackCardId: hitCard.id, quantity: 1 });
+    }
+
+    // Deduct quantities from classic pack cards
+    console.log('🎯 Deducting quantities from classic pack cards...');
+    for (const deduction of cardsToDeduct) {
+      const currentCard = packCards.find((pc: any) => pc.id === deduction.classicPackCardId);
+      if (currentCard && currentCard.quantity >= deduction.quantity) {
+        await tx
+          .update(classicPackCards)
+          .set({ quantity: currentCard.quantity - deduction.quantity })
+          .where(eq(classicPackCards.id, deduction.classicPackCardId));
+        console.log(`✅ Updated classic pack quantity: ${currentCard.quantity} -> ${currentCard.quantity - deduction.quantity}`);
+      } else {
+        console.log(`⚠️ Warning: Not enough quantity for card ${deduction.classicPackCardId}`);
+      }
+    }
+
+    // Add cards to user's vault (consolidate quantities)
+    console.log('🎯 Adding cards to user vault...');
+    const cardQuantityMap = new Map<string, number>();
+    
+    for (const card of selectedCards) {
+      const currentQuantity = cardQuantityMap.get(card.id) || 0;
+      cardQuantityMap.set(card.id, currentQuantity + 1);
+    }
+
+    for (const [cardId, quantity] of cardQuantityMap.entries()) {
+      const card = selectedCards.find(c => c.id === cardId);
+      if (card) {
+        await this.addUserCard({
+          userId,
+          cardId: card.id,
+          pullValue: card.marketValue.toString(),
+          quantity,
+          pulledAt: new Date(),
+          isRefunded: false,
+          isShipped: false
+        }, tx);
+        console.log(`✅ Added ${quantity}x ${card.name} to user vault`);
+      }
+    }
+
+    // Mark pack as opened
     await tx
       .update(userPacks)
-      .set({ 
-        isOpened: true, 
-        openedAt: new Date() 
-      })
+      .set({ isOpened: true, openedAt: new Date() })
       .where(eq(userPacks.id, userPack.id));
 
-    // Invalidate user packs cache
-    this.cache.delete(CacheKeys.userPacks(userId));
+    // Add hit card to global feed if it's A tier or above
+    const finalHitCard = selectedCards.find(card => card.isHit);
+    if (finalHitCard && ['A', 'S', 'SS', 'SSS'].includes(finalHitCard.tier)) {
+      console.log(`📰 Adding pack pull to global feed: ${finalHitCard.tier} tier card - ${finalHitCard.name}`);
+      await this.addGlobalFeedEntry({
+        userId,
+        cardId: finalHitCard.id,
+        tier: finalHitCard.tier,
+        gameType: 'pack'
+      }, tx);
+      console.log('✅ Successfully added to global feed');
+    }
 
-    // Add to global feed
-    await tx.insert(globalFeed).values({
-      userId,
-      cardId: selectedCards[7]?.id || selectedCards[0].id, // Use hit card or first card
-      tier: selectedCards[7]?.tier || selectedCards[0].tier,
-      gameType: 'classic_pack',
-    });
-
+    console.log('🎯 Classic pack opening complete');
     return {
       userCard: {
         id: '',
@@ -836,11 +832,11 @@ export class DatabaseStorage implements IStorage {
         quantity: 0,
         pulledAt: null,
         isRefunded: null,
-        isShipped: null,
-      }, // Not used in new format
+        isShipped: null
+      },
       packCards: selectedCards,
-      hitCardPosition: 7, // The 8th card (index 7) is the hit card
-      packType: 'classic', // Use classic as the pack type
+      hitCardPosition: 7,
+      packType: 'classic'
     };
   }
 
@@ -921,7 +917,7 @@ export class DatabaseStorage implements IStorage {
             name: selectedCard.card.name || "Common Card",
             imageUrl: selectedCard.card.imageUrl || "/card-images/random-common-card.png",
             tier: selectedCard.card.tier || "D",
-            marketValue: selectedCard.card.credits || 10,
+            marketValue: selectedCard.card.credits || 1,
             isHit: false,
             position: i
           });
@@ -1128,7 +1124,7 @@ export class DatabaseStorage implements IStorage {
           name: randomCommon.card.name || 'Common Card',
           imageUrl: randomCommon.card.imageUrl || '/card-images/random-common-card.png',
           tier: randomCommon.card.tier || 'D',
-          marketValue: randomCommon.card.credits || 10,
+          marketValue: randomCommon.card.credits || 1,
           isHit: false,
           position: 7
         });
@@ -1654,6 +1650,9 @@ export class DatabaseStorage implements IStorage {
         totalSpent: sql`${users.totalSpent} + ${amount}`,
       })
       .where(eq(users.id, userId));
+    
+    // Invalidate user cache to ensure fresh data
+    this.cache.delete(CacheKeys.user(userId));
   }
 
   async deductUserCredits(userId: string, amount: string): Promise<boolean> {
@@ -1664,6 +1663,11 @@ export class DatabaseStorage implements IStorage {
       })
       .where(and(eq(users.id, userId), sql`${users.credits} >= ${amount}`))
       .returning();
+
+    // Invalidate user cache to ensure fresh data
+    if (result.length > 0) {
+      this.cache.delete(CacheKeys.user(userId));
+    }
 
     return result.length > 0;
   }
