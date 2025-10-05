@@ -66,7 +66,7 @@ import {
   type PullRate,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, gt } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { SimpleCache, CacheKeys, CacheTTL } from "./cache/simpleCache";
 
@@ -374,6 +374,8 @@ export class DatabaseStorage implements IStorage {
         pulledAt: userCards.pulledAt,
         isRefunded: userCards.isRefunded,
         isShipped: userCards.isShipped,
+        packId: userCards.packId,
+        packSource: userCards.packSource,
         // Inventory card fields
         card: {
           id: inventory.id,
@@ -394,24 +396,26 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(userCards.pulledAt));
 
-    const finalResult = result.map(row => ({
-      id: row.id,
-      userId: row.userId,
-      cardId: row.cardId,
-      pullValue: row.pullValue,
-      quantity: row.quantity,
-      pulledAt: row.pulledAt,
-      isRefunded: row.isRefunded,
-      isShipped: row.isShipped,
-      card: row.card ? {
-        ...row.card,
-        // Add missing fields that the old cards table had
-        isActive: true,
-        packType: 'inventory',
-        marketValue: row.card.credits.toString(),
-        stock: null,
-      } : null,
-    })) as UserCardWithCard[];
+      const finalResult = result.map(row => ({
+        id: row.id,
+        userId: row.userId,
+        cardId: row.cardId,
+        pullValue: row.pullValue,
+        quantity: row.quantity,
+        pulledAt: row.pulledAt,
+        isRefunded: row.isRefunded,
+        isShipped: row.isShipped,
+        packId: row.packId,
+        packSource: row.packSource,
+        card: row.card ? {
+          ...row.card,
+          // Add missing fields that the old cards table had
+          isActive: true,
+          packType: 'inventory',
+          marketValue: row.card.credits.toString(),
+          stock: null,
+        } : null,
+      })) as UserCardWithCard[];
 
     console.log('🔍 Final getUserCards result:', finalResult.length, 'cards');
     console.log('🔍 Final cards:', finalResult.map(card => ({ id: card.id, name: card.card?.name, quantity: card.quantity })));
@@ -436,13 +440,45 @@ export class DatabaseStorage implements IStorage {
 
         const pullValue = card?.credits || 0;
 
-        // Insert user card into vault
-        await tx.insert(userCards).values({
-          ...userCard,
+        // Check if user already has this card
+        const [existingCard] = await tx
+          .select()
+          .from(userCards)
+          .where(and(
+            eq(userCards.userId, userCard.userId!),
+            eq(userCards.cardId, userCard.cardId!),
+            eq(userCards.isRefunded, false),
+            eq(userCards.isShipped, false)
+          ))
+          .limit(1);
+
+        if (existingCard) {
+          // Update existing card quantity
+          await tx
+            .update(userCards)
+            .set({ 
+              quantity: existingCard.quantity + (userCard.quantity || 1),
+              pulledAt: new Date() // Update the pull time
+            })
+            .where(eq(userCards.id, existingCard.id));
+          
+          console.log(`✅ Updated existing card quantity: ${existingCard.quantity} -> ${existingCard.quantity + (userCard.quantity || 1)}`);
+        } else {
+        // Insert new user card into vault
+        const insertData: any = {
+          userId: userCard.userId,
+          cardId: userCard.cardId,
           pullValue: pullValue.toString(),
+          quantity: userCard.quantity,
           isRefunded: userCard.isRefunded ?? false,
           isShipped: userCard.isShipped ?? false,
-        });
+          packSource: userCard.packSource || null,
+          packId: userCard.packId || null,
+        };
+
+        await tx.insert(userCards).values(insertData);
+          console.log(`✅ Added new card to vault: ${userCard.quantity}x ${userCard.cardId}`);
+        }
         
         // Stock management removed - using inventory system instead
         // if (userCard.cardId) {
@@ -487,6 +523,8 @@ export class DatabaseStorage implements IStorage {
           cardId: userCards.cardId,
           pullValue: userCards.pullValue,
           quantity: userCards.quantity,
+          packSource: userCards.packSource,
+          packId: userCards.packId,
         })
         .from(userCards)
         .where(and(inArray(userCards.id, cardIds), eq(userCards.userId, userId)));
@@ -522,45 +560,139 @@ export class DatabaseStorage implements IStorage {
 
       // OPTIMIZATION: Bulk operations instead of individual queries
       if (cardsToRefund.length > 0) {
-        // Get all inventory card IDs that need to be added back to packs
-        const inventoryCardIds = cardsToRefund
-          .filter(card => card.inventoryCard)
-          .map(card => card.inventoryCard!.id);
-
-        if (inventoryCardIds.length > 0) {
-          // Bulk fetch all pack cards that match the inventory cards
-          const packCards = await tx
-            .select()
-            .from(specialPackCards)
-            .where(inArray(specialPackCards.cardId, inventoryCardIds));
-
-          // Create a map for quick lookup
-          const packCardMap = new Map(packCards.map(pc => [pc.cardId, pc]));
-
-          // Group cards by pack card ID for bulk updates
-          const packUpdates = new Map<string, number>();
+        // Group cards by directory for library-style return system
+        console.log(`🔄 Processing refund for ${cardsToRefund.length} cards`);
+        console.log(`📚 Library system: Grouping cards by directory for return`);
+        
+        const cardsByDirectory = new Map<string, typeof cardsToRefund>();
+        
+        for (const card of cardsToRefund) {
+          const directory = card.directory || 'Mystery Pack'; // Default to Mystery Pack for backward compatibility
+          const packSource = card.packSource || 'special';
+          const directoryKey = `${directory}:${packSource}`;
           
-          for (const card of cardsToRefund) {
-            if (card.inventoryCard) {
-              const packCard = packCardMap.get(card.inventoryCard.id);
-              if (packCard) {
-                const currentQuantity = packUpdates.get(packCard.id) || 0;
-                packUpdates.set(packCard.id, currentQuantity + (card.quantity || 1));
+          if (!cardsByDirectory.has(directoryKey)) {
+            cardsByDirectory.set(directoryKey, []);
+          }
+          cardsByDirectory.get(directoryKey)!.push(card);
+        }
+
+        // Process each directory separately (library-style return)
+        for (const [directoryKey, cards] of Array.from(cardsByDirectory.entries())) {
+          const [directory, packSource] = directoryKey.split(':');
+          console.log(`📚 Library system: Processing refund for ${cards.length} cards from directory: ${directory} (${packSource} pack)`);
+          
+          const inventoryCardIds = cards
+            .filter(card => card.inventoryCard)
+            .map(card => card.inventoryCard!.id);
+
+          if (inventoryCardIds.length > 0) {
+            if (packSource === 'classic') {
+              // Handle classic pack cards for specific directory
+              const packCards = await tx
+                .select()
+                .from(classicPackCards)
+                .where(and(
+                  inArray(classicPackCards.cardId, inventoryCardIds),
+                  eq(classicPackCards.directory, directory)
+                ));
+
+              const packCardMap = new Map(packCards.map(pc => [pc.cardId, pc]));
+              const packUpdates = new Map<string, number>();
+              
+              for (const card of cards) {
+                if (card.inventoryCard) {
+                  const packCard = packCardMap.get(card.inventoryCard.id);
+                  if (packCard) {
+                    const currentQuantity = packUpdates.get(packCard.id) || 0;
+                    packUpdates.set(packCard.id, currentQuantity + (card.quantity || 1));
+                  }
+                }
               }
+
+              // Bulk update classic pack quantities
+              for (const [packCardId, totalQuantity] of Array.from(packUpdates.entries())) {
+                await tx
+                  .update(classicPackCards)
+                  .set({ 
+                    quantity: sql`${classicPackCards.quantity} + ${totalQuantity}` 
+                  })
+                  .where(eq(classicPackCards.id, packCardId));
+              }
+
+              console.log(`✅ Bulk updated ${packUpdates.size} classic pack cards with refunded quantities for directory: ${directory}`);
+              
+            } else if (packSource === 'mystery') {
+              // Handle mystery pack cards for specific directory
+              const packCards = await tx
+                .select()
+                .from(mysteryPackCards)
+                .where(and(
+                  inArray(mysteryPackCards.cardId, inventoryCardIds),
+                  eq(mysteryPackCards.directory, directory)
+                ));
+
+              const packCardMap = new Map(packCards.map(pc => [pc.cardId, pc]));
+              const packUpdates = new Map<string, number>();
+              
+              for (const card of cards) {
+                if (card.inventoryCard) {
+                  const packCard = packCardMap.get(card.inventoryCard.id);
+                  if (packCard) {
+                    const currentQuantity = packUpdates.get(packCard.id) || 0;
+                    packUpdates.set(packCard.id, currentQuantity + (card.quantity || 1));
+                  }
+                }
+              }
+
+              // Bulk update mystery pack quantities
+              for (const [packCardId, totalQuantity] of Array.from(packUpdates.entries())) {
+                await tx
+                  .update(mysteryPackCards)
+                  .set({ 
+                    quantity: sql`${mysteryPackCards.quantity} + ${totalQuantity}` 
+                  })
+                  .where(eq(mysteryPackCards.id, packCardId));
+              }
+
+              console.log(`✅ Bulk updated ${packUpdates.size} mystery pack cards with refunded quantities for directory: ${directory}`);
+              
+            } else {
+              // Handle special pack cards for specific directory
+              const packCards = await tx
+                .select()
+                .from(specialPackCards)
+                .where(and(
+                  inArray(specialPackCards.cardId, inventoryCardIds),
+                  eq(specialPackCards.directory, directory)
+                ));
+
+              const packCardMap = new Map(packCards.map(pc => [pc.cardId, pc]));
+              const packUpdates = new Map<string, number>();
+              
+              for (const card of cards) {
+                if (card.inventoryCard) {
+                  const packCard = packCardMap.get(card.inventoryCard.id);
+                  if (packCard) {
+                    const currentQuantity = packUpdates.get(packCard.id) || 0;
+                    packUpdates.set(packCard.id, currentQuantity + (card.quantity || 1));
+                  }
+                }
+              }
+
+              // Bulk update special pack quantities
+              for (const [packCardId, totalQuantity] of Array.from(packUpdates.entries())) {
+                await tx
+                  .update(specialPackCards)
+                  .set({ 
+                    quantity: sql`${specialPackCards.quantity} + ${totalQuantity}` 
+                  })
+                  .where(eq(specialPackCards.id, packCardId));
+              }
+
+              console.log(`✅ Bulk updated ${packUpdates.size} special pack cards with refunded quantities for directory: ${directory}`);
             }
           }
-
-          // Bulk update pack quantities
-          for (const [packCardId, totalQuantity] of Array.from(packUpdates.entries())) {
-            await tx
-              .update(specialPackCards)
-              .set({ 
-                quantity: sql`${specialPackCards.quantity} + ${totalQuantity}` 
-              })
-              .where(eq(specialPackCards.id, packCardId));
-          }
-
-          console.log(`✅ Bulk updated ${packUpdates.size} pack cards with refunded quantities`);
         }
       }
 
@@ -668,7 +800,7 @@ export class DatabaseStorage implements IStorage {
   private async openClassicPack(tx: any, userPack: any, classicPack: any, userId: string): Promise<PackOpenResult> {
     console.log('🎯 Opening classic pack:', classicPack.name);
     
-    // Get all cards in the classic pack pool
+    // Get all cards in the classic pack pool with quantity > 0
     const packCards = await tx
       .select({
         id: classicPackCards.id,
@@ -688,31 +820,83 @@ export class DatabaseStorage implements IStorage {
       })
       .from(classicPackCards)
       .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
-      .where(eq(classicPackCards.packId, classicPack.id));
+      .where(
+        and(
+          eq(classicPackCards.packId, classicPack.id),
+          gt(classicPackCards.quantity, 0) // Only include cards with quantity > 0
+        )
+      );
 
-    console.log('🎯 Available pack cards:', packCards.length);
+    console.log('🎯 Available pack cards (quantity > 0):', packCards.length);
+    console.log('🎯 Pack cards details:', packCards.map((pc: any) => ({ 
+      name: pc.card.name, 
+      tier: pc.card.tier, 
+      quantity: pc.quantity 
+    })));
     
     if (packCards.length === 0) {
       throw new Error('No cards available in classic pack');
+    }
+
+        // Use fixed Pokeball Mystery Pack odds for Black Bolt pack
+        const baseOdds = {
+          "SSS": 0.005,
+          "SS": 0.015, 
+          "S": 0.03,
+          "A": 0.05,
+          "B": 0.10,
+          "C": 0.20,
+          "D": 0.60
+        };
+        console.log('🎯 Using fixed Pokeball Mystery Pack odds:', baseOdds);
+        
+    // Group cards by tier for selection
+    const cardsByTier: { [key: string]: any[] } = {};
+    for (const pc of packCards) {
+      const tier = pc.card?.tier || 'D';
+      if (!cardsByTier[tier]) {
+        cardsByTier[tier] = [];
+      }
+      cardsByTier[tier].push(pc);
+    }
+    
+    console.log('🎯 Cards by tier:', cardsByTier);
+    console.log('🎯 Cards by tier details:', Object.keys(cardsByTier).map(tier => ({
+      tier,
+      count: cardsByTier[tier].length,
+      cards: cardsByTier[tier].map(pc => ({ name: pc.card.name, quantity: pc.quantity }))
+    })));
+    
+    // Check if we have cards for each required tier with quantity > 0
+    const requiredTiers = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+    const missingTiers = requiredTiers.filter(tier => {
+      const tierCards = cardsByTier[tier];
+      if (!tierCards || tierCards.length === 0) {
+        return true; // No cards in this tier
+      }
+      // Check if any card in this tier has quantity > 0
+      const hasAvailableCards = tierCards.some(pc => pc.quantity > 0);
+      return !hasAvailableCards; // No cards with quantity > 0
+    });
+    
+    if (missingTiers.length > 0) {
+      throw new Error(`No cards available in tier(s): ${missingTiers.join(', ')}`);
     }
 
     // Create 8 cards: 7 commons + 1 hit
     const selectedCards = [];
     const cardsToDeduct: { classicPackCardId: string; quantity: number }[] = [];
     
-    // Add 7 common cards (D tier)
-    const commonCards = packCards.filter((pc: any) => pc.card?.tier === 'D');
-    console.log('🎯 Common cards available:', commonCards.length);
+        // Add 7 common cards (D tier) - always use D tier for common positions
+        const commonCards = cardsByTier['D'] || [];
+        console.log('🎯 Common cards available:', commonCards.length);
+        
+        if (commonCards.length === 0) {
+          throw new Error('No common cards (D tier) found in classic pack');
+        }
     
     for (let i = 0; i < 7; i++) {
-      let selectedCard;
-      
-      if (commonCards.length > 0) {
-        selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
-      } else {
-        // Fallback: use any available card
-        selectedCard = packCards[Math.floor(Math.random() * packCards.length)];
-      }
+      const selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
       
       selectedCards.push({
         id: selectedCard.card.id,
@@ -733,17 +917,59 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Add 1 hit card (C tier or above)
-    const hitCards = packCards.filter((pc: any) => pc.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
-    console.log('🎯 Hit cards available:', hitCards.length);
-    
-    let hitCard;
-    if (hitCards.length > 0) {
-      hitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
-    } else {
-      // Fallback: use any available card
-      hitCard = packCards[Math.floor(Math.random() * packCards.length)];
-    }
+        // Add 1 hit card using ODDS-BASED selection (not quantity-based)
+        const allHitCards = packCards.filter((pc: any) => pc.card && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
+        console.log('🎯 Hit cards available:', allHitCards.length);
+        
+        if (allHitCards.length === 0) {
+          throw new Error('No hit cards (C+ tier) found in classic pack');
+        }
+        
+        // ODDS-BASED SELECTION: First select tier based on fixed odds, then select any card from that tier
+        const hitTiers = ['SSS', 'SS', 'S', 'A', 'B', 'C'];
+        const hitWeights: { [key: string]: number } = {};
+        let totalHitWeight = 0;
+        
+        // Use fixed odds regardless of quantity
+        for (const tier of hitTiers) {
+          if (cardsByTier[tier] && cardsByTier[tier].length > 0) {
+            hitWeights[tier] = baseOdds[tier as keyof typeof baseOdds] || 0;
+            totalHitWeight += hitWeights[tier];
+            console.log(`🎯 Tier ${tier}: ${cardsByTier[tier].length} cards, weight: ${hitWeights[tier]}`);
+          } else {
+            console.log(`🎯 Tier ${tier}: No cards available`);
+          }
+        }
+        
+        console.log('🎯 Hit tier weights (odds-based):', hitWeights);
+        console.log('🎯 Total hit weight:', totalHitWeight);
+        
+        // Select hit card tier using weighted random selection based on ODDS
+        const random = Math.random() * totalHitWeight;
+        let cumulativeWeight = 0;
+        let selectedTier = 'C'; // fallback
+        
+        for (const tier of hitTiers) {
+          if (hitWeights[tier]) {
+            cumulativeWeight += hitWeights[tier];
+            if (random <= cumulativeWeight) {
+              selectedTier = tier;
+              break;
+            }
+          }
+        }
+        
+        console.log('🎯 Selected hit tier (odds-based):', selectedTier);
+        
+        // Select a card from the selected tier that has quantity > 0
+        const tierCards = cardsByTier[selectedTier];
+        const availableTierCards = tierCards.filter((pc: any) => pc.quantity > 0);
+        
+        if (availableTierCards.length === 0) {
+          throw new Error(`No cards available in ${selectedTier} tier (all have quantity = 0)`);
+        }
+        
+        const hitCard = availableTierCards[Math.floor(Math.random() * availableTierCards.length)];
     
     selectedCards.push({
       id: hitCard.card.id,
@@ -765,16 +991,20 @@ export class DatabaseStorage implements IStorage {
 
     // Deduct quantities from classic pack cards
     console.log('🎯 Deducting quantities from classic pack cards...');
+    console.log('🎯 Cards to deduct:', JSON.stringify(cardsToDeduct, null, 2));
     for (const deduction of cardsToDeduct) {
+      console.log(`🎯 Looking for pack card with ID: ${deduction.classicPackCardId}`);
       const currentCard = packCards.find((pc: any) => pc.id === deduction.classicPackCardId);
+      console.log(`🎯 Found pack card:`, currentCard ? { id: currentCard.id, cardId: currentCard.cardId, quantity: currentCard.quantity } : 'NOT FOUND');
       if (currentCard && currentCard.quantity >= deduction.quantity) {
         await tx
           .update(classicPackCards)
           .set({ quantity: currentCard.quantity - deduction.quantity })
           .where(eq(classicPackCards.id, deduction.classicPackCardId));
-        console.log(`✅ Updated classic pack quantity: ${currentCard.quantity} -> ${currentCard.quantity - deduction.quantity}`);
+        console.log(`✅ Updated classic pack card ${deduction.classicPackCardId} quantity: ${currentCard.quantity} -> ${currentCard.quantity - deduction.quantity}`);
       } else {
-        console.log(`⚠️ Warning: Not enough quantity for card ${deduction.classicPackCardId}`);
+        console.log(`❌ ERROR: Not enough quantity for card ${deduction.classicPackCardId}. Current: ${currentCard?.quantity || 0}, Required: ${deduction.quantity}`);
+        throw new Error(`Not enough quantity for card ${deduction.classicPackCardId}. Current: ${currentCard?.quantity || 0}, Required: ${deduction.quantity}`);
       }
     }
 
@@ -787,7 +1017,7 @@ export class DatabaseStorage implements IStorage {
       cardQuantityMap.set(card.id, currentQuantity + 1);
     }
 
-    for (const [cardId, quantity] of cardQuantityMap.entries()) {
+        for (const [cardId, quantity] of Array.from(cardQuantityMap.entries())) {
       const card = selectedCards.find(c => c.id === cardId);
       if (card) {
         await this.addUserCard({
@@ -795,11 +1025,12 @@ export class DatabaseStorage implements IStorage {
           cardId: card.id,
           pullValue: card.marketValue.toString(),
           quantity,
-          pulledAt: new Date(),
           isRefunded: false,
-          isShipped: false
-        }, tx);
-        console.log(`✅ Added ${quantity}x ${card.name} to user vault`);
+          isShipped: false,
+          packSource: 'classic',
+          packId: classicPack.id
+        });
+        console.log(`✅ Added ${quantity}x ${card.name} to user vault from classic pack: ${classicPack.name} (${classicPack.id})`);
       }
     }
 
@@ -813,12 +1044,12 @@ export class DatabaseStorage implements IStorage {
     const finalHitCard = selectedCards.find(card => card.isHit);
     if (finalHitCard && ['A', 'S', 'SS', 'SSS'].includes(finalHitCard.tier)) {
       console.log(`📰 Adding pack pull to global feed: ${finalHitCard.tier} tier card - ${finalHitCard.name}`);
-      await this.addGlobalFeedEntry({
-        userId,
-        cardId: finalHitCard.id,
-        tier: finalHitCard.tier,
-        gameType: 'pack'
-      }, tx);
+          await this.addGlobalFeedEntry({
+            userId,
+            cardId: finalHitCard.id,
+            tier: finalHitCard.tier,
+            gameType: 'pack'
+          });
       console.log('✅ Successfully added to global feed');
     }
 
@@ -832,7 +1063,10 @@ export class DatabaseStorage implements IStorage {
         quantity: 0,
         pulledAt: null,
         isRefunded: null,
-        isShipped: null
+        isShipped: null,
+        packId: null,
+        packSource: null,
+        directory: null
       },
       packCards: selectedCards,
       hitCardPosition: 7,
@@ -840,21 +1074,304 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  private async openSpecialPack(tx: any, userPack: any, specialPack: any, userId: string): Promise<PackOpenResult> {
+    console.log('🎯 Opening special pack:', specialPack.name);
+    console.log('📚 Library system: Looking for cards in directory:', specialPack.name);
+    
+    // Get all cards in the special pack pool with quantity > 0 and matching directory
+    const packCards = await tx
+      .select({
+        id: specialPackCards.id,
+        packId: specialPackCards.packId,
+        cardId: specialPackCards.cardId,
+        quantity: specialPackCards.quantity,
+        directory: specialPackCards.directory,
+        createdAt: specialPackCards.createdAt,
+        card: {
+          id: inventory.id,
+          name: inventory.name,
+          imageUrl: inventory.imageUrl,
+          credits: inventory.credits,
+          tier: inventory.tier,
+          createdAt: inventory.createdAt,
+          updatedAt: inventory.updatedAt,
+        }
+      })
+      .from(specialPackCards)
+      .innerJoin(inventory, eq(specialPackCards.cardId, inventory.id))
+      .where(
+        and(
+          eq(specialPackCards.packId, specialPack.id),
+          eq(specialPackCards.directory, specialPack.name), // Library system: Only cards from this directory
+          gt(specialPackCards.quantity, 0) // Only include cards with quantity > 0
+        )
+      );
+
+    console.log('🎯 Available special pack cards (quantity > 0):', packCards.length);
+    console.log('🎯 Special pack cards details:', packCards.map((pc: any) => ({ 
+      name: pc.card.name, 
+      tier: pc.card.tier, 
+      quantity: pc.quantity 
+    })));
+    
+    if (packCards.length === 0) {
+      throw new Error('No cards available in special pack');
+    }
+
+    // Use fixed Pokeball Mystery Pack odds for special packs
+    const baseOdds = {
+      "SSS": 0.005,
+      "SS": 0.015, 
+      "S": 0.03,
+      "A": 0.05,
+      "B": 0.10,
+      "C": 0.20,
+      "D": 0.60
+    };
+    console.log('🎯 Using fixed Pokeball Mystery Pack odds:', baseOdds);
+    
+    // Group cards by tier for selection
+    const cardsByTier: { [key: string]: any[] } = {};
+    for (const pc of packCards) {
+      const tier = pc.card?.tier || 'D';
+      if (!cardsByTier[tier]) {
+        cardsByTier[tier] = [];
+      }
+      cardsByTier[tier].push(pc);
+    }
+    
+    console.log('🎯 Cards by tier:', cardsByTier);
+    console.log('🎯 Cards by tier details:', Object.keys(cardsByTier).map(tier => ({
+      tier,
+      count: cardsByTier[tier].length,
+      cards: cardsByTier[tier].map(pc => ({ name: pc.card.name, quantity: pc.quantity }))
+    })));
+    
+    // Check if we have cards for each required tier with quantity > 0
+    const requiredTiers = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+    const missingTiers = requiredTiers.filter(tier => {
+      const tierCards = cardsByTier[tier];
+      if (!tierCards || tierCards.length === 0) {
+        return true; // No cards in this tier
+      }
+      // Check if any card in this tier has quantity > 0
+      const hasAvailableCards = tierCards.some(pc => pc.quantity > 0);
+      return !hasAvailableCards; // No cards with quantity > 0
+    });
+    
+    if (missingTiers.length > 0) {
+      throw new Error(`No cards available in tier(s): ${missingTiers.join(', ')}`);
+    }
+
+    // Create 8 cards: 7 commons + 1 hit
+    const selectedCards = [];
+    const cardsToDeduct: { specialPackCardId: string; quantity: number }[] = [];
+    
+    // Add 7 common cards (D tier) - always use D tier for common positions
+    const commonCards = cardsByTier['D'] || [];
+    console.log('🎯 Common cards available:', commonCards.length);
+    
+    if (commonCards.length === 0) {
+      throw new Error('No common cards (D tier) found in special pack');
+    }
+
+    for (let i = 0; i < 7; i++) {
+      const selectedCard = commonCards[Math.floor(Math.random() * commonCards.length)];
+      
+      selectedCards.push({
+        id: selectedCard.card.id,
+        name: selectedCard.card.name || 'Common Card',
+        imageUrl: selectedCard.card.imageUrl || '/card-images/random-common-card.png',
+        tier: selectedCard.card.tier || 'D',
+        marketValue: selectedCard.card.credits || 1,
+        isHit: false,
+        position: i
+      });
+      
+      // Track quantity deduction
+      const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === selectedCard.id);
+      if (existingDeduction) {
+        existingDeduction.quantity += 1;
+      } else {
+        cardsToDeduct.push({ specialPackCardId: selectedCard.id, quantity: 1 });
+      }
+    }
+
+    // Add 1 hit card using ODDS-BASED selection (not quantity-based)
+    const allHitCards = packCards.filter((pc: any) => pc.card && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(pc.card.tier));
+    console.log('🎯 Hit cards available:', allHitCards.length);
+    
+    if (allHitCards.length === 0) {
+      throw new Error('No hit cards (C+ tier) found in special pack');
+    }
+    
+    // ODDS-BASED SELECTION: First select tier based on fixed odds, then select any card from that tier
+    const hitTiers = ['SSS', 'SS', 'S', 'A', 'B', 'C'];
+    const hitWeights: { [key: string]: number } = {};
+    let totalHitWeight = 0;
+    
+    // Use fixed odds regardless of quantity
+    for (const tier of hitTiers) {
+      if (cardsByTier[tier] && cardsByTier[tier].length > 0) {
+        hitWeights[tier] = baseOdds[tier as keyof typeof baseOdds] || 0;
+        totalHitWeight += hitWeights[tier];
+        console.log(`🎯 Tier ${tier}: ${cardsByTier[tier].length} cards, weight: ${hitWeights[tier]}`);
+      } else {
+        console.log(`🎯 Tier ${tier}: No cards available`);
+      }
+    }
+    
+    console.log('🎯 Hit tier weights (odds-based):', hitWeights);
+    console.log('🎯 Total hit weight:', totalHitWeight);
+    
+    // Select hit card tier using weighted random selection based on ODDS
+    const random = Math.random() * totalHitWeight;
+    let cumulativeWeight = 0;
+    let selectedTier = 'C'; // fallback
+    
+    for (const tier of hitTiers) {
+      if (hitWeights[tier]) {
+        cumulativeWeight += hitWeights[tier];
+        if (random <= cumulativeWeight) {
+          selectedTier = tier;
+          break;
+        }
+      }
+    }
+    
+    console.log('🎯 Selected hit tier (odds-based):', selectedTier);
+    
+    // Select a card from the selected tier that has quantity > 0
+    const tierCards = cardsByTier[selectedTier];
+    const availableTierCards = tierCards.filter((pc: any) => pc.quantity > 0);
+    
+    if (availableTierCards.length === 0) {
+      throw new Error(`No cards available in ${selectedTier} tier (all have quantity = 0)`);
+    }
+    
+    const hitCard = availableTierCards[Math.floor(Math.random() * availableTierCards.length)];
+
+    selectedCards.push({
+      id: hitCard.card.id,
+      name: hitCard.card.name || 'Hit Card',
+      imageUrl: hitCard.card.imageUrl || '/card-images/hit.png',
+      tier: hitCard.card.tier || 'C',
+      marketValue: hitCard.card.credits || 100,
+      isHit: true,
+      position: 7
+    });
+    
+    // Track quantity deduction for hit card
+    const existingDeduction = cardsToDeduct.find(d => d.specialPackCardId === hitCard.id);
+    if (existingDeduction) {
+      existingDeduction.quantity += 1;
+    } else {
+      cardsToDeduct.push({ specialPackCardId: hitCard.id, quantity: 1 });
+    }
+
+    // Deduct quantities from special pack cards
+    console.log('🎯 Deducting quantities from special pack cards...');
+    console.log('🎯 Cards to deduct:', JSON.stringify(cardsToDeduct, null, 2));
+    for (const deduction of cardsToDeduct) {
+      console.log(`🎯 Looking for pack card with ID: ${deduction.specialPackCardId}`);
+      const currentCard = packCards.find((pc: any) => pc.id === deduction.specialPackCardId);
+      console.log(`🎯 Found pack card:`, currentCard ? { id: currentCard.id, cardId: currentCard.cardId, quantity: currentCard.quantity } : 'NOT FOUND');
+      if (currentCard && currentCard.quantity >= deduction.quantity) {
+        await tx
+          .update(specialPackCards)
+          .set({ quantity: currentCard.quantity - deduction.quantity })
+          .where(eq(specialPackCards.id, deduction.specialPackCardId));
+        console.log(`✅ Updated special pack card ${deduction.specialPackCardId} quantity: ${currentCard.quantity} -> ${currentCard.quantity - deduction.quantity}`);
+      } else {
+        console.log(`❌ ERROR: Not enough quantity for card ${deduction.specialPackCardId}. Current: ${currentCard?.quantity || 0}, Required: ${deduction.quantity}`);
+        throw new Error(`Not enough quantity for card ${deduction.specialPackCardId}. Current: ${currentCard?.quantity || 0}, Required: ${deduction.quantity}`);
+      }
+    }
+
+    // Add cards to user's vault (consolidate quantities)
+    console.log('🎯 Adding cards to user vault...');
+    const cardQuantityMap = new Map<string, number>();
+    
+    for (const card of selectedCards) {
+      const currentQuantity = cardQuantityMap.get(card.id) || 0;
+      cardQuantityMap.set(card.id, currentQuantity + 1);
+    }
+
+        for (const [cardId, quantity] of Array.from(cardQuantityMap.entries())) {
+      const card = selectedCards.find(c => c.id === cardId);
+      if (card) {
+        await this.addUserCard({
+          userId,
+          cardId: card.id,
+          pullValue: card.marketValue.toString(),
+          quantity,
+          isRefunded: false,
+          isShipped: false,
+          packSource: 'special',
+          packId: specialPack.id,
+          directory: specialPack.name // Library system: Store directory for return tracking
+        });
+        console.log(`✅ Added ${quantity}x ${card.name} to user vault from special pack: ${specialPack.name} (${specialPack.id}) - Directory: ${specialPack.name}`);
+      }
+    }
+
+    // Mark pack as opened
+    await tx
+      .update(userPacks)
+      .set({ isOpened: true, openedAt: new Date() })
+      .where(eq(userPacks.id, userPack.id));
+
+    // Add hit card to global feed if it's A tier or above
+    const finalHitCard = selectedCards.find(card => card.isHit);
+    if (finalHitCard && ['A', 'S', 'SS', 'SSS'].includes(finalHitCard.tier)) {
+      await tx.insert(globalFeed).values({
+        userId,
+        cardId: finalHitCard.id,
+        tier: finalHitCard.tier,
+        gameType: 'pack'
+      });
+    }
+
+    // Invalidate user packs cache
+    this.cache.delete(CacheKeys.userPacks(userId));
+
+    return {
+      userCard: {
+        id: '',
+        userId: null,
+        cardId: null,
+        pullValue: '0',
+        quantity: 0,
+        pulledAt: null,
+        isRefunded: null,
+        isShipped: null,
+        packId: null,
+        packSource: null,
+        directory: null
+      },
+      packCards: selectedCards,
+      hitCardPosition: 7, // The 8th card (index 7) is the hit card
+      packType: 'special',
+    };
+  }
+
   private async openMysteryPack(tx: any, userPack: any, mysteryPack: any, userId: string): Promise<PackOpenResult> {
     console.log('🎲 Opening mystery pack:', mysteryPack.subtype);
+    console.log('📚 Library system: Looking for cards in directory: Mystery Pack');
     
     // Use the base mystery pack ID to get cards from the shared pool
     const basePackId = '00000000-0000-0000-0000-000000000001';
     console.log('🎲 Using base mystery pack ID for shared cards:', basePackId);
     console.log('🎲 Pack subtype for odds:', mysteryPack.subtype);
     
-    // Get all cards in the shared mystery pack pool
+    // Get all cards in the shared mystery pack pool with quantity > 0 and matching directory
     const packCards = await tx
       .select({
         id: mysteryPackCards.id,
         packId: mysteryPackCards.packId,
         cardId: mysteryPackCards.cardId,
         quantity: mysteryPackCards.quantity,
+        directory: mysteryPackCards.directory,
         createdAt: mysteryPackCards.createdAt,
         card: {
           id: inventory.id,
@@ -868,7 +1385,13 @@ export class DatabaseStorage implements IStorage {
       })
         .from(mysteryPackCards)
         .innerJoin(inventory, eq(mysteryPackCards.cardId, inventory.id))
-        .where(eq(mysteryPackCards.packId, basePackId));
+        .where(
+          and(
+            eq(mysteryPackCards.packId, basePackId),
+            eq(mysteryPackCards.directory, 'Mystery Pack'), // Library system: Only cards from Mystery Pack directory
+            gt(mysteryPackCards.quantity, 0) // Only include cards with quantity > 0
+          )
+        );
 
     console.log('🎲 Found pack cards:', packCards.length);
     console.log('🎲 Pack cards details:', packCards.map((pc: any) => ({ id: pc.id, cardName: pc.card?.name, quantity: pc.quantity })));
@@ -877,7 +1400,34 @@ export class DatabaseStorage implements IStorage {
       throw new Error('No cards available in mystery pack');
     }
 
-    console.log('🎲 Available cards in shared pool:', packCards.map((pc: any) => ({ name: pc.card.name, tier: pc.card.tier, quantity: pc.quantity })));
+    console.log('🎲 Available cards in shared pool:', packCards.length);
+    console.log('🎲 Pack cards details:', packCards.map((pc: any) => ({ name: pc.card.name, tier: pc.card.tier, quantity: pc.quantity })));
+
+    // Check if we have cards for each required tier with quantity > 0
+    const requiredTiers = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+    const cardsByTier: { [key: string]: any[] } = {};
+    for (const pc of packCards) {
+      const tier = pc.card?.tier || 'D';
+      if (!cardsByTier[tier]) {
+        cardsByTier[tier] = [];
+      }
+      cardsByTier[tier].push(pc);
+    }
+    
+    // Check for tiers with no cards OR no cards with quantity > 0
+    const missingTiers = requiredTiers.filter(tier => {
+      const tierCards = cardsByTier[tier];
+      if (!tierCards || tierCards.length === 0) {
+        return true; // No cards in this tier
+      }
+      // Check if any card in this tier has quantity > 0
+      const hasAvailableCards = tierCards.some(pc => pc.quantity > 0);
+      return !hasAvailableCards; // No cards with quantity > 0
+    });
+    
+    if (missingTiers.length > 0) {
+      throw new Error(`No cards available in tier(s): ${missingTiers.join(', ')}`);
+    }
 
     // Fetch the latest odds from the database to ensure we have the most up-to-date values
     const [latestMysteryPack] = await tx
@@ -989,7 +1539,13 @@ export class DatabaseStorage implements IStorage {
                 
                 if (masterballRandom <= cumulativeWeight) {
                   selectedTier = tier;
-                  selectedHitCard = masterballCardsByTier[tier][Math.floor(Math.random() * masterballCardsByTier[tier].length)];
+                  // Only select cards with quantity > 0
+                  const availableTierCards = masterballCardsByTier[tier].filter((pc: any) => pc.quantity > 0);
+                  if (availableTierCards.length === 0) {
+                    console.warn(`No cards available in ${tier} tier (all have quantity = 0), trying next tier`);
+                    continue;
+                  }
+                  selectedHitCard = availableTierCards[Math.floor(Math.random() * availableTierCards.length)];
                   console.log(`🎯 Selected ${tier} tier hit card for Masterball!`);
                   break;
                 }
@@ -999,12 +1555,21 @@ export class DatabaseStorage implements IStorage {
             // Fallback if no tier was selected
             if (!selectedHitCard) {
               console.warn('No Masterball hit card tier selected by weight, using fallback');
-              const availableTiers = Object.keys(masterballCardsByTier).filter(tier => masterballCardsByTier[tier].length > 0);
+              const availableTiers = Object.keys(masterballCardsByTier).filter(tier => {
+                const tierCards = masterballCardsByTier[tier];
+                return tierCards.length > 0 && tierCards.some((pc: any) => pc.quantity > 0);
+              });
               if (availableTiers.length > 0) {
                 selectedTier = availableTiers[0];
-                selectedHitCard = masterballCardsByTier[selectedTier][Math.floor(Math.random() * masterballCardsByTier[selectedTier].length)];
+                const availableTierCards = masterballCardsByTier[selectedTier].filter((pc: any) => pc.quantity > 0);
+                selectedHitCard = availableTierCards[Math.floor(Math.random() * availableTierCards.length)];
               } else {
-                selectedHitCard = masterballHitCards[0];
+                // Find any card with quantity > 0
+                const availableCards = masterballHitCards.filter((pc: any) => pc.quantity > 0);
+                if (availableCards.length === 0) {
+                  throw new Error('No cards available in Masterball pack (all have quantity = 0)');
+                }
+                selectedHitCard = availableCards[0];
               }
             }
             
@@ -1075,7 +1640,13 @@ export class DatabaseStorage implements IStorage {
               
               if (hitRandom <= cumulativeWeight) {
                 selectedTier = tier;
-                selectedHitCard = cardsByTier[tier][Math.floor(Math.random() * cardsByTier[tier].length)];
+                // Only select cards with quantity > 0
+                const availableTierCards = cardsByTier[tier].filter((pc: any) => pc.quantity > 0);
+                if (availableTierCards.length === 0) {
+                  console.warn(`No cards available in ${tier} tier (all have quantity = 0), trying next tier`);
+                  continue;
+                }
+                selectedHitCard = availableTierCards[Math.floor(Math.random() * availableTierCards.length)];
                 console.log(`🎯 Selected ${tier} tier hit card!`);
                 break;
               }
@@ -1085,12 +1656,21 @@ export class DatabaseStorage implements IStorage {
           // Fallback if no tier was selected
           if (!selectedHitCard) {
             console.warn('No hit card tier selected by weight, using fallback');
-            const availableTiers = Object.keys(cardsByTier).filter(tier => cardsByTier[tier].length > 0);
+            const availableTiers = Object.keys(cardsByTier).filter(tier => {
+              const tierCards = cardsByTier[tier];
+              return tierCards.length > 0 && tierCards.some((pc: any) => pc.quantity > 0);
+            });
             if (availableTiers.length > 0) {
               selectedTier = availableTiers[0];
-              selectedHitCard = cardsByTier[selectedTier][Math.floor(Math.random() * cardsByTier[selectedTier].length)];
+              const availableTierCards = cardsByTier[selectedTier].filter((pc: any) => pc.quantity > 0);
+              selectedHitCard = availableTierCards[Math.floor(Math.random() * availableTierCards.length)];
             } else {
-              selectedHitCard = allHitCards[0];
+              // Find any card with quantity > 0
+              const availableCards = allHitCards.filter((pc: any) => pc.quantity > 0);
+              if (availableCards.length === 0) {
+                throw new Error('No cards available in mystery pack (all have quantity = 0)');
+              }
+              selectedHitCard = availableCards[0];
             }
           }
           
@@ -1185,6 +1765,9 @@ export class DatabaseStorage implements IStorage {
         pullValue: cardValues.get(cardId) || '0',
         isRefunded: false,
         isShipped: false,
+        packSource: 'mystery',
+        packId: mysteryPack.id,
+        directory: 'Mystery Pack' // Library system: Store directory for return tracking
       });
     }
 
@@ -1218,6 +1801,9 @@ export class DatabaseStorage implements IStorage {
         pulledAt: null,
         isRefunded: null,
         isShipped: null,
+        packId: null,
+        packSource: null,
+        directory: null
       }, // Not used in new format
       packCards: selectedCards,
       hitCardPosition: 7, // The 8th card (index 7) is the hit card
@@ -1270,6 +1856,18 @@ export class DatabaseStorage implements IStorage {
         if (classicPack.length > 0) {
           // This is a classic pack - handle it with the new logic
           return await this.openClassicPack(tx, userPack, classicPack[0], userId);
+        }
+
+        // Check if it's a special pack
+        const specialPack = await tx
+          .select()
+          .from(specialPacks)
+          .where(eq(specialPacks.id, userPack.packId))
+          .limit(1);
+
+        if (specialPack.length > 0) {
+          // This is a special pack - handle it with the new logic
+          return await this.openSpecialPack(tx, userPack, specialPack[0], userId);
         }
 
         // Regular pack logic continues below

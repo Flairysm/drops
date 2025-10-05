@@ -23,7 +23,8 @@ import {
   Plus,
   X,
   Eye,
-  Save
+  Save,
+  RefreshCw
 } from "lucide-react";
 
 export default function Admin() {
@@ -252,6 +253,108 @@ export default function Admin() {
     }));
   };
 
+  // Save all quantity changes for Classic Packs
+  const handleSaveAllQuantitiesClassic = async () => {
+    if (Object.keys(editingQuantity).length === 0) {
+      alert('No changes to save.');
+      return;
+    }
+
+    if (!editingContentPool) {
+      alert('No pack selected. Please try again.');
+      return;
+    }
+    
+    console.log('handleSaveAllQuantitiesClassic called with:', editingQuantity);
+    
+    try {
+      // Save all changes in parallel
+      const savePromises = Object.entries(editingQuantity).map(async ([cardId, newQuantity]) => {
+        if (newQuantity === undefined || newQuantity < 0) return;
+        
+        // Find the card to get the actual cardId
+        // For classic packs, we need to find by the pack card ID (not the inventory card ID)
+        const cardToUpdate = editingContentPool.cards.find(card => card.id === cardId);
+        if (!cardToUpdate) {
+          console.warn(`Card not found for id: ${cardId}`);
+          return;
+        }
+
+        if (newQuantity === 0) {
+          // Remove card if quantity is 0
+          console.log('Removing card from classic pack:', { packId: editingContentPool.id, cardId: cardToUpdate.id });
+          
+          const response = await apiRequest('DELETE', `/api/admin/classic-packs/${editingContentPool.id}/cards/${cardToUpdate.id}`);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to remove ${cardToUpdate.name}: ${errorText}`);
+          }
+          
+          return { action: 'removed', name: cardToUpdate.name };
+        } else {
+          // Update quantity
+          console.log('Updating card quantity in classic pack:', { packId: editingContentPool.id, cardId: cardToUpdate.id, quantity: newQuantity });
+          
+          const response = await apiRequest('PATCH', `/api/admin/classic-packs/${editingContentPool.id}/cards/${cardToUpdate.id}`, {
+            quantity: newQuantity
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update ${cardToUpdate.name}: ${errorText}`);
+          }
+          
+          return { action: 'updated', name: cardToUpdate.name };
+        }
+      });
+
+      const results = await Promise.all(savePromises);
+      const successfulUpdates = results.filter(Boolean);
+      
+      const updatedCards = successfulUpdates.filter(r => r && r.action === 'updated').map(r => r!.name);
+      const removedCards = successfulUpdates.filter(r => r && r.action === 'removed').map(r => r!.name);
+      
+      console.log('Successfully processed classic pack card changes:', successfulUpdates);
+      
+      let message = `Successfully processed ${successfulUpdates.length} card(s):`;
+      if (updatedCards.length > 0) {
+        message += `\nUpdated: ${updatedCards.join(', ')}`;
+      }
+      if (removedCards.length > 0) {
+        message += `\nRemoved: ${removedCards.join(', ')}`;
+      }
+      
+      alert(message);
+      
+      // Clear all editing states
+      setEditingQuantity({});
+      
+      // Refresh the classic pack data
+      console.log('Refreshing classic pack data after updating...');
+      await fetchClassicPacks();
+      
+      // Update the editingContentPool state with the latest data
+      if (editingContentPool) {
+        const updatedClassicPacks = await apiRequest('GET', '/api/admin/classic-packs');
+        if (updatedClassicPacks.ok) {
+          const packsData = await updatedClassicPacks.json();
+          const updatedPack = packsData.find((pack: any) => pack.id === editingContentPool.id);
+          if (updatedPack) {
+            setEditingContentPool(updatedPack);
+            console.log('Updated editingContentPool with latest data');
+          }
+        }
+      }
+      
+      console.log('Classic pack data refreshed after updating');
+    } catch (error) {
+      console.error('Error updating classic pack card quantities:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Error updating quantities: ${errorMessage}`);
+    }
+  };
+
   // Fetch inventory cards from API
   const fetchInventoryCards = async () => {
     try {
@@ -334,6 +437,20 @@ export default function Admin() {
       fetchUsers();
     } else if (activeTab === 'settings') {
       fetchSystemSettings();
+    }
+  }, [activeTab]);
+
+  // Auto-refresh pack data every 5 seconds when on manage tab
+  useEffect(() => {
+    if (activeTab === 'manage') {
+      const interval = setInterval(() => {
+        console.log('🔄 Auto-refreshing pack data...');
+        fetchSpecialPacks();
+        fetchClassicPacks();
+        fetchMysteryPacks();
+      }, 5000); // Refresh every 5 seconds
+
+      return () => clearInterval(interval);
     }
   }, [activeTab]);
 
@@ -1536,6 +1653,17 @@ export default function Admin() {
     } catch (error: any) {
       console.error('Error fetching special packs:', error);
     }
+  };
+
+  // Manual refresh function for all pack data
+  const refreshAllPackData = async () => {
+    console.log('🔄 Manually refreshing all pack data...');
+    await Promise.all([
+      fetchSpecialPacks(),
+      fetchClassicPacks(),
+      fetchMysteryPacks()
+    ]);
+    console.log('✅ All pack data refreshed');
   };
 
   // Fetch classic packs from API
@@ -3142,13 +3270,41 @@ export default function Admin() {
                     onChange={(e) => setContentSearchQuery(e.target.value)}
                     className="w-full"
                   />
+                  {contentSearchQuery && (
+                    <p className="text-sm text-muted-foreground">
+                      Showing {inventoryCards.filter(card => {
+                        const isAlreadyInPack = editingContentPool?.cards.some(packCard => 
+                          (packCard as any).cardId === card.id || packCard.id === card.id
+                        );
+                        if (isAlreadyInPack) return false;
+                        return card.name.toLowerCase().includes(contentSearchQuery.toLowerCase());
+                      }).length} available cards (excluding {editingContentPool?.cards.length || 0} already in pack)
+                    </p>
+                  )}
+                  {!contentSearchQuery && editingContentPool?.cards.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {editingContentPool.cards.length} cards already in this pack
+                    </p>
+                  )}
                   
                   {/* Filtered Inventory Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
                     {(() => {
-                      const filteredCards = inventoryCards.filter(card => 
-                        card.name.toLowerCase().includes(contentSearchQuery.toLowerCase())
-                      );
+                      const filteredCards = inventoryCards.filter(card => {
+                        // Check if card is already in the pack
+                        // For classic packs, cards have a 'cardId' property that references the inventory card
+                        const isAlreadyInPack = editingContentPool?.cards.some(packCard => 
+                          (packCard as any).cardId === card.id || packCard.id === card.id
+                        );
+                        
+                        // If already in pack, exclude it
+                        if (isAlreadyInPack) {
+                          return false;
+                        }
+                        
+                        // Apply search filter
+                        return card.name.toLowerCase().includes(contentSearchQuery.toLowerCase());
+                      });
                       console.log('Edit Prize Dialog - Inventory cards:', inventoryCards.length);
                       console.log('Edit Prize Dialog - Search query:', contentSearchQuery);
                       console.log('Edit Prize Dialog - Filtered cards:', filteredCards.length);
@@ -3162,7 +3318,27 @@ export default function Admin() {
                       }
                       
                       if (filteredCards.length === 0) {
-                        return <p className="text-muted-foreground text-center py-8">No cards found matching "{contentSearchQuery}".</p>;
+                        return (
+                          <div className="text-center py-8">
+                            <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-medium mb-2">
+                              {contentSearchQuery 
+                                ? "No cards found" 
+                                : editingContentPool?.cards.length > 0 
+                                  ? "All cards already in pack" 
+                                  : "No cards in inventory"
+                              }
+                            </h3>
+                            <p className="text-muted-foreground">
+                              {contentSearchQuery 
+                                ? "Try adjusting your search terms"
+                                : editingContentPool?.cards.length > 0
+                                  ? "All available cards have been added to this pack"
+                                  : "Add some cards to inventory first"
+                              }
+                            </p>
+                          </div>
+                        );
                       }
                       
                       return filteredCards.map((card: any) => (
@@ -3191,7 +3367,19 @@ export default function Admin() {
                           
                 {/* Current Prize Cards */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Current Prize Cards ({editingContentPool.cards.length})</h3>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Current Prize Cards ({editingContentPool.cards.length})</h3>
+                    {Object.keys(editingQuantity).length > 0 && (
+                      <Button
+                        onClick={handleSaveAllQuantitiesClassic}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Save All ({Object.keys(editingQuantity).length})
+                      </Button>
+                    )}
+                  </div>
                   {editingContentPool.cards.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No prize cards in this pack yet.</p>
                   ) : (
@@ -3216,8 +3404,6 @@ export default function Admin() {
                                     className="w-16 h-6 text-xs"
                                     min="0"
                                   />
-                                  <Button onClick={() => handleSaveQuantitySpecial(card.id)} size="sm" className="h-6 px-2 text-xs">Save</Button>
-                                  <Button onClick={() => setEditingQuantity(prev => { const newState = { ...prev }; delete newState[card.id]; return newState; })} variant="outline" size="sm" className="h-6 px-2 text-xs">Cancel</Button>
                                 </>
                               ) : (
                                 <>

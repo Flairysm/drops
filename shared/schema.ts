@@ -122,6 +122,7 @@ export const specialPackCards = pgTable("special_pack_cards", {
   packId: varchar("pack_id").notNull().references(() => specialPacks.id, { onDelete: "cascade" }),
   cardId: varchar("card_id").notNull().references(() => inventory.id, { onDelete: "cascade" }),
   quantity: integer("quantity").notNull().default(1),
+  directory: varchar("directory", { length: 100 }), // Library directory label (e.g., "Black Bolt", "Mystery Pack")
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -147,6 +148,7 @@ export const classicPackCards = pgTable("classic_pack_cards", {
   packId: varchar("pack_id").notNull().references(() => classicPacks.id, { onDelete: "cascade" }),
   cardId: varchar("card_id").notNull().references(() => inventory.id, { onDelete: "cascade" }),
   quantity: integer("quantity").notNull().default(1),
+  directory: varchar("directory", { length: 100 }), // Library directory label (e.g., "Black Bolt", "Mystery Pack")
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -173,6 +175,7 @@ export const mysteryPackCards = pgTable("mystery_pack_cards", {
   packId: uuid("pack_id").notNull().references(() => mysteryPacks.id, { onDelete: "cascade" }),
   cardId: varchar("card_id").notNull().references(() => inventory.id, { onDelete: "cascade" }),
   quantity: integer("quantity").notNull().default(1),
+  directory: varchar("directory", { length: 100 }), // Library directory label (e.g., "Black Bolt", "Mystery Pack")
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -218,6 +221,9 @@ export const userCards = pgTable("user_cards", {
   pulledAt: timestamp("pulled_at").defaultNow(),
   isRefunded: boolean("is_refunded").default(false),
   isShipped: boolean("is_shipped").default(false),
+  packSource: varchar("pack_source", { length: 50 }), // Track which pack this card came from (mystery, classic, special)
+  packId: varchar("pack_id"), // Track the specific pack ID this card came from
+  directory: varchar("directory", { length: 100 }), // Library directory label for return tracking (e.g., "Black Bolt", "Mystery Pack")
 });
 
 // User packs earned from games (unopened)

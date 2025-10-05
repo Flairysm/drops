@@ -1943,17 +1943,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('====================================');
       console.log('📦 Classic pack purchase request:', { userId, packId });
       
-      // Get the classic pack
-      const classicPack = await storage.getClassicPackById(packId);
-      if (!classicPack) {
-        console.log('📦 Classic pack not found');
-        return res.status(404).json({ message: 'Classic pack not found' });
+      // Get the pack (could be classic or special)
+      let pack = await storage.getClassicPackById(packId);
+      let packType = 'classic';
+      
+      if (!pack) {
+        // Try to get it as a special pack
+        pack = await storage.getSpecialPackById(packId);
+        packType = 'special';
       }
       
-      console.log('📦 Found classic pack:', classicPack.name, 'Price:', classicPack.price);
+      if (!pack) {
+        console.log('📦 Pack not found');
+        return res.status(404).json({ message: 'Pack not found' });
+      }
+      
+      console.log('📦 Found pack:', pack.name, 'Price:', pack.price, 'Type:', packType);
       
       // Check if pack is active
-      if (!classicPack.isActive) {
+      if (!pack.isActive) {
         console.log('📦 Pack is not active');
         return res.status(400).json({ message: 'Pack is not available' });
       }
@@ -1968,7 +1976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📦 User found:', user.username, 'Credits:', user.credits);
       
       // Check credits - TEMPORARILY DISABLED FOR TESTING
-      const packPrice = parseFloat(classicPack.price);
+      const packPrice = parseFloat(pack.price);
       const userCredits = parseFloat(user.credits || '0');
       console.log('📦 Pack price:', packPrice, 'User credits:', userCredits);
       
@@ -1991,9 +1999,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📦 Creating user pack...');
       const userPack = await storage.addUserPack({
         userId,
-        packId: classicPack.id,
-        packType: 'classic',
-        tier: 'classic',
+        packId: pack.id,
+        packType: packType,
+        tier: packType,
         earnedFrom: 'purchase',
         isOpened: false,
       });
@@ -2002,7 +2010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Open the pack immediately
       console.log('📦 Opening pack...');
       const packResult = await storage.openUserPack(userPack.id, userId);
-      console.log('📦 Classic pack opening result:', JSON.stringify(packResult, null, 2));
+      console.log('📦 Pack opening result:', JSON.stringify(packResult, null, 2));
 
       const response = { 
         success: true,
@@ -2014,6 +2022,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error purchasing classic pack:", error);
       res.status(500).json({ message: error.message || "Failed to purchase pack" });
+    }
+  });
+
+  // Migration endpoint
+  app.post('/api/debug/migrate-database', async (req, res) => {
+    try {
+      console.log('🔧 Running database migration...');
+      
+      // Add pack_source column
+      await db.execute(sql`ALTER TABLE user_cards ADD COLUMN IF NOT EXISTS pack_source VARCHAR(50);`);
+      console.log('✅ Added pack_source column');
+      
+      // Add pack_id column
+      await db.execute(sql`ALTER TABLE user_cards ADD COLUMN IF NOT EXISTS pack_id VARCHAR(255);`);
+      console.log('✅ Added pack_id column');
+      
+      res.json({
+        success: true,
+        message: 'Database migration completed successfully',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
+      res.status(500).json({ error: 'Migration failed', details: error.message });
+    }
+  });
+
+  // Check user_cards table schema
+  app.get('/api/debug/check-user-cards-schema', async (req, res) => {
+    try {
+      console.log('🔍 Checking user_cards table schema...');
+      
+      const result = await db.execute(sql`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns 
+        WHERE table_name = 'user_cards'
+        ORDER BY ordinal_position
+      `);
+      
+      console.log('🔍 user_cards columns:', result.rows);
+      
+      res.json({
+        success: true,
+        columns: result.rows
+      });
+    } catch (error) {
+      console.error('❌ Error checking schema:', error);
+      res.status(500).json({ error: 'Failed to check schema', details: error.message });
     }
   });
 
@@ -2187,6 +2243,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error clearing cache:', error);
       res.status(500).json({ error: 'Failed to clear cache' });
+    }
+  });
+
+  // Debug endpoint to check classic pack cards with quantity details
+  app.get('/api/debug/classic-pack-cards/:packId', async (req, res) => {
+    try {
+      const { packId } = req.params;
+      
+      console.log(`🔍 DEBUG: Checking classic pack cards for ${packId}...`);
+      
+      const { db } = await import('./db');
+      const { classicPackCards, inventory } = await import('../shared/schema');
+      const { eq, and, gt } = await import('drizzle-orm');
+      
+      // Get all cards (including quantity = 0)
+      const allCards = await db
+        .select({
+          id: classicPackCards.id,
+          packId: classicPackCards.packId,
+          cardId: classicPackCards.cardId,
+          quantity: classicPackCards.quantity,
+          card: {
+            id: inventory.id,
+            name: inventory.name,
+            tier: inventory.tier,
+          }
+        })
+        .from(classicPackCards)
+        .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
+        .where(eq(classicPackCards.packId, packId));
+      
+      // Get only cards with quantity > 0
+      const availableCards = await db
+        .select({
+          id: classicPackCards.id,
+          packId: classicPackCards.packId,
+          cardId: classicPackCards.cardId,
+          quantity: classicPackCards.quantity,
+          card: {
+            id: inventory.id,
+            name: inventory.name,
+            tier: inventory.tier,
+          }
+        })
+        .from(classicPackCards)
+        .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
+        .where(
+          and(
+            eq(classicPackCards.packId, packId),
+            gt(classicPackCards.quantity, 0)
+          )
+        );
+      
+      console.log(`🔍 All cards: ${allCards.length}, Available cards: ${availableCards.length}`);
+      
+      res.json({
+        success: true,
+        packId,
+        allCards: allCards.length,
+        availableCards: availableCards.length,
+        allCardsDetails: allCards,
+        availableCardsDetails: availableCards
+      });
+    } catch (error) {
+      console.error('❌ Error checking classic pack cards:', error);
+      res.status(500).json({ error: 'Failed to check classic pack cards' });
+    }
+  });
+
+  // Debug endpoint to add pack source tracking columns
+  app.post('/api/debug/add-pack-source-tracking', async (req, res) => {
+    try {
+      console.log('🔧 DEBUG: Adding pack source tracking columns...');
+      
+      const { db } = await import('./db');
+      const { sql } = await import('drizzle-orm');
+      
+      // Add pack_source column if it doesn't exist
+      await db.execute(sql`
+        ALTER TABLE user_cards 
+        ADD COLUMN IF NOT EXISTS pack_source VARCHAR(50)
+      `);
+      
+      // Add pack_id column if it doesn't exist
+      await db.execute(sql`
+        ALTER TABLE user_cards 
+        ADD COLUMN IF NOT EXISTS pack_id VARCHAR(255)
+      `);
+      
+      console.log('✅ Successfully added pack source tracking columns');
+      
+      res.json({
+        success: true,
+        message: 'Successfully added pack source tracking columns'
+      });
+    } catch (error) {
+      console.error('❌ Error adding pack source tracking columns:', error);
+      res.status(500).json({ error: 'Failed to add pack source tracking columns' });
     }
   });
 
@@ -2516,7 +2670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 All entries:', result.rows);
       
       // Group by pack
-      const packGroups = {};
+      const packGroups: { [key: string]: any[] } = {};
       result.rows.forEach((row: any) => {
         if (!packGroups[row.pack_name]) {
           packGroups[row.pack_name] = [];
@@ -2532,6 +2686,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error in mystery pack cards debug endpoint:', error);
       res.status(500).json({ error: 'Failed to check mystery_pack_cards table' });
+    }
+  });
+
+  // Debug endpoint to check Black Bolt pack cards
+  app.get('/api/debug/black-bolt-cards', async (req, res) => {
+    try {
+      console.log('🔍 DEBUG: Checking Black Bolt pack cards...');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          cpc.id,
+          cpc.pack_id,
+          cpc.card_id,
+          cpc.quantity,
+          i.name as card_name,
+          i.tier,
+          i.credits
+        FROM classic_pack_cards cpc
+        LEFT JOIN inventory i ON cpc.card_id = i.id
+        WHERE cpc.pack_id = 'c7b5a8b3-4dc4-4faf-afc0-3c235cb0f0c1'
+        ORDER BY i.tier, i.name
+      `);
+      
+      console.log('🔍 Black Bolt pack cards:', result.rows);
+      
+      res.json({
+        success: true,
+        packId: 'c7b5a8b3-4dc4-4faf-afc0-3c235cb0f0c1',
+        cards: result.rows
+      });
+    } catch (error) {
+      console.error('❌ Error checking Black Bolt pack cards:', error);
+      res.status(500).json({ error: 'Failed to check Black Bolt pack cards' });
     }
   });
 
