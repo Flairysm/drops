@@ -369,7 +369,7 @@ export default function Play() {
                       game={{
                         id: pack.id,
                         name: pack.name,
-                        description: pack.description || `${pack.subtype} classic pack`,
+                        description: pack.description || `${pack.packType} classic pack`,
                         cost: parseFloat(pack.price),
                         image: pack.imageUrl,
                         route: `/purchase/classic/${pack.id}`,

@@ -78,7 +78,7 @@ export function setupAuth(app: Express) {
         });
       }
 
-      const { username, email, password, phoneNumber } = result.data;
+      const { username, email, password } = result.data;
 
       // Check if user already exists
       const existingUserByEmail = await storage.getUserByEmail(email);
@@ -99,7 +99,6 @@ export function setupAuth(app: Express) {
         username,
         email,
         password: hashedPassword,
-        phoneNumber,
       });
 
       // Log them in by setting session

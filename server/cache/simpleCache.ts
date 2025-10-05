@@ -182,15 +182,15 @@ export const CacheKeys = {
     `global:feed:${limit || 10}:${minTier || 'all'}`,
   
   // Mystery packs
-  mysteryPacks: () => 'mystery:packs:all',
+  mysteryPack: () => 'mystery:packs:all',
   mysteryPackCards: (packId: string) => `mystery:pack:cards:${packId}`,
   
   // Classic packs
-  classicPacks: () => 'classic:packs:all',
+  classicPack: () => 'classic:packs:all',
   classicPackCards: (packId: string) => `classic:pack:cards:${packId}`,
   
   // Special packs
-  specialPacks: () => 'special:packs:all',
+  specialPack: () => 'special:packs:all',
   specialPackCards: (packId: string) => `special:pack:cards:${packId}`,
 };
 

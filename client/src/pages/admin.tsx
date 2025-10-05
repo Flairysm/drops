@@ -30,6 +30,19 @@ import {
 export default function Admin() {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const queryClient = useQueryClient();
+
+  // Helper function for authenticated requests
+  const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+    const token = localStorage.getItem('authToken');
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      credentials: 'include',
+    });
+  };
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
@@ -43,28 +56,23 @@ export default function Admin() {
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const [manageSection, setManageSection] = useState<"classic" | "special" | "mystery">("classic");
   const [mysterySection, setMysterySection] = useState<"view" | "edit" | "add">("view");
-  const [mysterySearchQuery, setMysterySearchQuery] = useState("");
   const [mysteryPackCards, setMysteryPackCards] = useState<Array<{
     id: string;
     packId: string;
-    cardId: string;
+    cardName: string;
+    cardImageUrl: string;
+    cardTier: string;
+    refundCredit: number;
     quantity: number;
+    cardSource: string;
     createdAt: string;
-    card: {
-      id: string;
-      name: string;
-      imageUrl: string;
-      credits: number;
-      createdAt: string;
-      updatedAt: string;
-    };
   }>>([]);
   const [mysteryPacks, setMysteryPacks] = useState<Array<{
     id: string;
     name: string;
     description: string;
     imageUrl?: string;
-    subtype: string;
+    packType: string;
     price?: string;
     totalPacks?: number;
     odds?: any;
@@ -72,7 +80,6 @@ export default function Admin() {
     createdAt: string;
   }>>([]);
   const [selectedMysteryPack, setSelectedMysteryPack] = useState<string>('');
-  const [editingQuantity, setEditingQuantity] = useState<{ [key: string]: number }>({});
   const [specialPools, setSpecialPools] = useState<Array<{
     id: string;
     name: string;
@@ -111,6 +118,7 @@ export default function Admin() {
     }>;
   }>>([]);
   const [showAddPoolDialog, setShowAddPoolDialog] = useState(false);
+  const [showAddClassicDialog, setShowAddClassicDialog] = useState(false);
   const [showEditPoolDialog, setShowEditPoolDialog] = useState(false);
   const [editingPool, setEditingPool] = useState<{
     id: string;
@@ -130,6 +138,27 @@ export default function Admin() {
   } | null>(null);
   const [contentSearchQuery, setContentSearchQuery] = useState('');
   
+  // Add Card Dialog State
+  const [showAddCardDialog, setShowAddCardDialog] = useState(false);
+  const [newCard, setNewCard] = useState({
+    name: '',
+    imageUrl: '',
+    tier: 'D',
+    refundCredit: '',
+    quantity: ''
+  });
+  
+  // Edit Card Dialog State
+  const [showEditCardDialog, setShowEditCardDialog] = useState(false);
+  const [editingCard, setEditingCard] = useState<any>(null);
+  const [editCardForm, setEditCardForm] = useState({
+    name: '',
+    imageUrl: '',
+    tier: 'D',
+    refundCredit: '',
+    quantity: ''
+  });
+  
   // View Prize Dialog State
   const [showViewPrizeDialog, setShowViewPrizeDialog] = useState(false);
   const [viewingPrizePool, setViewingPrizePool] = useState<{
@@ -144,24 +173,6 @@ export default function Admin() {
     price: '', 
     totalCards: '' 
   });
-  const [inventoryCards, setInventoryCards] = useState<Array<{
-    id: string;
-    name: string;
-    imageUrl: string;
-    credits: number;
-    tier: string;
-  }>>([]);
-  const [showAddCardForm, setShowAddCardForm] = useState(false);
-  const [editingCard, setEditingCard] = useState<{ id: string; name: string; imageUrl: string; credits: number; tier: string; } | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', imageUrl: '', credits: '', tier: 'D' });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [newCard, setNewCard] = useState({
-    name: '',
-    imageUrl: '',
-    credits: '',
-    tier: 'D'
-  });
-  const [isLoadingInventory, setIsLoadingInventory] = useState(false);
 
 
 
@@ -178,10 +189,44 @@ export default function Admin() {
     }
   };
 
-  const handleUpdateCredits = () => {
+  const handleUpdateCredits = async () => {
     if (selectedUser) {
-      // Update credits logic here
+      try {
+        const response = await apiRequest('POST', '/api/user/update-credits', {
+          amount: creditAmount.toString()
+        });
+        
+        if (response.ok) {
+          // Refresh user data to show updated credits immediately
+          await refreshUserData(selectedUser.id);
       setShowUserDialog(false);
+          // Refresh the users list
+          fetchUsers();
+        } else {
+          console.error('Failed to update credits');
+        }
+      } catch (error) {
+        console.error('Error updating credits:', error);
+      }
+    }
+  };
+
+  // Function to refresh user data (useful when credits are updated directly in database)
+  const refreshUserData = async (userId: string) => {
+    try {
+      const response = await apiRequest('POST', `/api/admin/refresh-user/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('User data refreshed:', data);
+        // Update the user in the local state
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user.id === userId ? { ...user, credits: data.user.credits } : user
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
     }
   };
 
@@ -246,134 +291,8 @@ export default function Admin() {
     setShowTransactionDialog(true);
   };
 
-  const handleNewCardChange = (field: string, value: string) => {
-    setNewCard(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
-  // Save all quantity changes for Classic Packs
-  const handleSaveAllQuantitiesClassic = async () => {
-    if (Object.keys(editingQuantity).length === 0) {
-      alert('No changes to save.');
-      return;
-    }
 
-    if (!editingContentPool) {
-      alert('No pack selected. Please try again.');
-      return;
-    }
-    
-    console.log('handleSaveAllQuantitiesClassic called with:', editingQuantity);
-    
-    try {
-      // Save all changes in parallel
-      const savePromises = Object.entries(editingQuantity).map(async ([cardId, newQuantity]) => {
-        if (newQuantity === undefined || newQuantity < 0) return;
-        
-        // Find the card to get the actual cardId
-        // For classic packs, we need to find by the pack card ID (not the inventory card ID)
-        const cardToUpdate = editingContentPool.cards.find(card => card.id === cardId);
-        if (!cardToUpdate) {
-          console.warn(`Card not found for id: ${cardId}`);
-          return;
-        }
-
-        if (newQuantity === 0) {
-          // Remove card if quantity is 0
-          console.log('Removing card from classic pack:', { packId: editingContentPool.id, cardId: cardToUpdate.id });
-          
-          const response = await apiRequest('DELETE', `/api/admin/classic-packs/${editingContentPool.id}/cards/${cardToUpdate.id}`);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to remove ${cardToUpdate.name}: ${errorText}`);
-          }
-          
-          return { action: 'removed', name: cardToUpdate.name };
-        } else {
-          // Update quantity
-          console.log('Updating card quantity in classic pack:', { packId: editingContentPool.id, cardId: cardToUpdate.id, quantity: newQuantity });
-          
-          const response = await apiRequest('PATCH', `/api/admin/classic-packs/${editingContentPool.id}/cards/${cardToUpdate.id}`, {
-            quantity: newQuantity
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to update ${cardToUpdate.name}: ${errorText}`);
-          }
-          
-          return { action: 'updated', name: cardToUpdate.name };
-        }
-      });
-
-      const results = await Promise.all(savePromises);
-      const successfulUpdates = results.filter(Boolean);
-      
-      const updatedCards = successfulUpdates.filter(r => r && r.action === 'updated').map(r => r!.name);
-      const removedCards = successfulUpdates.filter(r => r && r.action === 'removed').map(r => r!.name);
-      
-      console.log('Successfully processed classic pack card changes:', successfulUpdates);
-      
-      let message = `Successfully processed ${successfulUpdates.length} card(s):`;
-      if (updatedCards.length > 0) {
-        message += `\nUpdated: ${updatedCards.join(', ')}`;
-      }
-      if (removedCards.length > 0) {
-        message += `\nRemoved: ${removedCards.join(', ')}`;
-      }
-      
-      alert(message);
-      
-      // Clear all editing states
-      setEditingQuantity({});
-      
-      // Refresh the classic pack data
-      console.log('Refreshing classic pack data after updating...');
-      await fetchClassicPacks();
-      
-      // Update the editingContentPool state with the latest data
-      if (editingContentPool) {
-        const updatedClassicPacks = await apiRequest('GET', '/api/admin/classic-packs');
-        if (updatedClassicPacks.ok) {
-          const packsData = await updatedClassicPacks.json();
-          const updatedPack = packsData.find((pack: any) => pack.id === editingContentPool.id);
-          if (updatedPack) {
-            setEditingContentPool(updatedPack);
-            console.log('Updated editingContentPool with latest data');
-          }
-        }
-      }
-      
-      console.log('Classic pack data refreshed after updating');
-    } catch (error) {
-      console.error('Error updating classic pack card quantities:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Error updating quantities: ${errorMessage}`);
-    }
-  };
-
-  // Fetch inventory cards from API
-  const fetchInventoryCards = async () => {
-    try {
-      setIsLoadingInventory(true);
-      const response = await apiRequest('GET', '/api/admin/inventory');
-      
-      if (response.ok) {
-        const cards = await response.json();
-        setInventoryCards(cards);
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to fetch inventory cards:', errorText);
-      }
-    } catch (error: any) {
-      console.error('Error fetching inventory cards:', error);
-    } finally {
-      setIsLoadingInventory(false);
-    }
-  };
 
   // Fetch mystery packs from API
   const fetchMysteryPacks = async () => {
@@ -393,7 +312,7 @@ export default function Admin() {
         
         // Load mystery pack cards immediately after loading mystery packs
         if (packs.length > 0) {
-          const pokeballPack = packs.find((pack: any) => pack.subtype === 'pokeball') || packs[0];
+          const pokeballPack = packs.find((pack: any) => pack.packType === 'pokeball') || packs[0];
           console.log('Auto-loading mystery pack cards for:', pokeballPack.id);
           const cardResponse = await apiRequest('GET', `/api/admin/mystery-packs/${pokeballPack.id}`);
           if (cardResponse.ok) {
@@ -411,20 +330,7 @@ export default function Admin() {
     }
   };
 
-  // Load inventory when switching to inventory tab
-  useEffect(() => {
-    if (activeTab === 'inventory') {
-      fetchInventoryCards();
-    }
-  }, [activeTab]);
 
-  // Load inventory when Edit Prize dialog opens
-  useEffect(() => {
-    if (showEditContentDialog) {
-      console.log('Loading inventory for Edit Prize dialog...');
-      fetchInventoryCards();
-    }
-  }, [showEditContentDialog]);
 
   // Load special packs when manage tab is active
   useEffect(() => {
@@ -454,12 +360,6 @@ export default function Admin() {
     }
   }, [activeTab]);
 
-  // Load inventory when switching to mystery add section
-  useEffect(() => {
-    if (activeTab === 'manage' && manageSection === 'mystery' && mysterySection === 'add') {
-      fetchInventoryCards();
-    }
-  }, [activeTab, manageSection, mysterySection]);
 
   // Load mystery packs when component mounts
   useEffect(() => {
@@ -480,7 +380,7 @@ export default function Admin() {
     try {
       if (mysteryPacks.length === 0) return;
       
-      const pokeballPack = mysteryPacks.find(pack => pack.subtype === 'pokeball') || mysteryPacks[0];
+      const pokeballPack = mysteryPacks.find(pack => pack.packType === 'pokeball') || mysteryPacks[0];
       console.log('Fetching cards for mystery pack pool:', pokeballPack.id);
       
       const response = await apiRequest('GET', `/api/admin/mystery-packs/${pokeballPack.id}`);
@@ -510,469 +410,20 @@ export default function Admin() {
     }
   }, [activeTab, manageSection, mysterySection, mysteryPacks]);
 
-  const handleAddCard = async () => {
-    if (newCard.name.trim() && newCard.imageUrl.trim() && newCard.credits.trim()) {
-      const credits = parseInt(newCard.credits);
-      
-      // Validate credits is a positive number
-      if (isNaN(credits) || credits <= 0) {
-        alert('Please enter a valid credit amount (positive number)');
-        return;
-      }
-
-      try {
-        const cardData = {
-          id: `${newCard.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-          name: newCard.name.trim(),
-          imageUrl: newCard.imageUrl.trim(),
-          credits: credits,
-          tier: newCard.tier
-        };
 
 
-        const response = await apiRequest('POST', '/api/admin/inventory', cardData);
 
 
-        if (response.ok) {
-          const result = await response.json();
-          
-          // Refresh inventory
-          await fetchInventoryCards();
-          
-          // Reset form and close dialog
-          setNewCard({ name: '', imageUrl: '', credits: '', tier: 'D' });
-          setShowAddCardForm(false);
-          
-          // Show success message
-          alert('Card added successfully!');
-        } else {
-          const errorText = await response.text();
-          console.error('API Error:', errorText);
-          alert(`Failed to add card: ${errorText}`);
-        }
-      } catch (error: any) {
-        console.error('Error adding card:', error);
-        alert(`Failed to add card: ${error.message}`);
-      }
-    } else {
-      alert('Please fill in all fields');
-    }
-  };
 
-  const handleRemoveCard = async (cardId: string, cardName: string) => {
-    // Check if card is used in any packs
-    const usedInSpecialPacks = specialPools.some(pool => 
-      pool.cards && pool.cards.some(packCard => (packCard as any).card?.id === cardId)
-    );
-    const usedInMysteryPacks = mysteryPackCards.some(packCard => (packCard as any).card?.id === cardId);
-    
-    let warningMessage = `Are you sure you want to remove "${cardName}" from inventory?`;
-    
-    if (usedInSpecialPacks || usedInMysteryPacks) {
-      warningMessage += `\n\n⚠️ This card is currently used in pack pools and will be automatically removed from:`;
-      if (usedInSpecialPacks) {
-        const packNames = specialPools
-          .filter(pool => pool.cards && pool.cards.some(packCard => (packCard as any).card?.id === cardId))
-          .map(pool => pool.name)
-          .join(', ');
-        warningMessage += `\n• Special Packs: ${packNames}`;
-      }
-      if (usedInMysteryPacks) {
-        warningMessage += `\n• Mystery Pack Pool`;
-      }
-      warningMessage += `\n\nThis action cannot be undone.`;
-    }
-
-    if (confirm(warningMessage)) {
-      try {
-        const response = await apiRequest('DELETE', `/api/admin/inventory/${cardId}`);
-
-        if (response.ok) {
-          // Refresh inventory
-          await fetchInventoryCards();
-          
-          // Also refresh pack data to reflect the removal
-          await fetchSpecialPacks();
-          await fetchMysteryPacks();
-          
-          let successMessage = `"${cardName}" has been removed from inventory`;
-          if (usedInSpecialPacks || usedInMysteryPacks) {
-            successMessage += ` and all pack pools`;
-          }
-          successMessage += ` successfully!`;
-          
-          alert(successMessage);
-        } else {
-          alert('Failed to remove card. Please try again.');
-        }
-      } catch (error: any) {
-        console.error('Error removing card:', error);
-        alert('Failed to remove card. Please try again.');
-      }
-    }
-  };
-
-  const handleEditCard = (card: { id: string; name: string; imageUrl: string; credits: number; tier: string; }) => {
-    setEditingCard(card);
-    setEditForm({
-      name: card.name,
-      imageUrl: card.imageUrl,
-      credits: card.credits.toString(),
-      tier: card.tier || 'D'
-    });
-  };
-
-  const handleUpdateCard = async () => {
-    if (!editingCard) return;
-
-    if (editForm.name.trim() && editForm.imageUrl.trim() && editForm.credits.trim()) {
-      const credits = parseInt(editForm.credits);
-      
-      // Validate credits is a positive number
-      if (isNaN(credits) || credits <= 0) {
-        alert('Please enter a valid credit amount (positive number)');
-        return;
-      }
-
-      try {
-        const cardData = {
-          name: editForm.name.trim(),
-          imageUrl: editForm.imageUrl.trim(),
-          credits: credits,
-          tier: editForm.tier
-        };
-
-
-        const response = await apiRequest('PATCH', `/api/admin/inventory/${editingCard.id}`, cardData);
-
-
-        if (response.ok) {
-          const result = await response.json();
-          
-          // Refresh inventory
-          await fetchInventoryCards();
-          
-          // Reset form and close edit mode
-          setEditingCard(null);
-          setEditForm({ name: '', imageUrl: '', credits: '', tier: 'D' });
-          
-          // Show success message
-          alert('Card updated successfully!');
-        } else {
-          const errorText = await response.text();
-          console.error('API Error:', errorText);
-          alert(`Failed to update card: ${errorText}`);
-        }
-      } catch (error: any) {
-        console.error('Error updating card:', error);
-        alert(`Failed to update card: ${error.message}`);
-      }
-    } else {
-      alert('Please fill in all fields');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingCard(null);
-    setEditForm({ name: '', imageUrl: '', credits: '', tier: 'D' });
-  };
-
-  // Filter cards based on search query
-  const filteredCards = inventoryCards.filter(card => 
-    card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    card.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Filter cards for mystery pack search (exclude cards already in mystery pack)
-  const mysteryFilteredCards = inventoryCards.filter(card => {
-    // Check if card is already in mystery pack
-    const isAlreadyInMysteryPack = mysteryPackCards.some(mysteryCard => mysteryCard.cardId === card.id);
-    
-    // If already in mystery pack, exclude it
-    if (isAlreadyInMysteryPack) {
-      return false;
-    }
-    
-    // Apply search filter
-    return card.name.toLowerCase().includes(mysterySearchQuery.toLowerCase()) ||
-           card.id.toLowerCase().includes(mysterySearchQuery.toLowerCase());
-  });
 
   // Debug logging
 
   // Add card to mystery pack (always uses the first pack - pokeball)
-  const handleAddToMysteryPack = async (card: { id: string; name: string; imageUrl: string; credits: number; }) => {
-    if (mysteryPacks.length === 0) {
-      alert('No mystery packs available. Please try again later.');
-      return;
-    }
 
-    // Always use the first mystery pack (pokeball) for the shared card pool
-    const pokeballPack = mysteryPacks.find(pack => pack.subtype === 'pokeball') || mysteryPacks[0];
-    
-    try {
-      console.log('Adding card to mystery pack pool:', { packId: pokeballPack.id, cardId: card.id });
-      
-      const response = await apiRequest('POST', `/api/admin/mystery-packs/${pokeballPack.id}/cards`, {
-        cardId: card.id,
-        quantity: 1
-      });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Successfully added card to mystery pack pool:', result);
-        alert(`${card.name} added to mystery pack pool!`);
-        
-        // Refresh the mystery pack cards display
-        console.log('Calling fetchMysteryPackCards to refresh UI after adding...');
-        await fetchMysteryPackCards();
-        console.log('fetchMysteryPackCards completed after adding');
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to add card to mystery pack pool:', errorText);
-        alert('Failed to add card to mystery pack pool. Please try again.');
-      }
-        } catch (error) {
-      console.error('Error adding card to mystery pack pool:', error);
-      alert('Error adding card to mystery pack pool. Please try again.');
-    }
-  };
 
-  // Handle removing card from mystery pack
-  const handleRemoveFromMysteryPack = async (mysteryPackCardId: string, cardName: string) => {
-    console.log('Remove button clicked!', { mysteryPackCardId, cardName });
-    
-    if (mysteryPacks.length === 0) {
-      alert('No mystery packs available. Please try again later.');
-      return;
-    }
 
-    // Always use the first mystery pack (pokeball) for the shared card pool
-    const pokeballPack = mysteryPacks.find(pack => pack.subtype === 'pokeball') || mysteryPacks[0];
-    
-    // Find the card to get the actual cardId
-    const cardToRemove = mysteryPackCards.find(card => card.id === mysteryPackCardId);
-    console.log('Card to remove:', cardToRemove);
-    
-    if (!cardToRemove) {
-      alert('Card not found in mystery pack pool.');
-      return;
-    }
-    
-    try {
-      console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, cardId: cardToRemove.cardId });
-      
-      const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToRemove.cardId}`);
 
-      if (response.ok) {
-        console.log('Successfully removed card from mystery pack pool');
-        alert(`${cardName} removed from mystery pack pool!`);
-        
-        // Refresh the mystery pack cards display
-        console.log('Calling fetchMysteryPackCards to refresh UI after direct removal...');
-        await fetchMysteryPackCards();
-        console.log('fetchMysteryPackCards completed after direct removal');
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to remove card from mystery pack pool:', errorText);
-        alert('Failed to remove card from mystery pack pool. Please try again.');
-      }
-        } catch (error) {
-      console.error('Error removing card from mystery pack pool:', error);
-      alert('Error removing card from mystery pack pool. Please try again.');
-    }
-  };
-
-  // Handle quantity editing
-  const handleQuantityChange = (cardId: string, newQuantity: number) => {
-    if (newQuantity < 0) return;
-    
-    setEditingQuantity(prev => ({
-      ...prev,
-      [cardId]: newQuantity
-    }));
-  };
-
-  // Save quantity changes for Mystery Packs
-  const handleSaveQuantity = async (cardId: string) => {
-    const newQuantity = editingQuantity[cardId];
-    if (newQuantity === undefined || newQuantity < 0) return;
-
-    if (mysteryPacks.length === 0) {
-      alert('No mystery packs available. Please try again later.');
-      return;
-    }
-
-    // Always use the first mystery pack (pokeball) for the shared card pool
-    const pokeballPack = mysteryPacks.find(pack => pack.subtype === 'pokeball') || mysteryPacks[0];
-    
-    // Debug logging
-    console.log('handleSaveQuantity (Mystery) called with cardId:', cardId);
-    console.log('mysteryPackCards:', mysteryPackCards);
-    console.log('Looking for card with id:', cardId);
-    
-    // Find the card to get the actual cardId
-    const cardToUpdate = mysteryPackCards.find(card => card.id === cardId);
-    console.log('Found cardToUpdate:', cardToUpdate);
-    
-    if (!cardToUpdate) {
-      alert('Card not found in mystery pack pool.');
-      return;
-    }
-
-    try {
-      if (newQuantity === 0) {
-        // Remove card if quantity is 0
-        console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id });
-        
-        const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`);
-
-        if (response.ok) {
-          console.log('Successfully removed card from mystery pack pool');
-          alert('Card removed from mystery pack!');
-          
-          // Refresh the mystery pack cards display
-          console.log('Calling fetchMysteryPackCards to refresh UI after removal...');
-          await fetchMysteryPackCards();
-          console.log('fetchMysteryPackCards completed after removal');
-        } else {
-          const errorText = await response.text();
-          console.error('Failed to remove card from mystery pack pool:', errorText);
-          alert('Failed to remove card from mystery pack pool. Please try again.');
-        }
-      } else {
-        // Update quantity
-        console.log('Updating card quantity in mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id, quantity: newQuantity });
-        
-        const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`, {
-          quantity: newQuantity
-        });
-
-        if (response.ok) {
-          console.log('Successfully updated card quantity in mystery pack pool');
-          alert('Quantity updated!');
-          
-          // Refresh the mystery pack cards display
-          console.log('Calling fetchMysteryPackCards to refresh UI...');
-          await fetchMysteryPackCards();
-          console.log('fetchMysteryPackCards completed');
-        } else {
-          const errorText = await response.text();
-          console.error('Failed to update card quantity in mystery pack pool:', errorText);
-          alert('Failed to update card quantity. Please try again.');
-        }
-      }
-    } catch (error) {
-      console.error('Error updating mystery pack card:', error);
-      alert('Error updating card. Please try again.');
-    }
-
-    // Clear editing state
-    setEditingQuantity(prev => {
-      const newState = { ...prev };
-      delete newState[cardId];
-      return newState;
-    });
-  };
-
-  // Cancel quantity editing
-  const handleCancelQuantity = (cardId: string) => {
-    setEditingQuantity(prev => {
-      const newState = { ...prev };
-      delete newState[cardId];
-      return newState;
-    });
-  };
-
-  // Save all quantity changes for Mystery Packs
-  const handleSaveAllQuantities = async () => {
-    if (Object.keys(editingQuantity).length === 0) {
-      alert('No changes to save.');
-      return;
-    }
-
-    if (mysteryPacks.length === 0) {
-      alert('No mystery packs available. Please try again later.');
-      return;
-    }
-
-    // Always use the first mystery pack (pokeball) for the shared card pool
-    const pokeballPack = mysteryPacks.find(pack => pack.subtype === 'pokeball') || mysteryPacks[0];
-    
-    console.log('handleSaveAllQuantities (Mystery) called with:', editingQuantity);
-    
-    try {
-      // Save all changes in parallel
-      const savePromises = Object.entries(editingQuantity).map(async ([cardId, newQuantity]) => {
-        if (newQuantity === undefined || newQuantity < 0) return;
-        
-        // Find the card to get the actual cardId
-        const cardToUpdate = mysteryPackCards.find(card => card.id === cardId);
-        if (!cardToUpdate) {
-          console.warn(`Card not found for id: ${cardId}`);
-          return;
-        }
-
-        if (newQuantity === 0) {
-          // Remove card if quantity is 0
-          console.log('Removing card from mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id });
-          
-          const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`);
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to remove ${cardToUpdate.card.name}: ${errorText}`);
-          }
-          
-          return { action: 'removed', name: cardToUpdate.card.name };
-        } else {
-          // Update quantity
-          console.log('Updating card quantity in mystery pack pool:', { packId: pokeballPack.id, mysteryPackCardId: cardToUpdate.id, quantity: newQuantity });
-          
-          const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardToUpdate.id}`, {
-            quantity: newQuantity
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to update ${cardToUpdate.card.name}: ${errorText}`);
-          }
-          
-          return { action: 'updated', name: cardToUpdate.card.name };
-        }
-      });
-
-      const results = await Promise.all(savePromises);
-      const successfulUpdates = results.filter(Boolean);
-      
-      const updatedCards = successfulUpdates.filter(r => r && r.action === 'updated').map(r => r!.name);
-      const removedCards = successfulUpdates.filter(r => r && r.action === 'removed').map(r => r!.name);
-      
-      console.log('Successfully processed mystery pack card changes:', successfulUpdates);
-      
-      let message = `Successfully processed ${successfulUpdates.length} card(s):`;
-      if (updatedCards.length > 0) {
-        message += `\nUpdated: ${updatedCards.join(', ')}`;
-      }
-      if (removedCards.length > 0) {
-        message += `\nRemoved: ${removedCards.join(', ')}`;
-      }
-      
-      alert(message);
-      
-      // Clear all editing states
-      setEditingQuantity({});
-      
-      // Refresh the mystery pack cards display
-      console.log('Calling fetchMysteryPackCards to refresh UI after updating...');
-      await fetchMysteryPackCards();
-      console.log('fetchMysteryPackCards completed after updating');
-    } catch (error) {
-      console.error('Error updating mystery pack card quantities:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Error updating quantities: ${errorMessage}`);
-    }
-  };
 
   // Special Pool Management
   const handleAddPool = async () => {
@@ -1007,7 +458,7 @@ export default function Admin() {
 
   const handleRemovePool = async (poolId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/special-packs/${poolId}`, {
+      const response = await authenticatedFetch(`http://localhost:3000/api/admin/special-packs/${poolId}`, {
         method: 'DELETE',
       });
 
@@ -1024,7 +475,7 @@ export default function Admin() {
     }
   };
 
-  const handleEditPool = (pool: any) => {
+  const handleEditContent = (pool: any) => {
     setEditingPool({
       id: pool.id,
       name: pool.name,
@@ -1078,7 +529,7 @@ export default function Admin() {
   const handleAddClassicPool = async () => {
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim()) {
       try {
-        const response = await fetch('http://localhost:3000/api/admin/classic-packs', {
+        const response = await authenticatedFetch('http://localhost:3000/api/admin/classic-packs', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1155,7 +606,7 @@ export default function Admin() {
   const handleDeleteClassicPool = async (poolId: string) => {
     if (confirm('Are you sure you want to delete this classic pack? This action cannot be undone.')) {
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${poolId}`, {
+        const response = await authenticatedFetch(`http://localhost:3000/api/admin/classic-packs/${poolId}`, {
           method: 'DELETE',
         });
 
@@ -1173,9 +624,9 @@ export default function Admin() {
     }
   };
 
-  // Edit Content Functions
-  const handleEditContent = async (pool: any) => {
-    console.log('handleEditContent called with pool:', pool);
+  // Edit Prize Functions
+  const handleEditPrize = async (pool: any) => {
+    console.log('handleEditPrize called with pool:', pool);
     
     // Set the editing pool directly from the pool data we already have
     setEditingContentPool({
@@ -1183,9 +634,9 @@ export default function Admin() {
       name: pool.name,
       cards: (pool.cards || []).map((card: any) => ({
         id: card.id,
-        name: card.card?.name || card.name,
-        imageUrl: card.card?.imageUrl || card.imageUrl,
-        credits: card.card?.credits || card.credits,
+        name: card.cardName || card.name,
+        imageUrl: card.cardImageUrl || card.imageUrl,
+        credits: card.refundCredit || card.credits,
         quantity: card.quantity
       }))
     });
@@ -1194,115 +645,12 @@ export default function Admin() {
     setShowEditContentDialog(true);
   };
 
-  // Save quantity changes for Special Packs and Classic Packs
-  const handleSaveQuantitySpecial = async (cardId: string) => {
-    const newQuantity = editingQuantity[cardId];
-    if (newQuantity === undefined || newQuantity < 0) return;
-
-    if (!editingContentPool) {
-      alert('No pack selected for editing.');
-      return;
-    }
-
-    // Determine if this is a classic pack or special pack based on the pack ID
-    const isClassicPack = classicPools.some(pool => pool.id === editingContentPool.id);
-    const apiEndpoint = isClassicPack ? 'classic-packs' : 'special-packs';
-
-    // Debug logging
-    console.log('handleSaveQuantitySpecial called with cardId:', cardId);
-    console.log('editingContentPool.cards:', editingContentPool.cards);
-    console.log('Looking for card with id:', cardId);
-    
-    // Find the card to get the actual cardId
-    const cardToUpdate = editingContentPool.cards.find(card => card.id === cardId);
-    console.log('Found cardToUpdate:', cardToUpdate);
-    
-    if (!cardToUpdate) {
-      alert(`Card not found in ${isClassicPack ? 'classic' : 'special'} pack pool.`);
-      return;
-    }
-
-    try {
-      if (newQuantity === 0) {
-        // Remove card if quantity is 0
-        console.log(`Removing card from ${isClassicPack ? 'classic' : 'special'} pack:`, { packId: editingContentPool.id, specialPackCardId: cardId });
-        
-        const response = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          console.log(`Successfully removed card from ${isClassicPack ? 'classic' : 'special'} pack`);
-          alert(`Card removed from ${isClassicPack ? 'classic' : 'special'} pack!`);
-          
-          // Refresh the pack data
-          const updatedPack = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`);
-          if (updatedPack.ok) {
-            const packData = await updatedPack.json();
-            setEditingContentPool(packData);
-            if (isClassicPack) {
-              setClassicPools(prev => prev.map(pack => 
-                pack.id === editingContentPool.id ? packData : pack
-              ));
-            } else {
-              setSpecialPools(prev => prev.map(pack => 
-                pack.id === editingContentPool.id ? packData : pack
-              ));
-            }
-          }
-        } else {
-          const errorText = await response.text();
-          console.error(`Failed to remove card from ${isClassicPack ? 'classic' : 'special'} pack:`, errorText);
-          alert(`Failed to remove card from ${isClassicPack ? 'classic' : 'special'} pack. Please try again.`);
-        }
-      } else {
-        // Update quantity
-        console.log(`Updating card quantity in ${isClassicPack ? 'classic' : 'special'} pack:`, { packId: editingContentPool.id, specialPackCardId: cardId, quantity: newQuantity });
-        
-        const response = await apiRequest('PATCH', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
-          quantity: newQuantity
-        });
-
-        if (response.ok) {
-          console.log(`Successfully updated card quantity in ${isClassicPack ? 'classic' : 'special'} pack`);
-          alert('Card quantity updated successfully!');
-          
-          // Refresh the pack data
-          const updatedPack = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
-          if (updatedPack.ok) {
-            const packData = await updatedPack.json();
-            setEditingContentPool(packData);
-            if (isClassicPack) {
-              setClassicPools(prev => prev.map(pack => 
-                pack.id === editingContentPool.id ? packData : pack
-              ));
-            } else {
-              setSpecialPools(prev => prev.map(pack => 
-                pack.id === editingContentPool.id ? packData : pack
-              ));
-            }
-          }
-        } else {
-          const errorText = await response.text();
-          console.error(`Failed to update card quantity in ${isClassicPack ? 'classic' : 'special'} pack:`, errorText);
-          alert('Failed to update card quantity. Please try again.');
-        }
-      }
-    } catch (error) {
-      console.error('Error updating special pack card quantity:', error);
-      alert('An error occurred while updating the card quantity. Please try again.');
-    }
-  };
 
   const handleAddCardToContent = async (card: any) => {
     if (!editingContentPool) return;
 
-    // Determine if this is a classic pack or special pack based on the pack ID
-    const isClassicPack = classicPools.some(pool => pool.id === editingContentPool.id);
-    const apiEndpoint = isClassicPack ? 'classic-packs' : 'special-packs';
+    // Determine the correct API endpoint based on pack type
+    const apiEndpoint = editingContentPool.id.startsWith('cp-') ? 'classic-packs' : 'special-packs';
 
     try {
       const response = await apiRequest('POST', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards`, {
@@ -1316,9 +664,9 @@ export default function Admin() {
         const updatedPool = await updatedPoolResponse.json();
         const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
           id: card.id,
-          name: card.card?.name || card.name,
-          imageUrl: card.card?.imageUrl || card.imageUrl,
-          credits: card.card?.credits || card.credits,
+          name: card.name,
+          imageUrl: card.imageUrl,
+          credits: card.refundCredit || card.credits,
           quantity: card.quantity
         }));
         
@@ -1327,23 +675,15 @@ export default function Admin() {
           cards: normalizedCards
         } : null);
         
-        // Update the appropriate pools state
-        if (isClassicPack) {
-          setClassicPools(prev => prev.map(pool => 
-            pool.id === editingContentPool.id 
-              ? { ...pool, cards: normalizedCards }
-              : pool
-          ));
-        } else {
+        // Update the special pools state (classic packs not supported in simplified system)
           setSpecialPools(prev => prev.map(pool => 
             pool.id === editingContentPool.id 
               ? { ...pool, cards: normalizedCards }
               : pool
           ));
-        }
         
         // Show success message
-        alert(`${card.name} added to pack successfully!`);
+        alert(`${card.cardName || card.name} added to pack successfully!`);
       } else {
         const errorText = await response.text();
         console.error('Failed to add card to pack:', errorText);
@@ -1358,9 +698,8 @@ export default function Admin() {
   const handleRemoveCardFromContent = async (cardId: string) => {
     if (!editingContentPool) return;
 
-    // Determine if this is a classic pack or special pack based on the pack ID
-    const isClassicPack = classicPools.some(pool => pool.id === editingContentPool.id);
-    const apiEndpoint = isClassicPack ? 'classic-packs' : 'special-packs';
+    // Determine the correct API endpoint based on pack type
+    const apiEndpoint = editingContentPool.id.startsWith('cp-') ? 'classic-packs' : 'special-packs';
 
     console.log('Removing card with ID:', cardId);
     console.log('Current editingContentPool.cards:', editingContentPool.cards);
@@ -1378,31 +717,23 @@ export default function Admin() {
           cards: prev.cards.filter(card => card.id !== cardId)
         } : null);
         
-        // Update the appropriate pools state
-        if (isClassicPack) {
-          setClassicPools(prev => prev.map(pool => 
-            pool.id === editingContentPool.id 
-              ? { ...pool, cards: (pool.cards || []).filter(card => card.id !== cardId) }
-              : pool
-          ));
-        } else {
+        // Update the special pools state (classic packs not supported in simplified system)
           setSpecialPools(prev => prev.map(pool => 
             pool.id === editingContentPool.id 
               ? { ...pool, cards: (pool.cards || []).filter(card => card.id !== cardId) }
               : pool
           ));
-        }
         
         // Then refresh from server to ensure consistency
-        const updatedPool = await fetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
+        const updatedPool = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
         console.log('Updated pool data:', updatedPool);
         console.log('Updated pool cards:', updatedPool.cards);
         
         const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
           id: card.id,
-          name: card.card?.name || card.name,
-          imageUrl: card.card?.imageUrl || card.imageUrl,
-          credits: card.card?.credits || card.credits,
+          name: card.name,
+          imageUrl: card.imageUrl,
+          credits: card.refundCredit || card.credits,
           quantity: card.quantity
         }));
         
@@ -1429,8 +760,11 @@ export default function Admin() {
   const handleUpdateCardQuantity = async (cardId: string, newQuantity: number) => {
     if (!editingContentPool || newQuantity < 1) return;
 
+    // Determine the correct API endpoint based on pack type
+    const apiEndpoint = editingContentPool.id.startsWith('cp-') ? 'classic-packs' : 'special-packs';
+
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/special-packs/${editingContentPool.id}/cards/${cardId}`, {
+      const response = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${cardId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1442,7 +776,7 @@ export default function Admin() {
 
       if (response.ok) {
         // Refresh the editing pool data
-        const updatedPool = await fetch(`http://localhost:3000/api/admin/special-packs/${editingContentPool.id}`).then(res => res.json());
+        const updatedPool = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
         setEditingContentPool(prev => prev ? {
           ...prev,
           cards: updatedPool.cards || []
@@ -1469,16 +803,144 @@ export default function Admin() {
     setShowEditContentDialog(false);
   };
 
+  // Add Card Functions
+  const handleAddCard = async () => {
+    if (!editingContentPool) return;
+
+    // Determine the correct API endpoint based on pack type
+    const apiEndpoint = editingContentPool.id.startsWith('cp-') ? 'classic-packs' : 'special-packs';
+
+    try {
+      const response = await apiRequest('POST', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards`, {
+        cardName: newCard.name,
+        cardImageUrl: newCard.imageUrl,
+        cardTier: newCard.tier,
+        refundCredit: parseInt(newCard.refundCredit) || 0,
+        quantity: parseInt(newCard.quantity) || 1
+      });
+
+      if (response.ok) {
+        // Refresh the editing pool data
+        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+        const updatedPool = await updatedPoolResponse.json();
+        const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
+          id: card.id,
+          name: card.name,
+          imageUrl: card.imageUrl,
+          credits: card.refundCredit || card.credits,
+          quantity: card.quantity
+        }));
+        
+        setEditingContentPool(prev => prev ? {
+          ...prev,
+          cards: normalizedCards
+        } : null);
+
+        // Reset form
+        setNewCard({ name: '', imageUrl: '', tier: 'D', refundCredit: '', quantity: '' });
+        setShowAddCardDialog(false);
+        
+        alert('Card added successfully!');
+      } else {
+        const errorText = await response.text();
+        alert(`Failed to add card: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error adding card:', error);
+      alert('An error occurred while adding the card. Please try again.');
+    }
+  };
+
+  // Edit Card Functions
+  const handleEditCard = (card: any) => {
+    setEditingCard(card);
+    setEditCardForm({
+      name: card.cardName || card.name,
+      imageUrl: card.cardImageUrl || card.imageUrl,
+      tier: card.cardTier || card.tier || 'D',
+      refundCredit: (card.refundCredit || card.credits).toString(),
+      quantity: card.quantity.toString()
+    });
+    setShowEditCardDialog(true);
+  };
+
+  const handleUpdateCard = async () => {
+    if (!editingCard || !editingContentPool) return;
+
+    // Determine the correct API endpoint based on pack type
+    const apiEndpoint = editingContentPool.id.startsWith('cp-') ? 'classic-packs' : 'special-packs';
+
+    try {
+      const response = await apiRequest('PATCH', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards/${editingCard.id}`, {
+        cardName: editCardForm.name,
+        cardImageUrl: editCardForm.imageUrl,
+        cardTier: editCardForm.tier,
+        refundCredit: parseInt(editCardForm.refundCredit) || 0,
+        quantity: parseInt(editCardForm.quantity) || 1
+      });
+
+      if (response.ok) {
+        // Refresh the editing pool data
+        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+        const updatedPool = await updatedPoolResponse.json();
+        const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
+          id: card.id,
+          name: card.name,
+          imageUrl: card.imageUrl,
+          credits: card.refundCredit || card.credits,
+          quantity: card.quantity
+        }));
+        
+        setEditingContentPool(prev => prev ? {
+          ...prev,
+          cards: normalizedCards
+        } : null);
+
+        // Reset form
+        setEditingCard(null);
+        setShowEditCardDialog(false);
+        
+        alert('Card updated successfully!');
+      } else {
+        const errorText = await response.text();
+        alert(`Failed to update card: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error updating card:', error);
+      alert('An error occurred while updating the card. Please try again.');
+    }
+  };
+
   // Classic Pack Card Management Functions
+  const handleEditClassicPrize = async (pool: any) => {
+    console.log('handleEditClassicPrize called with pool:', pool);
+    
+    // Set the editing pool directly from the pool data we already have
+    setEditingContentPool({
+      id: pool.id,
+      name: pool.name,
+      cards: (pool.cards || []).map((card: any) => ({
+        id: card.id,
+        name: card.cardName || card.name,
+        imageUrl: card.cardImageUrl || card.imageUrl,
+        credits: card.refundCredit || card.credits,
+        quantity: card.quantity
+      }))
+    });
+    
+    console.log('Setting showEditContentDialog to true');
+    setShowEditContentDialog(true);
+  };
+
   const handleViewClassicPrize = (pool: any) => {
     setViewingPrizePool({
       id: pool.id,
       name: pool.name,
       cards: (pool.cards || []).map((card: any) => ({
         id: card.id,
-        name: card.card?.name || card.name,
-        imageUrl: card.card?.imageUrl || card.imageUrl,
-        credits: card.card?.credits || card.credits,
+        name: card.cardName || card.name,
+        imageUrl: card.cardImageUrl || card.imageUrl,
+        credits: card.refundCredit || card.credits,
         quantity: card.quantity
       }))
     });
@@ -1491,9 +953,9 @@ export default function Admin() {
       name: pool.name,
       cards: (pool.cards || []).map((card: any) => ({
         id: card.id,
-        name: card.card?.name || card.name,
-        imageUrl: card.card?.imageUrl || card.imageUrl,
-        credits: card.card?.credits || card.credits,
+        name: card.cardName || card.name,
+        imageUrl: card.cardImageUrl || card.imageUrl,
+        credits: card.refundCredit || card.credits,
         quantity: card.quantity
       }))
     });
@@ -1505,7 +967,7 @@ export default function Admin() {
     if (!editingContentPool) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}/cards`, {
+      const response = await authenticatedFetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}/cards`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1521,7 +983,7 @@ export default function Admin() {
       }
 
       // Refresh the pack data
-      const updatedPack = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}`);
+      const updatedPack = await authenticatedFetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}`);
       const packData = await updatedPack.json();
       
       // Update the editing content pool with fresh data
@@ -1530,9 +992,9 @@ export default function Admin() {
         name: packData.name,
         cards: (packData.cards || []).map((card: any) => ({
           id: card.id,
-          name: card.card?.name || card.name,
-          imageUrl: card.card?.imageUrl || card.imageUrl,
-          credits: card.card?.credits || card.credits,
+          name: card.name,
+          imageUrl: card.imageUrl,
+          credits: card.refundCredit || card.credits,
           quantity: card.quantity
         }))
       });
@@ -1580,7 +1042,7 @@ export default function Admin() {
     if (!editingContentPool) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}/cards/${cardId}`, {
+      const response = await authenticatedFetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}/cards/${cardId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1593,7 +1055,7 @@ export default function Admin() {
       }
 
       // Refresh the pack data
-      const updatedPack = await fetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}`);
+      const updatedPack = await authenticatedFetch(`http://localhost:3000/api/admin/classic-packs/${editingContentPool.id}`);
       const packData = await updatedPack.json();
       
       // Update the editing content pool with fresh data
@@ -1602,9 +1064,9 @@ export default function Admin() {
         name: packData.name,
         cards: (packData.cards || []).map((card: any) => ({
           id: card.id,
-          name: card.card?.name || card.name,
-          imageUrl: card.card?.imageUrl || card.imageUrl,
-          credits: card.card?.credits || card.credits,
+          name: card.name,
+          imageUrl: card.imageUrl,
+          credits: card.refundCredit || card.credits,
           quantity: card.quantity
         }))
       });
@@ -1626,9 +1088,9 @@ export default function Admin() {
       name: pool.name,
       cards: (pool.cards || []).map((card: any) => ({
         id: card.id,
-        name: card.card?.name || card.name,
-        imageUrl: card.card?.imageUrl || card.imageUrl,
-        credits: card.card?.credits || card.credits,
+        name: card.cardName || card.name,
+        imageUrl: card.cardImageUrl || card.imageUrl,
+        credits: card.refundCredit || card.credits,
         quantity: card.quantity
       }))
     });
@@ -1643,15 +1105,17 @@ export default function Admin() {
   // Fetch special packs from API
   const fetchSpecialPacks = async () => {
     try {
+      console.log('🔄 Fetching special packs...');
       const response = await apiRequest('GET', '/api/admin/special-packs');
       if (response.ok) {
         const packs = await response.json();
+        console.log('✅ Special packs fetched:', packs);
         setSpecialPools(packs);
     } else {
-        console.error('Failed to fetch special packs');
+        console.error('❌ Failed to fetch special packs');
       }
     } catch (error: any) {
-      console.error('Error fetching special packs:', error);
+      console.error('❌ Error fetching special packs:', error);
     }
   };
 
@@ -1758,22 +1222,18 @@ export default function Admin() {
           <h1 className="text-3xl font-bold font-gaming mb-8 text-center">Admin Dashboard</h1>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-5xl mx-auto grid-cols-5 mb-8">
+            <TabsList className="grid w-full max-w-5xl mx-auto grid-cols-4 mb-8">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="user" data-testid="tab-user">
+              <TabsTrigger value="users" data-testid="tab-users">
                 <Users className="w-4 h-4 mr-2" />
-                User
+                Users
               </TabsTrigger>
               <TabsTrigger value="manage" data-testid="tab-manage">
                 <Package className="w-4 h-4 mr-2" />
                 Manage
-              </TabsTrigger>
-              <TabsTrigger value="inventory" data-testid="tab-inventory">
-                <Package className="w-4 h-4 mr-2" />
-                Inventory
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
                 <Settings className="w-4 h-4 mr-2" />
@@ -1885,11 +1345,22 @@ export default function Admin() {
               </div>
             </TabsContent>
 
-            {/* User Tab */}
-            <TabsContent value="user">
+            {/* Users Tab */}
+            <TabsContent value="users">
               <Card className="gaming-card">
                 <CardHeader>
+                  <div className="flex items-center justify-between">
                   <CardTitle>User Management</CardTitle>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={fetchUsers}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Refresh Users
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                     {isLoadingUsers ? (
@@ -1923,6 +1394,16 @@ export default function Admin() {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => refreshUserData(user.id)}
+                              title="Refresh user data (useful when credits are updated directly in database)"
+                            >
+                              <RefreshCw className="w-3 h-3 mr-1" />
+                              Refresh
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
                             onClick={() => handleEditUser(user)}
                           >
                             <Edit className="w-3 h-3 mr-1" />
@@ -1939,108 +1420,91 @@ export default function Admin() {
 
             {/* Manage Tab */}
             <TabsContent value="manage">
-              <div className="space-y-6">
-                {/* Section Selector */}
-                <div className="flex gap-4 mb-6">
-                  <Button
-                    variant={manageSection === "classic" ? "default" : "outline"}
-                    onClick={() => setManageSection("classic")}
-                  >
+              <Tabs value={manageSection} onValueChange={(value) => setManageSection(value as "classic" | "special" | "mystery")} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="classic">
                     <Package className="w-4 h-4 mr-2" />
                     Classic
-                  </Button>
-                  <Button
-                    variant={manageSection === "special" ? "default" : "outline"}
-                    onClick={() => setManageSection("special")}
-                  >
+                  </TabsTrigger>
+                  <TabsTrigger value="special">
                     <Package className="w-4 h-4 mr-2" />
                     Special
-                  </Button>
-                  <Button
-                    variant={manageSection === "mystery" ? "default" : "outline"}
-                    onClick={() => setManageSection("mystery")}
-                  >
+                  </TabsTrigger>
+                  <TabsTrigger value="mystery">
                     <Package className="w-4 h-4 mr-2" />
                     Mystery
-                  </Button>
-                </div>
+                  </TabsTrigger>
+                </TabsList>
 
                 {/* Classic Pack Section */}
-                {manageSection === "classic" && (
+                <TabsContent value="classic">
                   <div className="space-y-6">
-                    {/* Classic Pack Navigation */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant={classicSection === "view" ? "default" : "outline"}
-                        onClick={() => setClassicSection("view")}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </Button>
-                      <Button
-                        variant={classicSection === "add" ? "default" : "outline"}
-                        onClick={() => setClassicSection("add")}
-                      >
+                    {/* Classic Packs Display */}
+                    <Card className="gaming-card">
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle>Classic Packs</CardTitle>
+                          <Button onClick={() => setShowAddClassicDialog(true)}>
                         <Plus className="w-4 h-4 mr-2" />
                         Add
                       </Button>
                     </div>
-
-                    {/* View Classic Packs */}
-                    {classicSection === "view" && (
-                      <Card className="gaming-card">
-                        <CardHeader>
-                          <CardTitle>Classic Packs</CardTitle>
                         </CardHeader>
                         <CardContent>
                           {classicPools.length === 0 ? (
                             <div className="text-center py-8">
                               <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                              <h3 className="text-lg font-medium mb-2">No Classic Packs</h3>
+                            <h3 className="text-lg font-medium mb-2">No classic packs created</h3>
                               <p className="text-muted-foreground">
-                                Create your first classic pack to get started
+                              Click "Add" to create your first classic pack
                               </p>
                             </div>
                           ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="space-y-4">
                               {classicPools.map((pool) => (
-                                <Card key={pool.id} className="gaming-card">
-                                  <CardContent className="p-4">
-                                    <div className="flex items-center gap-4">
+                              <div key={pool.id} className="border rounded-lg p-4">
+                                <div className="space-y-4">
+                                  {/* Pack Header */}
+                                  <div className="flex gap-4">
                                       <img
                                         src={pool.imageUrl || pool.image}
                                         alt={pool.name}
-                                        className="w-16 h-16 object-cover rounded-lg"
+                                      className="w-20 h-20 object-cover rounded flex-shrink-0"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                      }}
                                       />
                                       <div className="flex-1 min-w-0">
                                         <h4 className="font-medium text-lg mb-1">{pool.name}</h4>
                                         <p className="text-sm text-muted-foreground mb-2">{pool.description}</p>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
                                           <div>Price: ${pool.price}</div>
+                                        <div>Total Cards: {pool.totalPacks || pool.totalCards || 0}</div>
                                           <div>Cards Added: {pool.cards?.length || 0}</div>
                                         </div>
                                       </div>
                             </div>
 
                                     {/* Action Buttons */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                       <Button
-                                        onClick={() => handleViewClassicPrize(pool)}
+                                      onClick={() => handleEditClassicPrize(pool)}
                                         variant="outline"
                                         size="sm"
                                         className="w-full"
                                       >
-                                        <Eye className="w-4 h-4 mr-2" />
-                                        View Prize
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit Prize
                                       </Button>
                                       <Button
-                                        onClick={() => handleEditClassicPool(pool)}
+                                      onClick={() => handleViewClassicPrize(pool)}
                                         variant="outline"
                                         size="sm"
                                         className="w-full"
                                       >
-                                        <Edit className="w-4 h-4 mr-2" />
-                                        Edit Content
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      View Prize
                                       </Button>
                                       <Button
                                         onClick={() => handleEditClassicContent(pool)}
@@ -2049,94 +1513,31 @@ export default function Admin() {
                                         className="w-full"
                                       >
                                         <Package className="w-4 h-4 mr-2" />
-                                        Edit Prize
+                                      Edit Content
                                       </Button>
                                       <Button
                                         onClick={() => handleDeleteClassicPool(pool.id)}
                                         variant="outline"
                                         size="sm"
-                                        className="w-full text-red-600 hover:text-red-700"
+                                      className="w-full"
                                       >
                                         <X className="w-4 h-4 mr-2" />
                                         Remove Content
                                       </Button>
                               </div>
-                                  </CardContent>
-                                </Card>
+                                </div>
+                              </div>
                               ))}
                             </div>
                           )}
                         </CardContent>
                       </Card>
-                    )}
 
-                    {/* Add Classic Pack */}
-                    {classicSection === "add" && (
-                      <Card className="gaming-card">
-                        <CardHeader>
-                          <CardTitle>Add Classic Pack</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="classicPackName">Pack Name</Label>
-                                <Input
-                                  id="classicPackName"
-                                  value={newPool.name}
-                                  onChange={(e) => setNewPool({ ...newPool, name: e.target.value })}
-                                  placeholder="Enter pack name"
-                                  required
-                                />
                               </div>
-                              <ImageUpload
-                              value={newPool.image}
-                              onChange={(value) => setNewPool({ ...newPool, image: value })}
-                              placeholder="Enter image URL"
-                              label="Image URL"
-                              id="classicPackImage"
-                              required
-                            />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="classicPackDescription">Description</Label>
-                              <Input
-                                id="classicPackDescription"
-                                value={newPool.description}
-                                onChange={(e) => setNewPool({ ...newPool, description: e.target.value })}
-                                placeholder="Enter pack description"
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="classicPackPrice">Price</Label>
-                              <Input
-                                id="classicPackPrice"
-                                type="number"
-                                value={newPool.price}
-                                onChange={(e) => setNewPool({ ...newPool, price: e.target.value })}
-                                placeholder="Enter price"
-                                required
-                              />
-                            </div>
-                            <Button 
-                              onClick={handleAddClassicPool}
-                              className="mt-4"
-                              disabled={!newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.description.trim()}
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Create Classic Pack
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                  </div>
-                )}
+                </TabsContent>
 
                 {/* Special Pack Section */}
-                {manageSection === "special" && (
+                <TabsContent value="special">
                   <div className="space-y-6">
                     {/* Special Packs Display */}
                       <Card className="gaming-card">
@@ -2145,7 +1546,7 @@ export default function Admin() {
                           <CardTitle>Special Packs</CardTitle>
                           <Button onClick={() => setShowAddPoolDialog(true)}>
                             <Plus className="w-4 h-4 mr-2" />
-                            Add Content
+                            Add
                           </Button>
                           </div>
                         </CardHeader>
@@ -2155,7 +1556,7 @@ export default function Admin() {
                             <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                             <h3 className="text-lg font-medium mb-2">No special packs created</h3>
                             <p className="text-muted-foreground">
-                              Click "Add Content" to create your first special pack
+                              Click "Add" to create your first special pack
                             </p>
                                   </div>
                         ) : (
@@ -2170,42 +1571,42 @@ export default function Admin() {
                                       alt={pool.name}
                                       className="w-20 h-20 object-cover rounded flex-shrink-0"
                                       onError={(e) => {
-                                        (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
                                       }}
                                     />
                                     <div className="flex-1 min-w-0">
                                       <h4 className="font-medium text-lg mb-1">{pool.name}</h4>
                                       <p className="text-sm text-muted-foreground mb-2">{pool.description}</p>
-                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
                                         <div>Price: ${pool.price}</div>
-                                        <div>Total Cards: {pool.totalPacks || pool.totalCards || 0}</div>
                                         <div>Cards Added: {pool.cards?.length || 0}</div>
                                     </div>
                                   </div>
                                 </div>
                                   
                                   {/* Action Buttons */}
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                   <Button
-                                      onClick={() => handleViewPrize(pool)}
+                                      onClick={() => handleEditPrize(pool)}
                                       variant="outline"
                                     size="sm"
                                       className="w-full"
                                     >
-                                      <Eye className="w-4 h-4 mr-2" />
-                                      View Prize
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit Prize
                                     </Button>
                                     <Button
-                                      onClick={() => handleEditContent(pool)}
+                                      onClick={() => handleViewPrize(pool)}
                                     variant="outline"
                                       size="sm"
                                       className="w-full"
                                   >
-                                      <Edit className="w-4 h-4 mr-2" />
-                                      Edit Prize
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      View Prize
                                   </Button>
                                   <Button
-                                      onClick={() => handleEditPool(pool)}
+                                      onClick={() => handleEditContent(pool)}
                                       variant="outline"
                                     size="sm"
                                       className="w-full"
@@ -2220,7 +1621,7 @@ export default function Admin() {
                                       className="w-full"
                                     >
                                       <X className="w-4 h-4 mr-2" />
-                                      Remove
+                                      Remove Content
                                   </Button>
                                 </div>
                               </div>
@@ -2232,38 +1633,21 @@ export default function Admin() {
                         </CardContent>
                       </Card>
                   </div>
-                )}
+                </TabsContent>
 
                 {/* Mystery Pack Section */}
-                {manageSection === "mystery" && (
+                <TabsContent value="mystery">
                   <div className="space-y-6">
-                    {/* Mystery Pack Sub-navigation */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant={mysterySection === "view" ? "default" : "outline"}
-                        onClick={() => setMysterySection("view")}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Prize
-                      </Button>
-                      <Button
-                        variant={mysterySection === "edit" ? "default" : "outline"}
-                        onClick={() => setMysterySection("edit")}
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Prize
-                      </Button>
-                      <Button
-                        variant={mysterySection === "add" ? "default" : "outline"}
-                        onClick={() => setMysterySection("add")}
-                      >
+                    {/* Mystery Pack Management */}
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-bold">Mystery Pack Management</h2>
+                      <Button onClick={() => {/* TODO: Add new card functionality */}}>
                         <Plus className="w-4 h-4 mr-2" />
-                        Add
+                        Add Card
                       </Button>
                     </div>
 
-                    {/* View Prize Tab */}
-                    {mysterySection === "view" && (
+                    {/* Mystery Pack Cards */}
                       <Card className="gaming-card">
                         <CardHeader>
                           <CardTitle>Mystery Pack Prize Pool</CardTitle>
@@ -2287,406 +1671,42 @@ export default function Admin() {
                               {mysteryPackCards.map((card) => (
                                 <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
                                   <img
-                                    src={card.card.imageUrl}
-                                    alt={card.card.name}
+                                    src={card.cardImageUrl}
+                                    alt={card.cardName}
                                     className="w-16 h-16 object-cover rounded"
                                     onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
                                     }}
                                   />
                                   <div className="flex-1">
-                                    <h4 className="font-medium">{card.card.name}</h4>
+                                    <h4 className="font-medium">{card.cardName}</h4>
                                     <p className="text-sm text-muted-foreground">
-                                      Credits: {card.card.credits} | Quantity: {card.quantity}
+                                      Credits: {card.refundCredit} | Quantity: {card.quantity}
                                     </p>
                               </div>
-                              </div>
-                              ))}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Edit Prize Tab */}
-                    {mysterySection === "edit" && (
-                      <Card className="gaming-card">
-                        <CardHeader>
-                          <CardTitle>Edit Mystery Pack Prize Cards</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {mysteryPackCards.length === 0 ? (
-                            <div className="text-center py-8">
-                              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                              <h3 className="text-lg font-medium mb-2">No cards in mystery pack prize pool</h3>
-                              <p className="text-muted-foreground">
-                                Add cards from inventory to build your mystery pack prize pool
-                              </p>
-                                    </div>
-                          ) : (
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-center mb-4">
-                                <p className="text-sm text-muted-foreground">
-                                  {mysteryPackCards.length} card(s) in mystery pack prize pool
-                                </p>
-                                {Object.keys(editingQuantity).length > 0 && (
-                                  <Button
-                                    onClick={handleSaveAllQuantities}
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700"
-                                  >
-                                    <Save className="w-4 h-4 mr-2" />
-                                    Save All ({Object.keys(editingQuantity).length})
-                                  </Button>
-                                )}
-                                    </div>
-                              {mysteryPackCards.map((card) => (
-                                <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                                  <img
-                                    src={card.card.imageUrl}
-                                    alt={card.card.name}
-                                    className="w-16 h-16 object-cover rounded"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
-                                    }}
-                                  />
-                                  <div className="flex-1">
-                                    <h4 className="font-medium">{card.card.name}</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                      Credits: {card.card.credits}
-                                    </p>
-                                    {editingQuantity[card.id] !== undefined ? (
-                                      <div className="flex items-center gap-2 mt-2">
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          value={editingQuantity[card.id]}
-                                          onChange={(e) => handleQuantityChange(card.id, parseInt(e.target.value) || 0)}
-                                          className="w-20 h-8"
-                                        />
-                                    <Button
-                                          onClick={() => handleCancelQuantity(card.id)}
-                                          variant="outline"
-                                      size="sm"
-                                          className="h-8"
-                                        >
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-2 mt-2">
-                                        <span className="text-sm text-muted-foreground">
-                                          Quantity: {card.quantity}
-                                        </span>
-                                        <Button
-                                          onClick={() => setEditingQuantity(prev => ({ ...prev, [card.id]: card.quantity }))}
-                                      variant="outline"
-                                          size="sm"
-                                          className="h-8"
-                                    >
-                                          <Edit className="w-3 h-3 mr-1" />
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm">
+                                      <Edit className="w-4 h-4 mr-2" />
                                           Edit
                                     </Button>
-                                      </div>
-                                    )}
-                                  </div>
-                                    <Button
-                                    onClick={() => {
-                                      console.log('Remove button clicked for card:', card);
-                                      handleRemoveFromMysteryPack(card.id, card.card.name);
-                                    }}
-                                    variant="outline"
-                                      size="sm"
-                                    >
+                                    <Button variant="outline" size="sm">
                                     <X className="w-4 h-4 mr-2" />
                                     Remove
                                     </Button>
                                   </div>
+                                  </div>
                               ))}
                                 </div>
                           )}
                         </CardContent>
                       </Card>
-                    )}
 
-                    {/* Add Tab */}
-                    {mysterySection === "add" && (
-                      <Card className="gaming-card">
-                        <CardHeader>
-                          <CardTitle>Add Cards to Mystery Pack Pool</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="mb-4 p-4 bg-muted rounded-lg">
-                            <h4 className="font-medium mb-2">Shared Card Pool</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Cards added here will be available in all mystery pack types (Pokeball, Greatball, Ultraball, Masterball). 
-                              The difference between pack types is only the odds of pulling different rarity tiers.
-                            </p>
-                                            </div>
-                          
-                          {/* Search Bar */}
-                          <div className="mb-6">
-                            <Input
-                              type="text"
-                              placeholder="Search cards from inventory..."
-                              value={mysterySearchQuery}
-                              onChange={(e) => setMysterySearchQuery(e.target.value)}
-                              className="w-full"
-                            />
-                            {mysterySearchQuery && (
-                              <p className="text-sm text-muted-foreground mt-2">
-                                Showing {mysteryFilteredCards.length} available cards (excluding {mysteryPackCards.length} already in mystery pack)
-                              </p>
-                            )}
-                            {!mysterySearchQuery && mysteryPackCards.length > 0 && (
-                              <p className="text-sm text-muted-foreground mt-2">
-                                {mysteryPackCards.length} cards already in mystery pack pool
-                              </p>
-                            )}
-                                          </div>
-
-                          {/* Cards List */}
-                          <div className="space-y-3">
-                            {mysteryFilteredCards.length === 0 ? (
-                              <div className="text-center py-8">
-                                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                                <h3 className="text-lg font-medium mb-2">
-                                  {mysterySearchQuery 
-                                    ? "No cards found" 
-                                    : mysteryPackCards.length > 0 
-                                      ? "All cards already in mystery pack" 
-                                      : "No cards in inventory"
-                                  }
-                                </h3>
-                                <p className="text-muted-foreground">
-                                  {mysterySearchQuery 
-                                    ? "Try adjusting your search terms"
-                                    : mysteryPackCards.length > 0
-                                      ? "All available cards have been added to the mystery pack pool"
-                                      : "Add some cards to inventory first"
-                                  }
-                                </p>
-                                      </div>
-                                    ) : (
-                              mysteryFilteredCards.map((card) => (
-                                <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                                  <img
-                                    src={card.imageUrl}
-                                    alt={card.name}
-                                    className="w-16 h-16 object-cover rounded"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
-                                    }}
-                                  />
-                                  <div className="flex-1">
-                                    <h4 className="font-medium">{card.name}</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                      Credits: {card.credits}
-                                    </p>
-                                  </div>
-                                      <Button
-                                    onClick={() => handleAddToMysteryPack(card)}
-                                        size="sm"
-                                      >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add
-                                      </Button>
-                                    </div>
-                              ))
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                )}
               </div>
             </TabsContent>
-
-            {/* Inventory Tab */}
-            <TabsContent value="inventory">
-                <Card className="gaming-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                    <Package className="w-5 h-5" />
-                    Card Inventory
-                    </CardTitle>
-                  </CardHeader>
-                        <CardContent>
-                  <div className="space-y-3">
-                    {/* Search Bar */}
-                    <div className="mb-6">
-                      <div className="relative max-w-md">
-                        <Input
-                          type="text"
-                          placeholder="Search cards by name..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-10"
-                        />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                              </div>
-                        {searchQuery && (
-                          <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-                              </div>
-                      {searchQuery && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Showing {filteredCards.length} of {inventoryCards.length} cards
-                        </p>
-                      )}
-                      {/* Usage Legend */}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                          <span>Used in pack pools</span>
-                        </div>
-                        <div className="text-gray-400">•</div>
-                        <span>Removing cards from inventory will also remove them from all pack pools</span>
-                      </div>
-                    </div>
-
-                    {/* Loading State */}
-                    {isLoadingInventory && (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                        <p className="mt-2 text-muted-foreground">Loading inventory...</p>
-                                </div>
-                              )}
-
-                    {/* Card List - Grid View */}
-                    {!isLoadingInventory && (
-                      <div className="space-y-2">
-                        {filteredCards.map((card) => (
-                          <Card key={card.id} className="gaming-card hover:shadow-lg transition-shadow">
-                            <CardContent className="p-3">
-                              <div className="flex items-center space-x-4">
-                                {/* Card Image - Small */}
-                                <div className="flex-shrink-0">
-                                  <img
-                                    src={card.imageUrl}
-                                    alt={card.name}
-                                    className="w-16 h-16 object-cover rounded-lg"
-                                    onError={(e) => {
-                                      e.currentTarget.src = '/assets/random-common-card.png';
-                                    }}
-                                  />
-                            </div>
-
-                                {/* Card Details - Compact */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-lg truncate">{card.name}</h3>
-                                    {/* Usage indicator */}
-                                    {(() => {
-                                      const usedInSpecialPacks = specialPools.some(pool => 
-                                        pool.cards && pool.cards.some(packCard => (packCard as any).card?.id === card.id)
-                                      );
-                                      const usedInMysteryPacks = mysteryPackCards.some(packCard => (packCard as any).card?.id === card.id);
-                                      
-                                      if (usedInSpecialPacks || usedInMysteryPacks) {
-                                        return (
-                                          <div className="flex items-center gap-1 ml-2">
-                                            <div className="w-2 h-2 bg-orange-400 rounded-full" title="Used in pack pools"></div>
-                                          </div>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
-                                  <div className="flex items-center justify-between mt-1">
-                                    <span className={`px-2 py-1 text-xs font-bold rounded border ${
-                                      card.tier === 'D' ? 'bg-gray-600 text-white border-gray-700' :
-                                      card.tier === 'C' ? 'bg-green-600 text-white border-green-700' :
-                                      card.tier === 'B' ? 'bg-blue-600 text-white border-blue-700' :
-                                      card.tier === 'A' ? 'bg-purple-600 text-white border-purple-700' :
-                                      card.tier === 'S' ? 'bg-orange-600 text-white border-orange-700' :
-                                      card.tier === 'SS' ? 'bg-red-600 text-white border-red-700' :
-                                      'bg-yellow-600 text-white border-yellow-700'
-                                    }`}>
-                                      {card.tier || 'D'}
-                                    </span>
-                                    <p className="text-sm text-blue-600 font-medium">
-                                      {card.credits} Credits
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {/* Action Buttons - Compact */}
-                                <div className="flex gap-2 flex-shrink-0">
-                            <Button
-                                    variant="outline"
-                              size="sm"
-                                    onClick={() => handleEditCard(card)}
-                                    className="px-3"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleRemoveCard(card.id, card.name)}
-                                    className="px-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                    {/* Empty State */}
-                    {!isLoadingInventory && inventoryCards.length === 0 && (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Package className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Cards in Inventory</h3>
-                        <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-                          Start building your card collection by adding your first card to the inventory.
-                        </p>
-                        <Button onClick={() => setShowAddCardForm(true)} className="mx-auto">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Your First Card
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* No Search Results */}
-                    {!isLoadingInventory && inventoryCards.length > 0 && filteredCards.length === 0 && (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Cards Found</h3>
-                        <p className="text-gray-500 mb-4 max-w-sm mx-auto">
-                          No cards match your search for "{searchQuery}". Try adjusting your search terms.
-                        </p>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setSearchQuery('')}
-                          className="mx-auto"
-                        >
-                          Clear Search
-                        </Button>
-                      </div>
-                    )}
-                          </div>
-                  </CardContent>
-                </Card>
+              </Tabs>
             </TabsContent>
+
 
             {/* Settings Tab */}
             <TabsContent value="settings">
@@ -2837,185 +1857,16 @@ export default function Admin() {
           </Dialog>
 
           {/* Floating Add Card Button - Only show on Inventory tab */}
-          {activeTab === 'inventory' && (
-            <Button
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 gaming-button"
-              onClick={() => setShowAddCardForm(true)}
-            >
-              <Plus className="w-6 h-6" />
-            </Button>
-          )}
 
-          {/* Add Card Dialog */}
-          <Dialog open={showAddCardForm} onOpenChange={setShowAddCardForm}>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold">Add New Card</DialogTitle>
-                <DialogDescription>
-                  Add a new card to the inventory with tier and credit information.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-6 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cardName" className="text-sm font-medium">Card Name</Label>
-                  <Input
-                    id="cardName"
-                    value={newCard.name}
-                    onChange={(e) => handleNewCardChange('name', e.target.value)}
-                    placeholder="Enter card name"
-                    className="w-full"
-                    required
-                  />
-                </div>
-
-                <ImageUpload
-                  value={newCard.imageUrl}
-                  onChange={(value) => handleNewCardChange('imageUrl', value)}
-                  placeholder="https://example.com/card-image.jpg"
-                  label="Image URL"
-                  id="imageUrl"
-                  required
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="credits" className="text-sm font-medium">Credits</Label>
-                  <Input
-                      id="credits"
-                      type="number"
-                      min="0"
-                      value={newCard.credits}
-                      onChange={(e) => handleNewCardChange('credits', e.target.value)}
-                      placeholder="Enter credit amount"
-                      className="w-full"
-                      required
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="tier" className="text-sm font-medium">Tier</Label>
-                    <select
-                      id="tier"
-                      value={newCard.tier}
-                      onChange={(e) => handleNewCardChange('tier', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
-                      required
-                    >
-                      <option value="D">D</option>
-                      <option value="C">C</option>
-                      <option value="B">B</option>
-                      <option value="A">A</option>
-                      <option value="S">S</option>
-                      <option value="SS">SS</option>
-                      <option value="SSS">SSS</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAddCardForm(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleAddCard} className="flex-1">
-                  Add Card
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Edit Card Dialog */}
-          <Dialog open={editingCard !== null} onOpenChange={() => setEditingCard(null)}>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold">Edit Card</DialogTitle>
-                <DialogDescription>
-                  Update the card details and tier information.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-6 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editCardName" className="text-sm font-medium">Card Name</Label>
-                  <Input
-                    id="editCardName"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    placeholder="Enter card name"
-                    className="w-full"
-                    required
-                  />
-                </div>
-                
-                <ImageUpload
-                  value={editForm.imageUrl}
-                  onChange={(value) => setEditForm({ ...editForm, imageUrl: value })}
-                  placeholder="https://example.com/card-image.jpg"
-                  label="Image URL"
-                  id="editImageUrl"
-                  required
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="editCredits" className="text-sm font-medium">Credits</Label>
-                  <Input
-                      id="editCredits"
-                    type="number"
-                    min="0"
-                      value={editForm.credits}
-                      onChange={(e) => setEditForm({ ...editForm, credits: e.target.value })}
-                      placeholder="Enter credit amount"
-                      className="w-full"
-                      required
-                    />
-                </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="editTier" className="text-sm font-medium">Tier</Label>
-                    <select
-                      id="editTier"
-                      value={editForm.tier}
-                      onChange={(e) => setEditForm({ ...editForm, tier: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
-                      required
-                    >
-                      <option value="D">D</option>
-                      <option value="C">C</option>
-                      <option value="B">B</option>
-                      <option value="A">A</option>
-                      <option value="S">S</option>
-                      <option value="SS">SS</option>
-                      <option value="SSS">SSS</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleCancelEdit}
-                  className="flex-1"
-                >
-                    Cancel
-                  </Button>
-                <Button onClick={handleUpdateCard} className="flex-1">
-                  Update Card
-                  </Button>
-                </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
         {/* Add Content Dialog */}
         <Dialog open={showAddPoolDialog} onOpenChange={setShowAddPoolDialog}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-              <DialogTitle>Add Content to Special Packs</DialogTitle>
-              <DialogDescription>
-                Create new special packs and add cards to them.
-              </DialogDescription>
+              <DialogTitle>Create New Special Pack</DialogTitle>
+                <DialogDescription>
+                Fill in the pack information to create a new special pack. You can add cards to the prize pool after creation.
+                </DialogDescription>
               </DialogHeader>
               
             <div className="space-y-6">
@@ -3025,54 +1876,60 @@ export default function Admin() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="poolName">Pack Name</Label>
-                    <Input
+                  <Input
                       id="poolName"
                       value={newPool.name}
                       onChange={(e) => setNewPool({ ...newPool, name: e.target.value })}
                       placeholder="Enter pack name"
-                      required
-                    />
+                    required
+                  />
                 </div>
-                
-                  <ImageUpload
+
+                <ImageUpload
                     value={newPool.image}
                     onChange={(value) => setNewPool({ ...newPool, image: value })}
                     placeholder="https://example.com/pack-image.jpg"
                     label="Pack Image URL"
                     id="poolImage"
-                    required
-                  />
-                  
+                  required
+                />
+
                   <div>
                     <Label htmlFor="poolPrice">Price ($)</Label>
-                    <Input
+                  <Input
                       id="poolPrice"
                       type="number"
                       step="0.01"
                       min="0"
-                      value={newPool.price}
-                      onChange={(e) => setNewPool({ ...newPool, price: e.target.value })}
+                      value={newPool.price === '0' ? '' : newPool.price}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewPool({ ...newPool, price: value === '' ? '0' : value });
+                      }}
                       placeholder="0.00"
                       required
                     />
-                      </div>
-                  
+                </div>
+
                   <div>
                     <Label htmlFor="poolTotalCards">Total Cards</Label>
-                    <Input
+                  <Input
                       id="poolTotalCards"
                       type="number"
                       min="1"
-                      value={newPool.totalCards}
-                      onChange={(e) => setNewPool({ ...newPool, totalCards: e.target.value })}
+                      value={newPool.totalCards === '1' ? '' : newPool.totalCards}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewPool({ ...newPool, totalCards: value === '' ? '1' : value });
+                      }}
                       placeholder="10"
-                      required
-                    />
-                    </div>
-                  
+                    required
+                  />
+                </div>
+                
                   <div className="md:col-span-2">
                     <Label htmlFor="poolDescription">Description</Label>
-                    <Input
+                  <Input
                       id="poolDescription"
                       value={newPool.description}
                       onChange={(e) => setNewPool({ ...newPool, description: e.target.value })}
@@ -3089,57 +1946,104 @@ export default function Admin() {
                   <Plus className="w-4 h-4 mr-2" />
                   Create Pack
                 </Button>
-              </div>
+                  </div>
 
-              {/* Add Cards to Existing Packs */}
-              {specialPools.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="font-medium">Add Cards to Existing Packs</h3>
-                  
-                  {specialPools.map((pool) => (
-                    <div key={pool.id} className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-3">{pool.name}</h4>
-                      <p className="text-sm text-muted-foreground mb-3">{pool.description}</p>
-                      
-                      {/* Show available cards from inventory */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {inventoryCards.slice(0, 9).map((card) => (
-                          <div key={card.id} className="flex items-center gap-3 p-3 border rounded">
-                            <img
-                              src={card.imageUrl}
-                              alt={card.name}
-                              className="w-12 h-12 object-cover rounded"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/assets/random-common-card.png';
-                              }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{card.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Credits: {card.credits}
-                              </p>
-                            </div>
-                            <Button
-                              onClick={() => handleAddCardToPool(pool.id, card)}
-                              size="sm"
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              )}
+
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                  setShowAddPoolDialog(false);
+                  setNewPool({ name: '', description: '', image: '', price: '', totalCards: '' });
+                }}
+              >
+                Close
+                  </Button>
+                </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+        {/* Add Classic Pack Dialog */}
+        <Dialog open={showAddClassicDialog} onOpenChange={setShowAddClassicDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+              <DialogTitle>Create New Classic Pack</DialogTitle>
+              <DialogDescription>
+                Fill in the pack information to create a new classic pack. You can add cards to the prize pool after creation.
+              </DialogDescription>
+              </DialogHeader>
+              
+            <div className="space-y-6">
+              {/* Create New Classic Pack Section */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-medium mb-4">Create New Classic Pack</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="classicPoolName">Pack Name</Label>
+                    <Input
+                      id="classicPoolName"
+                      value={newPool.name}
+                      onChange={(e) => setNewPool({ ...newPool, name: e.target.value })}
+                      placeholder="Enter pack name"
+                      required
+                    />
+                </div>
+                
+                  <ImageUpload
+                    value={newPool.image}
+                    onChange={(value) => setNewPool({ ...newPool, image: value })}
+                    placeholder="https://example.com/pack-image.jpg"
+                    label="Pack Image URL"
+                    id="classicPoolImage"
+                    required
+                  />
+                  
+                  <div>
+                    <Label htmlFor="classicPoolPrice">Price ($)</Label>
+                    <Input
+                      id="classicPoolPrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newPool.price === '0' ? '' : newPool.price}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewPool({ ...newPool, price: value === '' ? '0' : value });
+                      }}
+                      placeholder="0.00"
+                      required
+                    />
+                      </div>
+                  
+                  
+                  <div className="md:col-span-2">
+                    <Label htmlFor="classicPoolDescription">Description</Label>
+                    <Input
+                      id="classicPoolDescription"
+                      value={newPool.description}
+                      onChange={(e) => setNewPool({ ...newPool, description: e.target.value })}
+                      placeholder="Enter pack description"
+                      required
+                    />
+                </div>
+                </div>
+                <Button 
+                  onClick={handleAddClassicPool}
+                  className="mt-4"
+                  disabled={!newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.description.trim()}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Classic Pack
+                </Button>
+              </div>
               </div>
 
               <DialogFooter>
                 <Button
                   variant="outline"
                   onClick={() => {
-                  setShowAddPoolDialog(false);
+                  setShowAddClassicDialog(false);
                   setNewPool({ name: '', description: '', image: '', price: '', totalCards: '' });
                 }}
               >
@@ -3261,124 +2165,24 @@ export default function Admin() {
               
             {editingContentPool && (
               <div className="space-y-6">
-                {/* Search Inventory */}
+                {/* Add Card Section */}
               <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Add Prize Cards from Inventory</h3>
-                  <Input
-                    placeholder="Search inventory cards..."
-                    value={contentSearchQuery}
-                    onChange={(e) => setContentSearchQuery(e.target.value)}
-                    className="w-full"
-                  />
-                  {contentSearchQuery && (
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Add Prize Cards</h3>
+                    <Button onClick={() => setShowAddCardDialog(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Card
+                    </Button>
+                  </div>
                     <p className="text-sm text-muted-foreground">
-                      Showing {inventoryCards.filter(card => {
-                        const isAlreadyInPack = editingContentPool?.cards.some(packCard => 
-                          (packCard as any).cardId === card.id || packCard.id === card.id
-                        );
-                        if (isAlreadyInPack) return false;
-                        return card.name.toLowerCase().includes(contentSearchQuery.toLowerCase());
-                      }).length} available cards (excluding {editingContentPool?.cards.length || 0} already in pack)
-                    </p>
-                  )}
-                  {!contentSearchQuery && editingContentPool?.cards.length > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {editingContentPool.cards.length} cards already in this pack
-                    </p>
-                  )}
-                  
-                  {/* Filtered Inventory Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
-                    {(() => {
-                      const filteredCards = inventoryCards.filter(card => {
-                        // Check if card is already in the pack
-                        // For classic packs, cards have a 'cardId' property that references the inventory card
-                        const isAlreadyInPack = editingContentPool?.cards.some(packCard => 
-                          (packCard as any).cardId === card.id || packCard.id === card.id
-                        );
-                        
-                        // If already in pack, exclude it
-                        if (isAlreadyInPack) {
-                          return false;
-                        }
-                        
-                        // Apply search filter
-                        return card.name.toLowerCase().includes(contentSearchQuery.toLowerCase());
-                      });
-                      console.log('Edit Prize Dialog - Inventory cards:', inventoryCards.length);
-                      console.log('Edit Prize Dialog - Search query:', contentSearchQuery);
-                      console.log('Edit Prize Dialog - Filtered cards:', filteredCards.length);
-                      
-                      if (isLoadingInventory) {
-                        return <p className="text-muted-foreground text-center py-8">Loading inventory cards...</p>;
-                      }
-                      
-                      if (inventoryCards.length === 0) {
-                        return <p className="text-muted-foreground text-center py-8">No cards in inventory yet.</p>;
-                      }
-                      
-                      if (filteredCards.length === 0) {
-                        return (
-                          <div className="text-center py-8">
-                            <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-lg font-medium mb-2">
-                              {contentSearchQuery 
-                                ? "No cards found" 
-                                : editingContentPool?.cards.length > 0 
-                                  ? "All cards already in pack" 
-                                  : "No cards in inventory"
-                              }
-                            </h3>
-                            <p className="text-muted-foreground">
-                              {contentSearchQuery 
-                                ? "Try adjusting your search terms"
-                                : editingContentPool?.cards.length > 0
-                                  ? "All available cards have been added to this pack"
-                                  : "Add some cards to inventory first"
-                              }
-                            </p>
-                          </div>
-                        );
-                      }
-                      
-                      return filteredCards.map((card: any) => (
-                        <div key={card.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                          <img
-                            src={card.imageUrl}
-                            alt={card.name}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{card.name}</p>
-                            <p className="text-xs text-muted-foreground">{card.credits} credits</p>
-                            </div>
-                          <Button
-                            onClick={() => handleAddCardToContent(card)}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                              </div>
-                      ));
-                    })()}
-                            </div>
+                    Add new cards to this pack with all required information including name, image, tier, refund credit, and quantity.
+                  </p>
                           </div>
                           
                 {/* Current Prize Cards */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Current Prize Cards ({editingContentPool.cards.length})</h3>
-                    {Object.keys(editingQuantity).length > 0 && (
-                      <Button
-                        onClick={handleSaveAllQuantitiesClassic}
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save All ({Object.keys(editingQuantity).length})
-                      </Button>
-                    )}
                   </div>
                   {editingContentPool.cards.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No prize cards in this pack yet.</p>
@@ -3395,24 +2199,18 @@ export default function Admin() {
                             <p className="font-medium text-sm truncate">{card.name}</p>
                             <p className="text-xs text-muted-foreground">{card.credits} credits</p>
                             <div className="flex items-center gap-2 mt-1">
-                              {editingQuantity[card.id] !== undefined ? (
-                                <>
-                                  <Input
-                                    type="number"
-                                    value={editingQuantity[card.id]}
-                                    onChange={(e) => setEditingQuantity({ ...editingQuantity, [card.id]: parseInt(e.target.value) })}
-                                    className="w-16 h-6 text-xs"
-                                    min="0"
-                                  />
-                                </>
-                              ) : (
-                                <>
                                   <p className="text-xs text-muted-foreground">Qty: {card.quantity}</p>
-                                  <Button onClick={() => setEditingQuantity({ ...editingQuantity, [card.id]: card.quantity })} variant="outline" size="sm" className="h-6 px-2 text-xs">Edit</Button>
-                                </>
-                            )}
                           </div>
                           </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleEditCard(card)}
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
                           <Button
                             onClick={() => handleRemoveCardFromContent(card.id)}
                             size="sm"
@@ -3421,6 +2219,7 @@ export default function Admin() {
                           >
                             <X className="w-3 h-3" />
                           </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -3433,6 +2232,210 @@ export default function Admin() {
             <DialogFooter>
               <Button variant="outline" onClick={handleCancelEditContent}>
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Card Dialog */}
+        <Dialog open={showAddCardDialog} onOpenChange={setShowAddCardDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Add New Card</DialogTitle>
+              <DialogDescription>
+                Add a new card to the pack with all required information.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="cardName" className="text-sm font-medium">Card Name</Label>
+                <Input
+                  id="cardName"
+                  value={newCard.name}
+                  onChange={(e) => setNewCard({ ...newCard, name: e.target.value })}
+                  placeholder="Enter card name"
+                  className="w-full"
+                  required
+                />
+              </div>
+
+              <ImageUpload
+                value={newCard.imageUrl}
+                onChange={(value) => setNewCard({ ...newCard, imageUrl: value })}
+                placeholder="https://example.com/card-image.jpg"
+                label="Image URL"
+                id="imageUrl"
+                required
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="refundCredit" className="text-sm font-medium">Refund Credit</Label>
+                  <Input
+                    id="refundCredit"
+                    type="number"
+                    min="0"
+                    value={newCard.refundCredit}
+                    onChange={(e) => {
+                      setNewCard({ ...newCard, refundCredit: e.target.value });
+                    }}
+                    placeholder="Enter refund credit"
+                    className="w-full"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tier" className="text-sm font-medium">Tier</Label>
+                  <select
+                    id="tier"
+                    value={newCard.tier}
+                    onChange={(e) => setNewCard({ ...newCard, tier: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
+                    required
+                  >
+                    <option value="D">D</option>
+                    <option value="C">C</option>
+                    <option value="B">B</option>
+                    <option value="A">A</option>
+                    <option value="S">S</option>
+                    <option value="SS">SS</option>
+                    <option value="SSS">SSS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quantity" className="text-sm font-medium">Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="1"
+                  value={newCard.quantity}
+                  onChange={(e) => {
+                    setNewCard({ ...newCard, quantity: e.target.value });
+                  }}
+                  placeholder="Enter quantity"
+                  className="w-full"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAddCardDialog(false);
+                  setNewCard({ name: '', imageUrl: '', tier: 'D', refundCredit: '', quantity: '' });
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleAddCard} className="flex-1">
+                Add Card
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Card Dialog */}
+        <Dialog open={showEditCardDialog} onOpenChange={setShowEditCardDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Edit Card</DialogTitle>
+              <DialogDescription>
+                Update the card details and information.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editCardName" className="text-sm font-medium">Card Name</Label>
+                <Input
+                  id="editCardName"
+                  value={editCardForm.name}
+                  onChange={(e) => setEditCardForm({ ...editCardForm, name: e.target.value })}
+                  placeholder="Enter card name"
+                  className="w-full"
+                  required
+                />
+              </div>
+              
+              <ImageUpload
+                value={editCardForm.imageUrl}
+                onChange={(value) => setEditCardForm({ ...editCardForm, imageUrl: value })}
+                placeholder="https://example.com/card-image.jpg"
+                label="Image URL"
+                id="editImageUrl"
+                required
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editRefundCredit" className="text-sm font-medium">Refund Credit</Label>
+                  <Input
+                    id="editRefundCredit"
+                    type="number"
+                    min="0"
+                    value={editCardForm.refundCredit}
+                    onChange={(e) => {
+                      setEditCardForm({ ...editCardForm, refundCredit: e.target.value });
+                    }}
+                    placeholder="Enter refund credit"
+                    className="w-full"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="editTier" className="text-sm font-medium">Tier</Label>
+                  <select
+                    id="editTier"
+                    value={editCardForm.tier}
+                    onChange={(e) => setEditCardForm({ ...editCardForm, tier: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
+                    required
+                  >
+                    <option value="D">D</option>
+                    <option value="C">C</option>
+                    <option value="B">B</option>
+                    <option value="A">A</option>
+                    <option value="S">S</option>
+                    <option value="SS">SS</option>
+                    <option value="SSS">SSS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editQuantity" className="text-sm font-medium">Quantity</Label>
+                <Input
+                  id="editQuantity"
+                  type="number"
+                  min="1"
+                  value={editCardForm.quantity}
+                  onChange={(e) => {
+                    setEditCardForm({ ...editCardForm, quantity: e.target.value });
+                  }}
+                  placeholder="Enter quantity"
+                  className="w-full"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowEditCardDialog(false);
+                  setEditingCard(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateCard} className="flex-1">
+                Update Card
               </Button>
             </DialogFooter>
           </DialogContent>

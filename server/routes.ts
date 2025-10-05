@@ -9,21 +9,16 @@ import path from "path";
 import { fileURLToPath } from 'url';
 import fileUpload from 'express-fileupload';
 import { 
-  insertCardSchema, 
-  insertPackSchema,
-  insertVirtualLibrarySchema,
-  insertInventorySchema,
-  insertShippingRequestSchema,
-  specialPacks,
-  specialPackCards,
-  inventory,
-  mysteryPacks,
-  mysteryPackCards,
+  classicPack,
+  classicPrize,
+  mysteryPack,
+  mysteryPrize,
+  specialPack,
+  specialPrize,
   userCards,
   globalFeed,
   users,
-  cards,
-  type GameResult 
+  transactions
 } from "@shared/schema";
 
 // Map tier to pack type for Plinko
@@ -58,6 +53,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error testing inventory:", error);
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Test database schema endpoint
+  app.get('/api/test-schema', async (req, res) => {
+    try {
+      // Check users table schema
+      const usersResult = await db.execute(sql`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position`);
+      res.json({ 
+        success: true, 
+        usersTableColumns: usersResult.rows,
+        message: "Database schema check completed"
+      });
+    } catch (error: any) {
+      console.error('Test schema error:', error);
+      res.json({ success: false, error: error.message });
+    }
+  });
+
+  // Test user lookup endpoint
+  app.get('/api/test-user/:email', async (req, res) => {
+    try {
+      const { email } = req.params;
+      // Direct database query to avoid schema issues
+      const userResult = await db.execute(sql`SELECT id, username, email, password_hash, role, credits FROM users WHERE email = ${email} LIMIT 1`);
+      const user = userResult.rows[0] as any;
+      res.json({ 
+        success: true, 
+        user: user ? {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          hasPassword: !!user.password_hash,
+          role: user.role,
+          credits: user.credits
+        } : null,
+        message: user ? "User found" : "User not found"
+      });
+    } catch (error: any) {
+      console.error('Test user error:', error);
+      res.json({ success: false, error: error.message });
+    }
+  });
+
+  // Test all users endpoint
+  app.get('/api/test-users', async (req, res) => {
+    try {
+      // Get all users
+      const usersResult = await db.execute(sql`SELECT id, username, email, role, credits FROM users LIMIT 10`);
+      res.json({ 
+        success: true, 
+        users: usersResult.rows,
+        count: usersResult.rows.length,
+        message: "Users retrieved"
+      });
+    } catch (error: any) {
+      console.error('Test users error:', error);
+      res.json({ success: false, error: error.message });
+    }
+  });
+
+  // Create test user endpoint
+  app.post('/api/test-create-user', async (req, res) => {
+    try {
+      const { email, username, password } = req.body;
+      const bcrypt = await import('bcrypt');
+      const hashedPassword = await bcrypt.hash(password, 12);
+      
+      // Insert user directly
+      const result = await db.execute(sql`
+        INSERT INTO users (id, username, email, password_hash, role, credits) 
+        VALUES (gen_random_uuid(), ${username}, ${email}, ${hashedPassword}, 'user', 1000)
+        RETURNING id, username, email, role, credits
+      `);
+      
+      res.json({ 
+        success: true, 
+        user: result.rows[0],
+        message: "User created successfully"
+      });
+    } catch (error: any) {
+      console.error('Create user error:', error);
+      res.json({ success: false, error: error.message });
     }
   });
 
@@ -172,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const packType = result.tier;
         
         const mysteryPacks = await storage.getMysteryPacks();
-        const targetPack = mysteryPacks.find(p => p.subtype === packType);
+        const targetPack = mysteryPacks.find(p => p.packType === packType);
         
         if (!targetPack) {
           // If specific pack type doesn't exist, use the first available pack
@@ -215,8 +293,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Add card to user vault with correct pull value
         await storage.addUserCard({
           userId,
-          cardId: result.cardId,
-          pullValue: card.credits.toString(),
+          cardName: card.name,
+          cardImageUrl: card.imageUrl,
+          cardTier: card.tier,
+          refundCredit: card.credits,
         });
 
         // Add to global feed if rare enough
@@ -276,7 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the mystery pack by tier
       const mysteryPacks = await storage.getMysteryPacks();
-      let pack = mysteryPacks.find(p => p.subtype === packTier);
+      let pack = mysteryPacks.find(p => p.packType === packTier);
       if (!pack) {
         // If pack doesn't exist, use the first available pack
         pack = mysteryPacks[0];
@@ -359,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the mystery pack by tier
       const mysteryPacks = await storage.getMysteryPacks();
-      let pack = mysteryPacks.find(p => p.subtype === packTier);
+      let pack = mysteryPacks.find(p => p.packType === packTier);
       if (!pack) {
         // If pack doesn't exist, use the first available pack
         pack = mysteryPacks[0];
@@ -445,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get the mystery pack by tier
       const mysteryPacks = await storage.getMysteryPacks();
-      let pack = mysteryPacks.find(p => p.subtype === packTier);
+      let pack = mysteryPacks.find(p => p.packType === packTier);
       if (!pack) {
         // If pack doesn't exist, use the first available pack
         pack = mysteryPacks[0];
@@ -597,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: card.id,
           isRefunded: card.isRefunded,
           isShipped: card.isShipped,
-          pullValue: card.pullValue
+          refundCredit: card.refundCredit
         }))
       });
     } catch (error) {
@@ -1223,17 +1303,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { cardId } = req.params;
       console.log('Testing cascading deletion for card:', cardId);
       
-      // Check if card exists in special pack cards
+      // Check if card exists in special pack cards (simplified system)
       const specialPackCardsResult = await db
         .select()
         .from(specialPackCards)
-        .where(eq(specialPackCards.cardId, cardId));
+        .where(eq(specialPackCards.cardName, cardId)); // Using cardName as identifier
       
-      // Check if card exists in mystery pack cards
+      // Check if card exists in mystery pack cards (simplified system)
       const mysteryPackCardsResult = await db
         .select()
         .from(mysteryPackCards)
-        .where(eq(mysteryPackCards.cardId, cardId));
+        .where(eq(mysteryPackCards.cardName, cardId)); // Using cardName as identifier
       
       res.json({ 
         success: true, 
@@ -1365,7 +1445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description,
         imageUrl: image,
         price: price.toString(),
-        totalPacks: parseInt(totalCards),
+        totalCards: parseInt(totalCards),
         isActive: true
       };
 
@@ -1389,7 +1469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description,
         imageUrl: image,
         price: price ? price.toString() : undefined,
-        totalPacks: totalCards ? parseInt(totalCards) : undefined
+        totalCards: totalCards ? parseInt(totalCards) : undefined
       });
 
       res.json(pack);
@@ -1426,17 +1506,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/special-packs/:packId/cards', isAdminCombined, async (req: any, res) => {
     try {
       const { packId } = req.params;
-      const { cardId, quantity = 1 } = req.body;
+      const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Adding card to special pack:', { packId, cardId, quantity });
+      console.log('Adding card to special pack:', { packId, cardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
-      if (!cardId) {
-        return res.status(400).json({ error: 'Missing cardId' });
+      // Support both old system (cardId) and new simplified system (cardName, etc.)
+      if (cardId) {
+        // Old system - add card by cardId
+        const packCard = await storage.addCardToSpecialPack(packId, cardId, quantity);
+        console.log('Successfully added card to pack:', packCard);
+        res.json(packCard);
+      } else if (cardName && cardImageUrl && cardTier && refundCredit !== undefined) {
+        // New simplified system - add card with full details
+        const packCard = await storage.addCardToSpecialPackSimplified(packId, {
+          cardName,
+          cardImageUrl,
+          cardTier,
+          refundCredit,
+          quantity
+        });
+        console.log('Successfully added card to pack (simplified):', packCard);
+        res.json(packCard);
+      } else {
+        return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
       }
-
-      const packCard = await storage.addCardToSpecialPack(packId, cardId, quantity);
-      console.log('Successfully added card to pack:', packCard);
-      res.json(packCard);
     } catch (error: any) {
       console.error('Error adding card to special pack:', error);
       console.error('Error details:', error.message, error.stack);
@@ -1487,6 +1580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const packData = {
+        id: `cp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name,
         description,
         imageUrl: image,
@@ -1557,52 +1651,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/classic-packs/:id/cards', isAdminCombined, async (req: any, res) => {
+  // Classic pack cards routes
+  app.post('/api/admin/classic-packs/:packId/cards', isAdminCombined, async (req: any, res) => {
     try {
-      const { id } = req.params;
-      const { cardId, quantity = 1 } = req.body;
+      const { packId } = req.params;
+      const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Adding card to classic pack:', { packId: id, cardId, quantity });
+      console.log('Adding card to classic pack:', { packId, cardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
-      const result = await storage.addCardToClassicPack(id, cardId, quantity);
-      console.log('Successfully added card to pack:', result);
-      res.json(result);
+      // Support both old system (cardId) and new simplified system (cardName, etc.)
+      if (cardId) {
+        // Old system - add card by cardId
+        const packCard = await storage.addCardToClassicPack(packId, cardId, quantity);
+        console.log('Successfully added card to pack:', packCard);
+        res.json(packCard);
+      } else if (cardName && cardImageUrl && cardTier && refundCredit !== undefined) {
+        // New simplified system - add card with full details
+        const packCard = await storage.addCardToClassicPackSimplified(packId, {
+          cardName,
+          cardImageUrl,
+          cardTier,
+          refundCredit,
+          quantity
+        });
+        console.log('Successfully added card to pack (simplified):', packCard);
+        res.json(packCard);
+      } else {
+        return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
+      }
     } catch (error: any) {
       console.error('Error adding card to classic pack:', error);
-      res.status(500).json({ error: 'Failed to add card to pack' });
+      console.error('Error details:', error.message, error.stack);
+      res.status(500).json({ error: 'Failed to add card to classic pack' });
     }
   });
 
-  app.delete('/api/admin/classic-packs/:id/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
+  app.delete('/api/admin/classic-packs/:packId/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
     try {
-      const { id, classicPackCardId } = req.params;
-      
-      console.log('Route handler - removing card:', { packId: id, classicPackCardId });
-      
-      await storage.removeCardFromClassicPack(id, classicPackCardId);
-      console.log('Route handler - card removed successfully');
+      const { packId, classicPackCardId } = req.params;
+      console.log('Route handler - removing card:', { packId, classicPackCardId });
+      await storage.removeCardFromClassicPack(packId, classicPackCardId);
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error removing card from classic pack:', error);
-      res.status(500).json({ error: 'Failed to remove card from pack' });
+      res.status(500).json({ error: 'Failed to remove card from classic pack' });
     }
   });
 
-  app.patch('/api/admin/classic-packs/:id/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
+  app.patch('/api/admin/classic-packs/:packId/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
     try {
-      const { id, classicPackCardId } = req.params;
-      const { quantity } = req.body;
+      const { packId, classicPackCardId } = req.params;
+      const { quantity, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Updating classic pack card quantity:', { packId: id, classicPackCardId, quantity });
+      console.log('Updating classic pack card:', { packId, classicPackCardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
-      const result = await storage.updateClassicPackCardQuantity(id, classicPackCardId, quantity);
-      console.log('Successfully updated classic pack card quantity:', result);
-      res.json(result);
+      if (quantity !== undefined) {
+        const updatedCard = await storage.updateClassicPackCardQuantity(packId, classicPackCardId, quantity);
+        res.json(updatedCard);
+      } else {
+        return res.status(400).json({ error: 'Only quantity updates are supported for classic pack cards' });
+      }
     } catch (error: any) {
-      console.error('Error updating classic pack card quantity:', error);
-      res.status(500).json({ error: 'Failed to update card quantity' });
+      console.error('Error updating classic pack card:', error);
+      res.status(500).json({ error: 'Failed to update classic pack card' });
     }
   });
+
+
 
   // Classic Pack Purchase Route (Public) - REMOVED FOR REBUILD
 
@@ -1691,17 +1806,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/mystery-packs/:packId/cards', isAdminCombined, async (req: any, res) => {
     try {
       const { packId } = req.params;
-      const { cardId, quantity = 1 } = req.body;
+      const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Adding card to mystery pack:', { packId, cardId, quantity });
+      console.log('Adding card to mystery pack:', { packId, cardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
-      if (!cardId) {
-        return res.status(400).json({ error: 'Missing cardId' });
+      // Support both old system (cardId) and new simplified system (cardName, etc.)
+      if (cardId) {
+        // Old system - add card by cardId
+        const packCard = await storage.addCardToMysteryPack(packId, cardId, quantity);
+        console.log('Successfully added card to mystery pack:', packCard);
+        res.json(packCard);
+      } else if (cardName && cardImageUrl && cardTier && refundCredit !== undefined) {
+        // New simplified system - add card with full details
+        const packCard = await storage.addCardToMysteryPackSimplified(packId, {
+          cardName,
+          cardImageUrl,
+          cardTier,
+          refundCredit,
+          quantity
+        });
+        console.log('Successfully added card to mystery pack (simplified):', packCard);
+        res.json(packCard);
+      } else {
+        return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
       }
-
-      const packCard = await storage.addCardToMysteryPack(packId, cardId, quantity);
-      console.log('Successfully added card to mystery pack:', packCard);
-      res.json(packCard);
     } catch (error: any) {
       console.error('Error adding card to mystery pack:', error);
       console.error('Error details:', error.message, error.stack);
@@ -1872,17 +2000,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/available-packs', async (req: any, res) => {
     try {
       const specialPacks = await storage.getSpecialPacks();
-      const classicPacks = await storage.getClassicPacks();
       const mysteryPacks = await storage.getMysteryPacks();
       
       // Filter only active packs
       const activeSpecialPacks = specialPacks.filter(pack => pack.isActive);
-      const activeClassicPacks = classicPacks.filter(pack => pack.isActive);
       const activeMysteryPacks = mysteryPacks.filter(pack => pack.isActive);
       
       res.json({
         specialPacks: activeSpecialPacks,
-        classicPacks: activeClassicPacks,
         mysteryPacks: activeMysteryPacks
       });
     } catch (error) {
@@ -2043,7 +2168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Database migration completed successfully',
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Migration failed:', error);
       res.status(500).json({ error: 'Migration failed', details: error.message });
     }
@@ -2067,7 +2192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         columns: result.rows
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error checking schema:', error);
       res.status(500).json({ error: 'Failed to check schema', details: error.message });
     }
@@ -2098,11 +2223,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         SELECT 
           id,
           name,
-          subtype,
+          pack_type,
           odds,
           is_active
-        FROM mystery_packs
-        ORDER BY subtype
+        FROM mystery_pack
+        ORDER BY pack_type
       `);
       
       console.log('🔍 Mystery packs found:', result.rows.length);
@@ -2115,6 +2240,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error in mystery packs debug endpoint:', error);
       res.status(500).json({ error: 'Failed to check mystery_packs table' });
+    }
+  });
+
+  app.get('/api/debug/special-packs', async (req, res) => {
+    try {
+      console.log('🔍 DEBUG: Checking special_pack table...');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          id,
+          name,
+          description,
+          image_url,
+          price,
+          total_cards,
+          is_active,
+          created_at
+        FROM special_pack
+        ORDER BY created_at DESC
+      `);
+      
+      console.log('🔍 Special packs found:', result.rows.length);
+      console.log('🔍 All special packs:', result.rows);
+      
+      res.json({
+        totalCount: result.rows.length,
+        packs: result.rows
+      });
+    } catch (error: any) {
+      console.error('🔍 DEBUG: Error checking special_pack table:', error);
+      res.status(500).json({ error: 'Failed to check special_pack table' });
+    }
+  });
+
+  app.get('/api/debug/classic-packs', async (req, res) => {
+    try {
+      console.log('🔍 DEBUG: Checking classic_pack table...');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          id,
+          name,
+          description,
+          image_url,
+          price,
+          is_active,
+          created_at
+        FROM classic_pack
+        ORDER BY created_at DESC
+      `);
+      
+      console.log('🔍 Classic packs found:', result.rows.length);
+      console.log('🔍 All classic packs:', result.rows);
+      
+      res.json({
+        totalCount: result.rows.length,
+        packs: result.rows
+      });
+    } catch (error: any) {
+      console.error('🔍 DEBUG: Error checking classic_pack table:', error);
+      res.status(500).json({ error: 'Failed to check classic_pack table' });
     }
   });
 
@@ -2257,38 +2443,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { classicPackCards, inventory } = await import('../shared/schema');
       const { eq, and, gt } = await import('drizzle-orm');
       
-      // Get all cards (including quantity = 0)
+      // Get all cards (including quantity = 0) - simplified system
       const allCards = await db
         .select({
           id: classicPackCards.id,
           packId: classicPackCards.packId,
-          cardId: classicPackCards.cardId,
+          cardName: classicPackCards.cardName,
+          cardImageUrl: classicPackCards.cardImageUrl,
+          cardTier: classicPackCards.cardTier,
+          refundCredit: classicPackCards.refundCredit,
           quantity: classicPackCards.quantity,
-          card: {
-            id: inventory.id,
-            name: inventory.name,
-            tier: inventory.tier,
-          }
+          cardSource: classicPackCards.cardSource,
         })
         .from(classicPackCards)
-        .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
         .where(eq(classicPackCards.packId, packId));
       
-      // Get only cards with quantity > 0
+      // Get only cards with quantity > 0 - simplified system
       const availableCards = await db
         .select({
           id: classicPackCards.id,
           packId: classicPackCards.packId,
-          cardId: classicPackCards.cardId,
+          cardName: classicPackCards.cardName,
+          cardImageUrl: classicPackCards.cardImageUrl,
+          cardTier: classicPackCards.cardTier,
+          refundCredit: classicPackCards.refundCredit,
           quantity: classicPackCards.quantity,
-          card: {
-            id: inventory.id,
-            name: inventory.name,
-            tier: inventory.tier,
-          }
+          cardSource: classicPackCards.cardSource,
         })
         .from(classicPackCards)
-        .innerJoin(inventory, eq(classicPackCards.cardId, inventory.id))
         .where(
           and(
             eq(classicPackCards.packId, packId),
@@ -2460,9 +2642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           packType,
           tier,
           earnedFrom: 'debug',
-          isOpened: false,
-          earnedAt: new Date(),
-          openedAt: null
+          isOpened: false
         });
       }
       
@@ -2575,14 +2755,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mpc.id,
           mpc.pack_id,
           mp.name as pack_name,
-          mp.subtype,
+          mp.pack_type,
           i.name as card_name,
           i.tier,
           mpc.quantity
         FROM mystery_pack_cards mpc
         LEFT JOIN mystery_packs mp ON mpc.pack_id = mp.id
         LEFT JOIN inventory i ON mpc.card_id = i.id
-        ORDER BY mp.subtype, i.tier
+        ORDER BY mp.pack_type, i.tier
       `);
       
       console.log('🔧 Cards after fix:', cardsResult.rows);
@@ -2719,6 +2899,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error checking Black Bolt pack cards:', error);
       res.status(500).json({ error: 'Failed to check Black Bolt pack cards' });
+    }
+  });
+
+  // Admin endpoint to force refresh user data (useful when credits are updated directly in database)
+  app.post('/api/admin/refresh-user/:userId', isAdminCombined, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Force fetch fresh user data from database
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'User data refreshed',
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          credits: user.credits
+        }
+      });
+    } catch (error: any) {
+      console.error('Error refreshing user data:', error);
+      res.status(500).json({ error: 'Failed to refresh user data' });
+    }
+  });
+
+  // Admin endpoint to invalidate all user caches
+  app.post('/api/admin/invalidate-user-caches', isAdminCombined, async (req: any, res) => {
+    try {
+      // Clear all user-related caches
+      // Note: Since we disabled user caching, this is mainly for future use
+      res.json({ 
+        success: true, 
+        message: 'User caches invalidated (user data is now always fresh)' 
+      });
+    } catch (error: any) {
+      console.error('Error invalidating user caches:', error);
+      res.status(500).json({ error: 'Failed to invalidate user caches' });
+    }
+  });
+
+  // Test endpoint to update user credits directly in database
+  app.post('/api/test-update-credits', async (req, res) => {
+    try {
+      const { userId, credits } = req.body;
+      await db.execute(sql`UPDATE users SET credits = ${credits.toString()} WHERE id = ${userId}`);
+      res.json({ 
+        success: true, 
+        message: `Updated user ${userId} credits to ${credits}` 
+      });
+    } catch (error: any) {
+      console.error('Test update credits error:', error);
+      res.json({ success: false, error: error.message });
+    }
+  });
+
+  // Test endpoint to test credit deduction directly
+  app.post('/api/test-deduct-credits', async (req, res) => {
+    try {
+      const { userId, amount } = req.body;
+      console.log('Testing credit deduction:', { userId, amount });
+      
+      // Test direct database query
+      const result = await db.execute(sql`
+        UPDATE users 
+        SET credits = credits - ${amount} 
+        WHERE id = ${userId} AND credits >= ${amount}
+        RETURNING id, credits
+      `);
+      
+      if (result.rows.length > 0) {
+        res.json({ 
+          success: true, 
+          message: `Deducted ${amount} credits from user ${userId}`,
+          newCredits: result.rows[0].credits
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: `Failed to deduct credits - insufficient balance or user not found` 
+        });
+      }
+    } catch (error: any) {
+      console.error('Test deduct credits error:', error);
+      res.json({ success: false, error: error.message });
+    }
+  });
+
+  // Test endpoint to test storage.deductUserCredits function
+  app.post('/api/test-storage-deduct', async (req, res) => {
+    try {
+      const { userId, amount } = req.body;
+      console.log('Testing storage.deductUserCredits:', { userId, amount });
+      
+      const success = await storage.deductUserCredits(userId, amount);
+      
+      if (success) {
+        res.json({ 
+          success: true, 
+          message: `Storage deducted ${amount} credits from user ${userId}` 
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: `Storage failed to deduct credits - insufficient balance or user not found` 
+        });
+      }
+    } catch (error: any) {
+      console.error('Test storage deduct error:', error);
+      res.json({ success: false, error: error.message });
     }
   });
 
