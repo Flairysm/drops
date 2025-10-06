@@ -96,6 +96,28 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+// EXTRA AGGRESSIVE cache bypass for admin routes
+app.use('/api/admin', (req, res, next) => {
+  // Remove any existing cache headers
+  res.removeHeader('ETag');
+  res.removeHeader('Last-Modified');
+  
+  // Set ULTRA aggressive cache-busting headers for admin
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate, private, max-age=0, s-maxage=0',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store',
+    'X-Admin-Cache-Bypass': 'true'
+  });
+  
+  // Add random timestamp to prevent any caching
+  res.set('X-Cache-Buster', Date.now().toString());
+  res.set('X-Admin-Timestamp', Date.now().toString());
+  
+  next();
+});
+
 // Serve attached assets as static files
 app.use('/attached_assets', express.static(path.resolve(__dirname, '../attached_assets')));
 

@@ -721,7 +721,7 @@ export class DatabaseStorage implements IStorage {
       selectedCards.push({
         id: selectedCard.id,
         name: selectedCard.cardName || 'Common Card',
-        imageUrl: selectedCard.cardImageUrl || '/card-images/random-common-card.png',
+        imageUrl: selectedCard.cardImageUrl || '/assets/Commons.png',
         tier: selectedCard.cardTier || 'D',
         marketValue: selectedCard.refundCredit || 1,
         isHit: false,
@@ -997,7 +997,7 @@ export class DatabaseStorage implements IStorage {
           selectedCards.push({
             id: selectedCard.id,
             name: selectedCard.cardName || "Common Card",
-            imageUrl: selectedCard.cardImageUrl || "/card-images/random-common-card.png",
+            imageUrl: selectedCard.cardImageUrl || "/assets/Commons.png",
             tier: selectedCard.cardTier || "D",
             marketValue: selectedCard.refundCredit || 1,
             isHit: false,
@@ -1234,7 +1234,7 @@ export class DatabaseStorage implements IStorage {
         selectedCards.push({
           id: randomCommon.card.id,
           name: randomCommon.card.name || 'Common Card',
-          imageUrl: randomCommon.card.imageUrl || '/card-images/random-common-card.png',
+          imageUrl: randomCommon.card.imageUrl || '/assets/Commons.png',
           tier: randomCommon.card.tier || 'D',
           marketValue: randomCommon.card.credits || 1,
           isHit: false,
@@ -2032,7 +2032,7 @@ export class DatabaseStorage implements IStorage {
       id: `spc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       packId,
       cardName: cardId, // Treat cardId as cardName in simplified system
-      cardImageUrl: '/assets/random-common-card.png', // Default image
+      cardImageUrl: '/assets/Commons.png', // Default image
       cardTier: 'D', // Default tier
       refundCredit: 1, // Default refund credit
       quantity
@@ -2172,7 +2172,7 @@ export class DatabaseStorage implements IStorage {
       id: `mpc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       packId,
       cardName: cardId, // Treat cardId as cardName in simplified system
-      cardImageUrl: '/assets/random-common-card.png', // Default image
+      cardImageUrl: '/assets/Commons.png', // Default image
       cardTier: 'D', // Default tier
       refundCredit: 1, // Default refund credit
       quantity
@@ -2262,11 +2262,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createClassicPack(pack: InsertClassicPack): Promise<ClassicPack> {
-    const [newPack] = await db
-      .insert(classicPack)
-      .values(pack)
-      .returning();
-    return newPack;
+    try {
+      const packWithId = {
+        ...pack,
+        id: `cp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+      console.log('Storage: Creating classic pack with ID:', packWithId.id);
+      const [newPack] = await db.insert(classicPack).values(packWithId).returning();
+      console.log('Storage: Created classic pack:', newPack);
+      return newPack;
+    } catch (error: any) {
+      console.error('Error creating classic pack:', error);
+      throw error;
+    }
   }
 
   async updateClassicPack(id: string, pack: Partial<InsertClassicPack>): Promise<ClassicPack> {
@@ -2291,7 +2299,7 @@ export class DatabaseStorage implements IStorage {
       id: `cpc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       packId,
       cardName: cardId, // Treat cardId as cardName in simplified system
-      cardImageUrl: '/assets/random-common-card.png', // Default image
+      cardImageUrl: '/assets/Commons.png', // Default image
       cardTier: 'D', // Default tier
       refundCredit: 1, // Default refund credit
       quantity

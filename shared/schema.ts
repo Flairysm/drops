@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, integer, boolean, timestamp, decimal, jsonb, sql } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, integer, boolean, timestamp, decimal, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -29,7 +29,7 @@ export const classicPack = pgTable("classic_pack", {
   id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name").notNull(),
   description: text("description"),
-  imageUrl: varchar("image_url"),
+  imageUrl: text("image_url"),
   price: varchar("price", { length: 20 }).notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -40,7 +40,7 @@ export const classicPrize = pgTable("classic_prize", {
   id: varchar("id", { length: 255 }).primaryKey(),
   packId: varchar("pack_id", { length: 255 }).notNull().references(() => classicPack.id, { onDelete: "cascade" }),
   cardName: varchar("card_name", { length: 255 }).notNull(),
-  cardImageUrl: varchar("card_image_url", { length: 500 }).notNull(),
+  cardImageUrl: text("card_image_url").notNull(),
   cardTier: varchar("card_tier", { length: 20 }).notNull().default("D"), // D, C, B, A, S, SS, SSS
   refundCredit: integer("refund_credit").notNull().default(1),
   quantity: integer("quantity").notNull().default(1),
@@ -52,7 +52,7 @@ export const mysteryPack = pgTable("mystery_pack", {
   id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name").notNull(),
   description: text("description"),
-  imageUrl: varchar("image_url"),
+  imageUrl: text("image_url"),
   packType: varchar("pack_type", { length: 50 }).notNull().default("pokeball"),
   price: varchar("price", { length: 20 }).notNull(),
   odds: jsonb("odds").default({}),
@@ -65,7 +65,7 @@ export const mysteryPrize = pgTable("mystery_prize", {
   id: varchar("id", { length: 255 }).primaryKey(),
   packId: varchar("pack_id", { length: 255 }).notNull().references(() => mysteryPack.id, { onDelete: "cascade" }),
   cardName: varchar("card_name", { length: 255 }).notNull(),
-  cardImageUrl: varchar("card_image_url", { length: 500 }).notNull(),
+  cardImageUrl: text("card_image_url").notNull(),
   cardTier: varchar("card_tier", { length: 20 }).notNull().default("D"), // D, C, B, A, S, SS, SSS
   refundCredit: integer("refund_credit").notNull().default(1),
   quantity: integer("quantity").notNull().default(1),
@@ -77,7 +77,7 @@ export const specialPack = pgTable("special_pack", {
   id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name").notNull(),
   description: text("description"),
-  imageUrl: varchar("image_url"),
+  imageUrl: text("image_url"),
   price: varchar("price", { length: 20 }).notNull(),
   totalCards: integer("total_cards").default(8),
   isActive: boolean("is_active").default(true),
@@ -89,7 +89,7 @@ export const specialPrize = pgTable("special_prize", {
   id: varchar("id", { length: 255 }).primaryKey(),
   packId: varchar("pack_id", { length: 255 }).notNull().references(() => specialPack.id, { onDelete: "cascade" }),
   cardName: varchar("card_name", { length: 255 }).notNull(),
-  cardImageUrl: varchar("card_image_url", { length: 500 }).notNull(),
+  cardImageUrl: text("card_image_url").notNull(),
   cardTier: varchar("card_tier", { length: 20 }).notNull().default("D"), // D, C, B, A, S, SS, SSS
   refundCredit: integer("refund_credit").notNull().default(1),
   quantity: integer("quantity").notNull().default(1),
@@ -118,7 +118,7 @@ export const userCards = pgTable("user_cards", {
   id: varchar("id", { length: 255 }).primaryKey(),
   userId: varchar("user_id").references(() => users.id),
   cardName: varchar("card_name", { length: 255 }).notNull(),
-  cardImageUrl: varchar("card_image_url", { length: 500 }).notNull(),
+  cardImageUrl: text("card_image_url").notNull(),
   cardTier: varchar("card_tier", { length: 20 }).notNull(),
   refundCredit: integer("refund_credit").notNull(),
   quantity: integer("quantity").default(1).notNull(),

@@ -49,12 +49,12 @@ export function CardDisplay({
                   onError={(e) => {
                     // Fallback to default image if the imageUrl fails to load
                     const target = e.target as HTMLImageElement;
-                    target.src = "/card-images/random-common-card.png";
+                    target.src = "/card-images/Commons.png";
                   }}
                 />
               ) : (
                 <img
-                  src="/card-images/random-common-card.png"
+                  src="/card-images/Commons.png"
                   alt={card.name}
                   className="w-full h-full object-cover"
                 />
@@ -115,12 +115,12 @@ export function CardDisplay({
               onError={(e) => {
                 // Fallback to default image if the imageUrl fails to load
                 const target = e.target as HTMLImageElement;
-                target.src = "/card-images/random-common-card.png";
+                target.src = "/card-images/Commons.png";
               }}
             />
           ) : (
             <img
-              src="/card-images/random-common-card.png"
+              src="/card-images/Commons.png"
               alt={card.name}
               className="w-full h-full object-cover"
             />

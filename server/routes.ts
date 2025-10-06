@@ -8,6 +8,7 @@ import { z } from "zod";
 import path from "path";
 import { fileURLToPath } from 'url';
 import fileUpload from 'express-fileupload';
+import { APICacheMiddleware, CachePatterns } from './cache/apiCache';
 import { 
   classicPack,
   classicPrize,
@@ -1479,7 +1480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/special-packs/:id', isAdminCombined, async (req: any, res) => {
+  app.delete('/api/admin/special-packs/:id', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteSpecialPack(id);
@@ -1537,7 +1538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/special-packs/:packId/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
+  app.delete('/api/admin/special-packs/:packId/cards/:specialPackCardId', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
     try {
       const { packId, specialPackCardId } = req.params;
       console.log('Route handler - removing card:', { packId, specialPackCardId });
@@ -1627,7 +1628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/classic-packs/:id', isAdminCombined, async (req: any, res) => {
+  app.delete('/api/admin/classic-packs/:id', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteClassicPack(id);
@@ -1686,7 +1687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/classic-packs/:packId/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
+  app.delete('/api/admin/classic-packs/:packId/cards/:classicPackCardId', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
     try {
       const { packId, classicPackCardId } = req.params;
       console.log('Route handler - removing card:', { packId, classicPackCardId });
@@ -2001,14 +2002,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const specialPacks = await storage.getSpecialPacks();
       const mysteryPacks = await storage.getMysteryPacks();
+      const classicPacks = await storage.getClassicPacks();
       
       // Filter only active packs
       const activeSpecialPacks = specialPacks.filter(pack => pack.isActive);
       const activeMysteryPacks = mysteryPacks.filter(pack => pack.isActive);
+      const activeClassicPacks = classicPacks.filter(pack => pack.isActive);
       
       res.json({
         specialPacks: activeSpecialPacks,
-        mysteryPacks: activeMysteryPacks
+        mysteryPacks: activeMysteryPacks,
+        classicPacks: activeClassicPacks
       });
     } catch (error) {
       console.error("Error fetching available packs:", error);

@@ -199,12 +199,12 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     /* Common Card - Revealed */
                     <div className="w-20 h-28">
                       <img
-                        src={card.imageUrl || "/card-images/random-common-card.png"}
+                        src={card.imageUrl || "/card-images/Commons.png"}
                         alt={card.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = "/card-images/random-common-card.png";
+                          target.src = "/card-images/Commons.png";
                         }}
                       />
                     </div>
@@ -236,13 +236,13 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   className={`relative w-20 h-28 ${getTierGlowColor(hitCard?.tier || '')}`}
                 >
                   <img
-                    src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/random-common-card.png") : "/card-images/hit.png"}
+                    src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
                     alt={isHitRevealed ? "Hit Card" : "Hit Card Back"}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       console.log('Image error for hit card:', target.src);
-                      target.src = isHitRevealed ? "/card-images/random-common-card.png" : "/card-images/hit.png";
+                      target.src = isHitRevealed ? "/card-images/Commons.png" : "/card-images/hit.png";
                     }}
                   />
                 </motion.div>

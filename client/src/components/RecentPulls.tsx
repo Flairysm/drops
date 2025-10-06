@@ -131,12 +131,12 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
                             loading="lazy"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = "/card-images/random-common-card.png";
+                              target.src = "/card-images/Commons.png";
                             }}
                           />
                         ) : (
                           <img 
-                            src="/card-images/random-common-card.png" 
+                            src="/card-images/Commons.png" 
                             alt={pull.card.name}
                             className="w-full h-full object-cover rounded-lg"
                             loading="lazy"

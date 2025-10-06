@@ -427,6 +427,7 @@ export default function Admin() {
 
   // Special Pool Management
   const handleAddPool = async () => {
+    console.log('🔄 Creating special pack with data:', newPool);
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim() && newPool.totalCards.trim()) {
       try {
         const response = await apiRequest('POST', '/api/admin/special-packs', {
@@ -527,6 +528,7 @@ export default function Admin() {
 
   // Classic Pool Management
   const handleAddClassicPool = async () => {
+    console.log('🔄 Creating classic pack with data:', newPool);
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim()) {
       try {
         const response = await authenticatedFetch('http://localhost:3000/api/admin/classic-packs', {
@@ -675,12 +677,20 @@ export default function Admin() {
           cards: normalizedCards
         } : null);
         
-        // Update the special pools state (classic packs not supported in simplified system)
+        // Update the appropriate pack state based on pack type
+        if (editingContentPool.id.startsWith('cp-')) {
+          setClassicPools(prev => prev.map(pool => 
+            pool.id === editingContentPool.id 
+              ? { ...pool, cards: normalizedCards }
+              : pool
+          ));
+        } else {
           setSpecialPools(prev => prev.map(pool => 
             pool.id === editingContentPool.id 
               ? { ...pool, cards: normalizedCards }
               : pool
           ));
+        }
         
         // Show success message
         alert(`${card.cardName || card.name} added to pack successfully!`);
@@ -717,12 +727,20 @@ export default function Admin() {
           cards: prev.cards.filter(card => card.id !== cardId)
         } : null);
         
-        // Update the special pools state (classic packs not supported in simplified system)
+        // Update the appropriate pack state based on pack type
+        if (editingContentPool.id.startsWith('cp-')) {
+          setClassicPools(prev => prev.map(pool => 
+            pool.id === editingContentPool.id 
+              ? { ...pool, cards: (pool.cards || []).filter(card => card.id !== cardId) }
+              : pool
+          ));
+        } else {
           setSpecialPools(prev => prev.map(pool => 
             pool.id === editingContentPool.id 
               ? { ...pool, cards: (pool.cards || []).filter(card => card.id !== cardId) }
               : pool
           ));
+        }
         
         // Then refresh from server to ensure consistency
         const updatedPool = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
@@ -743,11 +761,20 @@ export default function Admin() {
           cards: normalizedCards
         } : null);
         
-        setSpecialPools(prev => prev.map(pool => 
-          pool.id === editingContentPool.id 
-            ? { ...pool, cards: normalizedCards }
-            : pool
-        ));
+        // Update the appropriate pack state with server data
+        if (editingContentPool.id.startsWith('cp-')) {
+          setClassicPools(prev => prev.map(pool => 
+            pool.id === editingContentPool.id 
+              ? { ...pool, cards: normalizedCards }
+              : pool
+          ));
+        } else {
+          setSpecialPools(prev => prev.map(pool => 
+            pool.id === editingContentPool.id 
+              ? { ...pool, cards: normalizedCards }
+              : pool
+          ));
+        }
       } else {
         alert('Failed to remove card from pack');
       }
@@ -801,6 +828,10 @@ export default function Admin() {
     setEditingContentPool(null);
     setContentSearchQuery('');
     setShowEditContentDialog(false);
+    
+    // Refresh pack data to reflect any changes made in the edit content dialog
+    fetchSpecialPacks();
+    fetchClassicPacks();
   };
 
   // Add Card Functions
@@ -839,6 +870,10 @@ export default function Admin() {
         // Reset form
         setNewCard({ name: '', imageUrl: '', tier: 'D', refundCredit: '', quantity: '' });
         setShowAddCardDialog(false);
+        
+        // Refresh main pack lists to reflect the change
+        fetchSpecialPacks();
+        fetchClassicPacks();
         
         alert('Card added successfully!');
       } else {
@@ -1181,6 +1216,98 @@ export default function Admin() {
       return pool;
     }));
     alert('Card removed from pool!');
+  };
+
+  // Mystery Pack Card Management Functions
+  const handleAddCardToMysteryPack = async () => {
+    if (!newCard.name || !newCard.imageUrl || !newCard.tier || !newCard.refundCredit) {
+      alert('Please fill in all card details');
+      return;
+    }
+
+    try {
+      const pokeballPack = mysteryPacks.find(pack => pack.packType === 'pokeball') || mysteryPacks[0];
+      if (!pokeballPack) {
+        alert('No mystery pack found');
+        return;
+      }
+
+      const response = await apiRequest('POST', `/api/admin/mystery-packs/${pokeballPack.id}/cards`, {
+        cardName: newCard.name,
+        cardImageUrl: newCard.imageUrl,
+        cardTier: newCard.tier,
+        refundCredit: parseInt(newCard.refundCredit) || 0,
+        quantity: parseInt(newCard.quantity) || 1
+      });
+
+      if (response.ok) {
+        // Reset form
+        setNewCard({ name: '', imageUrl: '', tier: 'D', refundCredit: '', quantity: '1' });
+        setShowAddCardDialog(false);
+        
+        // Refresh mystery pack cards
+        fetchMysteryPackCards();
+        alert('Card added to mystery pack successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to add card: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('Error adding card to mystery pack:', error);
+      alert('Failed to add card to mystery pack. Please try again.');
+    }
+  };
+
+  const handleRemoveCardFromMysteryPack = async (cardId: string) => {
+    try {
+      const pokeballPack = mysteryPacks.find(pack => pack.packType === 'pokeball') || mysteryPacks[0];
+      if (!pokeballPack) {
+        alert('No mystery pack found');
+        return;
+      }
+
+      const response = await apiRequest('DELETE', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardId}`);
+
+      if (response.ok) {
+        // Optimistically update the UI
+        setMysteryPackCards(prev => prev.filter(card => card.id !== cardId));
+        alert('Card removed from mystery pack successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to remove card: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('Error removing card from mystery pack:', error);
+      alert('Failed to remove card from mystery pack. Please try again.');
+    }
+  };
+
+  const handleUpdateMysteryPackCardQuantity = async (cardId: string, newQuantity: number) => {
+    try {
+      const pokeballPack = mysteryPacks.find(pack => pack.packType === 'pokeball') || mysteryPacks[0];
+      if (!pokeballPack) {
+        alert('No mystery pack found');
+        return;
+      }
+
+      const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${cardId}`, {
+        quantity: newQuantity
+      });
+
+      if (response.ok) {
+        // Optimistically update the UI
+        setMysteryPackCards(prev => prev.map(card => 
+          card.id === cardId ? { ...card, quantity: newQuantity } : card
+        ));
+        alert('Card quantity updated successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to update quantity: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('Error updating mystery pack card quantity:', error);
+      alert('Failed to update card quantity. Please try again.');
+    }
   };
 
 
@@ -1657,9 +1784,16 @@ export default function Admin() {
                             <div className="text-center py-8">
                               <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                               <h3 className="text-lg font-medium mb-2">No cards in mystery pack prize pool</h3>
-                              <p className="text-muted-foreground">
+                              <p className="text-muted-foreground mb-4">
                                 Add cards from inventory to build your mystery pack prize pool
                               </p>
+                              <Button 
+                                onClick={() => setShowAddCardDialog(true)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add First Card
+                              </Button>
                             </div>
                           ) : (
                             <div className="space-y-3">
@@ -1667,7 +1801,15 @@ export default function Admin() {
                                 <p className="text-sm text-muted-foreground">
                                   {mysteryPackCards.length} card(s) in mystery pack prize pool
                                 </p>
-                              </div>
+                                  <Button
+                                  onClick={() => setShowAddCardDialog(true)}
+                                    size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                  >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add Card
+                                  </Button>
+                                    </div>
                               {mysteryPackCards.map((card) => (
                                 <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
                                   <img
@@ -1684,13 +1826,31 @@ export default function Admin() {
                                     <p className="text-sm text-muted-foreground">
                                       Credits: {card.refundCredit} | Quantity: {card.quantity}
                                     </p>
-                              </div>
+                                      </div>
                                   <div className="flex gap-2">
-                                    <Button variant="outline" size="sm">
+                                        <Button
+                                      variant="outline"
+                                          size="sm"
+                                      onClick={() => {
+                                        const newQuantity = prompt(`Enter new quantity for ${card.cardName}:`, card.quantity.toString());
+                                        if (newQuantity && !isNaN(parseInt(newQuantity))) {
+                                          handleUpdateMysteryPackCardQuantity(card.id, parseInt(newQuantity));
+                                        }
+                                      }}
+                                    >
                                       <Edit className="w-4 h-4 mr-2" />
                                           Edit
                                     </Button>
-                                    <Button variant="outline" size="sm">
+                                    <Button
+                                    variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (confirm(`Are you sure you want to remove ${card.cardName} from the mystery pack?`)) {
+                                          handleRemoveCardFromMysteryPack(card.id);
+                                        }
+                                      }}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
                                     <X className="w-4 h-4 mr-2" />
                                     Remove
                                     </Button>
@@ -1887,7 +2047,10 @@ export default function Admin() {
 
                 <ImageUpload
                     value={newPool.image}
-                    onChange={(value) => setNewPool({ ...newPool, image: value })}
+                    onChange={(value) => {
+                      console.log('🖼️ ImageUpload onChange called with:', value);
+                      setNewPool({ ...newPool, image: value });
+                    }}
                     placeholder="https://example.com/pack-image.jpg"
                     label="Pack Image URL"
                     id="poolImage"
@@ -1917,10 +2080,10 @@ export default function Admin() {
                       id="poolTotalCards"
                       type="number"
                       min="1"
-                      value={newPool.totalCards === '1' ? '' : newPool.totalCards}
+                      value={newPool.totalCards}
                       onChange={(e) => {
                         const value = e.target.value;
-                        setNewPool({ ...newPool, totalCards: value === '' ? '1' : value });
+                        setNewPool({ ...newPool, totalCards: value });
                       }}
                       placeholder="10"
                     required
@@ -1939,9 +2102,23 @@ export default function Admin() {
                 </div>
                 </div>
                 <Button 
-                  onClick={handleAddPool}
+                  onClick={() => {
+                    console.log('🔄 Special pack button clicked, current form state:', newPool);
+                    handleAddPool();
+                  }}
                   className="mt-4"
-                  disabled={!newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.totalCards.trim() || !newPool.description.trim()}
+                  disabled={(() => {
+                    const isValid = !newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.totalCards.trim() || !newPool.description.trim();
+                    console.log('🔄 Special pack form validation:', {
+                      name: !!newPool.name.trim(),
+                      image: !!newPool.image.trim(),
+                      price: !!newPool.price.trim(),
+                      totalCards: !!newPool.totalCards.trim(),
+                      description: !!newPool.description.trim(),
+                      isValid: !isValid
+                    });
+                    return isValid;
+                  })()}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Pack
@@ -1992,7 +2169,10 @@ export default function Admin() {
                 
                   <ImageUpload
                     value={newPool.image}
-                    onChange={(value) => setNewPool({ ...newPool, image: value })}
+                    onChange={(value) => {
+                      console.log('🖼️ Classic ImageUpload onChange called with:', value);
+                      setNewPool({ ...newPool, image: value });
+                    }}
                     placeholder="https://example.com/pack-image.jpg"
                     label="Pack Image URL"
                     id="classicPoolImage"
@@ -2029,9 +2209,22 @@ export default function Admin() {
                 </div>
                 </div>
                 <Button 
-                  onClick={handleAddClassicPool}
+                  onClick={() => {
+                    console.log('🔄 Classic pack button clicked, current form state:', newPool);
+                    handleAddClassicPool();
+                  }}
                   className="mt-4"
-                  disabled={!newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.description.trim()}
+                  disabled={(() => {
+                    const isValid = !newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.description.trim();
+                    console.log('🔄 Classic pack form validation:', {
+                      name: !!newPool.name.trim(),
+                      image: !!newPool.image.trim(),
+                      price: !!newPool.price.trim(),
+                      description: !!newPool.description.trim(),
+                      isValid: !isValid
+                    });
+                    return isValid;
+                  })()}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Classic Pack
@@ -2332,7 +2525,16 @@ export default function Admin() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleAddCard} className="flex-1">
+              <Button 
+                onClick={() => {
+                  if (activeTab === 'manage' && manageSection === 'mystery') {
+                    handleAddCardToMysteryPack();
+                  } else {
+                    handleAddCard();
+                  }
+                }} 
+                className="flex-1"
+              >
                 Add Card
               </Button>
             </DialogFooter>

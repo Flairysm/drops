@@ -47,8 +47,8 @@ export class APICacheMiddleware {
         return next();
       }
 
-      // Skip caching for authenticated admin requests (they need fresh data)
-      if (req.url.startsWith('/api/admin') && req.headers.authorization) {
+      // Skip caching for ALL admin requests (they need fresh data)
+      if (req.url.startsWith('/api/admin')) {
         return next();
       }
 

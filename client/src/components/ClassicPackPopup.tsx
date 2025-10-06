@@ -146,7 +146,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
     
     // Count hit cards for the toast message
     const hitCount = openedCards.filter(card => 
-      card.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.card.tier)
+      card.cardTier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.cardTier)
     ).length;
     
     // Add a small delay for the hit card animation to complete, then show continue button
@@ -324,7 +324,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
                     <div className="space-y-6">
                       {['SSS', 'SS', 'S', 'A', 'B', 'C'].map((tier) => {
                         const tierCards = packData.cards.filter((card: any) => 
-                          (card.card?.tier || 'D') === tier
+                          (card.cardTier || 'D') === tier
                         );
                         
                         if (tierCards.length === 0) return null;
@@ -359,15 +359,10 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
                                   className="relative group"
                                 >
                                   <img 
-                                    src={card.card?.imageUrl || card.imageUrl} 
-                                    alt={card.card?.name || card.name}
+                                    src={card.cardImageUrl} 
+                                    alt={card.cardName}
                                     className="w-full aspect-[3/4] rounded-lg object-cover border-2 border-gray-600 hover:border-[#22D3EE]/50 transition-colors duration-200"
                                   />
-                                  {card.quantity > 1 && (
-                                    <div className="absolute -top-1 -right-1 bg-[#22D3EE] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                                      {card.quantity}
-                                    </div>
-                                  )}
                                 </motion.div>
                               ))}
                             </div>
@@ -444,7 +439,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
 
                   <div className="grid grid-cols-4 gap-4">
                     {openedCards.map((card, index) => {
-                      const isHitCard = card.card?.tier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.card.tier);
+                      const isHitCard = card.cardTier && ['C', 'B', 'A', 'S', 'SS', 'SSS'].includes(card.cardTier);
                       const isRevealed = index < revealedCards;
                       const isLastCard = index === 7;
                       
@@ -470,8 +465,8 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
                           {isRevealed ? (
                             <div className="flex items-center justify-center h-full">
                               <img 
-                                src={card.card?.tier === 'D' || !card.card?.tier || card.card?.name === 'Common Card' ? '/card-images/random-common-card.png' : (card.card?.imageUrl || card.imageUrl)} 
-                                alt={card.card?.name || card.name}
+                                src={card.cardTier === 'D' || !card.cardTier || card.cardName === 'Common Card' ? '/card-images/Commons.png' : card.cardImageUrl} 
+                                alt={card.cardName}
                                 className="w-full h-full rounded-lg object-cover"
                               />
                             </div>

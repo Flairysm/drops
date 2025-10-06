@@ -214,33 +214,33 @@ export default function Purchase() {
                           >
                             <div className="flex items-center gap-3 mb-3">
                               <img 
-                                src={card.card?.imageUrl || card.imageUrl} 
-                                alt={card.card?.name || card.name}
+                                src={card.cardImageUrl} 
+                                alt={card.cardName}
                                 className="w-12 h-12 rounded-lg object-cover"
                               />
                               <div className="flex-1">
                                 <h4 className="font-medium text-[#E5E7EB] text-sm">
-                                  {card.card?.name || card.name}
+                                  {card.cardName}
                                 </h4>
                                 <Badge 
                                   className={`text-xs ${
-                                    card.card?.tier === 'SSS' ? 'bg-red-500' :
-                                    card.card?.tier === 'SS' ? 'bg-purple-500' :
-                                    card.card?.tier === 'S' ? 'bg-blue-500' :
-                                    card.card?.tier === 'A' ? 'bg-green-500' :
-                                    card.card?.tier === 'B' ? 'bg-yellow-500' :
-                                    card.card?.tier === 'C' ? 'bg-orange-500' :
+                                    card.cardTier === 'SSS' ? 'bg-red-500' :
+                                    card.cardTier === 'SS' ? 'bg-purple-500' :
+                                    card.cardTier === 'S' ? 'bg-blue-500' :
+                                    card.cardTier === 'A' ? 'bg-green-500' :
+                                    card.cardTier === 'B' ? 'bg-yellow-500' :
+                                    card.cardTier === 'C' ? 'bg-orange-500' :
                                     'bg-gray-500'
                                   } text-white`}
                                 >
-                                  {card.card?.tier || 'D'}
+                                  {card.cardTier || 'D'}
                                 </Badge>
                               </div>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span className="text-[#9CA3AF]">Value:</span>
                               <span className="text-[#22D3EE] font-medium">
-                                {card.card?.credits || card.credits} Credits
+                                {card.refundCredit} Credits
                               </span>
                             </div>
                           </motion.div>
