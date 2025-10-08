@@ -552,6 +552,145 @@ export default function Home() {
             </div>
           </motion.section>
 
+          {/* New Release Section */}
+          <motion.section 
+            className="mb-12"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
+            <div className="flex items-center mb-6">
+              {/* Neon Strip */}
+              <div className="w-1 h-8 bg-gradient-to-b from-[#7C3AED] via-[#A855F7] to-[#22D3EE] rounded-full mr-4 shadow-[0_0_8px_rgba(124,58,237,0.3)]"></div>
+              
+              {/* New Release Title */}
+              <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">New Release</h2>
+            </div>
+            
+            {/* New Release Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Mystery Pack Release */}
+              <motion.div
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                className="group"
+              >
+                <Link href="/purchase">
+                  <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#7C3AED]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_30px_rgba(124,58,237,0.2)] overflow-hidden">
+                    <CardContent className="p-6">
+                      {/* Pack Image */}
+                      <div className="relative mb-4">
+                        <div className="w-full h-32 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-xl flex items-center justify-center border border-purple-500/30">
+                          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                            <Package className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                        {/* New Badge */}
+                        <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[#00E6A8] to-[#00D4AA] text-black font-bold text-xs px-2 py-1">
+                          NEW
+                        </Badge>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-[#A855F7] transition-colors">
+                          Mystery Packs
+                        </h3>
+                        <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                          Discover rare cards with our new mystery pack system. Each pack contains guaranteed hits!
+                        </p>
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-[#FACC15] font-semibold text-sm">Starting at 100₵</span>
+                          <Sparkles className="w-4 h-4 text-[#FACC15]" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+
+              {/* Special Edition Release */}
+              <motion.div
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                className="group"
+              >
+                <Link href="/purchase">
+                  <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#EC4899]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(236,72,153,0.1)] hover:shadow-[0_0_30px_rgba(236,72,153,0.2)] overflow-hidden">
+                    <CardContent className="p-6">
+                      {/* Pack Image */}
+                      <div className="relative mb-4">
+                        <div className="w-full h-32 bg-gradient-to-br from-pink-600/20 to-cyan-600/20 rounded-xl flex items-center justify-center border border-pink-500/30">
+                          <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-cyan-500 rounded-full flex items-center justify-center">
+                            <Crown className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                        {/* Limited Badge */}
+                        <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[#EC4899] to-[#F97316] text-white font-bold text-xs px-2 py-1">
+                          LIMITED
+                        </Badge>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-[#EC4899] transition-colors">
+                          Special Edition
+                        </h3>
+                        <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                          Exclusive limited-time packs with premium cards and special artwork. Don't miss out!
+                        </p>
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-[#FACC15] font-semibold text-sm">500₵</span>
+                          <Trophy className="w-4 h-4 text-[#FACC15]" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+
+              {/* Classic Pack Update */}
+              <motion.div
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                className="group"
+              >
+                <Link href="/purchase">
+                  <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#22D3EE]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.1)] hover:shadow-[0_0_30px_rgba(34,211,238,0.2)] overflow-hidden">
+                    <CardContent className="p-6">
+                      {/* Pack Image */}
+                      <div className="relative mb-4">
+                        <div className="w-full h-32 bg-gradient-to-br from-cyan-600/20 to-blue-600/20 rounded-xl flex items-center justify-center border border-cyan-500/30">
+                          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                            <Star className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                        {/* Updated Badge */}
+                        <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[#22D3EE] to-[#3B82F6] text-white font-bold text-xs px-2 py-1">
+                          UPDATED
+                        </Badge>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-[#22D3EE] transition-colors">
+                          Classic Packs
+                        </h3>
+                        <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                          Updated with new card sets and improved odds. Your favorite packs just got better!
+                        </p>
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-[#FACC15] font-semibold text-sm">50₵</span>
+                          <TrendingUp className="w-4 h-4 text-[#FACC15]" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+            </div>
+          </motion.section>
+
           {/* Recent Pulls */}
           <motion.section 
             className="mb-12"
