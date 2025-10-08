@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
 import { RecentPulls } from "@/components/RecentPulls";
+import { ClassicPackPopup } from "@/components/ClassicPackPopup";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +10,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2, Star, Crown, Sparkles, Trophy } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import type { User } from "@shared/schema";
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [isBlackBoltPopupOpen, setIsBlackBoltPopupOpen] = useState(false);
 
   const { data: userData } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -22,6 +25,16 @@ export default function Home() {
   const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
     enabled: isAuthenticated,
+  });
+
+  // Fetch Black Bolt pack data
+  const { data: blackBoltPack } = useQuery({
+    queryKey: ["/api/available-packs"],
+    enabled: isAuthenticated,
+    select: (data: any) => {
+      // Find the Black Bolt pack from classic packs
+      return data?.classicPacks?.find((pack: any) => pack.name === "Black Bolt");
+    },
   });
 
   if (isLoading) {
@@ -372,7 +385,7 @@ export default function Home() {
            <div className="flex flex-row items-center justify-between mb-6 gap-4 mt-8">
              <div className="flex-1">
                <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-white mb-2 tracking-[-0.04em] leading-[1.15]">
-                 Hey <span className="text-white">{userData?.username || userData?.firstName || "Player"}</span>!
+                 Hey <span className="text-white">{userData?.username || "Player"}</span>!
                </h1>
                <p className="text-base sm:text-lg text-[#9CA3AF] font-normal leading-[1.6]">Your TCG adventure awaits</p>
              </div>
@@ -458,6 +471,7 @@ export default function Home() {
                  >
                    <Button 
                      size="sm"
+                     onClick={() => setIsBlackBoltPopupOpen(true)}
                      className="bg-gradient-to-r from-[#00E6A8] to-[#00E6A8] hover:from-[#00E6A8] hover:to-[#00E6A8] text-black px-4 py-2 rounded-xl font-medium w-fit shadow-[0_0_12px_rgba(0,230,168,0.3)] hover:shadow-[0_0_16px_rgba(0,230,168,0.4)] transition-all duration-200 text-sm"
                    >
                      Open Now
@@ -652,6 +666,16 @@ export default function Home() {
       </main>
 
       <NavigationFooter />
+
+      {/* Black Bolt Pack Popup */}
+      {blackBoltPack && (
+        <ClassicPackPopup
+          pack={blackBoltPack}
+          isOpen={isBlackBoltPopupOpen}
+          onClose={() => setIsBlackBoltPopupOpen(false)}
+          onOpenPack={() => {}} // Not needed for this use case
+        />
+      )}
     </div>
   );
 }
