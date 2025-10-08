@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { ClassicPackPopup } from "@/components/ClassicPackPopup";
+import { SpecialPackPopup } from "@/components/SpecialPackPopup";
 
 // Game data structure
 interface GameItem {
@@ -59,6 +60,8 @@ export default function Play() {
   const { isAuthenticated, isLoading } = useAuth();
   const [selectedClassicPack, setSelectedClassicPack] = useState<any>(null);
   const [isClassicPackPopupOpen, setIsClassicPackPopupOpen] = useState(false);
+  const [selectedSpecialPack, setSelectedSpecialPack] = useState<any>(null);
+  const [isSpecialPackPopupOpen, setIsSpecialPackPopupOpen] = useState(false);
 
   // Handle classic pack click
   const handleClassicPackClick = (game: any) => {
@@ -66,6 +69,14 @@ export default function Play() {
     const originalPack = availablePacks?.classicPacks?.find((pack: any) => pack.id === game.id);
     setSelectedClassicPack(originalPack);
     setIsClassicPackPopupOpen(true);
+  };
+
+  // Handle special pack click
+  const handleSpecialPackClick = (game: any) => {
+    // Find the original pack data from availablePacks
+    const originalPack = availablePacks?.specialPacks?.find((pack: any) => pack.id === game.id);
+    setSelectedSpecialPack(originalPack);
+    setIsSpecialPackPopupOpen(true);
   };
 
   // Handle pack opening (no longer needed since animation is in popup)
@@ -112,7 +123,7 @@ export default function Play() {
   }
 
   // Game Card Component
-  const GameCard = ({ game, isLarge = false, delay = 0, onClassicPackClick }: { game: GameItem, isLarge?: boolean, delay?: number, onClassicPackClick?: (pack: any) => void }) => {
+  const GameCard = ({ game, isLarge = false, delay = 0, onClassicPackClick, onSpecialPackClick }: { game: GameItem, isLarge?: boolean, delay?: number, onClassicPackClick?: (pack: any) => void, onSpecialPackClick?: (pack: any) => void }) => {
     const cardSize = isLarge ? "w-72 h-64" : "w-56 h-48";
     
     const handleClick = () => {
@@ -121,6 +132,8 @@ export default function Play() {
       // Check if this is a classic pack
       if (game.badge === "Classic" && onClassicPackClick) {
         onClassicPackClick(game);
+      } else if (game.badge === "Special" && onSpecialPackClick) {
+        onSpecialPackClick(game);
       } else {
         window.location.href = game.route;
       }
@@ -341,7 +354,8 @@ export default function Play() {
                         badge: "Special",
                         badgeColor: "bg-purple-500"
                       }} 
-                      delay={0.5 + index * 0.1} 
+                      delay={0.5 + index * 0.1}
+                      onSpecialPackClick={handleSpecialPackClick}
                     />
                   ))}
                 </div>
@@ -396,6 +410,17 @@ export default function Play() {
         onClose={() => {
           setIsClassicPackPopupOpen(false);
           setSelectedClassicPack(null);
+        }}
+        onOpenPack={handleOpenPack}
+      />
+
+      {/* Special Pack Popup */}
+      <SpecialPackPopup
+        pack={selectedSpecialPack}
+        isOpen={isSpecialPackPopupOpen}
+        onClose={() => {
+          setIsSpecialPackPopupOpen(false);
+          setSelectedSpecialPack(null);
         }}
         onOpenPack={handleOpenPack}
       />
