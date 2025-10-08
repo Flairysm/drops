@@ -334,7 +334,7 @@ export class DatabaseStorage {
       // Use raw SQL query with proper tier filtering and limit
       const result = await db.execute(sql`
         SELECT * FROM global_feed 
-        WHERE tier = ANY(${allowedTiers})
+        WHERE tier IN (${sql.join(allowedTiers.map(tier => sql`${tier}`), sql`, `)})
         ORDER BY created_at DESC 
         LIMIT ${limit}
       `);
