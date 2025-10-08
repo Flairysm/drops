@@ -932,14 +932,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Global feed routes
   app.get('/api/feed', async (req, res) => {
     try {
-      const { limit = 50, minTier } = req.query;
+      const { limit = 10, minTier = 'A' } = req.query;
       
+      console.log("📰 Feed request - limit:", limit, "minTier:", minTier);
       
       // Use the storage method instead of direct query
       const feedData = await storage.getGlobalFeed(parseInt(limit as string), minTier as string);
       
-      if (feedData.length > 0) {
-      }
+      console.log("📰 Feed response - returning", feedData.length, "entries");
       
       res.json(feedData);
     } catch (error) {
@@ -2075,10 +2075,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const packResult = await storage.openUserPack(packId, userId);
       
-      // Add to global feed for hit cards
+      // Add to global feed for A+ tier hit cards only
       const hitCard = packResult.packCards.find(card => card.isHit);
       
-      if (hitCard && hitCard.tier) {
+      if (hitCard && hitCard.tier && ['A', 'S', 'SS', 'SSS'].includes(hitCard.tier)) {
         try {
           // Get user info for the feed
           const user = await storage.getUser(userId);
@@ -2091,12 +2091,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cardTier: hitCard.tier,
             imageUrl: hitCard.imageUrl
           });
-          console.log("✅ Added hit card to global feed:", hitCard.name);
+          console.log("✅ Added A+ tier hit card to global feed:", hitCard.name, hitCard.tier);
         } catch (error) {
           console.error('❌ Failed to add to global feed:', error);
         }
       } else {
-        console.log("ℹ️ No hit card found, skipping global feed");
+        console.log("ℹ️ No A+ tier hit card found, skipping global feed");
       }
       
       res.json({ 
@@ -2172,10 +2172,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Open the pack immediately
       const packResult = await storage.openUserPack(userPack.id, userId);
 
-      // Add to global feed for hit cards
+      // Add to global feed for A+ tier hit cards only
       const hitCard = packResult.packCards.find(card => card.isHit);
       
-      if (hitCard && hitCard.tier) {
+      if (hitCard && hitCard.tier && ['A', 'S', 'SS', 'SSS'].includes(hitCard.tier)) {
         try {
           // Get user info for the feed
           const user = await storage.getUser(userId);
@@ -2188,10 +2188,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cardTier: hitCard.tier,
             imageUrl: hitCard.imageUrl
           });
-          console.log("✅ Added hit card to global feed:", hitCard.name);
+          console.log("✅ Added A+ tier hit card to global feed:", hitCard.name, hitCard.tier);
         } catch (error) {
           console.error('❌ Failed to add to global feed:', error);
         }
+      } else {
+        console.log("ℹ️ No A+ tier hit card found, skipping global feed");
       }
 
       const response = { 

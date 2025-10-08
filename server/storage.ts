@@ -292,7 +292,7 @@ export class DatabaseStorage {
     try {
       // Use raw SQL since the Drizzle schema doesn't match the actual database table
       await db.execute(sql`
-        INSERT INTO global_feed (id, user_id, card_id, game_type, card_name, card_image_url, created_at)
+        INSERT INTO global_feed (id, user_id, card_id, game_type, card_name, card_image_url, tier, created_at)
         VALUES (
           ${`gf-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`},
           ${feedData.userId},
@@ -300,6 +300,7 @@ export class DatabaseStorage {
           ${feedData.packType || 'unknown'},
           ${feedData.cardName || feedData.card?.name || 'Unknown Card'},
           ${feedData.imageUrl || feedData.card?.imageUrl || '/card-images/Commons.png'},
+          ${feedData.cardTier || feedData.card?.tier || 'D'},
           ${new Date()}
         )
       `);
@@ -315,11 +316,31 @@ export class DatabaseStorage {
     try {
       console.log("📰 Fetching global feed with limit:", limit, "minTier:", minTier);
       
-      // Use raw SQL query since the Drizzle schema doesn't match the actual database table
-      const result = await db.execute(sql`SELECT * FROM global_feed ORDER BY created_at DESC LIMIT 10`);
+      // Define tier hierarchy for filtering
+      const tierHierarchy = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'];
+      const minTierIndex = tierHierarchy.indexOf(minTier);
+      
+      if (minTierIndex === -1) {
+        console.log("📰 Invalid minTier, defaulting to A tier");
+        minTier = 'A';
+      }
+      
+      // Get all tiers from minTier and above
+      const allowedTiers = tierHierarchy.slice(minTierIndex);
+      console.log("📰 Allowed tiers:", allowedTiers);
+      
+      // Use raw SQL query with proper tier filtering and limit
+      const result = await db.execute(sql`
+        SELECT * FROM global_feed 
+        WHERE tier = ANY(${allowedTiers})
+        ORDER BY created_at DESC 
+        LIMIT ${limit}
+      `);
       
       console.log("📰 Global feed result:", result.rows.length, "entries");
-      console.log("📰 Sample row:", result.rows[0]);
+      if (result.rows.length > 0) {
+        console.log("📰 Sample row:", result.rows[0]);
+      }
       
       // Transform the result to match the expected format
       const transformedResult = result.rows.map((row: any) => ({
