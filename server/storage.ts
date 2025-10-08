@@ -393,7 +393,27 @@ export class DatabaseStorage {
       .from(classicPrize)
       .where(eq(classicPrize.packId, id));
     
-    return { ...pack[0], cards };
+    // Count how many times this pack has been opened
+    const openedCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userPacks)
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true)
+      ));
+    
+    // For classic packs, calculate total from prize pool cards
+    const totalCards = cards.reduce((sum, card) => sum + (card.quantity || 0), 0);
+    const openedPacks = openedCount[0]?.count || 0;
+    const availableCards = Math.max(0, totalCards - openedPacks);
+    
+    return { 
+      ...pack[0], 
+      cards,
+      totalCards,
+      openedPacks,
+      availableCards
+    };
   }
 
   async createClassicPack(packData: InsertClassicPack): Promise<ClassicPack> {
@@ -486,7 +506,26 @@ export class DatabaseStorage {
       .from(specialPrize)
       .where(eq(specialPrize.packId, id));
     
-    return { ...pack[0], cards };
+    // Count how many times this pack has been opened
+    const openedCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userPacks)
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true)
+      ));
+    
+    const totalCards = pack[0].totalCards || 8;
+    const openedPacks = openedCount[0]?.count || 0;
+    const availableCards = Math.max(0, totalCards - openedPacks);
+    
+    return { 
+      ...pack[0], 
+      cards,
+      totalCards,
+      openedPacks,
+      availableCards
+    };
   }
 
   async createSpecialPack(packData: InsertSpecialPack): Promise<SpecialPack> {
