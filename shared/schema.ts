@@ -124,7 +124,6 @@ export const userCards = pgTable("user_cards", {
   quantity: integer("quantity").default(1).notNull(),
   pullValue: decimal("pull_value", { precision: 10, scale: 2 }).default("0.00"),
   packSource: varchar("pack_source", { length: 100 }),
-  packId: varchar("pack_id"),
   cardSource: varchar("card_source", { length: 100 }),
   isRefunded: boolean("is_refunded").default(false),
   isShipped: boolean("is_shipped").default(false),
@@ -135,10 +134,12 @@ export const userCards = pgTable("user_cards", {
 export const globalFeed = pgTable("global_feed", {
   id: varchar("id", { length: 255 }).primaryKey(),
   userId: varchar("user_id").references(() => users.id),
-  cardName: varchar("card_name", { length: 255 }).notNull(),
-  cardTier: varchar("card_tier", { length: 20 }).notNull(),
-  gameType: varchar("game_type", { length: 50 }).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  packId: varchar("pack_id", { length: 256 }), // Can be null for mystery packs
+  packType: varchar("pack_type", { length: 256 }).notNull(),
+  cardName: varchar("card_name", { length: 256 }).notNull(),
+  cardTier: varchar("card_tier", { length: 256 }).notNull(),
+  imageUrl: varchar("image_url", { length: 256 }).notNull(),
+  pulledAt: timestamp("pulled_at").defaultNow().notNull(),
 });
 
 // Transactions
@@ -279,7 +280,7 @@ export const insertUserCardSchema = createInsertSchema(userCards).omit({
 });
 
 export const insertGlobalFeedSchema = createInsertSchema(globalFeed).omit({
-  createdAt: true,
+  pulledAt: true,
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
@@ -325,4 +326,26 @@ export type SpecialPackWithPrizes = SpecialPack & { prizes: SpecialPrize[] };
 
 export type GlobalFeedWithDetails = GlobalFeed & {
   user: Pick<User, 'username'>;
+};
+
+// Legacy types for compatibility
+export type Card = {
+  id: string;
+  name: string;
+  tier: string;
+  imageUrl: string;
+  marketValue: string;
+  isHit?: boolean;
+  position?: number;
+};
+
+export type Pack = {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  price: string;
+  isActive: boolean;
+  createdAt: Date;
+  cards?: any[];
 };

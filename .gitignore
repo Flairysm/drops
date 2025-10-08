@@ -40,3 +40,23 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+# Database files and migrations
+*.sql
+!server/migrations/*.sql
+
+# Backup files
+*backup*
+*schema-backup*
+
+# Setup scripts
+setup-*.js
+setup-*.ts
+
+# Documentation files (optional - uncomment if you don't want to track docs)
+# *.md
+# !README.md
+
+# Test files
+test-*.sql
+*-test.sql

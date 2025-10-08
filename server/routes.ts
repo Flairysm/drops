@@ -8,7 +8,6 @@ import { z } from "zod";
 import path from "path";
 import { fileURLToPath } from 'url';
 import fileUpload from 'express-fileupload';
-import { APICacheMiddleware, CachePatterns } from './cache/apiCache';
 import { 
   classicPack,
   classicPrize,
@@ -21,6 +20,13 @@ import {
   users,
   transactions
 } from "@shared/schema";
+
+// Game result interface
+interface GameResult {
+  cardId: string;
+  tier: string;
+  gameType: string;
+}
 
 // Map tier to pack type for Plinko
 
@@ -44,6 +50,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development'
     });
+  });
+
+  // Test endpoint to assign packs to user
+  app.post('/api/admin/assign-test-packs', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { count = 100 } = req.body;
+      
+      console.log(`🎁 Assigning ${count} test packs to user ${userId}`);
+      
+      const packTypes = [
+        { packId: 'mystery-pokeball', tier: 'pokeball' },
+        { packId: 'mystery-greatball', tier: 'greatball' },
+        { packId: 'mystery-ultraball', tier: 'ultraball' },
+        { packId: 'mystery-masterball', tier: 'masterball' }
+      ];
+      
+      let totalAdded = 0;
+      
+      for (const packType of packTypes) {
+        console.log(`📦 Adding ${count} ${packType.tier} packs...`);
+        
+        for (let i = 0; i < count; i++) {
+          try {
+            await storage.addUserPack({
+              id: `test-${packType.tier}-${Date.now()}-${i}`,
+              userId,
+              packId: packType.packId,
+              packType: 'mystery',
+              tier: packType.tier,
+              earnedFrom: 'admin_test',
+              isOpened: false,
+            });
+            totalAdded++;
+          } catch (error) {
+            console.error(`❌ Error adding ${packType.tier} pack ${i + 1}:`, error.message);
+          }
+        }
+        
+        console.log(`✅ Completed adding ${count} ${packType.tier} packs`);
+      }
+      
+      console.log(`🎉 All test packs assigned successfully! Total: ${totalAdded}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully assigned ${totalAdded} test packs`,
+        totalAdded,
+        packsPerType: count
+      });
+    } catch (error) {
+      console.error("❌ Error assigning test packs:", error);
+      res.status(500).json({ message: "Failed to assign test packs" });
+    }
   });
 
   // Test inventory endpoint (no auth required for testing)
@@ -262,6 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Award fallback pack to user
           await storage.addUserPack({
+            id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             userId,
             packId: fallbackPack.id,
             packType: 'mystery',
@@ -272,6 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           // Award pack to user - store the pack type as tier for display
           await storage.addUserPack({
+            id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             userId,
             packId: targetPack.id,
             packType: 'mystery',
@@ -313,6 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create transaction record
       await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'game_play',
         amount: `-${actualBetAmount}`,
@@ -368,6 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Award pack to user
       await storage.addUserPack({
+        id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         packId: pack.id,
         packType: 'mystery',
@@ -378,6 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create transaction record
       await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'game_play',
         amount: "0", // No additional cost since credits were already deducted
@@ -450,8 +515,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Award mystery pack to user
-      console.log('Awarding mystery pack to user:', { userId, packId: pack.id, packType: 'mystery', tier: packTier, earnedFrom: 'find-pikachu' });
       const userPack = await storage.addUserPack({
+        id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         packId: pack.id,
         packType: 'mystery',
@@ -459,10 +524,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         earnedFrom: 'find-pikachu',
         isOpened: false,
       });
-      console.log('Successfully added user pack:', userPack);
 
       // Create transaction record
       await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'game_play',
         amount: "0", // No additional cost since credits were already deducted
@@ -537,6 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Award mystery pack to user
       await storage.addUserPack({
+        id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         packId: pack.id,
         packType: 'mystery',
@@ -547,6 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create transaction record
       await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'game_play',
         amount: "0", // No additional cost since credits were already deducted
@@ -600,48 +667,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid card IDs" });
       }
 
+      console.log(`🔄 Processing refund for user ${userId}: ${cardIds.length} cards`);
+
       await storage.refundCards(cardIds, userId);
       
       // Add notification
       await storage.addNotification({
+        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'refund',
         title: 'Cards Refunded',
         message: `Successfully refunded ${cardIds.length} cards`,
       });
 
-      res.json({ success: true });
+      console.log(`✅ Refund completed successfully for user ${userId}`);
+
+      res.json({ 
+        success: true, 
+        message: `Successfully refunded ${cardIds.length} cards`,
+        refundedCount: cardIds.length
+      });
     } catch (error) {
-      console.error("Error refunding cards:", error);
+      console.error("❌ Error refunding cards:", error);
       res.status(500).json({ message: "Failed to refund cards" });
     }
   });
 
   // Async refund endpoint - processes refunds in background
   app.post('/api/vault/refund-async', isAuthenticatedCombined, async (req: any, res) => {
-    console.log("🔥 ASYNC REFUND ENDPOINT HIT!");
-    console.log("🔥 Request body:", req.body);
-    console.log("🔥 User:", req.user);
-    console.log("🔥 Request headers:", req.headers);
     
     try {
       const userId = req.user.id;
       const { cardIds } = req.body;
 
-      console.log(`🚀 Async refund endpoint called for user ${userId} with ${cardIds?.length || 0} cards`);
-      console.log(`🚀 Card IDs:`, cardIds);
 
       if (!Array.isArray(cardIds) || cardIds.length === 0) {
-        console.log("❌ Invalid card IDs provided");
         return res.status(400).json({ message: "Invalid card IDs" });
       }
 
       // Immediately respond to client
-      console.log("🚀 Sending immediate response to client");
       res.json({ success: true, message: "Refund processing started" });
 
       // Process refund in background (don't await)
-      console.log("🚀 Starting background processing...");
       storage.refundCardsAsync(cardIds, userId).catch(error => {
         console.error("❌ Async refund processing failed:", error);
         // Could add error notification here if needed
@@ -693,7 +760,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { cardIds } = req.body;
 
-      console.log(`🧪 TEST: Manual refund trigger for user ${userId} with ${cardIds?.length || 0} cards`);
 
       if (!Array.isArray(cardIds) || cardIds.length === 0) {
         return res.status(400).json({ message: "Invalid card IDs" });
@@ -715,43 +781,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Simple test endpoint to verify routing
   app.post('/api/vault/test-simple', isAuthenticatedCombined, async (req: any, res) => {
-    console.log("🧪 SIMPLE TEST ENDPOINT HIT!");
     res.json({ success: true, message: "Simple test endpoint working" });
   });
 
   // Image upload endpoint - using different path to avoid Vite interference
   app.post('/api/admin/upload-image', isAuthenticatedCombined, async (req: any, res) => {
-    console.log("🖼️ IMAGE UPLOAD ENDPOINT HIT!");
-    console.log("🖼️ Request body keys:", Object.keys(req.body || {}));
-    console.log("🖼️ Request files keys:", Object.keys(req.files || {}));
-    console.log("🖼️ User:", req.user);
     
     try {
       const userId = req.user.id;
-      console.log("🖼️ User ID:", userId);
       
       // Check if user is admin
       const user = await storage.getUser(userId);
-      console.log("🖼️ User from DB:", user);
-      console.log("🖼️ User role:", user?.role);
       
       if (!user || user.role !== 'admin') {
-        console.log("🖼️ ❌ Admin access denied");
         return res.status(403).json({ message: "Admin access required" });
       }
 
       // Handle file upload using multer or similar
       // For now, we'll use a simple approach with express-fileupload
-      console.log("🖼️ Checking for files...");
-      console.log("🖼️ req.files:", req.files);
       
       if (!req.files || !req.files.image) {
-        console.log("🖼️ ❌ No image file provided");
         return res.status(400).json({ message: "No image file provided" });
       }
 
       const imageFile = req.files.image;
-      console.log("🖼️ Image file:", {
+      console.log('📁 Image file received:', {
         name: imageFile.name,
         size: imageFile.size,
         mimetype: imageFile.mimetype
@@ -759,41 +813,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate file type
       if (!imageFile.mimetype.startsWith('image/')) {
-        console.log("🖼️ ❌ Invalid file type:", imageFile.mimetype);
         return res.status(400).json({ message: "File must be an image" });
       }
 
       // Validate file size (10MB limit)
       if (imageFile.size > 10 * 1024 * 1024) {
-        console.log("🖼️ ❌ File too large:", imageFile.size);
         return res.status(400).json({ message: "File size must be less than 10MB" });
       }
 
       // Generate unique filename
       const fileExtension = imageFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
-      console.log("🖼️ Generated filename:", fileName);
       
       // Save file to uploads directory
       const __filename = fileURLToPath(import.meta.url);
       const __dirname = path.dirname(__filename);
       const uploadPath = path.join(__dirname, '../client/public/uploads', fileName);
-      console.log("🖼️ Upload path:", uploadPath);
       
       // Ensure uploads directory exists
       const fs = await import('fs');
       const uploadsDir = path.join(__dirname, '../client/public/uploads');
       if (!fs.existsSync(uploadsDir)) {
-        console.log("🖼️ Creating uploads directory:", uploadsDir);
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
       
       await imageFile.mv(uploadPath);
-      console.log("🖼️ ✅ File saved successfully");
 
       // Return the public URL
       const imageUrl = `/uploads/${fileName}`;
-      console.log("🖼️ ✅ Returning image URL:", imageUrl);
       
       res.json({ 
         success: true, 
@@ -809,7 +856,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Test endpoint without authentication to verify basic routing
   app.post('/api/vault/test-basic', async (req: any, res) => {
-    console.log("🧪 BASIC TEST ENDPOINT HIT!");
     res.json({ success: true, message: "Basic test endpoint working" });
   });
 
@@ -817,15 +863,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to check global feed table
   app.get('/api/feed/debug', async (req, res) => {
     try {
-      console.log('🔍 DEBUG: Checking global_feed table...');
       
       // Check total count
       const totalCount = await db.select({ count: sql<number>`count(*)` }).from(globalFeed);
-      console.log('🔍 Total entries in global_feed:', totalCount[0]?.count || 0);
       
       // Get all entries
       const allEntries = await db.select().from(globalFeed).limit(10);
-      console.log('🔍 Sample entries:', allEntries);
       
       res.json({
         totalCount: totalCount[0]?.count || 0,
@@ -837,11 +880,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to check global feed table
+  app.get('/api/feed/test-table', async (req, res) => {
+    try {
+      // Check if global_feed table exists and has data
+      const result = await db.execute(sql`SELECT COUNT(*) as count FROM global_feed`);
+      const count = result.rows[0]?.count || 0;
+      
+      // Get a few sample records
+      const sampleResult = await db.execute(sql`SELECT * FROM global_feed LIMIT 5`);
+      
+      res.json({ 
+        success: true, 
+        count: count,
+        sampleRecords: sampleResult.rows,
+        message: "Global feed table check completed"
+      });
+    } catch (error) {
+      console.error("❌ Error checking global feed table:", error);
+      res.status(500).json({ message: "Failed to check global feed table", error: error.message });
+    }
+  });
+
   // Test endpoint to manually add a feed entry
   app.post('/api/feed/test-add', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      console.log('🧪 TEST: Adding manual feed entry for user:', userId);
       
       // Get a random card from inventory
       const inventoryCards = await storage.getInventoryCards();
@@ -850,7 +914,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const randomCard = inventoryCards[0];
-      console.log('🧪 Using card:', randomCard);
       
       await storage.addGlobalFeedEntry({
         userId,
@@ -859,7 +922,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gameType: 'test',
       });
       
-      console.log('✅ Test feed entry added successfully');
       res.json({ success: true, message: "Test feed entry added" });
     } catch (error) {
       console.error("❌ Error adding test feed entry:", error);
@@ -872,14 +934,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { limit = 50, minTier } = req.query;
       
-      console.log('📰 Fetching global feed with params:', { limit, minTier });
       
       // Use the storage method instead of direct query
       const feedData = await storage.getGlobalFeed(parseInt(limit as string), minTier as string);
       
-      console.log(`📰 Found ${feedData.length} feed entries`);
       if (feedData.length > 0) {
-        console.log('📰 Sample feed entry:', JSON.stringify(feedData[0], null, 2));
       }
       
       res.json(feedData);
@@ -914,6 +973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateUserCredits(userId, creditAmount.toFixed(2));
       
       await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'purchase',
         amount: creditAmount.toFixed(2),
@@ -921,6 +981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       await storage.addNotification({
+        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'purchase',
         title: 'Credits Added',
@@ -952,6 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'deduction',
         amount: (-deductAmount).toFixed(2),
@@ -967,23 +1029,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User credit update endpoint for reload page
   app.post('/api/user/update-credits', isAuthenticatedCombined, async (req: any, res) => {
-    
     try {
       const userId = req.user.id;
-      const { credits } = req.body;
+      const { credits, amount } = req.body;
 
+      console.log("🔄 Credit reload request:", { userId, credits, amount, body: req.body });
 
-      const creditAmount = parseFloat(credits);
+      // Support both 'credits' and 'amount' parameters for backward compatibility
+      const creditAmount = parseFloat(credits || amount);
       if (isNaN(creditAmount) || creditAmount <= 0) {
         return res.status(400).json({ message: "Invalid credit amount" });
       }
 
+      // Get current user credits
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const currentCredits = parseFloat(user.credits || "0");
+      const newCredits = currentCredits + creditAmount;
+
+      console.log("🔄 Credit calculation:", { 
+        userId, 
+        currentCredits, 
+        creditAmount, 
+        newCredits,
+        userCreditsString: user.credits,
+        calculation: `${currentCredits} + ${creditAmount} = ${newCredits}`
+      });
 
       // Add credits to user account
-      await storage.updateUserCredits(userId, creditAmount.toFixed(2));
+      await storage.updateUserCredits(userId, newCredits.toFixed(2));
       
       // Add transaction record
       await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'purchase',
         amount: creditAmount.toFixed(2),
@@ -992,15 +1073,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add notification
       await storage.addNotification({
+        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'purchase',
         title: 'Credits Added',
         message: `Added ${creditAmount} credits to your account`,
       });
 
-      res.json({ success: true, creditsAdded: creditAmount });
+      console.log("✅ Credit reload successful:", { userId, creditsAdded: creditAmount, newTotal: newCredits });
+
+      res.json({ success: true, creditsAdded: creditAmount, newTotal: newCredits });
     } catch (error) {
-      console.error("Error updating user credits:", error);
+      console.error("❌ Error updating user credits:", error);
       res.status(500).json({ message: "Failed to update credits" });
     }
   });
@@ -1017,6 +1101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const shippingRequest = await storage.createShippingRequest(requestData);
       
       await storage.addNotification({
+        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         type: 'shipping',
         title: 'Shipping Request Created',
@@ -1288,9 +1373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/test-special-packs', async (req: any, res) => {
     try {
-      console.log('Testing special packs query...');
       const result = await db.select().from(specialPacks);
-      console.log('Query result:', result);
       res.json({ success: true, result });
     } catch (error: any) {
       console.error('Special packs test error:', error);
@@ -1302,7 +1385,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/test-cascade-delete/:cardId', async (req: any, res) => {
     try {
       const { cardId } = req.params;
-      console.log('Testing cascading deletion for card:', cardId);
       
       // Check if card exists in special pack cards (simplified system)
       const specialPackCardsResult = await db
@@ -1332,9 +1414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to check inventory table directly
   app.get('/api/test-inventory', async (req: any, res) => {
     try {
-      console.log('Testing inventory table query...');
       const result = await db.select().from(inventory);
-      console.log('Inventory query result:', result);
       res.json({ success: true, result, count: result.length });
     } catch (error: any) {
       console.error('Inventory test error:', error);
@@ -1345,7 +1425,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to add tier column
   app.get('/api/fix-inventory-tier', async (req: any, res) => {
     try {
-      console.log('Adding tier column to inventory table...');
       
       // Add tier column if it doesn't exist
       await db.execute(sql`ALTER TABLE inventory ADD COLUMN IF NOT EXISTS tier VARCHAR(20) DEFAULT 'D' NOT NULL;`);
@@ -1355,7 +1434,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Test the query again
       const result = await db.select().from(inventory);
-      console.log('Inventory after adding tier column:', result);
       
       res.json({ success: true, message: 'Tier column added successfully', result, count: result.length });
     } catch (error: any) {
@@ -1367,7 +1445,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to add packType column
   app.get('/api/fix-pack-type', async (req: any, res) => {
     try {
-      console.log('Adding packType column to special_packs table...');
       
       // Add packType column if it doesn't exist
       await db.execute(sql`ALTER TABLE special_packs ADD COLUMN IF NOT EXISTS pack_type VARCHAR(50) DEFAULT 'special' NOT NULL;`);
@@ -1377,7 +1454,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Test the query again
       const result = await db.select().from(specialPacks);
-      console.log('Special packs after adding packType column:', result);
       
       res.json({ success: true, message: 'PackType column added successfully', result, count: result.length });
     } catch (error: any) {
@@ -1388,13 +1464,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/test-remove-card', async (req: any, res) => {
     try {
-      console.log('Testing remove card functionality...');
       const packId = '348915f7-5185-481b-bcb6-590c8e87d02d';
       const specialPackCardId = 'spc-1758596540504-agi7i73cb';
       
-      console.log('Calling removeCardFromSpecialPack with:', { packId, specialPackCardId });
       await storage.removeCardFromSpecialPack(packId, specialPackCardId);
-      console.log('Remove card successful');
       res.json({ success: true });
     } catch (error: any) {
       console.error('Remove card test error:', error);
@@ -1405,9 +1478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin special packs routes
   app.get('/api/admin/special-packs', isAdminCombined, async (req: any, res) => {
     try {
-      console.log('Getting special packs...');
       const packs = await storage.getSpecialPacks();
-      console.log('Successfully fetched packs:', packs);
       res.json(packs);
     } catch (error: any) {
       console.error('Error fetching special packs:', error);
@@ -1420,9 +1491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Classic Packs Routes
   app.get('/api/admin/classic-packs', isAdminCombined, async (req: any, res) => {
     try {
-      console.log('Getting classic packs...');
       const packs = await storage.getClassicPacks();
-      console.log('Successfully fetched classic packs:', packs);
       res.json(packs);
     } catch (error: any) {
       console.error('Error fetching classic packs:', error);
@@ -1480,7 +1549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/special-packs/:id', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
+  app.delete('/api/admin/special-packs/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteSpecialPack(id);
@@ -1509,13 +1578,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
       const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Adding card to special pack:', { packId, cardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
       // Support both old system (cardId) and new simplified system (cardName, etc.)
       if (cardId) {
         // Old system - add card by cardId
         const packCard = await storage.addCardToSpecialPack(packId, cardId, quantity);
-        console.log('Successfully added card to pack:', packCard);
         res.json(packCard);
       } else if (cardName && cardImageUrl && cardTier && refundCredit !== undefined) {
         // New simplified system - add card with full details
@@ -1526,7 +1593,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           refundCredit,
           quantity
         });
-        console.log('Successfully added card to pack (simplified):', packCard);
         res.json(packCard);
       } else {
         return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
@@ -1538,12 +1604,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/special-packs/:packId/cards/:specialPackCardId', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
+  app.delete('/api/admin/special-packs/:packId/cards/:specialPackCardId', isAdminCombined, async (req: any, res) => {
     try {
       const { packId, specialPackCardId } = req.params;
-      console.log('Route handler - removing card:', { packId, specialPackCardId });
       await storage.removeCardFromSpecialPack(packId, specialPackCardId);
-      console.log('Route handler - card removed successfully');
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error removing card from special pack:', error);
@@ -1574,7 +1638,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name, description, image, price } = req.body;
       
-      console.log('Received classic pack data:', { name, description, image, price });
       
       if (!name || !description || !image || !price) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -1590,9 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       };
 
-      console.log('Creating classic pack with data:', packData);
       const newPack = await storage.createClassicPack(packData);
-      console.log('Successfully created classic pack:', newPack);
       res.json(newPack);
     } catch (error: any) {
       console.error('Error creating classic pack:', error);
@@ -1620,7 +1681,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const updatedPack = await storage.updateClassicPack(id, packData);
-      console.log('Updated classic pack:', updatedPack);
       res.json(updatedPack);
     } catch (error: any) {
       console.error('Error updating classic pack:', error);
@@ -1628,11 +1688,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/classic-packs/:id', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
+  app.delete('/api/admin/classic-packs/:id', isAdminCombined, async (req: any, res) => {
     try {
       const { id } = req.params;
       await storage.deleteClassicPack(id);
-      console.log('Deleted classic pack:', id);
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting classic pack:', error);
@@ -1658,13 +1717,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
       const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Adding card to classic pack:', { packId, cardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
       // Support both old system (cardId) and new simplified system (cardName, etc.)
       if (cardId) {
         // Old system - add card by cardId
         const packCard = await storage.addCardToClassicPack(packId, cardId, quantity);
-        console.log('Successfully added card to pack:', packCard);
         res.json(packCard);
       } else if (cardName && cardImageUrl && cardTier && refundCredit !== undefined) {
         // New simplified system - add card with full details
@@ -1675,7 +1732,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           refundCredit,
           quantity
         });
-        console.log('Successfully added card to pack (simplified):', packCard);
         res.json(packCard);
       } else {
         return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
@@ -1687,10 +1743,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/classic-packs/:packId/cards/:classicPackCardId', isAdminCombined, APICacheMiddleware.getInstance().createInvalidationMiddleware(CachePatterns.adminRelated), async (req: any, res) => {
+  app.delete('/api/admin/classic-packs/:packId/cards/:classicPackCardId', isAdminCombined, async (req: any, res) => {
     try {
       const { packId, classicPackCardId } = req.params;
-      console.log('Route handler - removing card:', { packId, classicPackCardId });
       await storage.removeCardFromClassicPack(packId, classicPackCardId);
       res.json({ success: true });
     } catch (error: any) {
@@ -1704,7 +1759,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId, classicPackCardId } = req.params;
       const { quantity, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Updating classic pack card:', { packId, classicPackCardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
       if (quantity !== undefined) {
         const updatedCard = await storage.updateClassicPackCardQuantity(packId, classicPackCardId, quantity);
@@ -1737,7 +1791,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name, description, image, price, totalCards } = req.body;
       
-      console.log('Received mystery pack data:', { name, description, image, price, totalCards });
       
       const packData = {
         name,
@@ -1748,10 +1801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       };
       
-      console.log('Creating mystery pack with data:', packData);
       
       const pack = await storage.createMysteryPack(packData);
-      console.log('Created mystery pack:', pack);
       res.json(pack);
     } catch (error: any) {
       console.error('Error creating mystery pack:', error);
@@ -1783,7 +1834,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       await storage.deleteMysteryPack(id);
-      console.log('Deleted mystery pack:', id);
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting mystery pack:', error);
@@ -1809,13 +1859,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
       const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
-      console.log('Adding card to mystery pack:', { packId, cardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
       // Support both old system (cardId) and new simplified system (cardName, etc.)
       if (cardId) {
         // Old system - add card by cardId
         const packCard = await storage.addCardToMysteryPack(packId, cardId, quantity);
-        console.log('Successfully added card to mystery pack:', packCard);
         res.json(packCard);
       } else if (cardName && cardImageUrl && cardTier && refundCredit !== undefined) {
         // New simplified system - add card with full details
@@ -1826,7 +1874,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           refundCredit,
           quantity
         });
-        console.log('Successfully added card to mystery pack (simplified):', packCard);
         res.json(packCard);
       } else {
         return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
@@ -2027,27 +2074,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
 
       const packResult = await storage.openUserPack(packId, userId);
-      console.log('📦 Pack opening result:', JSON.stringify(packResult, null, 2));
       
-      // Add to global feed for all cards (temporarily for testing)
+      // Add to global feed for hit cards
       const hitCard = packResult.packCards.find(card => card.isHit);
-      console.log('🎯 Hit card found:', hitCard);
       
       if (hitCard && hitCard.tier) {
-        console.log(`📰 Adding pack pull to global feed: ${hitCard.tier} tier card - ${hitCard.name}`);
         try {
+          // Get user info for the feed
+          const user = await storage.getUser(userId);
           await storage.addGlobalFeedEntry({
             userId,
-            cardId: hitCard.id,
-            tier: hitCard.tier,
-            gameType: 'pack',
+            username: user?.username || 'Unknown',
+            packId: packId,
+            packType: packResult.packType,
+            cardName: hitCard.name,
+            cardTier: hitCard.tier,
+            imageUrl: hitCard.imageUrl
           });
-          console.log('✅ Successfully added to global feed');
+          console.log("✅ Added hit card to global feed:", hitCard.name);
         } catch (error) {
           console.error('❌ Failed to add to global feed:', error);
         }
       } else {
-        console.log('❌ No hit card found or missing tier');
+        console.log("ℹ️ No hit card found, skipping global feed");
       }
       
       res.json({ 
@@ -2067,10 +2116,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { packId } = req.params;
       
-      console.log('====================================');
-      console.log('🎯 BLACK BOLT PACK OPENING STARTED 🎯');
-      console.log('====================================');
-      console.log('📦 Classic pack purchase request:', { userId, packId });
       
       // Get the pack (could be classic or special)
       let pack = await storage.getClassicPackById(packId);
@@ -2083,50 +2128,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!pack) {
-        console.log('📦 Pack not found');
         return res.status(404).json({ message: 'Pack not found' });
       }
       
-      console.log('📦 Found pack:', pack.name, 'Price:', pack.price, 'Type:', packType);
       
       // Check if pack is active
       if (!pack.isActive) {
-        console.log('📦 Pack is not active');
         return res.status(400).json({ message: 'Pack is not available' });
       }
       
       // Get user data
       const user = await storage.getUser(userId);
       if (!user) {
-        console.log('📦 User not found');
         return res.status(404).json({ message: 'User not found' });
       }
       
-      console.log('📦 User found:', user.username, 'Credits:', user.credits);
       
-      // Check credits - TEMPORARILY DISABLED FOR TESTING
+      // Check credits
       const packPrice = parseFloat(pack.price);
       const userCredits = parseFloat(user.credits || '0');
-      console.log('📦 Pack price:', packPrice, 'User credits:', userCredits);
       
-      // TEMPORARILY DISABLED: Credit check
-      // if (userCredits < packPrice) {
-      //   console.log('📦 Insufficient credits');
-      //   return res.status(400).json({ message: 'Insufficient credits' });
-      // }
+      if (userCredits < packPrice) {
+        return res.status(400).json({ message: 'Insufficient credits' });
+      }
 
-      // TEMPORARILY DISABLED: Deduct credits
-      // console.log('📦 Deducting credits...');
-      // const success = await storage.deductUserCredits(userId, packPrice.toString());
-      // if (!success) {
-      //   console.log('📦 Failed to deduct credits');
-      //   return res.status(400).json({ message: 'Failed to deduct credits' });
-      // }
-      console.log('📦 Credits check bypassed for testing');
+      // Deduct credits
+      const success = await storage.deductUserCredits(userId, packPrice.toString());
+      if (!success) {
+        return res.status(400).json({ message: 'Failed to deduct credits' });
+      }
 
       // Create user pack
-      console.log('📦 Creating user pack...');
       const userPack = await storage.addUserPack({
+        id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         userId,
         packId: pack.id,
         packType: packType,
@@ -2134,18 +2168,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         earnedFrom: 'purchase',
         isOpened: false,
       });
-      console.log('📦 User pack created:', userPack.id);
 
       // Open the pack immediately
-      console.log('📦 Opening pack...');
       const packResult = await storage.openUserPack(userPack.id, userId);
-      console.log('📦 Pack opening result:', JSON.stringify(packResult, null, 2));
+
+      // Add to global feed for hit cards
+      const hitCard = packResult.packCards.find(card => card.isHit);
+      
+      if (hitCard && hitCard.tier) {
+        try {
+          // Get user info for the feed
+          const user = await storage.getUser(userId);
+          await storage.addGlobalFeedEntry({
+            userId,
+            username: user?.username || 'Unknown',
+            packId: packId,
+            packType: packResult.packType,
+            cardName: hitCard.name,
+            cardTier: hitCard.tier,
+            imageUrl: hitCard.imageUrl
+          });
+          console.log("✅ Added hit card to global feed:", hitCard.name);
+        } catch (error) {
+          console.error('❌ Failed to add to global feed:', error);
+        }
+      }
 
       const response = { 
         success: true,
         ...packResult
       };
-      console.log('📦 Sending response:', JSON.stringify(response, null, 2));
       res.json(response);
 
     } catch (error: any) {
@@ -2157,15 +2209,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Migration endpoint
   app.post('/api/debug/migrate-database', async (req, res) => {
     try {
-      console.log('🔧 Running database migration...');
       
       // Add pack_source column
       await db.execute(sql`ALTER TABLE user_cards ADD COLUMN IF NOT EXISTS pack_source VARCHAR(50);`);
-      console.log('✅ Added pack_source column');
       
       // Add pack_id column
       await db.execute(sql`ALTER TABLE user_cards ADD COLUMN IF NOT EXISTS pack_id VARCHAR(255);`);
-      console.log('✅ Added pack_id column');
       
       res.json({
         success: true,
@@ -2181,7 +2230,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check user_cards table schema
   app.get('/api/debug/check-user-cards-schema', async (req, res) => {
     try {
-      console.log('🔍 Checking user_cards table schema...');
       
       const result = await db.execute(sql`
         SELECT column_name, data_type, is_nullable
@@ -2190,7 +2238,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY ordinal_position
       `);
       
-      console.log('🔍 user_cards columns:', result.rows);
       
       res.json({
         success: true,
@@ -2202,26 +2249,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Cache stats endpoint
-  app.get('/api/debug/cache-stats', async (req, res) => {
-    try {
-      const { SimpleCache } = await import('./cache/simpleCache');
-      const cache = SimpleCache.getInstance();
-      const stats = cache.getStats();
-      res.json({
-        cache: stats,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('❌ Error getting cache stats:', error);
-      res.status(500).json({ error: 'Failed to get cache stats' });
-    }
-  });
-
   // Debug mystery packs endpoint
   app.get('/api/debug/mystery-packs', async (req, res) => {
     try {
-      console.log('🔍 DEBUG: Checking mystery_packs table...');
       
       const result = await db.execute(sql`
         SELECT 
@@ -2234,8 +2264,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY pack_type
       `);
       
-      console.log('🔍 Mystery packs found:', result.rows.length);
-      console.log('🔍 All mystery packs:', result.rows);
       
       res.json({
         totalCount: result.rows.length,
@@ -2249,7 +2277,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/debug/special-packs', async (req, res) => {
     try {
-      console.log('🔍 DEBUG: Checking special_pack table...');
       
       const result = await db.execute(sql`
         SELECT 
@@ -2265,8 +2292,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY created_at DESC
       `);
       
-      console.log('🔍 Special packs found:', result.rows.length);
-      console.log('🔍 All special packs:', result.rows);
       
       res.json({
         totalCount: result.rows.length,
@@ -2280,7 +2305,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/debug/classic-packs', async (req, res) => {
     try {
-      console.log('🔍 DEBUG: Checking classic_pack table...');
       
       const result = await db.execute(sql`
         SELECT 
@@ -2295,8 +2319,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY created_at DESC
       `);
       
-      console.log('🔍 Classic packs found:', result.rows.length);
-      console.log('🔍 All classic packs:', result.rows);
       
       res.json({
         totalCount: result.rows.length,
@@ -2311,7 +2333,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to update mystery pack odds
   app.post('/api/debug/update-mystery-pack-odds', async (req, res) => {
     try {
-      console.log('🔧 DEBUG: Updating mystery pack odds...');
       
       // Update Pokeball Mystery Pack odds
       await db.execute(sql`
@@ -2373,7 +2394,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE id = '35f87706-28e3-452b-ab85-1cca72dfc32a'
       `);
       
-      console.log('✅ Successfully updated mystery pack odds');
       
       res.json({
         success: true,
@@ -2390,14 +2410,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.params;
       
-      console.log(`🔍 DEBUG: Checking user data for ${userId}...`);
       
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
       
-      console.log(`🔍 User data:`, user);
       
       res.json({
         success: true,
@@ -2409,39 +2427,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug endpoint to clear user cache
-  app.post('/api/debug/clear-user-cache/:userId', async (req, res) => {
-    try {
-      const { userId } = req.params;
-      
-      console.log(`🧹 DEBUG: Clearing cache for user ${userId}...`);
-      
-      const { SimpleCache, CacheKeys } = await import('./cache/simpleCache');
-      const cache = SimpleCache.getInstance();
-      
-      // Clear user cache
-      cache.delete(CacheKeys.user(userId));
-      cache.delete(CacheKeys.userCards(userId));
-      cache.delete(CacheKeys.userPacks(userId));
-      
-      console.log(`✅ Cache cleared for user ${userId}`);
-      
-      res.json({
-        success: true,
-        message: `Cache cleared for user ${userId}`
-      });
-    } catch (error) {
-      console.error('❌ Error clearing cache:', error);
-      res.status(500).json({ error: 'Failed to clear cache' });
-    }
-  });
-
   // Debug endpoint to check classic pack cards with quantity details
   app.get('/api/debug/classic-pack-cards/:packId', async (req, res) => {
     try {
       const { packId } = req.params;
       
-      console.log(`🔍 DEBUG: Checking classic pack cards for ${packId}...`);
       
       const { db } = await import('./db');
       const { classicPackCards, inventory } = await import('../shared/schema');
@@ -2482,7 +2472,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           )
         );
       
-      console.log(`🔍 All cards: ${allCards.length}, Available cards: ${availableCards.length}`);
       
       res.json({
         success: true,
@@ -2501,7 +2490,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to add pack source tracking columns
   app.post('/api/debug/add-pack-source-tracking', async (req, res) => {
     try {
-      console.log('🔧 DEBUG: Adding pack source tracking columns...');
       
       const { db } = await import('./db');
       const { sql } = await import('drizzle-orm');
@@ -2518,7 +2506,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ADD COLUMN IF NOT EXISTS pack_id VARCHAR(255)
       `);
       
-      console.log('✅ Successfully added pack source tracking columns');
       
       res.json({
         success: true,
@@ -2533,7 +2520,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to fix common card value
   app.post('/api/debug/update-common-card-value', async (req, res) => {
     try {
-      console.log('🔧 DEBUG: Updating common card value from 10 to 1...');
       
       // Update the common card value in inventory
       await db.execute(sql`
@@ -2542,7 +2528,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE id = 'f776501e-10fa-4340-b4f7-263540306506'
       `);
       
-      console.log('✅ Successfully updated common card value to 1 credit');
       
       res.json({
         success: true,
@@ -2551,32 +2536,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error updating common card value:', error);
       res.status(500).json({ error: 'Failed to update common card value' });
-    }
-  });
-
-  // Debug endpoint to clear inventory cache
-  app.post('/api/debug/clear-inventory-cache', async (req, res) => {
-    try {
-      console.log('🧹 DEBUG: Clearing inventory cache...');
-      
-      const { SimpleCache, CacheKeys } = await import('./cache/simpleCache');
-      const cache = SimpleCache.getInstance();
-      
-      // Clear inventory-related cache
-      cache.delete('inventory:all');
-      cache.delete('inventory:cards');
-      cache.delete('specialPacks:all');
-      cache.delete('classicPacks:all');
-      
-      console.log('✅ Successfully cleared inventory cache');
-      
-      res.json({
-        success: true,
-        message: 'Successfully cleared inventory cache'
-      });
-    } catch (error) {
-      console.error('❌ Error clearing inventory cache:', error);
-      res.status(500).json({ error: 'Failed to clear inventory cache' });
     }
   });
 
@@ -2589,7 +2548,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required fields: userId, amount' });
       }
       
-      console.log(`🔧 DEBUG: Adding ${amount} credits to user ${userId}...`);
       
       // Get current user credits
       const user = await storage.getUser(userId);
@@ -2603,7 +2561,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user credits
       await storage.updateUserCredits(userId, newCredits.toString());
       
-      console.log(`✅ Successfully added ${amount} credits to user ${userId}. New balance: ${newCredits}`);
       
       res.json({
         success: true,
@@ -2626,7 +2583,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required fields: userId, packType, packId' });
       }
       
-      console.log(`🔧 DEBUG: Adding ${quantity} ${packType} packs to user ${userId}...`);
       
       // Use the existing storage method to add packs
       for (let i = 0; i < quantity; i++) {
@@ -2641,6 +2597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         await storage.addUserPack({
+          id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           userId,
           packId,
           packType,
@@ -2650,7 +2607,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`✅ Successfully added ${quantity} ${packType} packs to user ${userId}`);
       
       res.json({
         success: true,
@@ -2668,11 +2624,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.params;
       
-      console.log(`🔧 DEBUG: Clearing all packs for user ${userId}...`);
       
       await db.execute(sql`DELETE FROM user_packs WHERE user_id = ${userId}`);
       
-      console.log(`✅ Successfully cleared all packs for user ${userId}`);
       
       res.json({
         success: true,
@@ -2689,11 +2643,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.params;
       
-      console.log(`🔍 DEBUG: Checking packs for user ${userId}...`);
       
       const packs = await storage.getUserPacks(userId);
       
-      console.log(`🔍 Found ${packs.length} packs for user ${userId}`);
       
       res.json({
         success: true,
@@ -2710,7 +2662,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update mystery pack odds endpoint
   app.post('/api/debug/update-pokeball-odds', async (req, res) => {
     try {
-      console.log('🔧 DEBUG: Updating Pokeball pack odds to be more realistic...');
       
       // Update Pokeball Mystery Pack odds to be more realistic for a common pack
       await db.execute(sql`
@@ -2727,7 +2678,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE id = 'e140f1bd-8277-436c-aa03-14bdc354da46'
       `);
       
-      console.log('✅ Successfully updated Pokeball pack odds');
       
       res.json({
         success: true,
@@ -2742,7 +2692,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fix mystery pack cards endpoint
   app.post('/api/debug/fix-mystery-pack-cards', async (req, res) => {
     try {
-      console.log('🔧 FIXING: Moving all mystery pack cards to base pack...');
       
       // Move all cards to the base mystery pack
       const result = await db.execute(sql`
@@ -2751,7 +2700,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE pack_id != '00000000-0000-0000-0000-000000000001'
       `);
       
-      console.log('🔧 Updated rows:', result.rowCount);
       
       // Show the result
       const cardsResult = await db.execute(sql`
@@ -2769,7 +2717,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY mp.pack_type, i.tier
       `);
       
-      console.log('🔧 Cards after fix:', cardsResult.rows);
       
       res.json({
         success: true,
@@ -2786,7 +2733,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/debug/user-cards/:userId', async (req, res) => {
     try {
       const { userId } = req.params;
-      console.log('🔍 DEBUG: Checking user_cards table for userId:', userId);
       
       const result = await db.execute(sql`
         SELECT 
@@ -2803,8 +2749,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY pulled_at DESC
       `);
       
-      console.log('🔍 Total user card entries:', result.rows.length);
-      console.log('🔍 All entries:', result.rows);
       
       // Group by status
       const active = result.rows.filter((row: any) => !row.is_refunded && !row.is_shipped);
@@ -2832,7 +2776,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mystery pack cards debug endpoint
   app.get('/api/debug/mystery-pack-cards', async (req, res) => {
     try {
-      console.log('🔍 DEBUG: Checking mystery_pack_cards table...');
       
       const result = await db.execute(sql`
         SELECT 
@@ -2850,8 +2793,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY mpc.created_at DESC
       `);
       
-      console.log('🔍 Total mystery pack card entries:', result.rows.length);
-      console.log('🔍 All entries:', result.rows);
       
       // Group by pack
       const packGroups: { [key: string]: any[] } = {};
@@ -2876,7 +2817,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to check Black Bolt pack cards
   app.get('/api/debug/black-bolt-cards', async (req, res) => {
     try {
-      console.log('🔍 DEBUG: Checking Black Bolt pack cards...');
       
       const result = await db.execute(sql`
         SELECT 
@@ -2893,7 +2833,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY i.tier, i.name
       `);
       
-      console.log('🔍 Black Bolt pack cards:', result.rows);
       
       res.json({
         success: true,
@@ -2969,7 +2908,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/test-deduct-credits', async (req, res) => {
     try {
       const { userId, amount } = req.body;
-      console.log('Testing credit deduction:', { userId, amount });
       
       // Test direct database query
       const result = await db.execute(sql`
@@ -3001,7 +2939,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/test-storage-deduct', async (req, res) => {
     try {
       const { userId, amount } = req.body;
-      console.log('Testing storage.deductUserCredits:', { userId, amount });
       
       const success = await storage.deductUserCredits(userId, amount);
       

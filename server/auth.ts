@@ -12,14 +12,6 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fall
 const JWT_EXPIRES_IN = '7d'; // 7 days
 
 export function getSession() {
-  // TEMPORARY: Use memory store to test if PostgreSQL store is the issue
-  console.log('🔐 Setting up session middleware with:', {
-    store: 'Memory (temporary)',
-    ttl: SESSION_TTL,
-    secure: false,
-    httpOnly: true
-  });
-  
   return session({
     secret: process.env.SESSION_SECRET!,
     // store: sessionStore, // Commented out PostgreSQL store temporarily
@@ -56,10 +48,8 @@ export function setupAuth(app: Express) {
               role: 'admin',
               credits: "1000",
             });
-            console.log('✅ Created admin user for development (admin@drops.app / admin123)');
           }
         } catch (error) {
-          console.log('Note: Admin user creation will happen after database connection');
         }
       }, 2000);
     } catch (error) {
@@ -170,7 +160,7 @@ export function setupAuth(app: Express) {
         { expiresIn: JWT_EXPIRES_IN }
       );
       
-      console.log('🔐 Login successful - Session set:', {
+      console.log('✅ Login successful:', {
         userId: user.id,
         sessionId: req.sessionID,
         sessionData: req.session,
@@ -182,8 +172,7 @@ export function setupAuth(app: Express) {
         if (err) {
           console.error('❌ Error saving session:', err);
         } else {
-          console.log('✅ Session saved successfully');
-          console.log('🔐 Session cookie should be set:', {
+          console.log('✅ Session saved successfully:', {
             sessionId: req.sessionID,
             cookieName: 'drops.sid',
             cookieValue: req.sessionID,
@@ -191,7 +180,7 @@ export function setupAuth(app: Express) {
           });
           
           // Debug: Check if session is actually in store
-          console.log('🔐 Current session data:', {
+          console.log('🔍 Session verification:', {
             sessionId: req.sessionID,
             userId: (req.session as any).userId,
             sessionExists: !!req.session
@@ -242,40 +231,35 @@ export const isAuthenticatedJWT: RequestHandler = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   
-  console.log('🔐 JWT Authentication middleware called:', {
+  console.log('🔍 JWT authentication check:', {
     hasAuthHeader: !!authHeader,
     hasToken: !!token,
     tokenPreview: token ? token.substring(0, 20) + '...' : null
   });
   
   if (!token) {
-    console.log('❌ No JWT token provided - returning 401');
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    console.log('✅ JWT token verified:', { userId: decoded.userId, username: decoded.username });
     
     // Attach user to request
     const user = await storage.getUser(decoded.userId);
     if (!user) {
-      console.log('❌ User not found in database - returning 401');
       return res.status(401).json({ message: "User not found" });
     }
 
-    console.log('✅ User authenticated successfully via JWT:', { userId: user.id, username: user.username });
     (req as any).user = user;
     next();
   } catch (error) {
-    console.log('❌ JWT token verification failed:', error);
     return res.status(401).json({ message: "Invalid token" });
   }
 };
 
 // Session Authentication middleware (original)
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  console.log('🔐 Session Authentication middleware called:', {
+  console.log('🔍 Session authentication check:', {
     sessionId: req.sessionID,
     sessionData: req.session,
     userId: (req.session as any)?.userId,
@@ -288,18 +272,15 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const userId = (req.session as any)?.userId;
   
   if (!userId) {
-    console.log('❌ No userId in session - returning 401');
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   // Attach user to request
   const user = await storage.getUser(userId);
   if (!user) {
-    console.log('❌ User not found in database - returning 401');
     return res.status(401).json({ message: "User not found" });
   }
 
-  console.log('✅ User authenticated successfully via session:', { userId, username: user.username });
   (req as any).user = user;
   next();
 };
@@ -313,7 +294,6 @@ export const isAuthenticatedCombined: RequestHandler = async (req, res, next) =>
   if (token) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      console.log('✅ JWT authentication successful:', { userId: decoded.userId, username: decoded.username });
       
       const user = await storage.getUser(decoded.userId);
       if (user) {
@@ -321,7 +301,6 @@ export const isAuthenticatedCombined: RequestHandler = async (req, res, next) =>
         return next();
       }
     } catch (error) {
-      console.log('❌ JWT authentication failed, trying session:', error);
     }
   }
   
@@ -330,13 +309,11 @@ export const isAuthenticatedCombined: RequestHandler = async (req, res, next) =>
   if (userId) {
     const user = await storage.getUser(userId);
     if (user) {
-      console.log('✅ Session authentication successful:', { userId, username: user.username });
       (req as any).user = user;
       return next();
     }
   }
   
-  console.log('❌ Both JWT and session authentication failed - returning 401');
   return res.status(401).json({ message: "Unauthorized" });
 };
 
@@ -371,7 +348,6 @@ export const isAdminCombined: RequestHandler = async (req, res, next) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      console.log('✅ JWT authentication successful for admin:', { userId: decoded.userId, username: decoded.username });
       
       const user = await storage.getUser(decoded.userId);
       if (user && user.role === 'admin') {
@@ -381,7 +357,6 @@ export const isAdminCombined: RequestHandler = async (req, res, next) => {
         return res.status(403).json({ message: "Admin access required" });
       }
     } catch (error) {
-      console.log('❌ JWT authentication failed for admin, trying session:', error);
     }
   }
   
@@ -390,7 +365,6 @@ export const isAdminCombined: RequestHandler = async (req, res, next) => {
   if (userId) {
     const user = await storage.getUser(userId);
     if (user && user.role === 'admin') {
-      console.log('✅ Session authentication successful for admin:', { userId, username: user.username });
       (req as any).user = user;
       return next();
     } else if (user && user.role !== 'admin') {
@@ -398,6 +372,5 @@ export const isAdminCombined: RequestHandler = async (req, res, next) => {
     }
   }
   
-  console.log('❌ Both JWT and session authentication failed for admin - returning 401');
   return res.status(401).json({ message: "Unauthorized" });
 };

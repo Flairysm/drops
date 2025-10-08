@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assign Test Packs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        h1 {
+            color: #22D3EE;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            font-size: 16px;
+        }
+        button {
+            background-color: #22D3EE;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #1bb8d1;
+        }
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #2d5a2d;
+            border: 1px solid #4a7c4a;
+        }
+        .error {
+            background-color: #5a2d2d;
+            border: 1px solid #7c4a4a;
+        }
+        .loading {
+            text-align: center;
+            color: #22D3EE;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎁 Assign Test Packs</h1>
+        <p>This will assign mystery packs to your account for testing purposes.</p>
+        
+        <div class="form-group">
+            <label for="count">Number of packs per type:</label>
+            <input type="number" id="count" value="100" min="1" max="1000">
+        </div>
+        
+        <button id="assignBtn" onclick="assignPacks()">Assign Test Packs</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function assignPacks() {
+            const count = document.getElementById('count').value;
+            const btn = document.getElementById('assignBtn');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Assigning packs...';
+            result.style.display = 'block';
+            result.className = 'result loading';
+            result.innerHTML = '🔄 Assigning test packs...';
+            
+            try {
+                const response = await fetch('/api/admin/assign-test-packs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ count: parseInt(count) }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p><strong>${data.message}</strong></p>
+                        <p>Total packs added: ${data.totalAdded}</p>
+                        <p>Packs per type: ${data.packsPerType}</p>
+                        <p>You now have:</p>
+                        <ul>
+                            <li>${data.packsPerType} Pokeball packs</li>
+                            <li>${data.packsPerType} Greatball packs</li>
+                            <li>${data.packsPerType} Ultraball packs</li>
+                            <li>${data.packsPerType} Masterball packs</li>
+                        </ul>
+                    `;
+                } else {
+                    throw new Error(data.message || 'Failed to assign packs');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                    <p>Make sure you're logged in and the server is running.</p>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Assign Test Packs';
+            }
+        }
+    </script>
+</body>
+</html>

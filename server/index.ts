@@ -5,7 +5,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from 'url';
-// import { getAdminEnhancements } from "./integration/adminEnhancements";
 
 // Fixed import.meta.dirname issue for production builds
 const __filename = fileURLToPath(import.meta.url);
@@ -123,7 +122,6 @@ app.use('/attached_assets', express.static(path.resolve(__dirname, '../attached_
 
 // Debug middleware to log all requests and CORS headers
 app.use((req, res, next) => {
-  console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.get('Origin') || 'none'}`);
   next();
 });
 
@@ -159,16 +157,9 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    console.log('🚀 Starting server...');
     
     const server = await registerRoutes(app);
-    console.log('✅ Routes registered successfully');
 
-    // Initialize admin enhancements
-    // console.log('🔧 Initializing admin enhancements...');
-    // const adminEnhancements = getAdminEnhancements(app);
-    // await adminEnhancements.initialize();
-    // console.log('✅ Admin enhancements initialized');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
@@ -182,10 +173,8 @@ app.use((req, res, next) => {
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes
     if (app.get("env") === "development") {
-      console.log('🔧 Setting up Vite for development');
       await setupVite(app, server);
     } else {
-      console.log('🚀 Setting up static file serving for production');
       serveStatic(app);
     }
 
@@ -197,7 +186,6 @@ app.use((req, res, next) => {
     const host = '0.0.0.0'; // Bind to all interfaces for better compatibility
     
     server.listen(port, host, () => {
-      console.log(`🎉 Server running on port ${port} (${host})`);
       log(`serving on port ${port} (${host})`);
     });
     

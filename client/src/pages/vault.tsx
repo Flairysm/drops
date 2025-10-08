@@ -12,7 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { Package, RefreshCw, Truck, Filter, Grid, List } from "lucide-react";
-import type { UserCardWithCard } from "@shared/schema";
+import type { UserCard } from "@shared/schema";
 import { motion } from "framer-motion";
 
 export default function Vault() {
@@ -38,7 +38,7 @@ export default function Vault() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: vaultCards, isLoading: vaultLoading } = useQuery<UserCardWithCard[]>({
+  const { data: vaultCards, isLoading: vaultLoading } = useQuery<UserCard[]>({
     queryKey: ["/api/vault"],
     enabled: isAuthenticated,
     queryFn: async () => {
@@ -59,79 +59,55 @@ export default function Vault() {
       
       for (const cardId of cardIds) {
         const selectedCard = vaultCards?.find(c => c.id === cardId);
-        if (selectedCard?.card?.tier === 'D') {
+        if (selectedCard?.cardTier === 'D') {
           // For common cards, find all individual common cards with the same properties
           const commonCards = vaultCards?.filter(c => 
-            c.card?.tier === 'D' && 
-            c.card?.name === selectedCard.card?.name &&
-            c.card?.imageUrl === selectedCard.card?.imageUrl &&
-            c.card?.credits === selectedCard.card?.credits
+            c.cardTier === 'D' && 
+            c.cardName === selectedCard.cardName &&
+            c.cardImageUrl === selectedCard.cardImageUrl &&
+            c.refundCredit === selectedCard.refundCredit
           ) || [];
           
           // Add all individual common card IDs and calculate total refund
           commonCards.forEach(card => {
             allCardIds.push(card.id);
-            totalRefundAmount += parseFloat(card.pullValue || '0');
+            totalRefundAmount += parseFloat(card.refundCredit.toString());
           });
         } else {
           // For C-SSS cards, add the individual card ID
           allCardIds.push(cardId);
-          totalRefundAmount += parseFloat(selectedCard?.pullValue || '0');
+          totalRefundAmount += parseFloat(selectedCard?.refundCredit.toString() || '0');
         }
       }
       
       // Remove duplicates
       const uniqueCardIds = [...new Set(allCardIds)];
       
-      // OPTIMISTIC UPDATE: Immediately update the UI
-      // 1. Remove cards from vault cache
-      queryClient.setQueryData<UserCardWithCard[]>(["/api/vault"], (oldData) => {
-        if (!oldData) return oldData;
-        return oldData.filter(card => !uniqueCardIds.includes(card.id));
-      });
+      // Make the refund API request first
+      console.log("🚀 Starting refund processing for card IDs:", uniqueCardIds);
+      console.log("🚀 Making API request to /api/vault/refund");
       
-      // 2. Update user credits optimistically
-      queryClient.setQueryData<any>(["/api/auth/user"], (oldData) => {
-        if (!oldData) return oldData;
-        const currentCredits = parseFloat(oldData.credits || '0');
-        return {
-          ...oldData,
-          credits: (currentCredits + totalRefundAmount).toFixed(2)
-        };
-      });
+      const response = await apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds });
+      console.log("✅ Refund request successful:", response);
       
-      // 3. Clear selected cards and show success message immediately
+      const data = await response.json();
+      console.log("✅ Refund response data:", data);
+      
+      // Clear selected cards and show success message
       setSelectedCards([]);
       toast({
         title: "Cards Refunded",
         description: `Successfully refunded ${uniqueCardIds.length} cards for ${totalRefundAmount.toFixed(2)} credits`,
       });
       
-      // 4. Use synchronous refund for now (since async has routing issues)
-      console.log("🚀 Starting synchronous refund processing for card IDs:", uniqueCardIds);
-      console.log("🚀 Making API request to /api/vault/refund");
-      
-      apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds })
-        .then(response => {
-          console.log("✅ Refund request successful:", response);
-          console.log("✅ Response status:", response.status);
-          return response.json();
-        })
-        .then(data => {
-          console.log("✅ Refund response data:", data);
-        })
-        .catch(error => {
-          console.error("❌ Refund processing failed:", error);
-          console.error("❌ Error details:", error.message);
-          // Could add a notification here, but don't rollback the optimistic update
-          // since the user already got their credits
-        });
+      // Invalidate and refetch the vault data to get the updated list
+      await queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       return { success: true, refundedCards: uniqueCardIds.length, totalRefund: totalRefundAmount };
     },
     onSuccess: () => {
-      // No need to invalidate queries since we did optimistic updates
-      // The async backend processing will handle the actual database updates
+      // Success is handled in the mutation function
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -145,10 +121,6 @@ export default function Vault() {
         }, 500);
         return;
       }
-      
-      // Rollback optimistic updates on error
-      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       toast({
         title: "Refund Failed",
@@ -171,10 +143,14 @@ export default function Vault() {
   }
 
   const handleSelectAll = () => {
-    if (selectedCards.length === filteredCards.length && filteredCards.length > 0) {
+    const originalFilteredCards = vaultCards?.filter(card => 
+      filterTier === "all" || card.cardTier === getTierMapping(filterTier)
+    ) || [];
+    
+    if (selectedCards.length === originalFilteredCards.length && originalFilteredCards.length > 0) {
       setSelectedCards([]);
     } else {
-      setSelectedCards(filteredCards.map(card => card.id));
+      setSelectedCards(originalFilteredCards.map(card => card.id));
     }
   };
 
@@ -191,8 +167,8 @@ export default function Vault() {
     return selectedCards.reduce((total, cardId) => {
       const card = vaultCards.find(c => c.id === cardId);
       if (!card) return total;
-      // Use current market value for refund calculation (100% value)
-      const refundValue = card.marketValue ? parseFloat(card.marketValue.toString()) : parseFloat(card.pullValue);
+      // Use refundCredit field for refund calculation
+      const refundValue = parseFloat(card.refundCredit.toString());
       return total + (refundValue * card.quantity);
     }, 0);
   };
@@ -203,17 +179,15 @@ export default function Vault() {
   };
 
   // Function to condense only common cards (D tier)
-  const condenseCards = (cards: UserCardWithCard[]) => {
-    const condensedCards: UserCardWithCard[] = [];
-    const commonCardMap = new Map<string, UserCardWithCard>();
+  const condenseCards = (cards: UserCard[]) => {
+    const condensedCards: UserCard[] = [];
+    const commonCardMap = new Map<string, UserCard>();
     
     cards.forEach(userCard => {
-      if (!userCard.card) return;
-      
       // Only condense common cards (D tier)
-      if (userCard.card.tier === 'D') {
+      if (userCard.cardTier === 'D') {
         // Create a unique key based on card properties for commons
-        const key = `${userCard.card.name}-${userCard.card.imageUrl}-${userCard.card.tier}-${userCard.card.credits}`;
+        const key = `${userCard.cardName}-${userCard.cardImageUrl}-${userCard.cardTier}-${userCard.refundCredit}`;
         
         if (commonCardMap.has(key)) {
           // If common card already exists, add to quantity
@@ -239,20 +213,24 @@ export default function Vault() {
 
   const filteredCards = condenseCards(
     vaultCards?.filter(card => 
-      card.card && (filterTier === "all" || card.card.tier === getTierMapping(filterTier))
+      filterTier === "all" || card.cardTier === getTierMapping(filterTier)
     ) || []
   );
 
-  const tierCounts = filteredCards?.reduce((acc, card) => {
+  const originalFilteredCards = vaultCards?.filter(card => 
+    filterTier === "all" || card.cardTier === getTierMapping(filterTier)
+  ) || [];
+
+  const tierCounts = originalFilteredCards?.reduce((acc, card) => {
     // Database now uses direct tier codes (D, C, B, A, S, SS, SSS)
-    if (card.card && card.card.tier) {
-      acc[card.card.tier] = (acc[card.card.tier] || 0) + card.quantity;
+    if (card.cardTier) {
+      acc[card.cardTier] = (acc[card.cardTier] || 0) + card.quantity;
     }
     return acc;
   }, {} as Record<string, number>) || {};
 
   const tiers = [
-    { value: "all", label: "All Cards", count: filteredCards?.reduce((sum, card) => sum + card.quantity, 0) || 0 },
+    { value: "all", label: "All Cards", count: originalFilteredCards?.reduce((sum, card) => sum + card.quantity, 0) || 0 },
     { value: "SSS", label: "SSS", count: tierCounts.SSS || 0, color: "legendary" },
     { value: "SS", label: "SS", count: tierCounts.SS || 0, color: "superrare" },
     { value: "S", label: "S", count: tierCounts.S || 0, color: "rare" },
@@ -382,7 +360,9 @@ export default function Vault() {
               <div className="flex items-center justify-between gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#22D3EE]" data-testid="text-total-cards">
-                    {filteredCards?.reduce((sum, card) => sum + card.quantity, 0) || 0}
+                    {vaultCards?.filter(card => 
+                      filterTier === "all" || card.cardTier === getTierMapping(filterTier)
+                    ).reduce((sum, card) => sum + card.quantity, 0) || 0}
                   </div>
                   <div className="text-sm text-[#9CA3AF]">Total Cards</div>
                 </div>
@@ -450,7 +430,7 @@ export default function Vault() {
                     className="bg-[#26263A]/50 border-[#26263A] text-[#E5E7EB] hover:bg-[#26263A]"
                     data-testid="button-select-all"
                   >
-                    {selectedCards.length === filteredCards.length ? "Deselect All" : "Select All"}
+                    {selectedCards.length === originalFilteredCards.length ? "Deselect All" : "Select All"}
                   </Button>
 
                   <Button
@@ -548,7 +528,13 @@ export default function Vault() {
                     </div>
                     
                     <CardDisplay 
-                      card={userCard.card}
+                      card={{
+                        id: userCard.id,
+                        name: userCard.cardName,
+                        imageUrl: userCard.cardImageUrl,
+                        tier: userCard.cardTier,
+                        credits: userCard.refundCredit.toString()
+                      }}
                       userCard={userCard}
                       viewMode={viewMode}
                       isSelected={selectedCards.includes(userCard.id)}

@@ -49,7 +49,10 @@ export function CardDisplay({
                   onError={(e) => {
                     // Fallback to default image if the imageUrl fails to load
                     const target = e.target as HTMLImageElement;
-                    target.src = "/card-images/Commons.png";
+                    // Only set fallback if we haven't already tried the fallback
+                    if (!target.src.includes('/card-images/Commons.png')) {
+                      target.src = "/card-images/Commons.png";
+                    }
                   }}
                 />
               ) : (
@@ -115,7 +118,10 @@ export function CardDisplay({
               onError={(e) => {
                 // Fallback to default image if the imageUrl fails to load
                 const target = e.target as HTMLImageElement;
-                target.src = "/card-images/Commons.png";
+                // Only set fallback if we haven't already tried the fallback
+                if (!target.src.includes('/card-images/Commons.png')) {
+                  target.src = "/card-images/Commons.png";
+                }
               }}
             />
           ) : (

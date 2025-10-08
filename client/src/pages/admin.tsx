@@ -24,7 +24,9 @@ import {
   X,
   Eye,
   Save,
-  RefreshCw
+  RefreshCw,
+  Search,
+  Filter
 } from "lucide-react";
 
 export default function Admin() {
@@ -158,6 +160,33 @@ export default function Admin() {
     refundCredit: '',
     quantity: ''
   });
+
+  // Mystery Pack Edit Card Dialog State
+  const [showMysteryEditCardDialog, setShowMysteryEditCardDialog] = useState(false);
+  const [editingMysteryCard, setEditingMysteryCard] = useState<any>(null);
+  const [mysteryEditCardForm, setMysteryEditCardForm] = useState({
+    name: '',
+    imageUrl: '',
+    tier: 'D',
+    refundCredit: '',
+    quantity: ''
+  });
+
+  // Edit Prize Dialog Search and Filter State
+  const [editPrizeSearchTerm, setEditPrizeSearchTerm] = useState('');
+  const [editPrizeTierFilter, setEditPrizeTierFilter] = useState('all');
+
+  // Filter cards for edit prize dialog based on search and tier
+  const filterCardsForEditPrize = (cards: any[]) => {
+    if (!cards) return [];
+    return cards.filter((card: any) => {
+      const cardName = card.name || card.cardName || '';
+      const cardTier = card.tier || card.cardTier || '';
+      const matchesSearch = cardName.toLowerCase().includes(editPrizeSearchTerm.toLowerCase());
+      const matchesTier = editPrizeTierFilter === 'all' || cardTier === editPrizeTierFilter;
+      return matchesSearch && matchesTier;
+    });
+  };
   
   // View Prize Dialog State
   const [showViewPrizeDialog, setShowViewPrizeDialog] = useState(false);
@@ -193,7 +222,7 @@ export default function Admin() {
     if (selectedUser) {
       try {
         const response = await apiRequest('POST', '/api/user/update-credits', {
-          amount: creditAmount.toString()
+          credits: creditAmount.toString()
         });
         
         if (response.ok) {
@@ -298,12 +327,14 @@ export default function Admin() {
   const fetchMysteryPacks = async () => {
     try {
       console.log('Fetching mystery packs...');
-      const response = await apiRequest('GET', '/api/admin/mystery-packs');
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await apiRequest('GET', `/api/admin/mystery-packs?_t=${timestamp}`);
       console.log('Mystery packs fetch response status:', response.status);
       
       if (response.ok) {
         const packs = await response.json();
-        console.log('Fetched mystery packs:', packs);
+        console.log('🔄 Fetched fresh mystery packs:', packs);
         setMysteryPacks(packs);
         // Auto-select the first pack if none is selected
         if (packs.length > 0 && !selectedMysteryPack) {
@@ -346,7 +377,7 @@ export default function Admin() {
     }
   }, [activeTab]);
 
-  // Auto-refresh pack data every 5 seconds when on manage tab
+  // Auto-refresh pack data every 30 seconds when on manage tab (reduced frequency)
   useEffect(() => {
     if (activeTab === 'manage') {
       const interval = setInterval(() => {
@@ -354,20 +385,14 @@ export default function Admin() {
         fetchSpecialPacks();
         fetchClassicPacks();
         fetchMysteryPacks();
-      }, 5000); // Refresh every 5 seconds
+      }, 30000); // Refresh every 30 seconds instead of 5
 
       return () => clearInterval(interval);
     }
   }, [activeTab]);
 
 
-  // Load mystery packs when component mounts
-  useEffect(() => {
-    console.log('Loading mystery packs...');
-    fetchMysteryPacks();
-  }, []);
-
-  // Load mystery packs when switching to mystery section
+  // Load mystery packs when component mounts or when switching to mystery section
   useEffect(() => {
     if (activeTab === 'manage' && manageSection === 'mystery') {
       console.log('Loading mystery packs...');
@@ -381,13 +406,13 @@ export default function Admin() {
       if (mysteryPacks.length === 0) return;
       
       const pokeballPack = mysteryPacks.find(pack => pack.packType === 'pokeball') || mysteryPacks[0];
-      console.log('Fetching cards for mystery pack pool:', pokeballPack.id);
       
-      const response = await apiRequest('GET', `/api/admin/mystery-packs/${pokeballPack.id}`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await apiRequest('GET', `/api/admin/mystery-packs/${pokeballPack.id}?_t=${timestamp}`);
       if (response.ok) {
         const packData = await response.json();
-        console.log('Fetched mystery pack cards:', packData.cards);
-        console.log('Setting mystery pack cards state with:', packData.cards || []);
+        console.log('🔄 Fetched fresh mystery pack cards:', packData.cards?.length || 0, 'cards');
         
         // Force a complete state reset to ensure re-render
         setMysteryPackCards([]);
@@ -405,7 +430,6 @@ export default function Admin() {
   // Load mystery pack cards when switching to view or edit tab
   useEffect(() => {
     if (activeTab === 'manage' && manageSection === 'mystery' && (mysterySection === 'view' || mysterySection === 'edit') && mysteryPacks.length > 0) {
-      console.log('Loading mystery pack cards for', mysterySection, '...');
       fetchMysteryPackCards();
     }
   }, [activeTab, manageSection, mysterySection, mysteryPacks]);
@@ -661,8 +685,9 @@ export default function Admin() {
       });
 
       if (response.ok) {
-        // Refresh the editing pool data
-        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+        // Refresh the editing pool data with cache-busting
+        const timestamp = Date.now();
+        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}?_t=${timestamp}`);
         const updatedPool = await updatedPoolResponse.json();
         const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
           id: card.id,
@@ -677,19 +702,11 @@ export default function Admin() {
           cards: normalizedCards
         } : null);
         
-        // Update the appropriate pack state based on pack type
+        // Update the appropriate pack state based on pack type with fresh data
         if (editingContentPool.id.startsWith('cp-')) {
-          setClassicPools(prev => prev.map(pool => 
-            pool.id === editingContentPool.id 
-              ? { ...pool, cards: normalizedCards }
-              : pool
-          ));
+          await fetchClassicPacks();
         } else {
-          setSpecialPools(prev => prev.map(pool => 
-            pool.id === editingContentPool.id 
-              ? { ...pool, cards: normalizedCards }
-              : pool
-          ));
+          await fetchSpecialPacks();
         }
         
         // Show success message
@@ -742,8 +759,9 @@ export default function Admin() {
           ));
         }
         
-        // Then refresh from server to ensure consistency
-        const updatedPool = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
+        // Then refresh from server to ensure consistency with cache-busting
+        const timestamp = Date.now();
+        const updatedPool = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}?_t=${timestamp}`).then(res => res.json());
         console.log('Updated pool data:', updatedPool);
         console.log('Updated pool cards:', updatedPool.cards);
         
@@ -802,19 +820,20 @@ export default function Admin() {
       });
 
       if (response.ok) {
-        // Refresh the editing pool data
-        const updatedPool = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}`).then(res => res.json());
+        // Refresh the editing pool data with cache-busting
+        const timestamp = Date.now();
+        const updatedPool = await authenticatedFetch(`http://localhost:3000/api/admin/${apiEndpoint}/${editingContentPool.id}?_t=${timestamp}`).then(res => res.json());
         setEditingContentPool(prev => prev ? {
           ...prev,
           cards: updatedPool.cards || []
         } : null);
         
-        // Also update the main specialPools state
-        setSpecialPools(prev => prev.map(pool => 
-          pool.id === editingContentPool.id 
-            ? { ...pool, cards: updatedPool.cards || [] }
-            : pool
-        ));
+        // Also update the main pack state based on pack type
+        if (editingContentPool.id.startsWith('cp-')) {
+          await fetchClassicPacks();
+        } else {
+          await fetchSpecialPacks();
+        }
       } else {
         alert('Failed to update card quantity');
       }
@@ -851,8 +870,9 @@ export default function Admin() {
       });
 
       if (response.ok) {
-        // Refresh the editing pool data
-        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+        // Refresh the editing pool data with cache-busting
+        const timestamp = Date.now();
+        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}?_t=${timestamp}`);
         const updatedPool = await updatedPoolResponse.json();
         const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
           id: card.id,
@@ -871,9 +891,11 @@ export default function Admin() {
         setNewCard({ name: '', imageUrl: '', tier: 'D', refundCredit: '', quantity: '' });
         setShowAddCardDialog(false);
         
-        // Refresh main pack lists to reflect the change
-        fetchSpecialPacks();
-        fetchClassicPacks();
+        // Refresh main pack lists to reflect the change with cache-busting
+        await Promise.all([
+          fetchSpecialPacks(),
+          fetchClassicPacks()
+        ]);
         
         alert('Card added successfully!');
       } else {
@@ -915,8 +937,9 @@ export default function Admin() {
       });
 
       if (response.ok) {
-        // Refresh the editing pool data
-        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}`);
+        // Refresh the editing pool data with cache-busting
+        const timestamp = Date.now();
+        const updatedPoolResponse = await apiRequest('GET', `/api/admin/${apiEndpoint}/${editingContentPool.id}?_t=${timestamp}`);
         const updatedPool = await updatedPoolResponse.json();
         const normalizedCards = (updatedPool.cards || []).map((card: any) => ({
           id: card.id,
@@ -930,6 +953,13 @@ export default function Admin() {
           ...prev,
           cards: normalizedCards
         } : null);
+
+        // Also update the main pack state based on pack type
+        if (editingContentPool.id.startsWith('cp-')) {
+          await fetchClassicPacks();
+        } else {
+          await fetchSpecialPacks();
+        }
 
         // Reset form
         setEditingCard(null);
@@ -1141,7 +1171,9 @@ export default function Admin() {
   const fetchSpecialPacks = async () => {
     try {
       console.log('🔄 Fetching special packs...');
-      const response = await apiRequest('GET', '/api/admin/special-packs');
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await apiRequest('GET', `/api/admin/special-packs?_t=${timestamp}`);
       if (response.ok) {
         const packs = await response.json();
         console.log('✅ Special packs fetched:', packs);
@@ -1168,9 +1200,12 @@ export default function Admin() {
   // Fetch classic packs from API
   const fetchClassicPacks = async () => {
     try {
-      const response = await apiRequest('GET', '/api/admin/classic-packs');
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await apiRequest('GET', `/api/admin/classic-packs?_t=${timestamp}`);
       if (response.ok) {
         const packs = await response.json();
+        console.log('🔄 Fetched fresh classic packs:', packs);
         setClassicPools(packs);
       } else {
         console.error('Failed to fetch classic packs');
@@ -1310,6 +1345,52 @@ export default function Admin() {
     }
   };
 
+  // Mystery Pack Edit Card Functions
+  const handleEditMysteryCard = (card: any) => {
+    setEditingMysteryCard(card);
+    setMysteryEditCardForm({
+      name: card.cardName,
+      imageUrl: card.cardImageUrl,
+      tier: card.cardTier,
+      refundCredit: card.refundCredit.toString(),
+      quantity: card.quantity.toString()
+    });
+    setShowMysteryEditCardDialog(true);
+  };
+
+  const handleUpdateMysteryCard = async () => {
+    if (!editingMysteryCard) return;
+
+    try {
+      const pokeballPack = mysteryPacks.find(pack => pack.packType === 'pokeball') || mysteryPacks[0];
+      if (!pokeballPack) {
+        alert('No mystery pack found');
+        return;
+      }
+
+      const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${editingMysteryCard.id}`, {
+        cardName: mysteryEditCardForm.name,
+        cardImageUrl: mysteryEditCardForm.imageUrl,
+        cardTier: mysteryEditCardForm.tier,
+        refundCredit: parseInt(mysteryEditCardForm.refundCredit) || 0,
+        quantity: parseInt(mysteryEditCardForm.quantity) || 1
+      });
+
+      if (response.ok) {
+        // Refresh mystery pack cards
+        fetchMysteryPackCards();
+        setShowMysteryEditCardDialog(false);
+        alert('Card updated successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to update card: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('Error updating mystery pack card:', error);
+      alert('Failed to update card. Please try again.');
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -1346,7 +1427,18 @@ export default function Admin() {
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold font-gaming mb-8 text-center">Admin Dashboard</h1>
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <h1 className="text-3xl font-bold font-gaming">Admin Dashboard</h1>
+            <Button 
+              onClick={refreshAllPackData}
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Data
+            </Button>
+          </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full max-w-5xl mx-auto grid-cols-4 mb-8">
@@ -1578,6 +1670,7 @@ export default function Admin() {
                     </div>
                         </CardHeader>
                         <CardContent>
+
                           {classicPools.length === 0 ? (
                             <div className="text-center py-8">
                               <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -1588,7 +1681,9 @@ export default function Admin() {
                             </div>
                           ) : (
                           <div className="space-y-4">
-                              {classicPools.map((pool) => (
+                              {classicPools.map((pool) => {
+                                const filteredCards = pool.cards || [];
+                                return (
                               <div key={pool.id} className="border rounded-lg p-4">
                                 <div className="space-y-4">
                                   {/* Pack Header */}
@@ -1654,7 +1749,8 @@ export default function Admin() {
                               </div>
                                 </div>
                               </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </CardContent>
@@ -1678,6 +1774,7 @@ export default function Admin() {
                           </div>
                         </CardHeader>
                         <CardContent>
+
                         {specialPools.length === 0 ? (
                           <div className="text-center py-8">
                             <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -1686,9 +1783,11 @@ export default function Admin() {
                               Click "Add" to create your first special pack
                             </p>
                                   </div>
-                        ) : (
+                          ) : (
                           <div className="space-y-4">
-                            {specialPools.map((pool) => (
+                              {specialPools.map((pool) => {
+                                const filteredCards = pool.cards || [];
+                                return (
                               <div key={pool.id} className="border rounded-lg p-4">
                                 <div className="space-y-4">
                                   {/* Pack Header */}
@@ -1754,7 +1853,8 @@ export default function Admin() {
                               </div>
                                 
                           </div>
-                            ))}
+                                );
+                              })}
                           </div>
                         )}
                         </CardContent>
@@ -1768,10 +1868,6 @@ export default function Admin() {
                     {/* Mystery Pack Management */}
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-2xl font-bold">Mystery Pack Management</h2>
-                      <Button onClick={() => {/* TODO: Add new card functionality */}}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Card
-                      </Button>
                     </div>
 
                     {/* Mystery Pack Cards */}
@@ -1796,67 +1892,133 @@ export default function Admin() {
                               </Button>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-center mb-4">
-                                <p className="text-sm text-muted-foreground">
-                                  {mysteryPackCards.length} card(s) in mystery pack prize pool
-                                </p>
-                                  <Button
-                                  onClick={() => setShowAddCardDialog(true)}
-                                    size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700"
-                                  >
-                                  <Plus className="w-4 h-4 mr-2" />
-                                  Add Card
-                                  </Button>
+                            <div className="space-y-4">
+                              <div className="space-y-4">
+                                {/* Header Section */}
+                                <div className="flex justify-between items-center p-4 bg-gray-800 rounded-lg border border-gray-700">
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-600 rounded-lg">
+                                      <Package className="w-5 h-5 text-white" />
                                     </div>
-                              {mysteryPackCards.map((card) => (
-                                <div key={card.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                                  <img
-                                    src={card.cardImageUrl}
-                                    alt={card.cardName}
-                                    className="w-16 h-16 object-cover rounded"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                    }}
-                                  />
-                                  <div className="flex-1">
-                                    <h4 className="font-medium">{card.cardName}</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                      Credits: {card.refundCredit} | Quantity: {card.quantity}
-                                    </p>
-                                      </div>
-                                  <div className="flex gap-2">
-                                        <Button
-                                      variant="outline"
-                                          size="sm"
-                                      onClick={() => {
-                                        const newQuantity = prompt(`Enter new quantity for ${card.cardName}:`, card.quantity.toString());
-                                        if (newQuantity && !isNaN(parseInt(newQuantity))) {
-                                          handleUpdateMysteryPackCardQuantity(card.id, parseInt(newQuantity));
-                                        }
-                                      }}
-                                    >
-                                      <Edit className="w-4 h-4 mr-2" />
-                                          Edit
-                                    </Button>
+                                    <div>
+                                      <h3 className="font-semibold text-white">Mystery Pack Cards</h3>
+                                      <p className="text-sm text-gray-300">
+                                        {mysteryPackCards.length} card{mysteryPackCards.length !== 1 ? 's' : ''} total
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    onClick={() => setShowAddCardDialog(true)}
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Card
+                                  </Button>
+                                </div>
+
+                              </div>
+                              
+                              {/* Cards List */}
+                              {mysteryPackCards.length === 0 ? (
+                                <div className="text-center py-8">
+                                  <Package className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                                  <h3 className="text-lg font-medium text-gray-300 mb-2">No cards in mystery pack</h3>
+                                  <p className="text-gray-500 mb-4">Add cards from inventory to build your mystery pack prize pool</p>
+                                  {mysteryPackCards.length === 0 && (
                                     <Button
-                                    variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        if (confirm(`Are you sure you want to remove ${card.cardName} from the mystery pack?`)) {
-                                          handleRemoveCardFromMysteryPack(card.id);
-                                        }
-                                      }}
-                                      className="text-red-600 hover:text-red-700"
+                                      onClick={() => setShowAddCardDialog(true)}
+                                      className="bg-blue-600 hover:bg-blue-700"
                                     >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Remove
+                                      <Plus className="w-4 h-4 mr-2" />
+                                      Add First Card
                                     </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                mysteryPackCards.map((card) => (
+                                <div key={card.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                  <div className="flex items-start gap-4">
+                                    {/* Card Image */}
+                                    <div className="flex-shrink-0">
+                                      <img
+                                        src={card.cardImageUrl}
+                                        alt={card.cardName}
+                                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                    
+                                    {/* Card Information */}
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-lg font-semibold text-white mb-2 truncate">
+                                        {card.cardName}
+                                      </h4>
+                                      
+                                      <div className="grid grid-cols-3 gap-4 text-sm">
+                                        <div className="flex flex-col">
+                                          <span className="text-gray-400 font-medium">Tier</span>
+                                          <Badge 
+                                            variant="secondary" 
+                                            className={`w-fit ${
+                                              card.cardTier === 'D' ? 'bg-gray-100 text-gray-800' :
+                                              card.cardTier === 'C' ? 'bg-blue-100 text-blue-800' :
+                                              card.cardTier === 'B' ? 'bg-green-100 text-green-800' :
+                                              card.cardTier === 'A' ? 'bg-yellow-100 text-yellow-800' :
+                                              card.cardTier === 'S' ? 'bg-orange-100 text-orange-800' :
+                                              card.cardTier === 'SS' ? 'bg-purple-100 text-purple-800' :
+                                              'bg-red-100 text-red-800'
+                                            }`}
+                                          >
+                                            {card.cardTier}
+                                          </Badge>
+                                        </div>
+                                        
+                                        <div className="flex flex-col">
+                                          <span className="text-gray-400 font-medium">Credits</span>
+                                          <span className="text-white font-semibold">{card.refundCredit}</span>
+                                        </div>
+                                        
+                                        <div className="flex flex-col">
+                                          <span className="text-gray-400 font-medium">Quantity</span>
+                                          <span className="text-white font-semibold">{card.quantity}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-col gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleEditMysteryCard(card)}
+                                        className="p-2 h-8 w-8"
+                                        title="Edit card"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                      
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          if (confirm(`Are you sure you want to remove ${card.cardName} from the mystery pack?`)) {
+                                            handleRemoveCardFromMysteryPack(card.id);
+                                          }
+                                        }}
+                                        className="p-2 h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                        title="Remove card"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
                                   </div>
-                                  </div>
-                              ))}
+                                </div>
+                              ))
+                              )}
                                 </div>
                           )}
                         </CardContent>
@@ -2377,11 +2539,61 @@ export default function Admin() {
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Current Prize Cards ({editingContentPool.cards.length})</h3>
                   </div>
+                  
+                  {/* Search and Filter Controls */}
+                  <div className="flex gap-4">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        placeholder="Search cards by name..."
+                        value={editPrizeSearchTerm}
+                        onChange={(e) => setEditPrizeSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4 text-gray-400" />
+                      <select
+                        className="flex h-10 w-40 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={editPrizeTierFilter}
+                        onChange={(e) => setEditPrizeTierFilter(e.target.value)}
+                      >
+                        <option value="all">All Tiers</option>
+                        <option value="D">D (Common)</option>
+                        <option value="C">C (Uncommon)</option>
+                        <option value="B">B (Rare)</option>
+                        <option value="A">A (Super Rare)</option>
+                        <option value="S">S (Ultra Rare)</option>
+                        <option value="SS">SS (Secret Rare)</option>
+                        <option value="SSS">SSS (Ultimate Rare)</option>
+                      </select>
+                    </div>
+                    {(editPrizeSearchTerm || editPrizeTierFilter !== 'all') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditPrizeSearchTerm('');
+                          setEditPrizeTierFilter('all');
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
                   {editingContentPool.cards.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">No prize cards in this pack yet.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
-                      {editingContentPool.cards.map((card: any) => (
+                  ) : (() => {
+                    const filteredCards = filterCardsForEditPrize(editingContentPool.cards);
+                    return filteredCards.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No cards match your search</h3>
+                        <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
+                        {filteredCards.map((card: any) => (
                         <div key={card.id} className="flex items-center gap-3 p-3 border rounded-lg">
                           <img
                             src={card.imageUrl}
@@ -2414,9 +2626,10 @@ export default function Admin() {
                           </Button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    );
+                  })()}
                     </div>
 
               </div>
@@ -2637,6 +2850,108 @@ export default function Admin() {
                 Cancel
               </Button>
               <Button onClick={handleUpdateCard} className="flex-1">
+                Update Card
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mystery Pack Edit Card Dialog */}
+        <Dialog open={showMysteryEditCardDialog} onOpenChange={setShowMysteryEditCardDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Edit Mystery Pack Card</DialogTitle>
+              <DialogDescription>
+                Update the card details and information in the mystery pack.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="mysteryEditCardName" className="text-sm font-medium">Card Name</Label>
+                <Input
+                  id="mysteryEditCardName"
+                  value={mysteryEditCardForm.name}
+                  onChange={(e) => setMysteryEditCardForm({ ...mysteryEditCardForm, name: e.target.value })}
+                  placeholder="Enter card name"
+                  className="w-full"
+                  required
+                />
+              </div>
+              
+              <ImageUpload
+                value={mysteryEditCardForm.imageUrl}
+                onChange={(value) => setMysteryEditCardForm({ ...mysteryEditCardForm, imageUrl: value })}
+                placeholder="https://example.com/card-image.jpg"
+                label="Image URL"
+                id="mysteryEditImageUrl"
+                required
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="mysteryEditRefundCredit" className="text-sm font-medium">Refund Credit</Label>
+                  <Input
+                    id="mysteryEditRefundCredit"
+                    type="number"
+                    min="0"
+                    value={mysteryEditCardForm.refundCredit}
+                    onChange={(e) => {
+                      setMysteryEditCardForm({ ...mysteryEditCardForm, refundCredit: e.target.value });
+                    }}
+                    placeholder="Enter refund credit"
+                    className="w-full"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mysteryEditTier" className="text-sm font-medium">Tier</Label>
+                  <select
+                    id="mysteryEditTier"
+                    value={mysteryEditCardForm.tier}
+                    onChange={(e) => setMysteryEditCardForm({ ...mysteryEditCardForm, tier: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900"
+                    required
+                  >
+                    <option value="D">D</option>
+                    <option value="C">C</option>
+                    <option value="B">B</option>
+                    <option value="A">A</option>
+                    <option value="S">S</option>
+                    <option value="SS">SS</option>
+                    <option value="SSS">SSS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mysteryEditQuantity" className="text-sm font-medium">Quantity</Label>
+                <Input
+                  id="mysteryEditQuantity"
+                  type="number"
+                  min="1"
+                  value={mysteryEditCardForm.quantity}
+                  onChange={(e) => {
+                    setMysteryEditCardForm({ ...mysteryEditCardForm, quantity: e.target.value });
+                  }}
+                  placeholder="Enter quantity"
+                  className="w-full"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowMysteryEditCardDialog(false);
+                  setEditingMysteryCard(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateMysteryCard} className="flex-1">
                 Update Card
               </Button>
             </DialogFooter>

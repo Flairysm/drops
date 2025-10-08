@@ -45,8 +45,11 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   const fetchPackDetails = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest('GET', `/api/admin/classic-packs/${pack.id}`);
+      // Add cache-busting parameter to ensure fresh data
+      const timestamp = Date.now();
+      const response = await apiRequest('GET', `/api/admin/classic-packs/${pack.id}?_t=${timestamp}`);
       const data = await response.json();
+      console.log('🔄 Fetched fresh pack data:', data);
       setPackData(data);
     } catch (error) {
       console.error('Error fetching pack details:', error);

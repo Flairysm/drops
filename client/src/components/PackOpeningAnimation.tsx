@@ -23,11 +23,7 @@ interface PackOpeningAnimationProps {
 }
 
 export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, packType }: PackOpeningAnimationProps) {
-  // Debug wrapper for onComplete
   const handleComplete = () => {
-    console.log('🚨 onComplete called! 🚨');
-    console.log('Current state when onComplete called:', { revealedCards, isHitRevealed });
-    console.trace('onComplete call stack');
     onComplete();
   };
   const [revealedCards, setRevealedCards] = useState(0);
@@ -57,62 +53,35 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   // Separate common cards and hit card
   const commonCards = packCards.filter(card => !card.isHit);
   const hitCard = packCards.find(card => card.isHit);
-  console.log('Hit card found:', hitCard);
-  console.log('Animation state:', { revealedCards, isHitRevealed });
-  console.log('revealedCards value:', revealedCards);
-  console.log('isHitRevealed value:', isHitRevealed);
   
 
   // Start sequential card reveal animation - 7 commons + 1 hit card
   useEffect(() => {
-    console.log('useEffect triggered - starting animation');
-    console.log('Pack cards:', packCards);
-    console.log('Hit card position:', hitCardPosition);
-    
     // Reset revealed cards
     setRevealedCards(0);
     setIsHitRevealed(false);
-    console.log('Animation state reset - revealedCards: 0, isHitRevealed: false');
     
     // Reveal 7 common cards first, then hit card back
     for (let i = 0; i < 7; i++) {
       setTimeout(() => {
-        console.log('Revealing common card', i + 1);
         setRevealedCards(i + 1);
       }, 500 + (i * 150)); // Start after 500ms, then 150ms intervals
     }
     
     // After 7 commons, show hit card back with a small delay
     const hitCardTimeout = 500 + (7 * 150) + 500;
-    console.log('Setting timeout for hit card back:', hitCardTimeout, 'ms');
     setTimeout(() => {
-      console.log('Showing hit card back - setting revealedCards to 8');
       setRevealedCards(8); // Show hit card back (8th card)
     }, hitCardTimeout);
-  }, [packCards, hitCardPosition]); // Run when packCards or hitCardPosition changes
+  }, []); // Only run once when component mounts
 
   const handleRevealHit = (e: React.MouseEvent) => {
-    console.log('🔥 handleRevealHit called! 🔥');
-    console.log('Event:', e);
-    console.log('Event type:', e.type);
-    console.log('Event target:', e.target);
-    console.log('Event currentTarget:', e.currentTarget);
-    
     e.preventDefault();
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     
-    console.log('Button clicked!');
-    console.log('Current state:', { revealedCards, isHitRevealed });
-    console.log('revealedCards when clicked:', revealedCards);
-    console.log('isHitRevealed when clicked:', isHitRevealed);
-    
     if (revealedCards >= 8 && !isHitRevealed) {
-      console.log('Setting isHitRevealed to true');
       setIsHitRevealed(true); // Reveal the hit card
-      console.log('isHitRevealed set to true, should show Continue button');
-    } else {
-      console.log('Condition not met - revealedCards:', revealedCards, 'isHitRevealed:', isHitRevealed);
     }
   };
 
@@ -222,7 +191,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
             {/* Hit Card Slot */}
             <motion.div
-              key={`hit-${hitCard?.id}`}
+              key="hit-card-slot"
               className="gaming-card p-2 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -241,8 +210,10 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      console.log('Image error for hit card:', target.src);
-                      target.src = isHitRevealed ? "/card-images/Commons.png" : "/card-images/hit.png";
+                      // Only set fallback if we haven't already tried the fallback
+                      if (!target.src.includes('/card-images/Commons.png') && !target.src.includes('/card-images/hit.png')) {
+                        target.src = isHitRevealed ? "/card-images/Commons.png" : "/card-images/hit.png";
+                      }
                     }}
                   />
                 </motion.div>

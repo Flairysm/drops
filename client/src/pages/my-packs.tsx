@@ -346,14 +346,6 @@ export default function MyPacks() {
             <p className="text-sm sm:text-base lg:text-lg text-[#E5E7EB] max-w-2xl mx-auto">
               Open your earned packs to discover amazing cards! Higher tier packs have better odds for rare cards.
             </p>
-            {!noPacks && (
-              <div className="flex justify-center mt-4">
-                <div className="text-center bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl px-4 sm:px-6 py-3 sm:py-4">
-                  <p className="text-xl sm:text-2xl font-bold text-[#22D3EE]">{(userPacks as any[] || []).length}</p>
-                  <p className="text-xs sm:text-sm text-[#9CA3AF]">Total Packs</p>
-                </div>
-              </div>
-            )}
           </motion.div>
 
           {noPacks ? (
@@ -452,202 +444,198 @@ export default function MyPacks() {
 
         </div>
 
-        {/* Compact Pack Odds Section */}
+        {/* Mystery Pack Odds Section */}
         <motion.div 
-          className="max-w-4xl mx-auto mt-8 mb-6"
+          className="max-w-6xl mx-auto mt-8 mb-6"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <div className="text-center mb-4">
+          <div className="text-center mb-6">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1">
               <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
-                Pack Odds
+                Mystery Pack Odds
               </span>
             </h2>
-            <p className="text-sm sm:text-base text-[#9CA3AF]">Probability of pulling each tier</p>
+            <p className="text-sm sm:text-base text-[#9CA3AF]">Hit card odds for each mystery pack type (7 D-tier cards + 1 hit card)</p>
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {/* Pokeball Pack */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Pokeball Pack Odds */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
               whileHover={{ scale: 1.02 }}
             >
               <div className="text-center mb-3">
-                <div className="flex justify-center mb-2">
-                  <PackImage packType="pokeball" size="large" />
+                <div className="w-14 h-14 mx-auto mb-2">
+                  <img 
+                    src="/assets/pokeball.png" 
+                    alt="Pokeball"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
                 </div>
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Pokeball Pack</h3>
+                <h3 className="font-bold text-base text-[#E5E7EB] mb-1">Pokeball</h3>
+                <p className="text-xs text-[#9CA3AF]">Base Odds</p>
               </div>
-              <div className="space-y-1 text-xs sm:text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">D Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">60%</span>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#10b981]">C:</span>
+                  <span className="font-semibold text-[#E5E7EB]">84.8%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#10b981]">C Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">20%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#3b82f6]">B:</span>
+                  <span className="font-semibold text-[#E5E7EB]">6%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">10%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#8b5cf6]">A:</span>
+                  <span className="font-semibold text-[#E5E7EB]">4.5%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8b5cf6]">A Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">5%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#f59e0b]">S:</span>
+                  <span className="font-semibold text-[#E5E7EB]">3.5%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#f59e0b]">S Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">3%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ec4899]">SS:</span>
+                  <span className="font-semibold text-[#E5E7EB]">1%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">1.5%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ef4444]">SSS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">0.5%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ef4444]">SSS:</span>
+                  <span className="font-semibold text-[#E5E7EB]">0.2%</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* Greatball Pack */}
+            {/* Greatball Pack Odds */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
               whileHover={{ scale: 1.02 }}
             >
               <div className="text-center mb-3">
-                <div className="flex justify-center mb-2">
-                  <PackImage packType="greatball" size="large" />
+                <div className="w-14 h-14 mx-auto mb-2">
+                  <img 
+                    src="/assets/greatball.png" 
+                    alt="Greatball"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
                 </div>
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Great Ball Pack</h3>
+                <h3 className="font-bold text-base text-[#E5E7EB] mb-1">Greatball</h3>
+                <p className="text-xs text-[#9CA3AF]">Improved Odds</p>
               </div>
-              <div className="space-y-1 text-xs sm:text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">D Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">12%</span>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#10b981]">C:</span>
+                  <span className="font-semibold text-[#E5E7EB]">40%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#10b981]">C Tier:</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#3b82f6]">B:</span>
                   <span className="font-semibold text-[#E5E7EB]">30%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">25%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#8b5cf6]">A:</span>
+                  <span className="font-semibold text-[#E5E7EB]">15%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8b5cf6]">A Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">20%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#f59e0b]">S:</span>
+                  <span className="font-semibold text-[#E5E7EB]">10%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#f59e0b]">S Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">8%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ec4899]">SS:</span>
+                  <span className="font-semibold text-[#E5E7EB]">4%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">3%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ef4444]">SSS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">2%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ef4444]">SSS:</span>
+                  <span className="font-semibold text-[#E5E7EB]">1%</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* Ultraball Pack */}
+            {/* Ultraball Pack Odds */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
               whileHover={{ scale: 1.02 }}
             >
               <div className="text-center mb-3">
-                <div className="flex justify-center mb-2">
-                  <PackImage packType="ultraball" size="large" />
+                <div className="w-14 h-14 mx-auto mb-2">
+                  <img 
+                    src="/assets/ultraball.png" 
+                    alt="Ultraball"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
                 </div>
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Ultra Ball Pack</h3>
+                <h3 className="font-bold text-base text-[#E5E7EB] mb-1">Ultraball</h3>
+                <p className="text-xs text-[#9CA3AF]">B+ Guaranteed</p>
               </div>
-              <div className="space-y-1 text-xs sm:text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">D Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">7%</span>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#3b82f6]">B:</span>
+                  <span className="font-semibold text-[#E5E7EB]">60%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#10b981]">C Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">20%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">30%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8b5cf6]">A Tier:</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#8b5cf6]">A:</span>
                   <span className="font-semibold text-[#E5E7EB]">25%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#f59e0b]">S Tier:</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#f59e0b]">S:</span>
                   <span className="font-semibold text-[#E5E7EB]">10%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">5%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ec4899]">SS:</span>
+                  <span className="font-semibold text-[#E5E7EB]">4%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ef4444]">SSS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">3%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ef4444]">SSS:</span>
+                  <span className="font-semibold text-[#E5E7EB]">1%</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* Masterball Pack */}
+            {/* Masterball Pack Odds */}
             <motion.div 
-              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-3 sm:p-4 lg:p-6 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+              className="bg-[#151521]/40 backdrop-blur-[15px] border border-[#26263A]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.8 }}
               whileHover={{ scale: 1.02 }}
             >
               <div className="text-center mb-3">
-                <div className="flex justify-center mb-2">
-                  <PackImage packType="masterball" size="large" />
+                <div className="w-14 h-14 mx-auto mb-2">
+                  <img 
+                    src="/assets/masterball.png" 
+                    alt="Masterball"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
                 </div>
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg text-[#E5E7EB]">Master Ball Pack</h3>
+                <h3 className="font-bold text-base text-[#E5E7EB] mb-1">Masterball</h3>
+                <p className="text-xs text-[#9CA3AF]">A+ Guaranteed</p>
               </div>
-              <div className="space-y-1 text-xs sm:text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6b7280]">D Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">5%</span>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#8b5cf6]">A:</span>
+                  <span className="font-semibold text-[#E5E7EB]">50%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#10b981]">C Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">15%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#3b82f6]">B Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">25%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8b5cf6]">A Tier:</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#f59e0b]">S:</span>
                   <span className="font-semibold text-[#E5E7EB]">30%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#f59e0b]">S Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">12%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ec4899]">SS:</span>
+                  <span className="font-semibold text-[#E5E7EB]">15%</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ec4899]">SS Tier:</span>
-                  <span className="font-semibold text-[#E5E7EB]">8%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#ef4444]">SSS Tier:</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#ef4444]">SSS:</span>
                   <span className="font-semibold text-[#E5E7EB]">5%</span>
                 </div>
               </div>

@@ -123,31 +123,33 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
                     <div className="relative">
                       {/* Card Image */}
                       <div className="w-36 h-54 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center border border-gray-600 shadow-lg">
-                        {pull.card.imageUrl ? (
+                        {pull.imageUrl ? (
                           <img 
-                            src={pull.card.imageUrl} 
-                            alt={pull.card.name}
+                            src={pull.imageUrl} 
+                            alt={pull.cardName || 'Card'}
                             className="w-full h-full object-cover rounded-lg"
                             loading="lazy"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = "/card-images/Commons.png";
+                              // Only set fallback if we haven't already tried the fallback
+                              if (!target.src.includes('/card-images/Commons.png')) {
+                                target.src = "/card-images/Commons.png";
+                              }
                             }}
                           />
                         ) : (
                           <img 
                             src="/card-images/Commons.png" 
-                            alt={pull.card.name}
+                            alt="Placeholder Card"
                             className="w-full h-full object-cover rounded-lg"
-                            loading="lazy"
                           />
                         )}
                       </div>
                       
                       {/* Tier Badge */}
                       <div className="absolute -top-1 -right-1">
-                        <Badge className={`${getTierColor(pull.tier)} font-bold text-xs px-2 py-0.5 border`}>
-                          {pull.tier}
+                        <Badge className={`${getTierColor(pull.cardTier)} font-bold text-xs px-2 py-0.5 border`}>
+                          {pull.cardTier}
                         </Badge>
                       </div>
                     </div>
@@ -156,10 +158,10 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
                   {/* Card Details */}
                   <div className="text-center mb-2">
                     <h3 className="text-sm font-bold text-white mb-1">
-                      {pull.card.name}
+                      {pull.cardName}
                     </h3>
                     <p className="text-gray-400 text-xs mb-1">
-                      {pull.tier} Tier Card
+                      {pull.cardTier} Tier Card
                     </p>
                     <p className="text-gray-300 text-xs">
                       pulled by {pull.user?.username || 'Unknown'}
