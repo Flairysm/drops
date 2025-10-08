@@ -31,7 +31,7 @@ export function CreditPurchase() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Credits Added!",
-        description: `Successfully added ${Math.floor(result.creditsAdded).toLocaleString()} credits to your account`,
+        description: `Successfully added ${Math.floor(result.creditsAdded)} credits to your account`,
         duration: 5000,
       });
     },

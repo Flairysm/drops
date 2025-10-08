@@ -97,7 +97,7 @@ export default function Vault() {
       setSelectedCards([]);
       toast({
         title: "Cards Refunded",
-        description: `Successfully refunded ${uniqueCardIds.length} cards for ${Math.floor(totalRefundAmount).toLocaleString()} credits`,
+        description: `Successfully refunded ${uniqueCardIds.length} cards for ${Math.floor(totalRefundAmount)} credits`,
       });
       
       // Invalidate and refetch the vault data to get the updated list
@@ -376,7 +376,7 @@ export default function Vault() {
 
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#A855F7]" data-testid="text-refund-value">
-                    {Math.floor(calculateRefundValue()).toLocaleString()}
+                    {Math.floor(calculateRefundValue())}
                   </div>
                   <div className="text-sm text-[#9CA3AF]">Refund Value (CR)</div>
                 </div>

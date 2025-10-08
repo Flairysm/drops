@@ -396,7 +396,7 @@ export function FindPikachuGame() {
             <Card className="gaming-card bg-gray-900/95 border-gray-600 shadow-lg">
               <CardContent className="p-3 sm:p-4 text-center">
                 <div className="text-xl sm:text-2xl font-bold text-white">
-                  {Math.floor(creditBalance).toLocaleString()}
+                  {Math.floor(creditBalance)}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-200 font-medium">Your Credits</div>
               </CardContent>
