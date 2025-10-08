@@ -468,12 +468,22 @@ export default function Home() {
            </Card>
           </motion.section>
 
-          {/* Quick Play Games Carousel */}
+          {/* Recent Pulls */}
           <motion.section 
             className="mb-12"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <RecentPulls limit={10} />
+          </motion.section>
+
+          {/* Quick Play Games Carousel */}
+          <motion.section 
+            className="mb-12"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
             <div className="flex items-center mb-6">
               {/* Neon Strip */}
@@ -557,7 +567,7 @@ export default function Home() {
             className="mb-12"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
           >
             <div className="flex items-center mb-6">
               {/* Neon Strip */}
@@ -676,16 +686,6 @@ export default function Home() {
                 </motion.div>
               </div>
             </div>
-          </motion.section>
-
-          {/* Recent Pulls */}
-          <motion.section 
-            className="mb-12"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <RecentPulls limit={10} />
           </motion.section>
 
         </div>
