@@ -187,13 +187,15 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
       )}
 
       <Dialog open={isOpen} onOpenChange={showAnimation ? undefined : onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#0B0B12] border-[#26263A]">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-[#E5E7EB] flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-              <Package className="w-4 h-4 text-white" />
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-[#0B0B12] via-[#151521] to-[#0B0B12] border-[#26263A] shadow-2xl">
+        <DialogHeader className="text-center pb-6">
+          <DialogTitle className="text-3xl font-bold text-[#E5E7EB] flex items-center justify-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Package className="w-6 h-6 text-white" />
             </div>
-            {pack.name}
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              {pack.name}
+            </span>
           </DialogTitle>
         </DialogHeader>
 
@@ -201,50 +203,63 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
         <div className="space-y-6">
           {/* Pack Image */}
           <div className="flex justify-center">
-            <Card className="w-full max-w-md h-64 bg-[#151521] border-[#26263A] overflow-hidden">
-              <CardContent className="p-0 h-full">
+            <Card className="w-full max-w-lg h-80 bg-[#151521] border-[#26263A] overflow-hidden shadow-2xl">
+              <CardContent className="p-0 h-full relative">
                 {pack.imageUrl ? (
-                  <img 
-                    src={pack.imageUrl} 
-                    alt={pack.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={pack.imageUrl} 
+                      alt={pack.name}
+                      className="w-full h-full object-contain bg-gradient-to-br from-gray-900 to-gray-800"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (!target.src.includes('placeholder')) {
+                          target.src = '/assets/placeholder-card.png';
+                        }
+                      }}
+                    />
+                    {/* Subtle overlay for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>
+                  </div>
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <Package className="w-16 h-16 text-white opacity-50" />
+                    <Package className="w-20 h-20 text-white opacity-70" />
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* User Info Section - Gaming Card Style */}
+          {/* User Info Section - Enhanced Gaming Card Style */}
           {user && (
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
-              <Card className="gaming-card bg-gray-900/95 border-gray-600 shadow-lg">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-white">
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-white mb-1">
                     {user.credits?.toLocaleString() || 0}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-200 font-medium">Your Credits</div>
+                  <div className="text-sm text-gray-300 font-medium">Your Credits</div>
+                  <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mt-2"></div>
                 </CardContent>
               </Card>
 
-              <Card className="gaming-card bg-gray-900/95 border-gray-600 shadow-lg">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-purple-500">
+              <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-purple-400 mb-1">
                     {pack.price}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-200 font-medium">Pack Cost</div>
+                  <div className="text-sm text-gray-300 font-medium">Pack Cost</div>
+                  <div className="w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mt-2"></div>
                 </CardContent>
               </Card>
 
-              <Card className="gaming-card bg-gray-900/95 border-gray-600 shadow-lg">
-                <CardContent className="p-3 sm:p-4 text-center">
-                  <div className="text-lg sm:text-xl font-bold text-white mb-1">
+              <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <CardContent className="p-4 text-center">
+                  <div className="text-xl font-bold text-white mb-1">
                     Special
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-200 font-medium">Pack Type</div>
+                  <div className="text-sm text-gray-300 font-medium">Pack Type</div>
+                  <div className="w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mt-2"></div>
                 </CardContent>
               </Card>
             </div>
@@ -252,9 +267,12 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
 
 
           {/* Pack Description */}
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-[#E5E7EB] mb-2">Description</h3>
-            <p className="text-[#9CA3AF] leading-relaxed max-w-2xl mx-auto">
+          <div className="text-center bg-gradient-to-r from-gray-900/50 to-gray-800/50 rounded-xl p-6 border border-gray-700/50">
+            <h3 className="text-xl font-semibold text-[#E5E7EB] mb-3 flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              Description
+            </h3>
+            <p className="text-[#B0B3B8] leading-relaxed max-w-3xl mx-auto text-base">
               {pack.description || "A special pack containing unique cards with enhanced rarities."}
             </p>
           </div>
@@ -264,25 +282,25 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
             <Button
               onClick={handleOpenPack}
               disabled={isOpening || (user && parseFloat(user.credits) < parseFloat(pack.price))}
-              className={`w-full max-w-md font-semibold py-3 rounded-lg transition-all duration-300 ${
+              className={`w-full max-w-lg font-bold py-4 rounded-xl transition-all duration-300 text-lg ${
                 user && parseFloat(user.credits) < parseFloat(pack.price)
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]'
+                  : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:shadow-[0_0_35px_rgba(168,85,247,0.6)] hover:scale-105'
               }`}
             >
               {isOpening ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                   Opening Pack...
                 </>
               ) : user && parseFloat(user.credits) < parseFloat(pack.price) ? (
                 <>
-                  <Coins className="w-4 h-4 mr-2" />
+                  <Coins className="w-5 h-5 mr-3" />
                   Insufficient Credits
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 mr-2" />
+                  <Play className="w-5 h-5 mr-3" />
                   Open Pack
                 </>
               )}
@@ -291,12 +309,12 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
 
           {/* Tabs for detailed information */}
           <Tabs defaultValue="prizepool" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-[#151521] border border-[#26263A]">
-              <TabsTrigger value="prizepool" className="data-[state=active]:bg-[#26263A] data-[state=active]:text-[#22D3EE]">
+            <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-gray-900/80 to-gray-800/80 border border-gray-600/50 rounded-xl p-1">
+              <TabsTrigger value="prizepool" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-lg transition-all duration-300">
                 <Gift className="w-4 h-4 mr-2" />
                 Prize Pool
               </TabsTrigger>
-              <TabsTrigger value="stats" className="data-[state=active]:bg-[#26263A] data-[state=active]:text-[#22D3EE]">
+              <TabsTrigger value="stats" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-lg transition-all duration-300">
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Statistics
               </TabsTrigger>
