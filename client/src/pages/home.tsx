@@ -558,48 +558,6 @@ export default function Home() {
                     </Card>
                   </Link>
                 </motion.div>
-
-                {/* Plinko Game */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
-                >
-                  <Link href="/play/plinko">
-                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
-                      <CardContent className="p-0 h-full">
-                        {/* Plinko Game Image */}
-                        <div 
-                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(34,211,238,0.4)]"
-                          style={{
-                            backgroundImage: `url('/assets/minesweeper-image.png')`
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-
-                {/* Wheel Game */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
-                >
-                  <Link href="/play/wheel">
-                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
-                      <CardContent className="p-0 h-full">
-                        {/* Wheel Game Image */}
-                        <div 
-                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(250,204,21,0.4)]"
-                          style={{
-                            backgroundImage: `url('/assets/energy-card.png')`
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
               </div>
             </div>
           </motion.section>
@@ -678,48 +636,6 @@ export default function Home() {
                           className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(236,72,153,0.4)]"
                           style={{
                             backgroundImage: `url('/assets/energy-match.png')`
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-
-                {/* Plinko Game */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
-                >
-                  <Link href="/play/plinko">
-                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
-                      <CardContent className="p-0 h-full">
-                        {/* Plinko Game Image */}
-                        <div 
-                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(34,211,238,0.4)]"
-                          style={{
-                            backgroundImage: `url('/assets/minesweeper-image.png')`
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-
-                {/* Wheel Game */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
-                >
-                  <Link href="/play/wheel">
-                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
-                      <CardContent className="p-0 h-full">
-                        {/* Wheel Game Image */}
-                        <div 
-                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(250,204,21,0.4)]"
-                          style={{
-                            backgroundImage: `url('/assets/energy-card.png')`
                           }}
                         />
                       </CardContent>
