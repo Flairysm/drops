@@ -254,7 +254,7 @@ export function WheelGame() {
     if (creditBalance < bet) {
       toast({
         title: "Insufficient Credits",
-        description: `You need ${bet} credits to play. You have ${creditBalance.toFixed(2)} credits.`,
+        description: `You need ${bet} credits to play. You have ${Math.floor(creditBalance).toLocaleString()} credits.`,
         variant: "destructive",
       });
       return;
@@ -372,7 +372,7 @@ export function WheelGame() {
                 className="text-sm font-semibold text-green-600 dark:text-green-400"
                 data-testid="text-credit-balance"
               >
-                Your Credits: {isCreditsLoading ? "Loading..." : (userCredits && typeof userCredits === 'object' && 'credits' in userCredits ? Number((userCredits as any).credits).toFixed(2) : "0.00")}
+                Your Credits: {isCreditsLoading ? "Loading..." : (userCredits && typeof userCredits === 'object' && 'credits' in userCredits ? Math.floor(Number((userCredits as any).credits)).toLocaleString() : "0")}
               </span>
             </div>
           </div>

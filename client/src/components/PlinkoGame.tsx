@@ -480,7 +480,7 @@ export function PlinkoGame() {
     if (creditBalance < parseFloat(fixedPrice)) {
       toast({
         title: "Insufficient Credits",
-        description: `You need ${fixedPrice} credits to play. You have ${creditBalance.toFixed(2)} credits.`,
+        description: `You need ${fixedPrice} credits to play. You have ${Math.floor(creditBalance).toLocaleString()} credits.`,
         variant: "destructive",
       });
       return;

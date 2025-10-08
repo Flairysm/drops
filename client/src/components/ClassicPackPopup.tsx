@@ -236,7 +236,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
               <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-white mb-1">
-                    {user.credits?.toLocaleString() || 0}
+                    {Math.floor(Number(user.credits) || 0).toLocaleString()}
                   </div>
                   <div className="text-sm text-gray-300 font-medium">Your Credits</div>
                   <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mt-2"></div>
