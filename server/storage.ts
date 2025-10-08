@@ -291,18 +291,20 @@ export class DatabaseStorage {
     console.log("📰 Adding to global feed:", feedData);
     try {
       // Use raw SQL since the Drizzle schema doesn't match the actual database table
+      const feedId = `gf-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const userId = feedData.userId;
+      const cardId = feedData.packId || null;
+      const gameType = feedData.packType || 'unknown';
+      const cardName = feedData.cardName || feedData.card?.name || 'Unknown Card';
+      const cardImageUrl = feedData.imageUrl || feedData.card?.imageUrl || '/card-images/Commons.png';
+      const tier = feedData.cardTier || feedData.card?.tier || 'D';
+      const createdAt = new Date();
+      
+      console.log("📰 SQL parameters:", { feedId, userId, cardId, gameType, cardName, cardImageUrl, tier, createdAt });
+      
       await db.execute(sql`
         INSERT INTO global_feed (id, user_id, card_id, game_type, card_name, card_image_url, tier, created_at)
-        VALUES (
-          ${`gf-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`},
-          ${feedData.userId},
-          ${feedData.packId || null},
-          ${feedData.packType || 'unknown'},
-          ${feedData.cardName || feedData.card?.name || 'Unknown Card'},
-          ${feedData.imageUrl || feedData.card?.imageUrl || '/card-images/Commons.png'},
-          ${feedData.cardTier || feedData.card?.tier || 'D'},
-          ${new Date()}
-        )
+        VALUES (${feedId}, ${userId}, ${cardId}, ${gameType}, ${cardName}, ${cardImageUrl}, ${tier}, ${createdAt})
       `);
       console.log("✅ Successfully added to global feed");
     } catch (error) {
