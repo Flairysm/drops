@@ -567,13 +567,14 @@ export default function Home() {
               <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">New Release</h2>
             </div>
             
-            {/* New Release Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* New Release Carousel */}
+            <div className="relative">
+              <div className="flex space-x-6 overflow-x-auto scrollbar-hide pb-4">
               {/* Mystery Pack Release */}
               <motion.div
                 whileHover={{ scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.98 }}
-                className="group"
+                className="group min-w-[300px] flex-shrink-0"
               >
                 <Link href="/purchase">
                   <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#7C3AED]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_30px_rgba(124,58,237,0.2)] overflow-hidden">
@@ -613,7 +614,7 @@ export default function Home() {
               <motion.div
                 whileHover={{ scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.98 }}
-                className="group"
+                className="group min-w-[300px] flex-shrink-0"
               >
                 <Link href="/purchase">
                   <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#EC4899]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(236,72,153,0.1)] hover:shadow-[0_0_30px_rgba(236,72,153,0.2)] overflow-hidden">
@@ -653,7 +654,7 @@ export default function Home() {
               <motion.div
                 whileHover={{ scale: 1.02, y: -4 }}
                 whileTap={{ scale: 0.98 }}
-                className="group"
+                className="group min-w-[300px] flex-shrink-0"
               >
                 <Link href="/purchase">
                   <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#22D3EE]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.1)] hover:shadow-[0_0_30px_rgba(34,211,238,0.2)] overflow-hidden">
@@ -688,6 +689,87 @@ export default function Home() {
                   </Card>
                 </Link>
               </motion.div>
+
+              {/* Premium Collection */}
+              <motion.div
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                className="group min-w-[300px] flex-shrink-0"
+              >
+                <Link href="/purchase">
+                  <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#FACC15]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(250,204,21,0.1)] hover:shadow-[0_0_30px_rgba(250,204,21,0.2)] overflow-hidden">
+                    <CardContent className="p-6">
+                      {/* Pack Image */}
+                      <div className="relative mb-4">
+                        <div className="w-full h-32 bg-gradient-to-br from-yellow-600/20 to-orange-600/20 rounded-xl flex items-center justify-center border border-yellow-500/30">
+                          <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                            <Crown className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                        {/* Premium Badge */}
+                        <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[#FACC15] to-[#F97316] text-black font-bold text-xs px-2 py-1">
+                          PREMIUM
+                        </Badge>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-[#FACC15] transition-colors">
+                          Premium Collection
+                        </h3>
+                        <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                          The ultimate collection with guaranteed high-tier cards and exclusive rewards.
+                        </p>
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-[#FACC15] font-semibold text-sm">1000₵</span>
+                          <Crown className="w-4 h-4 text-[#FACC15]" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+
+              {/* Seasonal Event */}
+              <motion.div
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                className="group min-w-[300px] flex-shrink-0"
+              >
+                <Link href="/purchase">
+                  <Card className="rounded-2xl bg-gradient-to-br from-[#151521] to-[#1a1a2e] border border-[#26263A] backdrop-blur-[10px] hover:border-[#10B981]/50 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] overflow-hidden">
+                    <CardContent className="p-6">
+                      {/* Pack Image */}
+                      <div className="relative mb-4">
+                        <div className="w-full h-32 bg-gradient-to-br from-green-600/20 to-emerald-600/20 rounded-xl flex items-center justify-center border border-green-500/30">
+                          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                            <Sparkles className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                        {/* Event Badge */}
+                        <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-[#10B981] to-[#059669] text-white font-bold text-xs px-2 py-1">
+                          EVENT
+                        </Badge>
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-[#10B981] transition-colors">
+                          Seasonal Event
+                        </h3>
+                        <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                          Special seasonal event packs with themed cards and exclusive rewards.
+                        </p>
+                        <div className="flex items-center justify-between pt-2">
+                          <span className="text-[#FACC15] font-semibold text-sm">200₵</span>
+                          <Sparkles className="w-4 h-4 text-[#FACC15]" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+              </div>
             </div>
           </motion.section>
 
