@@ -516,7 +516,7 @@ export default function Home() {
                   whileTap={{ scale: 0.98 }}
                   className="flex-shrink-0"
                 >
-                  <Link href="/purchase">
+                  <Link href="/play">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
                       <CardContent className="p-0 h-full">
                         {/* Classic Pack Image */}
@@ -600,7 +600,7 @@ export default function Home() {
                   whileTap={{ scale: 0.98 }}
                   className="flex-shrink-0"
                 >
-                  <Link href="/purchase">
+                  <Link href="/play">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
                       <CardContent className="p-0 h-full">
                         {/* Classic Pack Image */}
