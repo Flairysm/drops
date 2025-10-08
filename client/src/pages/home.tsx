@@ -478,96 +478,12 @@ export default function Home() {
             <RecentPulls limit={10} />
           </motion.section>
 
-          {/* Quick Play Games Carousel */}
-          <motion.section 
-            className="mb-12"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
-            <div className="flex items-center mb-6">
-              {/* Neon Strip */}
-              <div className="w-1 h-8 bg-gradient-to-b from-[#7C3AED] via-[#A855F7] to-[#22D3EE] rounded-full mr-4 shadow-[0_0_8px_rgba(124,58,237,0.3)]"></div>
-              
-             {/* Quick Play Title */}
-             <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Quick Play</h2>
-            </div>
-            
-            {/* Game Carousel */}
-            <div className="relative">
-              <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide">
-                {/* Classic Pack */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
-                >
-                  <Link href="/purchase">
-                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
-                      <CardContent className="p-0 h-full">
-                        {/* Classic Pack Image */}
-                        <div 
-                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(124,58,237,0.4)]"
-                          style={{
-                            backgroundImage: `url('/assets/classic-image.png')`
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-
-                {/* Find Pika Game */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
-                >
-                  <Link href="/play/findpika">
-                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
-                      <CardContent className="p-0 h-full">
-                        {/* Find Pika Game Image */}
-                        <div 
-                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(34,197,94,0.4)]"
-                          style={{
-                            backgroundImage: `url('/assets/find-pika-image.png')`
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-
-                {/* Energy Match Game */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
-                >
-                  <Link href="/play/energy-match">
-                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
-                      <CardContent className="p-0 h-full">
-                        {/* Energy Match Game Image */}
-                        <div 
-                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(236,72,153,0.4)]"
-                          style={{
-                            backgroundImage: `url('/assets/energy-match.png')`
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              </div>
-            </div>
-          </motion.section>
-
           {/* New Release Section */}
           <motion.section 
             className="mb-12"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
           >
             <div className="flex items-center mb-6">
               {/* Neon Strip */}
@@ -687,6 +603,91 @@ export default function Home() {
               </div>
             </div>
           </motion.section>
+
+          {/* Quick Play Games Carousel */}
+          <motion.section 
+            className="mb-12"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            <div className="flex items-center mb-6">
+              {/* Neon Strip */}
+              <div className="w-1 h-8 bg-gradient-to-b from-[#7C3AED] via-[#A855F7] to-[#22D3EE] rounded-full mr-4 shadow-[0_0_8px_rgba(124,58,237,0.3)]"></div>
+              
+             {/* Quick Play Title */}
+             <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Quick Play</h2>
+            </div>
+            
+            {/* Game Carousel */}
+            <div className="relative">
+              <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide">
+                {/* Classic Pack */}
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-shrink-0"
+                >
+                  <Link href="/purchase">
+                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
+                      <CardContent className="p-0 h-full">
+                        {/* Classic Pack Image */}
+                        <div 
+                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(124,58,237,0.4)]"
+                          style={{
+                            backgroundImage: `url('/assets/classic-image.png')`
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </motion.div>
+
+                {/* Find Pika Game */}
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-shrink-0"
+                >
+                  <Link href="/play/findpika">
+                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
+                      <CardContent className="p-0 h-full">
+                        {/* Find Pika Game Image */}
+                        <div 
+                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(34,197,94,0.4)]"
+                          style={{
+                            backgroundImage: `url('/assets/find-pika-image.png')`
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </motion.div>
+
+                {/* Energy Match Game */}
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex-shrink-0"
+                >
+                  <Link href="/play/energy-match">
+                    <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
+                      <CardContent className="p-0 h-full">
+                        {/* Energy Match Game Image */}
+                        <div 
+                          className="w-full h-full bg-cover bg-center rounded-2xl shadow-[0_0_12px_rgba(236,72,153,0.4)]"
+                          style={{
+                            backgroundImage: `url('/assets/energy-match.png')`
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </motion.div>
+              </div>
+            </div>
+          </motion.section>
+
 
         </div>
       </main>
