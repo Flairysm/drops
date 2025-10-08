@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ChevronRight, Package } from "lucide-react";
 import { motion } from "framer-motion";
 import type { GlobalFeedWithDetails } from "@shared/schema";
@@ -94,15 +93,11 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
   return (
     <div className="w-full">
       {/* Section Title */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center mb-8">
         <div className="flex items-center space-x-3">
           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
           <h2 className="text-2xl font-bold text-white">Recent Pulls</h2>
         </div>
-        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-          View all
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </Button>
       </div>
 
       {/* Recent Pulls Carousel */}
