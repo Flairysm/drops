@@ -187,18 +187,23 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
       )}
 
       <Dialog open={isOpen} onOpenChange={showAnimation ? undefined : onClose}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-[#0B0B12] via-[#151521] to-[#0B0B12] border-[#26263A] shadow-2xl">
-        <DialogHeader className="text-center pb-6">
-          <DialogTitle className="text-3xl font-bold text-[#E5E7EB] flex items-center justify-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Package className="w-6 h-6 text-white" />
-            </div>
-            <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-[#0B0B12] via-[#151521] to-[#0B0B12] border-[#26263A] shadow-2xl [&>button]:hidden">
+          {/* Custom X Button */}
+          <button
+            onClick={onClose}
+            className="absolute right-6 top-6 w-10 h-10 flex items-center justify-center text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-600 shadow-lg z-50 !block"
+          >
+            <X className="h-5 w-5 mx-auto" />
+          </button>
+
+        <DialogHeader className="text-center pb-3">
+          <DialogTitle className="text-4xl font-bold tracking-wide">
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               {pack.name}
             </span>
           </DialogTitle>
+          <div className="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full mt-3"></div>
         </DialogHeader>
-
 
         <div className="space-y-6">
           {/* Pack Image */}
@@ -222,7 +227,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>
                   </div>
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
                     <Package className="w-20 h-20 text-white opacity-70" />
                   </div>
                 )}
@@ -245,24 +250,21 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
 
               <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-orange-400 mb-1">
+                  <div className="text-2xl font-bold text-blue-400 mb-1">
                     {pack.price}
                   </div>
                   <div className="text-sm text-gray-300 font-medium">Pack Cost</div>
-                  <div className="w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mt-2"></div>
+                  <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mt-2"></div>
                 </CardContent>
               </Card>
 
               <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-4 text-center">
                   <div className="text-xl font-bold text-white mb-1">
-                    {packData?.availableCards !== undefined && packData?.totalCards !== undefined 
-                      ? `${packData.availableCards}/${packData.totalCards}`
-                      : '0/0'
-                    }
+                    Classic
                   </div>
-                  <div className="text-sm text-gray-300 font-medium">Available Cards</div>
-                  <div className="w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full mt-2"></div>
+                  <div className="text-sm text-gray-300 font-medium">Pack Type</div>
+                  <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mt-2"></div>
                 </CardContent>
               </Card>
             </div>
@@ -272,7 +274,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
           {/* Pack Description */}
           <div className="text-center bg-gradient-to-r from-gray-900/50 to-gray-800/50 rounded-xl p-6 border border-gray-700/50">
             <h3 className="text-xl font-semibold text-[#E5E7EB] mb-3 flex items-center justify-center gap-2">
-              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               Description
             </h3>
             <p className="text-[#B0B3B8] leading-relaxed max-w-3xl mx-auto text-base">
@@ -288,7 +290,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
               className={`w-full max-w-lg font-bold py-4 rounded-xl transition-all duration-300 text-lg ${
                 user && parseFloat(user.credits) < parseFloat(pack.price)
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-[0_0_25px_rgba(249,115,22,0.4)] hover:shadow-[0_0_35px_rgba(249,115,22,0.6)] hover:scale-105'
+                  : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-[0_0_25px_rgba(59,130,246,0.4)] hover:shadow-[0_0_35px_rgba(59,130,246,0.6)] hover:scale-105 active:scale-95 touch-manipulation'
               }`}
             >
               {isOpening ? (
@@ -363,7 +365,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
                                   tier === 'S' ? 'bg-blue-500' :
                                   tier === 'A' ? 'bg-green-500' :
                                   tier === 'B' ? 'bg-yellow-500' :
-                                  tier === 'C' ? 'bg-orange-500' :
+                                  tier === 'C' ? 'bg-blue-500' :
                                   'bg-gray-500'
                                 } text-white`}
                               >
@@ -417,7 +419,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
                   initial={{ scale: 0.5, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="bg-gradient-to-br from-orange-500 to-red-500 rounded-full p-8 shadow-[0_0_50px_rgba(249,115,22,0.8)]"
+                  className="bg-gradient-to-br from-blue-500 to-purple-500 rounded-full p-8 shadow-[0_0_50px_rgba(59,130,246,0.8)]"
                 >
                   <motion.div
                     animate={{ rotate: 360 }}

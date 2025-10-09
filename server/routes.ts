@@ -646,6 +646,258 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dice game endpoint
+  app.post('/api/dice/roll', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { amount } = req.body;
+
+      // Validate input
+      if (typeof amount !== 'number' || amount < 250) {
+        return res.status(400).json({ message: "Minimum bet is 250 credits" });
+      }
+
+      // Simulate dice roll - 5 dice with 6 Pokemon types
+      const pokemonTypes = ['psychic', 'fire', 'grass', 'water', 'electric', 'dark'];
+      const dice = Array.from({ length: 5 }, () => 
+        pokemonTypes[Math.floor(Math.random() * pokemonTypes.length)]
+      );
+      
+      // Count matches
+      const counts: { [key: string]: number } = {};
+      dice.forEach(type => {
+        counts[type] = (counts[type] || 0) + 1;
+      });
+      
+      const maxMatches = Math.max(...Object.values(counts));
+      
+      // Determine reward based on matches
+      let packTier: string;
+      if (maxMatches >= 5) {
+        packTier = 'masterball';
+      } else if (maxMatches >= 4) {
+        packTier = 'ultraball';
+      } else if (maxMatches >= 3) {
+        packTier = 'greatball';
+      } else if (maxMatches >= 2) {
+        packTier = 'pokeball';
+      } else {
+        packTier = 'pokeball'; // Minimum reward
+      }
+
+      // Create transaction record
+      await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        type: 'game_play',
+        amount: amount.toString(),
+        description: `Pokemon Dice game - rolled ${dice.join(', ')} with ${maxMatches} matches`,
+      });
+
+      // Create game session
+      await storage.createGameSession({
+        userId,
+        gameType: 'dice',
+        gameData: { dice, maxMatches, packTier, timestamp: Date.now() },
+        status: 'completed',
+      });
+
+      res.json({
+        success: true,
+        dice,
+        maxMatches,
+        packTier,
+        message: `You rolled ${dice.join(', ')} and got ${maxMatches} matches! You won a ${packTier} pack!`,
+      });
+
+    } catch (error) {
+      console.error("Error in Dice game:", error);
+      res.status(500).json({ message: "Dice game error occurred" });
+    }
+  });
+
+  app.post('/api/dice/play', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { result } = req.body;
+      
+      if (!result) {
+        return res.status(400).json({ message: "Game result is required" });
+      }
+
+      // Get the mystery pack by tier
+      const mysteryPacks = await storage.getMysteryPacks();
+      let pack = mysteryPacks.find(p => p.packType === result);
+      if (!pack) {
+        // If pack doesn't exist, use the first available pack
+        pack = mysteryPacks[0];
+        if (!pack) {
+          return res.status(500).json({ message: `No mystery packs available` });
+        }
+      }
+
+      // Award mystery pack to user
+      await storage.addUserPack({
+        id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        packId: pack.id,
+        packType: 'mystery',
+        tier: result,
+        earnedFrom: 'dice',
+        isOpened: false,
+      });
+
+      res.json({
+        success: true,
+        message: "Pack added to your inventory!",
+      });
+
+    } catch (error) {
+      console.error("Error assigning dice pack:", error);
+      res.status(500).json({ message: "Failed to assign pack" });
+    }
+  });
+
+  // Wheel game endpoint
+  app.post('/api/wheel/deduct-credits', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { amount } = req.body;
+
+      // Validate input
+      if (typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // Get current user credits
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const currentCredits = Number(user.credits);
+      if (currentCredits < amount) {
+        return res.status(400).json({ message: "Insufficient credits" });
+      }
+
+      // Deduct credits
+      const newCredits = currentCredits - amount;
+      await storage.updateUserCredits(userId, newCredits.toString());
+
+      // Create transaction record
+      await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        type: 'game_play',
+        amount: `-${amount}`,
+        description: `Wheel game spin - ${amount} credits`,
+      });
+
+      res.json({
+        success: true,
+        newCredits,
+        deducted: amount,
+      });
+
+    } catch (error) {
+      console.error("Error deducting credits for wheel game:", error);
+      res.status(500).json({ message: "Failed to deduct credits" });
+    }
+  });
+
+  // Wheel game play endpoint
+  app.post('/api/wheel/play', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { result } = req.body;
+
+      // Validate input
+      if (typeof result !== 'string') {
+        return res.status(400).json({ message: "Invalid result" });
+      }
+
+      // Map wheel result to mystery pack tier
+      let packTier: string;
+      switch (result.toLowerCase()) {
+        case 'pokeball':
+          packTier = 'pokeball';
+          break;
+        case 'greatball':
+          packTier = 'greatball';
+          break;
+        case 'ultraball':
+          packTier = 'ultraball';
+          break;
+        case 'masterball':
+          packTier = 'masterball';
+          break;
+        default:
+          packTier = 'pokeball'; // Default fallback
+      }
+
+      console.log(`🎯 Wheel result: ${result} -> packTier: ${packTier}`);
+
+      // Get the mystery pack by tier
+      const mysteryPacks = await storage.getMysteryPacks();
+      console.log(`📦 Available mystery packs:`, mysteryPacks.map(p => ({ id: p.id, name: p.name, packType: p.packType })));
+      
+      let pack = mysteryPacks.find(p => p.packType === packTier);
+      console.log(`🎯 Looking for packType: ${packTier}, found:`, pack ? { id: pack.id, name: pack.name, packType: pack.packType } : 'null');
+      
+      if (!pack) {
+        // If pack doesn't exist, use the first available pack
+        pack = mysteryPacks[0];
+        console.log(`⚠️ Pack not found, using first available:`, pack ? { id: pack.id, name: pack.name, packType: pack.packType } : 'null');
+        if (!pack) {
+          return res.status(500).json({ message: `No mystery packs available` });
+        }
+      }
+
+      // Award mystery pack to user
+      await storage.addUserPack({
+        id: `up-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        packId: pack.id,
+        packType: 'mystery',
+        tier: packTier,
+        earnedFrom: 'wheel-spin',
+        isOpened: false,
+      });
+
+      // Create transaction record
+      await storage.addTransaction({
+        id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        type: 'game_play',
+        amount: "0", // No additional cost since credits were already deducted
+        description: `Wheel game completed - won ${packTier} mystery pack`,
+      });
+
+      // Create game session
+      await storage.createGameSession({
+        userId,
+        gameType: 'wheel-spin',
+        gameData: { result, packTier, timestamp: Date.now() },
+        status: 'completed',
+      });
+
+      // Prepare response message
+      const message = `Congratulations! You won a ${packTier.charAt(0).toUpperCase() + packTier.slice(1)} mystery pack!`;
+
+      res.json({
+        success: true,
+        result,
+        packTier,
+        message,
+        packId: pack.id,
+      });
+
+    } catch (error) {
+      console.error("Error in Wheel game play:", error);
+      res.status(500).json({ message: "Wheel game play error occurred" });
+    }
+  });
+
   // Vault routes
   app.get('/api/vault', isAuthenticatedCombined, async (req: any, res) => {
     try {
@@ -2967,50 +3219,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 // Simplified game simulation logic
 async function simulateGame(gameType: string, betAmount: number): Promise<GameResult> {
-  if (gameType === 'plinko') {
-    // For Plinko, simulate the bucket the ball would land in
-    // This matches the visual Plinko layout: [Masterball, Ultraball, Greatball, Pokeball, Pokeball, Pokeball, Greatball, Ultraball, Masterball]
-    const plinkoOutcomes = ["masterball", "ultraball", "greatball", "pokeball", "pokeball", "pokeball", "greatball", "ultraball", "masterball"];
+
+  if (gameType === 'dice') {
+    // For dice game, simulate rolling 5 dice with 6 Pokemon types
+    const pokemonTypes = ['fire', 'water', 'grass', 'electric', 'psychic', 'fighting'];
+    const dice = Array.from({ length: 5 }, () => 
+      pokemonTypes[Math.floor(Math.random() * pokemonTypes.length)]
+    );
     
-    // Realistic physics-based distribution (center buckets more likely)
-    const weights = [0.5, 4.5, 10, 20, 30, 20, 10, 4.5, 0.5]; // Matches bell curve distribution
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    // Count matches
+    const counts: { [key: string]: number } = {};
+    dice.forEach(type => {
+      counts[type] = (counts[type] || 0) + 1;
+    });
     
-    let random = Math.random() * totalWeight;
-    let selectedIndex = 0;
+    const maxMatches = Math.max(...Object.values(counts));
     
-    for (let i = 0; i < weights.length; i++) {
-      random -= weights[i];
-      if (random <= 0) {
-        selectedIndex = i;
-        break;
-      }
+    // Determine reward based on matches
+    let tier: string;
+    if (maxMatches >= 5) {
+      tier = 'masterball';
+    } else if (maxMatches >= 4) {
+      tier = 'ultraball';
+    } else if (maxMatches >= 3) {
+      tier = 'greatball';
+    } else if (maxMatches >= 2) {
+      tier = 'pokeball';
+    } else {
+      tier = 'pokeball'; // Minimum reward
     }
     
-    const packType = plinkoOutcomes[selectedIndex];
-    
     return {
-      cardId: '', // Not needed for Plinko
-      tier: packType, // This is now the pack type directly
+      cardId: `dice-${Date.now()}`,
+      tier: tier,
       gameType,
-    };
-  }
-
-  if (gameType === 'wheel') {
-    // For wheel game, use pokeball pack system like plinko
-    // Wheel odds: Pokeball 61%, Greatball 22%, Ultraball 14%, Masterball 2.8%
-    const random = Math.random();
-    let tier: string;
-    
-    if (random < 0.028) tier = 'masterball';
-    else if (random < 0.168) tier = 'ultraball'; // 0.028 + 0.14
-    else if (random < 0.388) tier = 'greatball'; // 0.168 + 0.22
-    else tier = 'pokeball'; // remaining 61.2%
-    
-    return {
-      cardId: '', // Not needed for wheel
-      tier: tier, // Pack type
-      gameType,
+      dice: dice // Include dice results for display
     };
   }
 

@@ -43,12 +43,12 @@ const gameData = {
       route: "/play/energy-match"
     },
     {
-      id: "wheel",
-      name: "Wheel Spin",
-      description: "Spin and Win!",
-      cost: 20,
-      gradient: "from-[#f59e0b] to-[#ef4444]",
-      route: "/play/wheel"
+      id: "dice",
+      name: "Pokemon Dice",
+      description: "Roll 5 dice and match Pokemon types!",
+      cost: 250,
+      image: "/assets/pokeball.png",
+      route: "/play/dice"
     }
   ] as GameItem[],
   specialPacks: [] as GameItem[],

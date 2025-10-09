@@ -778,11 +778,11 @@ export function FindPikachuGame() {
           >
             <div className="text-center space-y-6">
               {/* Header */}
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold text-white tracking-wide">
-                  GAME OVER
+              <div className="space-y-3">
+                <h2 className="text-4xl font-bold tracking-wide">
+                  <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Moonbreon hunt</span>
                 </h2>
-                <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full"></div>
+                <div className="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full"></div>
               </div>
               
               {/* Pack Image */}

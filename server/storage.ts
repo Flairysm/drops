@@ -331,11 +331,13 @@ export class DatabaseStorage {
       const allowedTiers = tierHierarchy.slice(minTierIndex);
       console.log("📰 Allowed tiers:", allowedTiers);
       
-      // Use raw SQL query with proper tier filtering and limit
+      // Use raw SQL query with proper tier filtering and limit, joining with users table
       const result = await db.execute(sql`
-        SELECT * FROM global_feed 
-        WHERE tier IN (${sql.join(allowedTiers.map(tier => sql`${tier}`), sql`, `)})
-        ORDER BY created_at DESC 
+        SELECT gf.*, u.username 
+        FROM global_feed gf
+        LEFT JOIN users u ON gf.user_id = u.id
+        WHERE gf.tier IN (${sql.join(allowedTiers.map(tier => sql`${tier}`), sql`, `)})
+        ORDER BY gf.created_at DESC 
         LIMIT ${limit}
       `);
       
@@ -353,7 +355,8 @@ export class DatabaseStorage {
         cardName: row.card_name,
         cardTier: row.tier,
         imageUrl: row.card_image_url,
-        pulledAt: row.created_at
+        pulledAt: row.created_at,
+        username: row.username // Include username from the join
       }));
       
       return transformedResult;

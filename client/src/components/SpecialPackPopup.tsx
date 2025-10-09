@@ -187,18 +187,23 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
       )}
 
       <Dialog open={isOpen} onOpenChange={showAnimation ? undefined : onClose}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-[#0B0B12] via-[#151521] to-[#0B0B12] border-[#26263A] shadow-2xl">
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-[#0B0B12] via-[#151521] to-[#0B0B12] border-[#26263A] shadow-2xl [&>button]:hidden">
+          {/* Custom X Button */}
+          <button
+            onClick={onClose}
+            className="absolute right-6 top-6 w-10 h-10 flex items-center justify-center text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-600 shadow-lg z-50 !block"
+          >
+            <X className="h-5 w-5 mx-auto" />
+          </button>
+
         <DialogHeader className="text-center pb-6">
-          <DialogTitle className="text-3xl font-bold text-[#E5E7EB] flex items-center justify-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Package className="w-6 h-6 text-white" />
-            </div>
+          <DialogTitle className="text-4xl font-bold tracking-wide">
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               {pack.name}
             </span>
           </DialogTitle>
+          <div className="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full mt-3"></div>
         </DialogHeader>
-
 
         <div className="space-y-6">
           {/* Pack Image */}

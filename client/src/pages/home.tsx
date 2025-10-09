@@ -509,12 +509,12 @@ export default function Home() {
             
             {/* Game Carousel */}
             <div className="relative">
-              <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide">
+              <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide touch-pan-x snap-x snap-mandatory">
                 {/* Classic Pack */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 snap-start"
                 >
                   <Link href="/play">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
@@ -535,7 +535,7 @@ export default function Home() {
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 snap-start"
                 >
                   <Link href="/play/findpika">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
@@ -556,7 +556,7 @@ export default function Home() {
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 snap-start"
                 >
                   <Link href="/play/energy-match">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
@@ -593,12 +593,12 @@ export default function Home() {
             
             {/* Game Carousel */}
             <div className="relative">
-              <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide">
+              <div className="flex space-x-4 sm:space-x-6 overflow-x-auto pb-4 scrollbar-hide touch-pan-x snap-x snap-mandatory">
                 {/* Classic Pack */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 snap-start"
                 >
                   <Link href="/play">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
@@ -619,7 +619,7 @@ export default function Home() {
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 snap-start"
                 >
                   <Link href="/play/findpika">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">
@@ -640,7 +640,7 @@ export default function Home() {
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 snap-start"
                 >
                   <Link href="/play/energy-match">
                     <Card className="rounded-2xl bg-[#151521] border border-[#26263A] backdrop-blur-[10px] hover:scale-[1.02] transition-all duration-200 cursor-pointer shadow-[0_0_20px_rgba(124,58,237,0.1)] hover:shadow-[0_0_24px_rgba(124,58,237,0.15)] w-64 h-56 overflow-hidden">

@@ -1,8 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+@import './mobile-enhancements.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 3D Dice Animation Styles */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
 
 /* Custom animations */
 @keyframes fade-in-up {

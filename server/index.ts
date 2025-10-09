@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
+import { WebSocketServer } from 'ws';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
@@ -185,8 +186,38 @@ app.use((req, res, next) => {
     const port = parseInt(process.env.PORT || '5000', 10);
     const host = '0.0.0.0'; // Bind to all interfaces for better compatibility
     
+    // Setup WebSocket server
+    const wss = new WebSocketServer({ server });
+    
+    wss.on('connection', (ws) => {
+      console.log('🔌 WebSocket client connected');
+      
+      ws.on('message', (message) => {
+        try {
+          const data = JSON.parse(message.toString());
+          console.log('📡 WebSocket message received:', data);
+          
+          // Echo back or handle specific message types
+          if (data.type === 'ping') {
+            ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      });
+      
+      ws.on('close', () => {
+        console.log('🔌 WebSocket client disconnected');
+      });
+      
+      ws.on('error', (error) => {
+        console.error('🔌 WebSocket error:', error);
+      });
+    });
+
     server.listen(port, host, () => {
       log(`serving on port ${port} (${host})`);
+      log(`WebSocket server running on ws://${host}:${port}/ws`);
     });
     
     server.on('error', (err) => {

@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Package } from "lucide-react";
+import { ChevronRight, Package, Wifi, WifiOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import type { GlobalFeedWithDetails } from "@shared/schema";
 
 interface RecentPullsProps {
@@ -11,6 +12,8 @@ interface RecentPullsProps {
 }
 
 export function RecentPulls({ limit = 10 }: RecentPullsProps) {
+  const { isConnected } = useWebSocket();
+  
   const { data: feedData, isLoading, error } = useQuery<GlobalFeedWithDetails[]>({
     queryKey: ["/api/feed", { limit, minTier: 'A' }],
     queryFn: async () => {
@@ -20,7 +23,7 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
       }
       return response.json();
     },
-    refetchInterval: 15000, // Refresh every 15 seconds
+    refetchInterval: isConnected ? false : 60000, // Only poll if WebSocket is not connected
   });
 
   const getTimeAgo = (date: Date | string) => {
@@ -93,23 +96,38 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
   return (
     <div className="w-full">
       {/* Section Title */}
-      <div className="flex items-center mb-8">
+      <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-3">
           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
           <h2 className="text-2xl font-bold text-white">Recent Pulls</h2>
+        </div>
+        
+        {/* Connection Status */}
+        <div className="flex items-center space-x-2">
+          {isConnected ? (
+            <div className="flex items-center space-x-1 text-green-400">
+              <Wifi className="w-4 h-4" />
+              <span className="text-xs">Live</span>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-1 text-yellow-400">
+              <WifiOff className="w-4 h-4" />
+              <span className="text-xs">Polling</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Recent Pulls Carousel */}
       <div className="relative">
-        <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
+        <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide touch-pan-x snap-x snap-mandatory">
           {feedData.map((pull, index) => (
             <motion.div
               key={pull.id}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="flex-shrink-0"
+              className="flex-shrink-0 snap-start"
             >
               <Card className="w-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <CardContent className="p-3">
@@ -159,7 +177,7 @@ export function RecentPulls({ limit = 10 }: RecentPullsProps) {
                       {pull.cardTier} Tier Card
                     </p>
                     <p className="text-gray-300 text-xs">
-                      pulled by {pull.user?.username || 'Unknown'}
+                      pulled by {pull.username || 'Unknown'}
                     </p>
                   </div>
 

@@ -11,8 +11,8 @@ export function useAuth() {
     refetchOnWindowFocus: false,
     refetchOnMount: true, // Changed back to true to ensure user data is fetched
     refetchOnReconnect: false,
-    staleTime: 0, // Force fresh data every time
-    gcTime: 0, // No caching
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   // If we get a 401 or any error, we're not authenticated, so stop loading

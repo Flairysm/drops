@@ -11,10 +11,9 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Play from "@/pages/games";
-import Plinko from "@/pages/plinko";
-import Wheel from "@/pages/wheel";
 import FindPika from "./pages/findpika";
 import EnergyMatch from "./pages/energy-match";
+import Dice from "./pages/dice";
 import MyPacks from "@/pages/my-packs";
 import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
@@ -79,10 +78,9 @@ function RouterComponent() {
       {isAuthenticated && (
         <>
           <Route path="/play" component={Play} />
-          <Route path="/play/plinko" component={Plinko} />
-          <Route path="/play/wheel" component={Wheel} />
           <Route path="/play/findpika" component={FindPika} />
           <Route path="/play/energy-match" component={EnergyMatch} />
+          <Route path="/play/dice" component={Dice} />
           <Route path="/my-packs" component={MyPacks} />
           <Route path="/vault" component={Vault} />
           <Route path="/reload" component={Reload} />
