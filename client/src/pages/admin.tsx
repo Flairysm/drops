@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
   Package, 
@@ -26,12 +27,15 @@ import {
   Save,
   RefreshCw,
   Search,
-  Filter
+  Filter,
+  Gift,
+  Trophy
 } from "lucide-react";
 
 export default function Admin() {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Helper function for authenticated requests
   const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
@@ -50,6 +54,28 @@ export default function Admin() {
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [creditAmount, setCreditAmount] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Raffle state
+  const [raffles, setRaffles] = useState<any[]>([]);
+  const [showRaffleDialog, setShowRaffleDialog] = useState(false);
+  const [editingRaffle, setEditingRaffle] = useState<any>(null);
+  const [raffleForm, setRaffleForm] = useState({
+    title: '',
+    description: '',
+    prizeImageUrl: '',
+    totalSlots: '',
+    pricePerSlot: '',
+    maxWinners: '1'
+  });
+  const [raffleImageFile, setRaffleImageFile] = useState<File | null>(null);
+  const [isUploadingRaffleImage, setIsUploadingRaffleImage] = useState(false);
+  const [raffleImageMode, setRaffleImageMode] = useState<'upload' | 'url'>('upload');
+  const [showPrizeEditDialog, setShowPrizeEditDialog] = useState(false);
+  const [prizeEditForm, setPrizeEditForm] = useState({
+    prizes: [
+      { position: 1, name: '', type: 'pack', value: '', imageUrl: '' }
+    ]
+  });
   const [adminStats, setAdminStats] = useState<any>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
@@ -374,6 +400,8 @@ export default function Admin() {
       fetchUsers();
     } else if (activeTab === 'settings') {
       fetchSystemSettings();
+    } else if (activeTab === 'raffles') {
+      fetchRaffles();
     }
   }, [activeTab]);
 
@@ -1215,6 +1243,277 @@ export default function Admin() {
     }
   };
 
+  // Raffle management functions
+  const fetchRaffles = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/admin/raffles");
+      console.log('🔍 Admin fetchRaffles response:', response);
+      const data = await response.json();
+      console.log('🔍 Admin fetchRaffles parsed data:', data);
+      if (data.success) {
+        console.log('🔍 Admin setting raffles:', data.raffles);
+        setRaffles(data.raffles);
+      }
+    } catch (error) {
+      console.error('Error fetching raffles:', error);
+    }
+  };
+
+  const handleRaffleImageUpload = async (file: File) => {
+    setIsUploadingRaffleImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setRaffleForm({...raffleForm, prizeImageUrl: result.url});
+        setRaffleImageFile(file);
+      } else {
+        console.error('Image upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    } finally {
+      setIsUploadingRaffleImage(false);
+    }
+  };
+
+  const handleCreateRaffle = async () => {
+    try {
+      // Create default prize for the raffle
+      const defaultPrize = {
+        position: 1,
+        name: 'Mystery Prize',
+        type: 'pack',
+        value: '0'
+      };
+
+      const raffleData = {
+        ...raffleForm,
+        imageUrl: raffleForm.prizeImageUrl, // Map to new field name
+        prizes: [defaultPrize], // Use new prizes array
+        autoDraw: true // Default to auto-draw
+      };
+      
+      const response = await apiRequest("POST", "/api/admin/raffles", raffleData);
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Raffle Created Successfully!",
+          description: `"${raffleForm.title}" has been created and is now active.`,
+          variant: "default",
+        });
+        setShowRaffleDialog(false);
+        setRaffleForm({
+          title: '',
+          description: '',
+          prizeImageUrl: '',
+          totalSlots: '',
+          pricePerSlot: '',
+          maxWinners: '1'
+        });
+        setRaffleImageFile(null);
+        setRaffleImageMode('upload');
+        fetchRaffles();
+      }
+    } catch (error) {
+      console.error('Error creating raffle:', error);
+      toast({
+        title: "Failed to Create Raffle",
+        description: "An error occurred while creating the raffle. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditRaffle = (raffle: any) => {
+    setEditingRaffle(raffle);
+    setRaffleForm({
+      title: raffle.title,
+      description: raffle.description || '',
+      prizeImageUrl: raffle.imageUrl || '', // Map from new field name
+      totalSlots: raffle.totalSlots.toString(),
+      pricePerSlot: raffle.pricePerSlot,
+      maxWinners: raffle.maxWinners.toString()
+    });
+    setShowRaffleDialog(true);
+  };
+
+  const handleUpdateRaffle = async () => {
+    try {
+      const updateData = {
+        ...raffleForm,
+        imageUrl: raffleForm.prizeImageUrl // Map to new field name
+      };
+      
+      const response = await apiRequest("PUT", `/api/admin/raffles/${editingRaffle.id}`, updateData);
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Raffle Updated Successfully!",
+          description: `"${raffleForm.title}" has been updated.`,
+          variant: "default",
+        });
+        setShowRaffleDialog(false);
+        setEditingRaffle(null);
+        setRaffleForm({
+          title: '',
+          description: '',
+          prizeImageUrl: '',
+          totalSlots: '',
+          pricePerSlot: '',
+          maxWinners: '1'
+        });
+        setRaffleImageFile(null);
+        setRaffleImageMode('upload');
+        fetchRaffles();
+      }
+    } catch (error) {
+      console.error('Error updating raffle:', error);
+      toast({
+        title: "Failed to Update Raffle",
+        description: "An error occurred while updating the raffle. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRaffle = async (raffleId: string) => {
+    if (window.confirm('Are you sure you want to delete this raffle?')) {
+      try {
+        const response = await apiRequest("DELETE", `/api/admin/raffles/${raffleId}`);
+        const data = await response.json();
+        if (data.success) {
+          toast({
+            title: "Raffle Deleted Successfully!",
+            description: "The raffle has been removed from the system.",
+            variant: "default",
+          });
+          fetchRaffles();
+        }
+      } catch (error) {
+        console.error('Error deleting raffle:', error);
+        toast({
+          title: "Failed to Delete Raffle",
+          description: "An error occurred while deleting the raffle. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleDrawWinners = async (raffleId: string) => {
+    if (window.confirm('Are you sure you want to draw winners for this raffle?')) {
+      try {
+        const response = await apiRequest("POST", `/api/admin/raffles/${raffleId}/draw`);
+        const data = await response.json();
+        if (data.success) {
+          toast({
+            title: "Winners Drawn Successfully!",
+            description: "The raffle winners have been selected and prizes have been distributed.",
+            variant: "default",
+          });
+          fetchRaffles();
+        }
+      } catch (error) {
+        console.error('Error drawing winners:', error);
+        toast({
+          title: "Failed to Draw Winners",
+          description: "An error occurred while drawing winners. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleViewRaffle = (raffleId: string) => {
+    // TODO: Implement raffle details view
+    console.log('View raffle:', raffleId);
+  };
+
+  const handleEditRafflePrize = (raffle: any) => {
+    setEditingRaffle(raffle);
+    
+    // Parse existing prizes or create default structure
+    let prizes = [];
+    if (raffle.prizes && Array.isArray(raffle.prizes)) {
+      prizes = raffle.prizes;
+    } else {
+      // Legacy single prize format
+      prizes = [{
+        position: 1,
+        name: raffle.prizeName || '',
+        type: raffle.prizeType || 'pack',
+        value: raffle.prizeValue || '',
+        imageUrl: raffle.prizeImageUrl || ''
+      }];
+    }
+    
+    setPrizeEditForm({ prizes });
+    setShowPrizeEditDialog(true);
+  };
+
+  // Helper functions for managing prizes
+  const addPrize = () => {
+    const newPosition = prizeEditForm.prizes.length + 1;
+    setPrizeEditForm({
+      prizes: [...prizeEditForm.prizes, { position: newPosition, name: '', type: 'pack', value: '', imageUrl: '' }]
+    });
+  };
+
+  const removePrize = (index: number) => {
+    if (prizeEditForm.prizes.length > 1) {
+      const updatedPrizes = prizeEditForm.prizes.filter((_, i) => i !== index);
+      // Reorder positions
+      const reorderedPrizes = updatedPrizes.map((prize, i) => ({ ...prize, position: i + 1 }));
+      setPrizeEditForm({ prizes: reorderedPrizes });
+    }
+  };
+
+  const updatePrize = (index: number, field: string, value: string) => {
+    const updatedPrizes = [...prizeEditForm.prizes];
+    updatedPrizes[index] = { ...updatedPrizes[index], [field]: value };
+    setPrizeEditForm({ prizes: updatedPrizes });
+  };
+
+  const handleUpdatePrize = async () => {
+    try {
+      console.log('🔍 Full prizeEditForm:', prizeEditForm);
+      console.log('🔍 PrizeEditForm.prizes:', prizeEditForm.prizes);
+      console.log('🔍 First prize object:', prizeEditForm.prizes[0]);
+      console.log('🔍 First prize imageUrl:', prizeEditForm.prizes[0]?.imageUrl);
+      console.log('🔍 Sending prize update data:', { prizes: prizeEditForm.prizes });
+      const response = await apiRequest("PUT", `/api/admin/raffles/${editingRaffle.id}`, { prizes: prizeEditForm.prizes });
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Prize Updated Successfully!",
+          description: `The prize details for "${editingRaffle.title}" have been updated.`,
+          variant: "default",
+        });
+        setShowPrizeEditDialog(false);
+        setEditingRaffle(null);
+        setPrizeEditForm({
+          prizes: [{ position: 1, name: '', type: 'pack', value: '', imageUrl: '' }]
+        });
+        fetchRaffles();
+      }
+    } catch (error) {
+      console.error('Error updating prize:', error);
+      toast({
+        title: "Failed to Update Prize",
+        description: "An error occurred while updating the prize details. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAddCardToPool = (poolId: string, card: { id: string; name: string; imageUrl: string; credits: number; }) => {
     setSpecialPools(prev => prev.map(pool => {
       if (pool.id === poolId) {
@@ -1441,7 +1740,7 @@ export default function Admin() {
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-5xl mx-auto grid-cols-4 mb-8">
+            <TabsList className="grid w-full max-w-6xl mx-auto grid-cols-5 mb-8">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Overview
@@ -1453,6 +1752,10 @@ export default function Admin() {
               <TabsTrigger value="manage" data-testid="tab-manage">
                 <Package className="w-4 h-4 mr-2" />
                 Manage
+              </TabsTrigger>
+              <TabsTrigger value="raffles" data-testid="tab-raffles">
+                <Gift className="w-4 h-4 mr-2" />
+                Raffles
               </TabsTrigger>
               <TabsTrigger value="settings" data-testid="tab-settings">
                 <Settings className="w-4 h-4 mr-2" />
@@ -2029,6 +2332,176 @@ export default function Admin() {
               </Tabs>
             </TabsContent>
 
+            {/* Raffles Tab */}
+            <TabsContent value="raffles">
+              <div className="space-y-6">
+                {/* Raffle Management Header */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Raffle Management</h2>
+                    <p className="text-gray-400">Create and manage raffles for your community</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowRaffleDialog(true)}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Raffle
+                  </Button>
+                </div>
+
+                {/* Active Raffles */}
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Gift className="w-5 h-5" />
+                      Active Raffles
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {(() => {
+                        console.log('🔍 Admin current raffles state:', raffles);
+                        console.log('🔍 Admin raffles length:', raffles.length);
+                        return raffles.length === 0;
+                      })() ? (
+                        <div className="text-center py-8 text-gray-400">
+                          <Gift className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>No active raffles found</p>
+                          <p className="text-sm">Create your first raffle to get started</p>
+                        </div>
+                      ) : (
+                        <div className="grid gap-4">
+                          {raffles.map((raffle) => (
+                            <div key={raffle.id} className="border border-gray-600 rounded-lg p-4 bg-gray-800/50 raffle-card">
+                              <div className="flex justify-between items-start mb-3 gap-4">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="text-lg font-semibold text-white text-wrap-safe">{raffle.title}</h3>
+                                  <p className="text-gray-400 text-sm text-wrap-safe">{raffle.description}</p>
+                                </div>
+                                <div className="flex gap-2 flex-shrink-0">
+                                  <Badge variant={raffle.status === 'active' ? 'default' : 'secondary'}>
+                                    {raffle.status}
+                                  </Badge>
+                                  {raffle.autoDraw && (
+                                    <Badge variant="outline">Auto Draw</Badge>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                                <div className="min-w-0">
+                                  <p className="text-gray-400 text-sm">Prize</p>
+                                  <p className="text-white font-medium text-wrap-safe">
+                                    {raffle.prizes && raffle.prizes.length > 0 ? raffle.prizes[0].name : (raffle.prizeName || 'No Prize')}
+                                  </p>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-gray-400 text-sm">Slots</p>
+                                  <p className="text-white font-medium">{raffle.filledSlots}/{raffle.totalSlots}</p>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-gray-400 text-sm">Price per Slot</p>
+                                  <p className="text-white font-medium">{raffle.pricePerSlot} credits</p>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-gray-400 text-sm">Max Winners</p>
+                                  <p className="text-white font-medium">{raffle.maxWinners}</p>
+                                </div>
+                              </div>
+
+                              {/* Winner Information for Completed Raffles */}
+                              {raffle.status === 'completed' && raffle.winners && raffle.winners.length > 0 && (
+                                <div className="border-t border-gray-600 pt-3 mb-3">
+                                  <h4 className="text-white font-semibold mb-2 flex items-center">
+                                    <Trophy className="w-4 h-4 text-yellow-400 mr-2" />
+                                    Winners
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {raffle.winners.map((winner: any, index: number) => (
+                                      <div key={winner.id} className="flex items-center justify-between bg-gray-700/50 rounded-lg p-3">
+                                        <div className="flex items-center space-x-3">
+                                          <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-black font-bold text-sm">
+                                            {winner.prizePosition === 1 ? '1st' : winner.prizePosition === 2 ? '2nd' : winner.prizePosition === 3 ? '3rd' : `${winner.prizePosition}th`}
+                                          </div>
+                                          {winner.prizeImageUrl && (
+                                            <img
+                                              src={winner.prizeImageUrl}
+                                              alt={winner.prizeName}
+                                              className="w-12 h-16 object-cover rounded border border-gray-600"
+                                              onError={(e) => {
+                                                e.currentTarget.style.display = 'none';
+                                              }}
+                                            />
+                                          )}
+                                          <div>
+                                            <p className="text-white font-medium">{winner.winnerUsername}</p>
+                                            <p className="text-gray-400 text-sm">Won: {winner.prizeName}</p>
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-gray-400 text-xs">
+                                            {new Date(winner.wonAt).toLocaleString()}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex justify-between items-center">
+                                <div className="text-sm text-gray-400">
+                                  Created: {new Date(raffle.createdAt).toLocaleDateString()}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditRaffle(raffle)}
+                                    title="Edit Content"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditRafflePrize(raffle)}
+                                    className="text-yellow-400 border-yellow-400 hover:bg-yellow-400/10"
+                                    title="Edit Prize"
+                                  >
+                                    <Gift className="w-4 h-4" />
+                                  </Button>
+                                  {raffle.status === 'active' && raffle.filledSlots >= raffle.totalSlots && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDrawWinners(raffle.id)}
+                                      className="text-green-400 border-green-400 hover:bg-green-400/10"
+                                      title="Draw Winners"
+                                    >
+                                      <Trophy className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteRaffle(raffle.id)}
+                                    title="Remove Content"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
             {/* Settings Tab */}
             <TabsContent value="settings">
@@ -3008,6 +3481,307 @@ export default function Admin() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+        {/* Raffle Dialog */}
+        <Dialog open={showRaffleDialog} onOpenChange={setShowRaffleDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingRaffle ? 'Edit Raffle' : 'Create New Raffle'}
+              </DialogTitle>
+              <DialogDescription>
+                {editingRaffle ? 'Update raffle details' : 'Set up a new raffle for your community'}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={raffleForm.title}
+                  onChange={(e) => setRaffleForm({...raffleForm, title: e.target.value})}
+                  placeholder="Raffle title"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={raffleForm.description}
+                  onChange={(e) => setRaffleForm({...raffleForm, description: e.target.value})}
+                  placeholder="Raffle description"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="prizeImage">Prize Image</Label>
+                <div className="space-y-3">
+                  {/* Mode Selection */}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={raffleImageMode === 'upload' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setRaffleImageMode('upload')}
+                      className="text-xs"
+                    >
+                      Upload File
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={raffleImageMode === 'url' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setRaffleImageMode('url')}
+                      className="text-xs"
+                    >
+                      Use URL
+                    </Button>
+                  </div>
+
+                  {/* Upload Mode */}
+                  {raffleImageMode === 'upload' && (
+                    <div>
+                      <input
+                        type="file"
+                        id="prizeImage"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleRaffleImageUpload(file);
+                          }
+                        }}
+                        className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white"
+                      />
+                      {isUploadingRaffleImage && (
+                        <p className="text-sm text-gray-400 mt-1">Uploading image...</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* URL Mode */}
+                  {raffleImageMode === 'url' && (
+                    <div>
+                      <Input
+                        id="prizeImageUrl"
+                        value={raffleForm.prizeImageUrl}
+                        onChange={(e) => setRaffleForm({...raffleForm, prizeImageUrl: e.target.value})}
+                        placeholder="Enter image URL"
+                      />
+                    </div>
+                  )}
+
+                  {/* Image Preview */}
+                  {raffleForm.prizeImageUrl && (
+                    <div className="mt-2">
+                      <img 
+                        src={raffleForm.prizeImageUrl} 
+                        alt="Prize preview" 
+                        className="w-20 h-20 object-cover rounded border border-gray-600"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="totalSlots">Total Slots *</Label>
+                  <Input
+                    id="totalSlots"
+                    type="number"
+                    value={raffleForm.totalSlots}
+                    onChange={(e) => setRaffleForm({...raffleForm, totalSlots: e.target.value})}
+                    placeholder="100"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pricePerSlot">Price per Slot *</Label>
+                  <Input
+                    id="pricePerSlot"
+                    type="number"
+                    value={raffleForm.pricePerSlot}
+                    onChange={(e) => setRaffleForm({...raffleForm, pricePerSlot: e.target.value})}
+                    placeholder="100"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="maxWinners">Max Winners</Label>
+                  <Input
+                    id="maxWinners"
+                    type="number"
+                    value={raffleForm.maxWinners}
+                    onChange={(e) => setRaffleForm({...raffleForm, maxWinners: e.target.value})}
+                    placeholder="1"
+                  />
+                </div>
+              </div>
+
+              {!editingRaffle && (
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                  <p className="text-sm text-blue-300">
+                    💡 <strong>Note:</strong> After creating the raffle, you can edit the prize details (name, type, value) by clicking the edit button on the raffle card.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowRaffleDialog(false);
+                setEditingRaffle(null);
+                setRaffleForm({
+                  title: '',
+                  description: '',
+                  prizeImageUrl: '',
+                  totalSlots: '',
+                  pricePerSlot: '',
+                  maxWinners: '1'
+                });
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={editingRaffle ? handleUpdateRaffle : handleCreateRaffle}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              >
+                {editingRaffle ? 'Update Raffle' : 'Create Raffle'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Prize Edit Dialog */}
+        <Dialog open={showPrizeEditDialog} onOpenChange={setShowPrizeEditDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Prize Details</DialogTitle>
+              <DialogDescription>
+                Set up prizes for different winner positions for "{editingRaffle?.title}"
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {prizeEditForm.prizes.map((prize, index) => (
+                <div key={index} className="border border-gray-600 rounded-lg p-4 bg-gray-800/50">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white">
+                      {index === 0 ? '1st Place Prize' : 
+                       index === 1 ? '2nd Place Prize' : 
+                       index === 2 ? '3rd Place Prize' : 
+                       `${index + 1}th Place Prize`}
+                    </h3>
+                    {prizeEditForm.prizes.length > 1 && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removePrize(index)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor={`prizeName-${index}`}>Prize Name *</Label>
+                      <Input
+                        id={`prizeName-${index}`}
+                        value={prize.name}
+                        onChange={(e) => updatePrize(index, 'name', e.target.value)}
+                        placeholder="e.g., Masterball Pack"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`prizeType-${index}`}>Prize Type *</Label>
+                      <select
+                        id={`prizeType-${index}`}
+                        value={prize.type}
+                        onChange={(e) => updatePrize(index, 'type', e.target.value)}
+                        className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white"
+                      >
+                        <option value="pack">Pack</option>
+                        <option value="card">Card</option>
+                        <option value="credits">Credits</option>
+                        <option value="physical">Physical Item</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`prizeValue-${index}`}>Prize Value</Label>
+                      <Input
+                        id={`prizeValue-${index}`}
+                        type="number"
+                        value={prize.value}
+                        onChange={(e) => updatePrize(index, 'value', e.target.value)}
+                        placeholder="Prize value (if applicable)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Prize Image URL */}
+                  <div className="mt-4">
+                    <Label htmlFor={`prizeImageUrl-${index}`}>Prize Image URL</Label>
+                    <Input
+                      id={`prizeImageUrl-${index}`}
+                      value={prize.imageUrl || ''}
+                      onChange={(e) => updatePrize(index, 'imageUrl', e.target.value)}
+                      placeholder="https://example.com/prize-image.jpg"
+                    />
+                    {prize.imageUrl && (
+                      <div className="mt-2">
+                        <img 
+                          src={prize.imageUrl} 
+                          alt={`${prize.name} preview`}
+                          className="w-24 h-32 object-cover rounded border border-gray-600"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={addPrize}
+                  className="border-dashed border-2 border-gray-500 hover:border-gray-400 text-gray-400 hover:text-gray-300"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Another Prize
+                </Button>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowPrizeEditDialog(false);
+                setEditingRaffle(null);
+                setPrizeEditForm({
+                  prizes: [{ position: 1, name: '', type: 'pack', value: '', imageUrl: '' }]
+                });
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdatePrize}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+              >
+                Update Prize
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         </div>
       </div>

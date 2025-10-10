@@ -18,7 +18,11 @@ import {
   userCards,
   globalFeed,
   users,
-  transactions
+  transactions,
+  raffles,
+  rafflePrizes,
+  raffleEntries,
+  raffleWinners
 } from "@shared/schema";
 
 // Game result interface
@@ -3212,6 +3216,766 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: false, error: error.message });
     }
   });
+
+  // ============================================================================
+  // RAFFLE ENDPOINTS
+  // ============================================================================
+
+  // Get all active raffles
+  app.get('/api/raffles', async (req, res) => {
+    try {
+      const activeRaffles = await db
+        .select({
+          id: raffles.id,
+          title: raffles.title,
+          description: raffles.description,
+          imageUrl: raffles.imageUrl,
+          totalSlots: raffles.totalSlots,
+          pricePerSlot: raffles.pricePerSlot,
+          filledSlots: raffles.filledSlots,
+          maxWinners: raffles.maxWinners,
+          status: raffles.status,
+          isActive: raffles.isActive,
+          autoDraw: raffles.autoDraw,
+          drawnAt: raffles.drawnAt,
+          createdAt: raffles.createdAt,
+          creator: {
+            username: users.username
+          }
+        })
+        .from(raffles)
+        .leftJoin(users, eq(raffles.createdBy, users.id))
+        .where(eq(raffles.isActive, true))
+        .orderBy(sql`${raffles.createdAt} DESC`);
+
+      // Get prizes and winners for each raffle
+      const rafflesWithPrizesAndWinners = await Promise.all(
+        activeRaffles.map(async (raffle) => {
+          const prizes = await db
+            .select()
+            .from(rafflePrizes)
+            .where(eq(rafflePrizes.raffleId, raffle.id))
+            .orderBy(rafflePrizes.position);
+
+          const winners = await db
+            .select({
+              id: raffleWinners.id,
+              userId: raffleWinners.userId,
+              prizePosition: raffleWinners.prizePosition,
+              wonAt: raffleWinners.wonAt,
+              prizeName: rafflePrizes.name,
+              prizeImageUrl: rafflePrizes.imageUrl,
+              winnerUsername: users.username
+            })
+            .from(raffleWinners)
+            .leftJoin(rafflePrizes, eq(raffleWinners.prizeId, rafflePrizes.id))
+            .leftJoin(users, eq(raffleWinners.userId, users.id))
+            .where(eq(raffleWinners.raffleId, raffle.id))
+            .orderBy(raffleWinners.prizePosition);
+
+          return {
+            ...raffle,
+            prizes,
+            winners
+          };
+        })
+      );
+
+      res.json({ success: true, raffles: rafflesWithPrizesAndWinners });
+    } catch (error) {
+      console.error('Error fetching raffles:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch raffles' });
+    }
+  });
+
+  // Get completed raffles for transparency
+  app.get('/api/raffles/completed', async (req, res) => {
+    try {
+      const completedRaffles = await db
+        .select({
+          id: raffles.id,
+          title: raffles.title,
+          description: raffles.description,
+          imageUrl: raffles.imageUrl,
+          totalSlots: raffles.totalSlots,
+          pricePerSlot: raffles.pricePerSlot,
+          filledSlots: raffles.filledSlots,
+          maxWinners: raffles.maxWinners,
+          status: raffles.status,
+          isActive: raffles.isActive,
+          autoDraw: raffles.autoDraw,
+          drawnAt: raffles.drawnAt,
+          createdAt: raffles.createdAt,
+          creator: {
+            username: users.username
+          }
+        })
+        .from(raffles)
+        .leftJoin(users, eq(raffles.createdBy, users.id))
+        .where(eq(raffles.status, 'completed'))
+        .orderBy(sql`${raffles.drawnAt} DESC`);
+
+      // Get prizes and winners for each raffle
+      const rafflesWithPrizesAndWinners = await Promise.all(
+        completedRaffles.map(async (raffle) => {
+          const prizes = await db
+            .select()
+            .from(rafflePrizes)
+            .where(eq(rafflePrizes.raffleId, raffle.id))
+            .orderBy(rafflePrizes.position);
+
+          const winners = await db
+            .select({
+              id: raffleWinners.id,
+              userId: raffleWinners.userId,
+              prizePosition: raffleWinners.prizePosition,
+              wonAt: raffleWinners.wonAt,
+              prizeName: rafflePrizes.name,
+              prizeImageUrl: rafflePrizes.imageUrl,
+              winnerUsername: users.username
+            })
+            .from(raffleWinners)
+            .leftJoin(rafflePrizes, eq(raffleWinners.prizeId, rafflePrizes.id))
+            .leftJoin(users, eq(raffleWinners.userId, users.id))
+            .where(eq(raffleWinners.raffleId, raffle.id))
+            .orderBy(raffleWinners.prizePosition);
+
+          return {
+            ...raffle,
+            prizes,
+            winners
+          };
+        })
+      );
+
+      res.json({ success: true, raffles: rafflesWithPrizesAndWinners });
+    } catch (error) {
+      console.error('Error fetching completed raffles:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch completed raffles' });
+    }
+  });
+
+  // Get user's raffle history
+  app.get('/api/raffles/my-history', isAuthenticatedCombined, async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
+      }
+
+      // Get user's entries
+      const userEntries = await db
+        .select({
+          id: raffleEntries.id,
+          raffleId: raffleEntries.raffleId,
+          slots: raffleEntries.slots,
+          totalCost: raffleEntries.totalCost,
+          createdAt: raffleEntries.entryDate,
+          raffle: {
+            title: raffles.title,
+            prizeName: raffles.prizeName,
+            prizeImageUrl: raffles.prizeImageUrl,
+            status: raffles.status,
+            drawnAt: raffles.drawnAt
+          }
+        })
+        .from(raffleEntries)
+        .leftJoin(raffles, eq(raffleEntries.raffleId, raffles.id))
+        .where(eq(raffleEntries.userId, userId))
+        .orderBy(sql`${raffleEntries.createdAt} DESC`);
+
+      // Get user's wins
+      const userWins = await db
+        .select({
+          id: raffleWinners.id,
+          raffleId: raffleWinners.raffleId,
+          winningSlot: raffleWinners.winningSlot,
+          prizePosition: raffleWinners.prizePosition,
+          prizeDelivered: raffleWinners.prizeDelivered,
+          deliveredAt: raffleWinners.deliveredAt,
+          createdAt: raffleWinners.createdAt,
+          raffle: {
+            title: raffles.title,
+            prizeName: raffles.prizeName,
+            prizeImageUrl: raffles.prizeImageUrl,
+            status: raffles.status,
+            drawnAt: raffles.drawnAt
+          }
+        })
+        .from(raffleWinners)
+        .leftJoin(raffles, eq(raffleWinners.raffleId, raffles.id))
+        .where(eq(raffleWinners.userId, userId))
+        .orderBy(sql`${raffleWinners.createdAt} DESC`);
+
+      res.json({ 
+        success: true, 
+        entries: userEntries,
+        wins: userWins
+      });
+    } catch (error) {
+      console.error('Error fetching user raffle history:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch raffle history' });
+    }
+  });
+
+  // Get raffle details with entries and winners
+  app.get('/api/raffles/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Get raffle details
+      const raffleDetails = await db
+        .select({
+          id: raffles.id,
+          title: raffles.title,
+          description: raffles.description,
+          prizeName: raffles.prizeName,
+          prizeImageUrl: raffles.prizeImageUrl,
+          prizeType: raffles.prizeType,
+          prizeValue: raffles.prizeValue,
+          prizes: raffles.prizes,
+          totalSlots: raffles.totalSlots,
+          pricePerSlot: raffles.pricePerSlot,
+          filledSlots: raffles.filledSlots,
+          maxWinners: raffles.maxWinners,
+          status: raffles.status,
+          isActive: raffles.isActive,
+          autoDraw: raffles.autoDraw,
+          drawnAt: raffles.drawnAt,
+          createdAt: raffles.createdAt,
+          creator: {
+            username: users.username
+          }
+        })
+        .from(raffles)
+        .leftJoin(users, eq(raffles.createdBy, users.id))
+        .where(eq(raffles.id, id))
+        .limit(1);
+
+      if (raffleDetails.length === 0) {
+        return res.status(404).json({ success: false, error: 'Raffle not found' });
+      }
+
+      const raffle = raffleDetails[0];
+
+      // Get entries
+      const entries = await db
+        .select({
+          id: raffleEntries.id,
+          userId: raffleEntries.userId,
+          slots: raffleEntries.slots,
+          totalCost: raffleEntries.totalCost,
+          createdAt: raffleEntries.entryDate,
+          user: {
+            username: users.username
+          }
+        })
+        .from(raffleEntries)
+        .leftJoin(users, eq(raffleEntries.userId, users.id))
+        .where(eq(raffleEntries.raffleId, id))
+        .orderBy(sql`${raffleEntries.createdAt} ASC`);
+
+      // Get winners
+      const winners = await db
+        .select({
+          id: raffleWinners.id,
+          userId: raffleWinners.userId,
+          winningSlot: raffleWinners.winningSlot,
+          prizePosition: raffleWinners.prizePosition,
+          prizeDelivered: raffleWinners.prizeDelivered,
+          deliveredAt: raffleWinners.deliveredAt,
+          createdAt: raffleWinners.createdAt,
+          user: {
+            username: users.username
+          }
+        })
+        .from(raffleWinners)
+        .leftJoin(users, eq(raffleWinners.userId, users.id))
+        .where(eq(raffleWinners.raffleId, id))
+        .orderBy(sql`${raffleWinners.prizePosition} ASC`);
+
+      res.json({
+        success: true,
+        raffle: {
+          ...raffle,
+          entries,
+          winners
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching raffle details:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch raffle details' });
+    }
+  });
+
+  // Join a raffle
+  app.post('/api/raffles/:id/join', isAuthenticatedCombined, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { slots } = req.body;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
+      }
+
+      if (!slots || slots < 1) {
+        return res.status(400).json({ success: false, error: 'Invalid number of slots' });
+      }
+
+      // Get raffle details
+      const raffleDetails = await db
+        .select()
+        .from(raffles)
+        .where(and(eq(raffles.id, id), eq(raffles.isActive, true)))
+        .limit(1);
+
+      if (raffleDetails.length === 0) {
+        return res.status(404).json({ success: false, error: 'Raffle not found or inactive' });
+      }
+
+      const raffle = raffleDetails[0];
+
+      // Check if raffle is still active
+      if (raffle.status !== 'active') {
+        return res.status(400).json({ success: false, error: 'Raffle is no longer active' });
+      }
+
+      // Check if there are enough slots available
+      const availableSlots = raffle.totalSlots - raffle.filledSlots;
+      if (slots > availableSlots) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Only ${availableSlots} slots available` 
+        });
+      }
+
+      const totalCost = Number(raffle.pricePerSlot) * slots;
+
+      // Check user credits
+      const user = await storage.getUser(userId);
+      if (!user || Number(user.credits) < totalCost) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Insufficient credits' 
+        });
+      }
+
+      // Note: Entry numbers are not stored in the database, they are calculated dynamically
+
+      // Create entry
+      await db.insert(raffleEntries).values({
+        raffleId: id,
+        userId: userId,
+        slots: slots,
+        totalCost: totalCost.toString()
+      });
+
+      // Update raffle filled slots
+      const newFilledSlots = raffle.filledSlots + slots;
+      await db
+        .update(raffles)
+        .set({ filledSlots: newFilledSlots })
+        .where(eq(raffles.id, id));
+
+      // Deduct credits
+      await storage.deductUserCredits(userId, totalCost);
+
+      // Create transaction record
+      await storage.addTransaction({
+        id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId: userId,
+        type: 'raffle_entry',
+        amount: totalCost,
+        description: `Joined raffle: ${raffle.title} (${slots} slots)`,
+        packId: id,
+        packType: 'raffle'
+      });
+
+      // Check if raffle is now full and auto-draw
+      if (raffle.autoDraw && newFilledSlots >= raffle.totalSlots) {
+        await drawRaffleWinners(id);
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Successfully joined raffle with ${slots} slots`,
+        totalCost: totalCost
+      });
+    } catch (error) {
+      console.error('Error joining raffle:', error);
+      res.status(500).json({ success: false, error: 'Failed to join raffle' });
+    }
+  });
+
+  // Admin: Get all raffles (including completed ones with winners)
+  app.get('/api/admin/raffles', isAdminCombined, async (req, res) => {
+    try {
+      const allRaffles = await db
+        .select({
+          id: raffles.id,
+          title: raffles.title,
+          description: raffles.description,
+          imageUrl: raffles.imageUrl,
+          totalSlots: raffles.totalSlots,
+          pricePerSlot: raffles.pricePerSlot,
+          filledSlots: raffles.filledSlots,
+          maxWinners: raffles.maxWinners,
+          status: raffles.status,
+          isActive: raffles.isActive,
+          autoDraw: raffles.autoDraw,
+          drawnAt: raffles.drawnAt,
+          createdAt: raffles.createdAt,
+          creator: {
+            username: users.username
+          }
+        })
+        .from(raffles)
+        .leftJoin(users, eq(raffles.createdBy, users.id))
+        .orderBy(sql`${raffles.createdAt} DESC`);
+
+      // Get prizes and winners for each raffle
+      const rafflesWithPrizesAndWinners = await Promise.all(
+        allRaffles.map(async (raffle) => {
+          const prizes = await db
+            .select()
+            .from(rafflePrizes)
+            .where(eq(rafflePrizes.raffleId, raffle.id))
+            .orderBy(rafflePrizes.position);
+
+          const winners = await db
+            .select({
+              id: raffleWinners.id,
+              userId: raffleWinners.userId,
+              prizePosition: raffleWinners.prizePosition,
+              wonAt: raffleWinners.wonAt,
+              prizeName: rafflePrizes.name,
+              prizeImageUrl: rafflePrizes.imageUrl,
+              winnerUsername: users.username
+            })
+            .from(raffleWinners)
+            .leftJoin(rafflePrizes, eq(raffleWinners.prizeId, rafflePrizes.id))
+            .leftJoin(users, eq(raffleWinners.userId, users.id))
+            .where(eq(raffleWinners.raffleId, raffle.id))
+            .orderBy(raffleWinners.prizePosition);
+
+          return {
+            ...raffle,
+            prizes,
+            winners
+          };
+        })
+      );
+
+      res.json({ success: true, raffles: rafflesWithPrizesAndWinners });
+    } catch (error) {
+      console.error('Error fetching admin raffles:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch raffles' });
+    }
+  });
+
+  // Admin: Create raffle
+  app.post('/api/admin/raffles', isAdminCombined, async (req, res) => {
+    try {
+      const {
+        title,
+        description,
+        imageUrl,
+        prizes,
+        totalSlots,
+        pricePerSlot,
+        maxWinners,
+        autoDraw
+      } = req.body;
+
+      const userId = (req as any).user?.id;
+
+      if (!title || !totalSlots || !pricePerSlot) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required fields' 
+        });
+      }
+
+      if (!prizes || !Array.isArray(prizes) || prizes.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'At least one prize is required' 
+        });
+      }
+
+      const raffleId = `raffle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Create the raffle
+      await db.insert(raffles).values({
+        id: raffleId,
+        title,
+        description,
+        imageUrl,
+        totalSlots: parseInt(totalSlots),
+        pricePerSlot: pricePerSlot.toString(),
+        maxWinners: maxWinners ? parseInt(maxWinners) : 1,
+        autoDraw: autoDraw !== false,
+        createdBy: userId
+      });
+
+      // Create the prizes
+      await db.insert(rafflePrizes).values(
+        prizes.map((prize: any) => ({
+          raffleId,
+          position: prize.position,
+          name: prize.name,
+          type: prize.type,
+          value: prize.value || '',
+          imageUrl: prize.imageUrl || null
+        }))
+      );
+
+      res.json({ 
+        success: true, 
+        message: 'Raffle created successfully',
+        raffleId: raffleId
+      });
+    } catch (error) {
+      console.error('Error creating raffle:', error);
+      res.status(500).json({ success: false, error: 'Failed to create raffle' });
+    }
+  });
+
+  // Admin: Update raffle
+  app.put('/api/admin/raffles/:id', isAdminCombined, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      console.log('Update raffle request:', { id, updateData });
+
+      // Handle raffle content updates
+      const raffleUpdateData = {
+        title: updateData.title,
+        description: updateData.description,
+        imageUrl: updateData.imageUrl,
+        totalSlots: updateData.totalSlots,
+        pricePerSlot: updateData.pricePerSlot,
+        maxWinners: updateData.maxWinners,
+        status: updateData.status,
+        isActive: updateData.isActive,
+        autoDraw: updateData.autoDraw
+      };
+
+      // Remove undefined fields
+      Object.keys(raffleUpdateData).forEach(key => {
+        if (raffleUpdateData[key] === undefined) {
+          delete raffleUpdateData[key];
+        }
+      });
+
+      // Update raffle if there are changes
+      if (Object.keys(raffleUpdateData).length > 0) {
+        await db
+          .update(raffles)
+          .set(raffleUpdateData)
+          .where(eq(raffles.id, id));
+      }
+
+      // Handle prizes updates
+      if (updateData.prizes && Array.isArray(updateData.prizes)) {
+        console.log('🔍 Server received updateData:', updateData);
+        console.log('🔍 Server received prizes:', updateData.prizes);
+        console.log('🔍 First prize object:', updateData.prizes[0]);
+        console.log('🔍 First prize imageUrl:', updateData.prizes[0]?.imageUrl);
+        
+        // Delete existing prizes
+        await db
+          .delete(rafflePrizes)
+          .where(eq(rafflePrizes.raffleId, id));
+
+        // Insert new prizes
+        if (updateData.prizes.length > 0) {
+          const prizeData = updateData.prizes.map((prize: any) => ({
+            raffleId: id,
+            position: prize.position,
+            name: prize.name,
+            type: prize.type,
+            value: prize.value || '',
+            imageUrl: prize.imageUrl || null
+          }));
+          
+          console.log('🔍 Server inserting prize data:', prizeData);
+          console.log('🔍 First prize data imageUrl:', prizeData[0]?.imageUrl);
+          
+          await db.insert(rafflePrizes).values(prizeData);
+        }
+      }
+
+      res.json({ success: true, message: 'Raffle updated successfully' });
+    } catch (error) {
+      console.error('Error updating raffle:', error);
+      res.status(500).json({ success: false, error: 'Failed to update raffle' });
+    }
+  });
+
+  // Admin: Delete raffle
+  app.delete('/api/admin/raffles/:id', isAdminCombined, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      await db
+        .update(raffles)
+        .set({ isActive: false })
+        .where(eq(raffles.id, id));
+
+      res.json({ success: true, message: 'Raffle deactivated successfully' });
+    } catch (error) {
+      console.error('Error deleting raffle:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete raffle' });
+    }
+  });
+
+  // Admin: Manually draw winners
+  app.post('/api/admin/raffles/:id/draw', isAdminCombined, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const result = await drawRaffleWinners(id);
+      res.json({ success: true, message: 'Winners drawn successfully', winners: result });
+    } catch (error) {
+      console.error('Error drawing winners:', error);
+      res.status(500).json({ success: false, error: 'Failed to draw winners' });
+    }
+  });
+
+  // Helper function to draw raffle winners
+  async function drawRaffleWinners(raffleId: string) {
+    console.log('🎲 Starting auto-draw for raffle:', raffleId);
+    
+    const raffle = await db
+      .select()
+      .from(raffles)
+      .where(eq(raffles.id, raffleId))
+      .limit(1);
+
+    if (raffle.length === 0) {
+      throw new Error('Raffle not found');
+    }
+
+    const raffleData = raffle[0];
+
+    if ((raffleData.filledSlots || 0) < raffleData.totalSlots) {
+      throw new Error('Raffle is not full yet');
+    }
+
+    if (raffleData.status !== 'active') {
+      throw new Error('Raffle is not active');
+    }
+
+    // Get all entries
+    const entries = await db
+      .select()
+      .from(raffleEntries)
+      .where(eq(raffleEntries.raffleId, raffleId));
+
+    console.log('🎲 Found entries:', entries.length);
+
+    // Get prizes for this raffle
+    const prizes = await db
+      .select()
+      .from(rafflePrizes)
+      .where(eq(rafflePrizes.raffleId, raffleId))
+      .orderBy(rafflePrizes.position);
+
+    console.log('🎲 Found prizes:', prizes.length);
+
+    if (prizes.length === 0) {
+      throw new Error('No prizes found for this raffle');
+    }
+
+    // Create array of all slot numbers based on entry slots
+    const allSlots = [];
+    let currentSlot = 1;
+    
+    for (const entry of entries) {
+      for (let i = 0; i < entry.slots; i++) {
+        allSlots.push({ 
+          slot: currentSlot, 
+          entryId: entry.id, 
+          userId: entry.userId 
+        });
+        currentSlot++;
+      }
+    }
+
+    console.log('🎲 Total slots available for drawing:', allSlots.length);
+
+    // Draw winners
+    const winners = [];
+    const maxWinners = Math.min(raffleData.maxWinners || 1, allSlots.length, prizes.length);
+
+    for (let i = 0; i < maxWinners; i++) {
+      const randomIndex = Math.floor(Math.random() * allSlots.length);
+      const winner = allSlots.splice(randomIndex, 1)[0];
+      const prize = prizes[i];
+
+      const winnerId = `winner-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      await db.insert(raffleWinners).values({
+        raffleId: raffleId,
+        userId: winner.userId,
+        prizePosition: i + 1,
+        prizeId: prize.id,
+        wonAt: new Date()
+      });
+
+      winners.push({
+        id: winnerId,
+        userId: winner.userId,
+        winningSlot: winner.slot,
+        prizePosition: i + 1,
+        prizeName: prize.name
+      });
+
+      console.log(`🎲 Winner ${i + 1}: User ${winner.userId}, Slot ${winner.slot}, Prize: ${prize.name}`);
+
+      // Award prize to winner based on prize type
+      if (prize.type === 'pack') {
+        await storage.addUserPack({
+          id: `pack-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          userId: winner.userId,
+          packId: raffleId,
+          packType: 'raffle',
+          tier: prize.name,
+          earnedFrom: `raffle_${raffleId}`
+        });
+        console.log(`🎁 Awarded pack "${prize.name}" to user ${winner.userId}`);
+      } else if (prize.type === 'credits' && prize.value) {
+        await storage.updateUserCredits(winner.userId, Number(prize.value));
+        console.log(`💰 Awarded ${prize.value} credits to user ${winner.userId}`);
+      } else if (prize.type === 'physical') {
+        // For physical prizes, we could add a special pack or just log it
+        await storage.addUserPack({
+          id: `pack-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          userId: winner.userId,
+          packId: raffleId,
+          packType: 'raffle_physical',
+          tier: prize.name,
+          earnedFrom: `raffle_${raffleId}`
+        });
+        console.log(`🎁 Awarded physical prize "${prize.name}" to user ${winner.userId}`);
+      }
+    }
+
+    // Update raffle status
+    await db
+      .update(raffles)
+      .set({ 
+        status: 'completed',
+        drawnAt: new Date()
+      })
+      .where(eq(raffles.id, raffleId));
+
+    console.log('🎲 Auto-draw completed successfully!');
+    return winners;
+  }
 
   const httpServer = createServer(app);
   return httpServer;

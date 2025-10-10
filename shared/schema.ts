@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, integer, boolean, timestamp, decimal, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, integer, boolean, timestamp, decimal, jsonb, serial } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -155,6 +155,60 @@ export const transactions = pgTable("transactions", {
 });
 
 // ============================================================================
+// RAFFLE TABLES (Clean Architecture)
+// ============================================================================
+
+// Raffles - Clean table without legacy fields
+export const raffles = pgTable("raffles", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  totalSlots: integer("total_slots").notNull(),
+  pricePerSlot: decimal("price_per_slot", { precision: 10, scale: 2 }).notNull(),
+  filledSlots: integer("filled_slots").default(0),
+  maxWinners: integer("max_winners").default(1),
+  status: varchar("status", { length: 20 }).default("active"), // 'active', 'filled', 'completed', 'cancelled'
+  isActive: boolean("is_active").default(true),
+  autoDraw: boolean("auto_draw").default(true),
+  drawnAt: timestamp("drawn_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: varchar("created_by").references(() => users.id),
+});
+
+// Raffle Prizes - Separate table for multiple prizes
+export const rafflePrizes = pgTable("raffle_prizes", {
+  id: serial("id").primaryKey(),
+  raffleId: varchar("raffle_id", { length: 255 }).notNull().references(() => raffles.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(), // 1st, 2nd, 3rd place, etc.
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'pack', 'card', 'credits', 'physical'
+  value: varchar("value", { length: 255 }), // Prize value (can be empty for some types)
+  imageUrl: text("image_url"), // Prize image URL
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Raffle Entries
+export const raffleEntries = pgTable("raffle_entries", {
+  id: serial("id").primaryKey(),
+  raffleId: varchar("raffle_id", { length: 255 }).notNull().references(() => raffles.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id),
+  slots: integer("slots").notNull(), // Number of slots purchased
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(), // Total credits spent
+  entryDate: timestamp("entry_date").defaultNow(),
+});
+
+// Raffle Winners
+export const raffleWinners = pgTable("raffle_winners", {
+  id: serial("id").primaryKey(),
+  raffleId: varchar("raffle_id", { length: 255 }).notNull().references(() => raffles.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id),
+  prizePosition: integer("prize_position").notNull(), // 1st, 2nd, 3rd place, etc.
+  prizeId: integer("prize_id").references(() => rafflePrizes.id),
+  wonAt: timestamp("won_at").defaultNow(),
+});
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 
@@ -163,6 +217,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   userCards: many(userCards),
   globalFeed: many(globalFeed),
   transactions: many(transactions),
+  createdRaffles: many(raffles),
+  raffleEntries: many(raffleEntries),
+  raffleWins: many(raffleWinners),
 }));
 
 export const classicPackRelations = relations(classicPack, ({ many }) => ({
@@ -223,6 +280,50 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, {
     fields: [transactions.userId],
     references: [users.id],
+  }),
+}));
+
+export const rafflesRelations = relations(raffles, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [raffles.createdBy],
+    references: [users.id],
+  }),
+  prizes: many(rafflePrizes),
+  entries: many(raffleEntries),
+  winners: many(raffleWinners),
+}));
+
+export const rafflePrizesRelations = relations(rafflePrizes, ({ one, many }) => ({
+  raffle: one(raffles, {
+    fields: [rafflePrizes.raffleId],
+    references: [raffles.id],
+  }),
+  winners: many(raffleWinners),
+}));
+
+export const raffleEntriesRelations = relations(raffleEntries, ({ one }) => ({
+  raffle: one(raffles, {
+    fields: [raffleEntries.raffleId],
+    references: [raffles.id],
+  }),
+  user: one(users, {
+    fields: [raffleEntries.userId],
+    references: [users.id],
+  }),
+}));
+
+export const raffleWinnersRelations = relations(raffleWinners, ({ one }) => ({
+  raffle: one(raffles, {
+    fields: [raffleWinners.raffleId],
+    references: [raffles.id],
+  }),
+  user: one(users, {
+    fields: [raffleWinners.userId],
+    references: [users.id],
+  }),
+  prize: one(rafflePrizes, {
+    fields: [raffleWinners.prizeId],
+    references: [rafflePrizes.id],
   }),
 }));
 
@@ -287,6 +388,26 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   createdAt: true,
 });
 
+export const insertRaffleSchema = createInsertSchema(raffles).omit({
+  createdAt: true,
+  drawnAt: true,
+});
+
+export const insertRafflePrizeSchema = createInsertSchema(rafflePrizes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRaffleEntrySchema = createInsertSchema(raffleEntries).omit({
+  id: true,
+  entryDate: true,
+});
+
+export const insertRaffleWinnerSchema = createInsertSchema(raffleWinners).omit({
+  id: true,
+  wonAt: true,
+});
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -319,10 +440,31 @@ export type InsertGlobalFeed = z.infer<typeof insertGlobalFeedSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
+export type Raffle = typeof raffles.$inferSelect;
+export type InsertRaffle = z.infer<typeof insertRaffleSchema>;
+export type RafflePrize = typeof rafflePrizes.$inferSelect;
+export type InsertRafflePrize = z.infer<typeof insertRafflePrizeSchema>;
+export type RaffleEntry = typeof raffleEntries.$inferSelect;
+export type InsertRaffleEntry = z.infer<typeof insertRaffleEntrySchema>;
+export type RaffleWinner = typeof raffleWinners.$inferSelect;
+export type InsertRaffleWinner = z.infer<typeof insertRaffleWinnerSchema>;
+
 // Extended types for API responses
 export type ClassicPackWithPrizes = ClassicPack & { prizes: ClassicPrize[] };
 export type MysteryPackWithPrizes = MysteryPack & { prizes: MysteryPrize[] };
 export type SpecialPackWithPrizes = SpecialPack & { prizes: SpecialPrize[] };
+
+export type RaffleWithDetails = Raffle & {
+  prizes: RafflePrize[];
+  entries: (RaffleEntry & { user: Pick<User, 'username'> })[];
+  winners: (RaffleWinner & { user: Pick<User, 'username'> })[];
+  creator: Pick<User, 'username'>;
+};
+
+export type RaffleEntryWithDetails = RaffleEntry & {
+  user: Pick<User, 'username'>;
+  raffle: Pick<Raffle, 'title' | 'imageUrl'>;
+};
 
 export type GlobalFeedWithDetails = GlobalFeed & {
   user: Pick<User, 'username'>;

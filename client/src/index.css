@@ -39,6 +39,29 @@
   display: none;  /* Safari and Chrome */
 }
 
+/* Text overflow utilities */
+.text-overflow-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-wrap-safe {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.raffle-card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.raffle-card * {
+  max-width: 100%;
+}
+
 :root {
   /* Base colors */
   --background: hsl(240, 3%, 6%);
