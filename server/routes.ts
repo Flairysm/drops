@@ -8,6 +8,8 @@ import { z } from "zod";
 import path from "path";
 import { fileURLToPath } from 'url';
 import fileUpload from 'express-fileupload';
+import { handleError, createErrorResponse, createSuccessResponse, asyncHandler } from './utils/errorHandler';
+import { createValidationMiddleware, createParamValidationMiddleware, raffleSchemas, commonSchemas } from './utils/validation';
 import { 
   classicPack,
   classicPrize,
@@ -2464,8 +2466,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Migration endpoint
-  app.post('/api/debug/migrate-database', async (req, res) => {
+  // Debug endpoints - only available in development
+  if (process.env.NODE_ENV === 'development') {
+    // Migration endpoint
+    app.post('/api/debug/migrate-database', async (req, res) => {
     try {
       
       // Add pack_source column
@@ -3102,6 +3106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to check Black Bolt pack cards' });
     }
   });
+  } // End of debug endpoints (development only)
 
   // Admin endpoint to force refresh user data (useful when credits are updated directly in database)
   app.post('/api/admin/refresh-user/:userId', isAdminCombined, async (req: any, res) => {
@@ -3373,8 +3378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: raffleEntries.entryDate,
           raffle: {
             title: raffles.title,
-            prizeName: raffles.prizeName,
-            prizeImageUrl: raffles.prizeImageUrl,
+            imageUrl: raffles.imageUrl,
             status: raffles.status,
             drawnAt: raffles.drawnAt
           }
@@ -3382,22 +3386,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(raffleEntries)
         .leftJoin(raffles, eq(raffleEntries.raffleId, raffles.id))
         .where(eq(raffleEntries.userId, userId))
-        .orderBy(sql`${raffleEntries.createdAt} DESC`);
+        .orderBy(sql`${raffleEntries.entryDate} DESC`);
 
       // Get user's wins
       const userWins = await db
         .select({
           id: raffleWinners.id,
           raffleId: raffleWinners.raffleId,
-          winningSlot: raffleWinners.winningSlot,
           prizePosition: raffleWinners.prizePosition,
-          prizeDelivered: raffleWinners.prizeDelivered,
-          deliveredAt: raffleWinners.deliveredAt,
-          createdAt: raffleWinners.createdAt,
+          wonAt: raffleWinners.wonAt,
           raffle: {
             title: raffles.title,
-            prizeName: raffles.prizeName,
-            prizeImageUrl: raffles.prizeImageUrl,
+            imageUrl: raffles.imageUrl,
             status: raffles.status,
             drawnAt: raffles.drawnAt
           }
@@ -3405,7 +3405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(raffleWinners)
         .leftJoin(raffles, eq(raffleWinners.raffleId, raffles.id))
         .where(eq(raffleWinners.userId, userId))
-        .orderBy(sql`${raffleWinners.createdAt} DESC`);
+        .orderBy(sql`${raffleWinners.wonAt} DESC`);
 
       res.json({ 
         success: true, 
@@ -3429,11 +3429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: raffles.id,
           title: raffles.title,
           description: raffles.description,
-          prizeName: raffles.prizeName,
-          prizeImageUrl: raffles.prizeImageUrl,
-          prizeType: raffles.prizeType,
-          prizeValue: raffles.prizeValue,
-          prizes: raffles.prizes,
+          imageUrl: raffles.imageUrl,
           totalSlots: raffles.totalSlots,
           pricePerSlot: raffles.pricePerSlot,
           filledSlots: raffles.filledSlots,
@@ -3473,18 +3469,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(raffleEntries)
         .leftJoin(users, eq(raffleEntries.userId, users.id))
         .where(eq(raffleEntries.raffleId, id))
-        .orderBy(sql`${raffleEntries.createdAt} ASC`);
+        .orderBy(sql`${raffleEntries.entryDate} ASC`);
 
       // Get winners
       const winners = await db
         .select({
           id: raffleWinners.id,
           userId: raffleWinners.userId,
-          winningSlot: raffleWinners.winningSlot,
           prizePosition: raffleWinners.prizePosition,
-          prizeDelivered: raffleWinners.prizeDelivered,
-          deliveredAt: raffleWinners.deliveredAt,
-          createdAt: raffleWinners.createdAt,
+          wonAt: raffleWinners.wonAt,
           user: {
             username: users.username
           }
@@ -3509,104 +3502,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Join a raffle
-  app.post('/api/raffles/:id/join', isAuthenticatedCombined, async (req, res) => {
-    try {
+  app.post('/api/raffles/:id/join', 
+    createParamValidationMiddleware(commonSchemas.id, 'id'),
+    createValidationMiddleware(raffleSchemas.joinRaffle),
+    isAuthenticatedCombined, 
+    asyncHandler(async (req, res) => {
       const { id } = req.params;
       const { slots } = req.body;
       const userId = (req as any).user?.id;
 
       if (!userId) {
-        return res.status(401).json({ success: false, error: 'User not authenticated' });
+        const { statusCode, response } = createErrorResponse('User not authenticated', 'UNAUTHORIZED', null, 401);
+        return res.status(statusCode).json(response);
       }
 
-      if (!slots || slots < 1) {
-        return res.status(400).json({ success: false, error: 'Invalid number of slots' });
-      }
+      // Use database transaction to prevent race conditions
+      const result = await db.transaction(async (tx) => {
+        // Get raffle details with row-level lock
+        const raffleDetails = await tx
+          .select()
+          .from(raffles)
+          .where(and(eq(raffles.id, id), eq(raffles.isActive, true)))
+          .limit(1)
+          .for('update'); // Row-level lock to prevent race conditions
 
-      // Get raffle details
-      const raffleDetails = await db
-        .select()
-        .from(raffles)
-        .where(and(eq(raffles.id, id), eq(raffles.isActive, true)))
-        .limit(1);
+        if (raffleDetails.length === 0) {
+          throw new Error('Raffle not found or inactive');
+        }
 
-      if (raffleDetails.length === 0) {
-        return res.status(404).json({ success: false, error: 'Raffle not found or inactive' });
-      }
+        const raffle = raffleDetails[0];
 
-      const raffle = raffleDetails[0];
+        // Check if raffle is still active
+        if (raffle.status !== 'active') {
+          throw new Error('Raffle is no longer active');
+        }
 
-      // Check if raffle is still active
-      if (raffle.status !== 'active') {
-        return res.status(400).json({ success: false, error: 'Raffle is no longer active' });
-      }
+        // Check if there are enough slots available
+        const availableSlots = raffle.totalSlots - (raffle.filledSlots || 0);
+        if (slots > availableSlots) {
+          throw new Error(`Only ${availableSlots} slots available`);
+        }
 
-      // Check if there are enough slots available
-      const availableSlots = raffle.totalSlots - raffle.filledSlots;
-      if (slots > availableSlots) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Only ${availableSlots} slots available` 
+        const totalCost = Number(raffle.pricePerSlot) * slots;
+
+        // Check user credits
+        const user = await storage.getUser(userId);
+        if (!user || Number(user.credits) < totalCost) {
+          throw new Error('Insufficient credits');
+        }
+
+        // Create entry
+        await tx.insert(raffleEntries).values({
+          raffleId: id,
+          userId: userId,
+          slots: slots,
+          totalCost: totalCost.toString()
         });
-      }
 
-      const totalCost = Number(raffle.pricePerSlot) * slots;
+        // Update raffle filled slots atomically
+        const newFilledSlots = (raffle.filledSlots || 0) + slots;
+        await tx
+          .update(raffles)
+          .set({ 
+            filledSlots: newFilledSlots,
+            status: newFilledSlots >= raffle.totalSlots ? 'filled' : 'active'
+          })
+          .where(eq(raffles.id, id));
 
-      // Check user credits
-      const user = await storage.getUser(userId);
-      if (!user || Number(user.credits) < totalCost) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Insufficient credits' 
+        // Deduct credits
+        await storage.deductUserCredits(userId, totalCost.toString());
+
+        // Create transaction record
+        await storage.addTransaction({
+          id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          userId: userId,
+          type: 'raffle_entry',
+          amount: totalCost.toString(),
+          description: `Joined raffle: ${raffle.title} (${slots} slots)`,
+          packId: id,
+          packType: 'raffle'
         });
-      }
 
-      // Note: Entry numbers are not stored in the database, they are calculated dynamically
-
-      // Create entry
-      await db.insert(raffleEntries).values({
-        raffleId: id,
-        userId: userId,
-        slots: slots,
-        totalCost: totalCost.toString()
+        return {
+          success: true,
+          message: `Successfully joined raffle with ${slots} slots`,
+          totalCost: totalCost,
+          raffle,
+          newFilledSlots
+        };
       });
 
-      // Update raffle filled slots
-      const newFilledSlots = raffle.filledSlots + slots;
-      await db
-        .update(raffles)
-        .set({ filledSlots: newFilledSlots })
-        .where(eq(raffles.id, id));
-
-      // Deduct credits
-      await storage.deductUserCredits(userId, totalCost);
-
-      // Create transaction record
-      await storage.addTransaction({
-        id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        userId: userId,
-        type: 'raffle_entry',
-        amount: totalCost,
-        description: `Joined raffle: ${raffle.title} (${slots} slots)`,
-        packId: id,
-        packType: 'raffle'
-      });
-
-      // Check if raffle is now full and auto-draw
-      if (raffle.autoDraw && newFilledSlots >= raffle.totalSlots) {
+      // Check if raffle is now full and auto-draw (outside transaction)
+      if (result.raffle.autoDraw && result.newFilledSlots >= result.raffle.totalSlots) {
         await drawRaffleWinners(id);
       }
 
-      res.json({ 
-        success: true, 
-        message: `Successfully joined raffle with ${slots} slots`,
-        totalCost: totalCost
-      });
-    } catch (error) {
-      console.error('Error joining raffle:', error);
-      res.status(500).json({ success: false, error: 'Failed to join raffle' });
-    }
-  });
+      const response = createSuccessResponse(
+        { totalCost: result.totalCost },
+        result.message
+      );
+      res.json(response);
+    }));
 
   // Admin: Get all raffles (including completed ones with winners)
   app.get('/api/admin/raffles', isAdminCombined, async (req, res) => {
@@ -3852,157 +3848,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function drawRaffleWinners(raffleId: string) {
     console.log('🎲 Starting auto-draw for raffle:', raffleId);
     
-    const raffle = await db
-      .select()
-      .from(raffles)
-      .where(eq(raffles.id, raffleId))
-      .limit(1);
+    // Use database transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      const raffle = await tx
+        .select()
+        .from(raffles)
+        .where(eq(raffles.id, raffleId))
+        .limit(1)
+        .for('update'); // Lock the raffle row
 
-    if (raffle.length === 0) {
-      throw new Error('Raffle not found');
-    }
-
-    const raffleData = raffle[0];
-
-    if ((raffleData.filledSlots || 0) < raffleData.totalSlots) {
-      throw new Error('Raffle is not full yet');
-    }
-
-    if (raffleData.status !== 'active') {
-      throw new Error('Raffle is not active');
-    }
-
-    // Get all entries
-    const entries = await db
-      .select()
-      .from(raffleEntries)
-      .where(eq(raffleEntries.raffleId, raffleId));
-
-    console.log('🎲 Found entries:', entries.length);
-
-    // Get prizes for this raffle
-    const prizes = await db
-      .select()
-      .from(rafflePrizes)
-      .where(eq(rafflePrizes.raffleId, raffleId))
-      .orderBy(rafflePrizes.position);
-
-    console.log('🎲 Found prizes:', prizes.length);
-
-    if (prizes.length === 0) {
-      throw new Error('No prizes found for this raffle');
-    }
-
-    // Create array of all slot numbers based on entry slots
-    const allSlots = [];
-    let currentSlot = 1;
-    
-    for (const entry of entries) {
-      for (let i = 0; i < entry.slots; i++) {
-        allSlots.push({ 
-          slot: currentSlot, 
-          entryId: entry.id, 
-          userId: entry.userId 
-        });
-        currentSlot++;
+      if (raffle.length === 0) {
+        throw new Error('Raffle not found');
       }
-    }
 
-    console.log('🎲 Total slots available for drawing:', allSlots.length);
+      const raffleData = raffle[0];
 
-    // Draw winners
-    const winners = [];
-    const maxWinners = Math.min(raffleData.maxWinners || 1, allSlots.length, prizes.length);
-    const winningUserIds = new Set(); // Track users who won main prizes
+      if ((raffleData.filledSlots || 0) < raffleData.totalSlots) {
+        throw new Error('Raffle is not full yet');
+      }
 
-    for (let i = 0; i < maxWinners; i++) {
-      const randomIndex = Math.floor(Math.random() * allSlots.length);
-      const winner = allSlots.splice(randomIndex, 1)[0];
-      const prize = prizes[i];
+      if (raffleData.status !== 'active' && raffleData.status !== 'filled') {
+        throw new Error('Raffle is not active');
+      }
 
-      const winnerId = `winner-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Get all entries
+      const entries = await tx
+        .select()
+        .from(raffleEntries)
+        .where(eq(raffleEntries.raffleId, raffleId));
+
+      console.log('🎲 Found entries:', entries.length);
+
+      // Get prizes for this raffle
+      const prizes = await tx
+        .select()
+        .from(rafflePrizes)
+        .where(eq(rafflePrizes.raffleId, raffleId))
+        .orderBy(rafflePrizes.position);
+
+      console.log('🎲 Found prizes:', prizes.length);
+
+      if (prizes.length === 0) {
+        throw new Error('No prizes found for this raffle');
+      }
+
+      // Create array of all slot numbers based on entry slots
+      const allSlots = [];
+      let currentSlot = 1;
       
-      await db.insert(raffleWinners).values({
-        raffleId: raffleId,
-        userId: winner.userId,
-        prizePosition: i + 1,
-        prizeId: prize.id,
-        wonAt: new Date()
-      });
-
-      winners.push({
-        id: winnerId,
-        userId: winner.userId,
-        winningSlot: winner.slot,
-        prizePosition: i + 1,
-        prizeName: prize.name
-      });
-
-      winningUserIds.add(winner.userId); // Track this user as a main prize winner
-
-      console.log(`🎲 Winner ${i + 1}: User ${winner.userId}, Slot ${winner.slot}, Prize: ${prize.name}`);
-
-      // Award prize to winner based on prize type
-      if (prize.type === 'pack') {
-        await storage.addUserPack({
-          id: `pack-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          userId: winner.userId,
-          packId: raffleId,
-          packType: 'raffle',
-          tier: prize.name,
-          earnedFrom: `raffle_${raffleId}`
-        });
-        console.log(`🎁 Awarded pack "${prize.name}" to user ${winner.userId}`);
-      } else if (prize.type === 'credits' && prize.value) {
-        await storage.updateUserCredits(winner.userId, Number(prize.value));
-        console.log(`💰 Awarded ${prize.value} credits to user ${winner.userId}`);
-      } else if (prize.type === 'physical') {
-        // For physical prizes, add directly to vault as a card
-        await storage.addUserCard({
-          id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          userId: winner.userId,
-          cardName: prize.name,
-          cardImageUrl: prize.imageUrl || '/assets/classic-image.png',
-          cardTier: 'SSS', // Physical prizes are highest tier
-          refundCredit: 1000, // High refund value for physical prizes
-          packSource: `raffle_${raffleId}`,
-          cardSource: 'raffle_prize'
-        });
-        console.log(`🎁 Awarded physical prize "${prize.name}" directly to user ${winner.userId}'s vault`);
-      }
-    }
-
-    // Award 1 credit consolation prize to all participants who didn't win main prizes
-    const allParticipantUserIds = new Set(entries.map(entry => entry.userId));
-    const consolationWinners = [...allParticipantUserIds].filter(userId => !winningUserIds.has(userId));
-    
-    console.log(`🎁 Awarding 1 credit consolation prize to ${consolationWinners.length} participants`);
-    
-    for (const userId of consolationWinners) {
-      if (userId) { // Ensure userId is not null
-        // Get current user credits
-        const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-        if (user.length > 0) {
-          const currentCredits = parseFloat(user[0].credits || "0");
-          const newCredits = currentCredits + 1;
-          await storage.updateUserCredits(userId, newCredits.toFixed(2));
-          console.log(`💰 Awarded 1 credit consolation prize to user ${userId} (${currentCredits} + 1 = ${newCredits})`);
+      for (const entry of entries) {
+        for (let i = 0; i < entry.slots; i++) {
+          allSlots.push({ 
+            slot: currentSlot, 
+            entryId: entry.id, 
+            userId: entry.userId 
+          });
+          currentSlot++;
         }
       }
-    }
 
-    // Update raffle status
-    await db
-      .update(raffles)
-      .set({ 
-        status: 'completed',
-        drawnAt: new Date()
-      })
-      .where(eq(raffles.id, raffleId));
+      console.log('🎲 Total slots available for drawing:', allSlots.length);
 
-    console.log('🎲 Auto-draw completed successfully!');
-    console.log(`🎁 Summary: ${winners.length} main prize winners, ${consolationWinners.length} consolation prize winners (1 credit each)`);
-    return winners;
+      // Draw winners
+      const winners = [];
+      const maxWinners = Math.min(raffleData.maxWinners || 1, allSlots.length, prizes.length);
+      const winningUserIds = new Set(); // Track users who won main prizes
+
+      for (let i = 0; i < maxWinners; i++) {
+        const randomIndex = Math.floor(Math.random() * allSlots.length);
+        const winner = allSlots.splice(randomIndex, 1)[0];
+        const prize = prizes[i];
+
+        const winnerId = `winner-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        await tx.insert(raffleWinners).values({
+          raffleId: raffleId,
+          userId: winner.userId,
+          prizePosition: i + 1,
+          prizeId: prize.id,
+          wonAt: new Date()
+        });
+
+        winners.push({
+          id: winnerId,
+          userId: winner.userId,
+          winningSlot: winner.slot,
+          prizePosition: i + 1,
+          prizeName: prize.name
+        });
+
+        winningUserIds.add(winner.userId); // Track this user as a main prize winner
+
+        console.log(`🎲 Winner ${i + 1}: User ${winner.userId}, Slot ${winner.slot}, Prize: ${prize.name}`);
+
+        // Award prize to winner based on prize type
+        if (prize.type === 'pack' && winner.userId) {
+          await storage.addUserPack({
+            id: `pack-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            userId: winner.userId,
+            packId: raffleId,
+            packType: 'raffle',
+            tier: prize.name,
+            earnedFrom: `raffle_${raffleId}`
+          });
+          console.log(`🎁 Awarded pack "${prize.name}" to user ${winner.userId}`);
+        } else if (prize.type === 'credits' && prize.value && winner.userId) {
+          await storage.updateUserCredits(winner.userId, Number(prize.value));
+          console.log(`💰 Awarded ${prize.value} credits to user ${winner.userId}`);
+        } else if (prize.type === 'physical' && winner.userId) {
+          // For physical prizes, add directly to vault as a card
+          await storage.addUserCard({
+            id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            userId: winner.userId,
+            cardName: prize.name,
+            cardImageUrl: prize.imageUrl || '/assets/classic-image.png',
+            cardTier: 'SSS', // Physical prizes are highest tier
+            refundCredit: 1000, // High refund value for physical prizes
+            packSource: `raffle_${raffleId}`,
+            cardSource: 'raffle_prize'
+          });
+          console.log(`🎁 Awarded physical prize "${prize.name}" directly to user ${winner.userId}'s vault`);
+        }
+      }
+
+      // Award 1 credit consolation prize to all participants who didn't win main prizes
+      const allParticipantUserIds = new Set(entries.map(entry => entry.userId));
+      const consolationWinners = [...allParticipantUserIds].filter(userId => !winningUserIds.has(userId));
+      
+      console.log(`🎁 Awarding 1 credit consolation prize to ${consolationWinners.length} participants`);
+      
+      for (const userId of consolationWinners) {
+        if (userId && typeof userId === 'string') { // Ensure userId is not null and is a string
+          // Get current user credits
+          const user = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
+          if (user.length > 0) {
+            const currentCredits = parseFloat(user[0].credits || "0");
+            const newCredits = currentCredits + 1;
+            await storage.updateUserCredits(userId, newCredits.toFixed(2));
+            console.log(`💰 Awarded 1 credit consolation prize to user ${userId} (${currentCredits} + 1 = ${newCredits})`);
+          }
+        }
+      }
+
+      // Update raffle status
+      await tx
+        .update(raffles)
+        .set({ 
+          status: 'completed',
+          drawnAt: new Date()
+        })
+        .where(eq(raffles.id, raffleId));
+
+      console.log('🎲 Auto-draw completed successfully!');
+      console.log(`🎁 Summary: ${winners.length} main prize winners, ${consolationWinners.length} consolation prize winners (1 credit each)`);
+      return winners;
+    });
   }
 
   const httpServer = createServer(app);
