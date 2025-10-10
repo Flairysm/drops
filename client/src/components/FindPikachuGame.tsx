@@ -768,19 +768,56 @@ export function FindPikachuGame() {
 
       {/* Game Over Popup */}
       {showGameOverPopup && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          {/* Bokeh Background Effects */}
+          <div className="absolute inset-0 overflow-hidden">
+            <motion.div
+              className="absolute -top-20 -left-20 w-40 h-40 bg-gradient-to-br from-yellow-400/10 to-orange-500/10 rounded-full blur-xl"
+              animate={{
+                x: [0, 30, 0],
+                y: [0, 20, 0],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-xl"
+              animate={{
+                x: [0, -30, 0],
+                y: [0, -20, 0],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            />
+            <motion.div
+              className="absolute top-1/4 right-1/4 w-32 h-32 bg-gradient-to-br from-blue-400/8 to-cyan-500/8 rounded-full blur-lg"
+              animate={{
+                x: [0, 20, 0],
+                y: [0, -15, 0],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            />
+          </div>
+
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            initial={{ opacity: 0, scale: 0.8, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-600 rounded-xl p-8 max-w-lg w-full shadow-2xl"
+            exit={{ opacity: 0, scale: 0.8, y: 30 }}
+            transition={{ 
+              duration: 0.4, 
+              ease: [0.25, 0.46, 0.45, 0.94],
+              type: "spring",
+              stiffness: 300,
+              damping: 30
+            }}
+            className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-600/50 rounded-2xl p-8 max-w-lg w-full shadow-2xl"
           >
             <div className="text-center space-y-6">
               {/* Header */}
               <div className="space-y-3">
                 <h2 className="text-4xl font-bold tracking-wide">
-                  <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Moonbreon hunt</span>
+                  <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Find Pikachu</span>
                 </h2>
                 <div className="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full"></div>
               </div>
@@ -799,7 +836,7 @@ export function FindPikachuGame() {
                       }}
                     />
                   </div>
-                  {/* Glow effect */}
+                  {/* Subtle glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-xl blur-sm -z-10"></div>
                 </div>
               </div>
@@ -808,7 +845,7 @@ export function FindPikachuGame() {
               <div className="space-y-4">
                 <div className="text-center">
                   <p className="text-xl text-gray-200 mb-2">
-                    {gameState.gameWon ? "Congratulations! You won!" : "Hunt ended!"}
+                    {gameState.gameWon ? "Hunt Complete!" : "Hunt Ended!"}
                   </p>
                   <p className="text-lg text-gray-300">
                     You found <span className="font-bold text-yellow-400">{gameState.pikachusFound}/4</span> Pikachus
@@ -818,13 +855,17 @@ export function FindPikachuGame() {
                   </p>
                 </div>
                 
-                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
-                  <p className="text-sm text-gray-300 text-center">
-                    🎁 Pack has been added to your collection
-                  </p>
-                  <p className="text-sm text-gray-300 text-center">
-                    Go to "My Packs" to open it
-                  </p>
+                {/* Blue Color Container */}
+                <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-5 border border-blue-500/20 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
+                  <div className="relative space-y-2">
+                    <p className="text-sm text-blue-200 font-medium">
+                      Pack has been added to your collection
+                    </p>
+                    <p className="text-sm text-gray-300">
+                      Go to "My Packs" to open it
+                    </p>
+                  </div>
                 </div>
               </div>
               

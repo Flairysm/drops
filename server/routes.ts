@@ -3312,7 +3312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .from(raffles)
         .leftJoin(users, eq(raffles.createdBy, users.id))
-        .where(eq(raffles.status, 'completed'))
+        .where(and(eq(raffles.status, 'completed'), eq(raffles.isActive, true)))
         .orderBy(sql`${raffles.drawnAt} DESC`);
 
       // Get prizes and winners for each raffle
@@ -3820,12 +3820,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
 
-      await db
-        .update(raffles)
-        .set({ isActive: false })
-        .where(eq(raffles.id, id));
+      // Delete related data first (due to foreign key constraints)
+      await db.delete(raffleWinners).where(eq(raffleWinners.raffleId, id));
+      await db.delete(raffleEntries).where(eq(raffleEntries.raffleId, id));
+      await db.delete(rafflePrizes).where(eq(rafflePrizes.raffleId, id));
+      
+      // Finally delete the raffle itself
+      await db.delete(raffles).where(eq(raffles.id, id));
 
-      res.json({ success: true, message: 'Raffle deactivated successfully' });
+      res.json({ success: true, message: 'Raffle deleted successfully' });
     } catch (error) {
       console.error('Error deleting raffle:', error);
       res.status(500).json({ success: false, error: 'Failed to delete raffle' });
@@ -3910,6 +3913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Draw winners
     const winners = [];
     const maxWinners = Math.min(raffleData.maxWinners || 1, allSlots.length, prizes.length);
+    const winningUserIds = new Set(); // Track users who won main prizes
 
     for (let i = 0; i < maxWinners; i++) {
       const randomIndex = Math.floor(Math.random() * allSlots.length);
@@ -3934,6 +3938,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         prizeName: prize.name
       });
 
+      winningUserIds.add(winner.userId); // Track this user as a main prize winner
+
       console.log(`🎲 Winner ${i + 1}: User ${winner.userId}, Slot ${winner.slot}, Prize: ${prize.name}`);
 
       // Award prize to winner based on prize type
@@ -3951,16 +3957,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUserCredits(winner.userId, Number(prize.value));
         console.log(`💰 Awarded ${prize.value} credits to user ${winner.userId}`);
       } else if (prize.type === 'physical') {
-        // For physical prizes, we could add a special pack or just log it
-        await storage.addUserPack({
-          id: `pack-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        // For physical prizes, add directly to vault as a card
+        await storage.addUserCard({
+          id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           userId: winner.userId,
-          packId: raffleId,
-          packType: 'raffle_physical',
-          tier: prize.name,
-          earnedFrom: `raffle_${raffleId}`
+          cardName: prize.name,
+          cardImageUrl: prize.imageUrl || '/assets/classic-image.png',
+          cardTier: 'SSS', // Physical prizes are highest tier
+          refundCredit: 1000, // High refund value for physical prizes
+          packSource: `raffle_${raffleId}`,
+          cardSource: 'raffle_prize'
         });
-        console.log(`🎁 Awarded physical prize "${prize.name}" to user ${winner.userId}`);
+        console.log(`🎁 Awarded physical prize "${prize.name}" directly to user ${winner.userId}'s vault`);
+      }
+    }
+
+    // Award 1 credit consolation prize to all participants who didn't win main prizes
+    const allParticipantUserIds = new Set(entries.map(entry => entry.userId));
+    const consolationWinners = [...allParticipantUserIds].filter(userId => !winningUserIds.has(userId));
+    
+    console.log(`🎁 Awarding 1 credit consolation prize to ${consolationWinners.length} participants`);
+    
+    for (const userId of consolationWinners) {
+      if (userId) { // Ensure userId is not null
+        // Get current user credits
+        const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        if (user.length > 0) {
+          const currentCredits = parseFloat(user[0].credits || "0");
+          const newCredits = currentCredits + 1;
+          await storage.updateUserCredits(userId, newCredits.toFixed(2));
+          console.log(`💰 Awarded 1 credit consolation prize to user ${userId} (${currentCredits} + 1 = ${newCredits})`);
+        }
       }
     }
 
@@ -3974,6 +4001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .where(eq(raffles.id, raffleId));
 
     console.log('🎲 Auto-draw completed successfully!');
+    console.log(`🎁 Summary: ${winners.length} main prize winners, ${consolationWinners.length} consolation prize winners (1 credit each)`);
     return winners;
   }
 

@@ -154,21 +154,34 @@ export default function MyPacks() {
           bgColor: "bg-purple-50",
           tier: "Legendary"
         };
+      case 'pe etb':
+        return { 
+          name: "PE ETB", 
+          color: "from-orange-600 to-yellow-400", 
+          borderColor: "border-orange-500",
+          textColor: "text-orange-600",
+          bgColor: "bg-orange-50",
+          tier: "Special"
+        };
       default:
         return { 
-          name: "Mystery Pack", 
+          name: packType || "Mystery Pack", 
           color: "from-gray-600 to-gray-400", 
           borderColor: "border-gray-500",
           textColor: "text-gray-600",
           bgColor: "bg-gray-50",
-          tier: "Unknown"
+          tier: "Special"
         };
     }
   };
 
   // Group packs by tier and count them
   const groupedPacks = (userPacks as any[] || []).reduce((acc: any, pack: any) => {
-    const tier = pack.tier || 'unknown';
+    let tier = pack.tier || 'unknown';
+    // Treat 'classic' tier as 'pokeball' for display purposes
+    if (tier === 'classic') {
+      tier = 'pokeball';
+    }
     if (!acc[tier]) {
       acc[tier] = [];
     }
@@ -179,7 +192,14 @@ export default function MyPacks() {
     return acc;
   }, {});
 
-  const packTiers = ['pokeball', 'greatball', 'ultraball', 'masterball'];
+  // Get all unique tiers from user's packs, with standard tiers first
+  const standardTiers = ['pokeball', 'greatball', 'ultraball', 'masterball'];
+  const userTiers = (userPacks as any[] || []).map(pack => pack.tier).filter(Boolean);
+  const uniqueUserTiers = [...new Set(userTiers)];
+  
+  // Filter out 'classic' tier since it's the same as 'pokeball' for display purposes
+  const filteredUserTiers = uniqueUserTiers.filter(tier => tier !== 'classic');
+  const packTiers = [...standardTiers, ...filteredUserTiers.filter(tier => !standardTiers.includes(tier))];
 
   // Pokemon pack images component
   const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
@@ -195,6 +215,8 @@ export default function MyPacks() {
           return "/assets/masterball.png";
         case 'luxury':
           return "/assets/masterball.png"; // Use masterball for luxury pack
+        case 'pe etb':
+          return "/assets/classic-image.png"; // Use classic pack image for PE ETB
         default:
           return "/assets/pokeball.png";
       }

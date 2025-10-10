@@ -233,6 +233,10 @@ export class DatabaseStorage {
               eq(mysteryPrize.packId, card.packSource || ''),
               eq(mysteryPrize.cardName, card.cardName)
             ));
+        } else if (card.cardSource === 'raffle_prize') {
+          // Raffle prize cards don't need to be returned to any prize pool
+          // They are one-time rewards, just give credits back
+          console.log(`🎁 Raffle prize card "${card.cardName}" refunded - no quantity returned to prize pool`);
         }
       }
 
@@ -754,9 +758,45 @@ export class DatabaseStorage {
       }
       
       return await this.openSpecialPack(specialPackData[0], userId);
+    } else if (userPack.packType === 'raffle_physical') {
+      console.log("✅ This is a raffle physical prize, creating special reward");
+      // For raffle physical prizes, create a special reward card
+      return await this.createRafflePhysicalReward(userPack, userId);
     }
     
     throw new Error(`Unknown pack type: ${userPack.packType}`);
+  }
+
+  private async createRafflePhysicalReward(userPack: any, userId: string): Promise<PackOpenResult> {
+    console.log("🎁 Creating raffle physical reward for:", userPack.tier);
+    
+    // Create a special reward card for the physical prize
+    const rewardCard = {
+      name: userPack.tier,
+      tier: 'SSS', // Physical prizes are the highest tier
+      imageUrl: '/assets/classic-image.png', // Use a special image for physical prizes
+      refundCredit: 1000, // High refund value for physical prizes
+      isHit: true
+    };
+    
+    // Add the reward card to user's vault
+    await this.addUserCard({
+      id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      cardName: rewardCard.name,
+      cardImageUrl: rewardCard.imageUrl,
+      cardTier: rewardCard.tier,
+      refundCredit: rewardCard.refundCredit,
+    });
+    
+    console.log("✅ Added raffle physical reward to user vault:", rewardCard.name);
+    
+    return {
+      success: true,
+      packCards: [rewardCard],
+      hitCardPosition: 0,
+      packType: 'raffle_physical'
+    };
   }
 
   private async openMysteryPack(mysteryPack: MysteryPack, userId: string): Promise<PackOpenResult> {

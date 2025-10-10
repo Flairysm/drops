@@ -587,28 +587,30 @@ export default function Play() {
                             {/* Prize Display */}
                             {raffle.prizes && raffle.prizes.length > 0 && (
                               <div className="mb-3">
-                                <div className="text-xs text-gray-400 mb-1">Prize{raffle.prizes.length > 1 ? 's' : ''}:</div>
-                                <div className="space-y-1">
+                                <div className="text-xs text-gray-400 mb-2">Prize{raffle.prizes.length > 1 ? 's' : ''}:</div>
+                                <div className="space-y-2">
                                   {raffle.prizes.map((prize, index) => (
-                                    <div key={prize.id || index} className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-2">
-                                        {prize.imageUrl && (
-                                          <img 
-                                            src={prize.imageUrl} 
-                                            alt={prize.name}
-                                            className="w-8 h-10 object-cover rounded border border-gray-600"
-                                            onError={(e) => {
-                                              e.currentTarget.style.display = 'none';
-                                            }}
-                                          />
-                                        )}
-                                        <span className="text-sm text-yellow-400 font-medium">
-                                          {prize.position === 1 ? '1st' : prize.position === 2 ? '2nd' : prize.position === 3 ? '3rd' : `${prize.position}th`} Place:
+                                    <div key={prize.id || index} className="flex items-start space-x-2">
+                                      {prize.imageUrl && (
+                                        <img 
+                                          src={prize.imageUrl} 
+                                          alt={prize.name}
+                                          className="w-8 h-10 object-cover rounded border border-gray-600 flex-shrink-0"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center space-x-1 mb-1">
+                                          <span className="text-xs text-yellow-400 font-medium">
+                                            {prize.position === 1 ? '1st' : prize.position === 2 ? '2nd' : prize.position === 3 ? '3rd' : `${prize.position}th`} Place:
+                                          </span>
+                                        </div>
+                                        <span className="text-sm text-white font-semibold leading-tight break-words">
+                                          {prize.name}
                                         </span>
                                       </div>
-                                      <span className="text-sm text-white font-semibold">
-                                        {prize.name}
-                                      </span>
                                     </div>
                                   ))}
                                 </div>
@@ -897,20 +899,13 @@ export default function Play() {
                   <img 
                     src={selectedRaffle.imageUrl} 
                     alt={selectedRaffle.title}
-                    className="w-full h-48 object-cover rounded-lg border border-gray-600"
+                    className="w-64 h-64 object-cover rounded-lg border border-gray-600 mx-auto"
                   />
                 ) : (
-                  <div className="w-full h-48 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center">
+                  <div className="w-64 h-64 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center mx-auto">
                     <Gift className="w-16 h-16 text-gray-400" />
                   </div>
                 )}
-                
-                {/* Status Badge */}
-                <div className="absolute top-4 right-4">
-                  <Badge className={`${getStatusColor(selectedRaffle.status)} text-white text-sm px-3 py-1`}>
-                    {selectedRaffle.status.toUpperCase()}
-                  </Badge>
-                </div>
               </div>
 
               {/* Raffle Stats */}
@@ -1033,6 +1028,20 @@ export default function Play() {
                 </div>
               </div>
 
+              {/* Consolation Prize Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">Consolation Prize</h3>
+                <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <h4 className="text-white font-semibold text-lg">1 credit</h4>
+                    </div>
+                    <p className="text-gray-400 text-sm">
+                      All participants who don't win main prizes receive 1 credit as a consolation reward
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* How to Join Section */}
               <div>

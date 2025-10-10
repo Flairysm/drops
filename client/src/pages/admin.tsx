@@ -1246,6 +1246,7 @@ export default function Admin() {
   // Raffle management functions
   const fetchRaffles = async () => {
     try {
+      console.log('🔄 Fetching raffles...');
       const response = await apiRequest("GET", "/api/admin/raffles");
       console.log('🔍 Admin fetchRaffles response:', response);
       const data = await response.json();
@@ -1253,9 +1254,12 @@ export default function Admin() {
       if (data.success) {
         console.log('🔍 Admin setting raffles:', data.raffles);
         setRaffles(data.raffles);
+        console.log('✅ Raffles state updated, current length:', data.raffles.length);
+      } else {
+        console.error('❌ Failed to fetch raffles:', data);
       }
     } catch (error) {
-      console.error('Error fetching raffles:', error);
+      console.error('❌ Error fetching raffles:', error);
     }
   };
 
@@ -1395,6 +1399,10 @@ export default function Admin() {
             description: "The raffle has been removed from the system.",
             variant: "default",
           });
+          // Invalidate React Query cache for raffles
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/raffles"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/raffles"] });
+          // Also manually refresh the local state
           fetchRaffles();
         }
       } catch (error) {
