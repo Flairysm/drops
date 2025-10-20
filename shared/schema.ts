@@ -155,6 +155,22 @@ export const transactions = pgTable("transactions", {
 });
 
 // ============================================================================
+// SYSTEM SETTINGS TABLE
+// ============================================================================
+
+export const systemSettings = pgTable("system_settings", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  type: varchar("type", { length: 50 }).default("string"), // string, boolean, number, json
+  isActive: boolean("is_active").default(true),
+  updatedBy: varchar("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ============================================================================
 // RAFFLE TABLES (Clean Architecture)
 // ============================================================================
 
@@ -327,6 +343,13 @@ export const raffleWinnersRelations = relations(raffleWinners, ({ one }) => ({
   }),
 }));
 
+export const systemSettingsRelations = relations(systemSettings, ({ one }) => ({
+  updatedBy: one(users, {
+    fields: [systemSettings.updatedBy],
+    references: [users.id],
+  }),
+}));
+
 // ============================================================================
 // ZOD SCHEMAS
 // ============================================================================
@@ -408,6 +431,12 @@ export const insertRaffleWinnerSchema = createInsertSchema(raffleWinners).omit({
   wonAt: true,
 });
 
+export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -449,6 +478,77 @@ export type InsertRaffleEntry = z.infer<typeof insertRaffleEntrySchema>;
 export type RaffleWinner = typeof raffleWinners.$inferSelect;
 export type InsertRaffleWinner = z.infer<typeof insertRaffleWinnerSchema>;
 
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
+
+// ============================================================================
+// SHIPPING TABLES
+// ============================================================================
+
+export const userAddresses = pgTable("user_addresses", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address").notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  state: varchar("state", { length: 100 }).notNull(),
+  postalCode: varchar("postal_code", { length: 20 }).notNull(),
+  country: varchar("country", { length: 100 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const shippingRequests = pgTable("shipping_requests", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  addressId: varchar("address_id", { length: 255 }).notNull().references(() => userAddresses.id),
+  items: jsonb("items").notNull(), // Array of items to ship
+  totalValue: decimal("total_value", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 50 }).default("pending"), // pending, shipped, delivered
+  trackingNumber: varchar("tracking_number", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const userAddressesRelations = relations(userAddresses, ({ one, many }) => ({
+  user: one(users, {
+    fields: [userAddresses.userId],
+    references: [users.id],
+  }),
+  shippingRequests: many(shippingRequests),
+}));
+
+export const shippingRequestsRelations = relations(shippingRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [shippingRequests.userId],
+    references: [users.id],
+  }),
+  address: one(userAddresses, {
+    fields: [shippingRequests.addressId],
+    references: [userAddresses.id],
+  }),
+}));
+
+export const insertUserAddressSchema = createInsertSchema(userAddresses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertShippingRequestSchema = createInsertSchema(shippingRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type UserAddress = typeof userAddresses.$inferSelect;
+export type InsertUserAddress = z.infer<typeof insertUserAddressSchema>;
+export type ShippingRequest = typeof shippingRequests.$inferSelect;
+export type InsertShippingRequest = z.infer<typeof insertShippingRequestSchema>;
+
 // Extended types for API responses
 export type ClassicPackWithPrizes = ClassicPack & { prizes: ClassicPrize[] };
 export type MysteryPackWithPrizes = MysteryPack & { prizes: MysteryPrize[] };
@@ -477,6 +577,7 @@ export type Card = {
   tier: string;
   imageUrl: string;
   marketValue: string;
+  credits?: string;
   isHit?: boolean;
   position?: number;
 };

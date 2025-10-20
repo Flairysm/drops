@@ -72,7 +72,10 @@ export function Navigation() {
     { path: "/play", label: "Play" },
     { path: "/my-packs", label: "My Packs" },
     { path: "/vault", label: "Vault" },
-    ...(isAdmin ? [{ path: "/admin", label: "Admin" }] : []),
+    ...(isAdmin ? [
+      { path: "/admin", label: "Admin" },
+      { path: "/shippingadmin", label: "Shipping Admin" }
+    ] : []),
   ];
 
   return (
@@ -167,6 +170,22 @@ export function Navigation() {
                             <div className="flex flex-col">
                               <span className="font-medium text-sm">Profile Settings</span>
                               <span className="text-xs text-[#9CA3AF]">Manage your account</span>
+                            </div>
+                          </div>
+                        </Link>
+                        <Link href="/shipping">
+                          <div 
+                            className="px-4 py-3 text-[#E5E7EB] hover:bg-[#26263A]/30 cursor-pointer flex items-center space-x-3 transition-all duration-200 group"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            <div className="w-8 h-8 bg-gradient-to-br from-[#059669] to-[#10B981] rounded-lg flex items-center justify-center shadow-[0_0_8px_rgba(5,150,105,0.3)] group-hover:shadow-[0_0_12px_rgba(5,150,105,0.5)] transition-all duration-200">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                              </svg>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm">Shipping</span>
+                              <span className="text-xs text-[#9CA3AF]">Manage addresses & track orders</span>
                             </div>
                           </div>
                         </Link>
@@ -285,6 +304,26 @@ export function Navigation() {
                           <User className="w-4 h-4 text-white" />
                         </div>
                         <span className="font-semibold tracking-wide">PROFILE</span>
+                      </div>
+                    </Button>
+                  </Link>
+                )}
+
+                {/* Mobile Shipping Button */}
+                {isAuthenticated && (
+                  <Link href="/shipping">
+                    <Button
+                      variant="outline"
+                      className="w-full border-[#26263A]/50 text-[#E5E7EB] hover:bg-[#151521]/50 hover:border-[#059669]/50 py-4 rounded-2xl transition-all duration-300"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <div className="flex items-center justify-center space-x-3">
+                        <div className="w-6 h-6 bg-gradient-to-br from-[#059669] to-[#10B981] rounded-lg flex items-center justify-center shadow-[0_0_8px_rgba(5,150,105,0.3)]">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                        </div>
+                        <span className="font-semibold tracking-wide">SHIPPING</span>
                       </div>
                     </Button>
                   </Link>

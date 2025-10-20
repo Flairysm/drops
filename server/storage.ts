@@ -10,6 +10,9 @@ import {
   userPacks,
   transactions,
   globalFeed,
+  systemSettings,
+  userAddresses,
+  shippingRequests,
   type User,
   type InsertUser,
   type ClassicPack,
@@ -31,6 +34,12 @@ import {
   type InsertUserCard,
   type InsertUserPack,
   type InsertTransaction,
+  type SystemSetting,
+  type InsertSystemSetting,
+  type UserAddress,
+  type InsertUserAddress,
+  type ShippingRequest,
+  type InsertShippingRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
@@ -832,8 +841,14 @@ export class DatabaseStorage {
         throw new Error("No common cards found in mystery pack pool");
       }
       
-      // Select a random common card for the first 7 cards
-      const selectedCommonCard = commonCards[Math.floor(Math.random() * commonCards.length)];
+      // Select a random common card for the first 7 cards - use crypto for better randomness
+      const { randomBytes } = await import('crypto');
+      const commonRandomBytes = randomBytes(4);
+      const commonRandom = commonRandomBytes.readUInt32BE(0) / 0xffffffff;
+      const selectedCommonCard = commonCards[Math.floor(commonRandom * commonCards.length)];
+      
+      console.log("🎲 Common card random:", commonRandom);
+      console.log("🎲 Common card random bytes:", commonRandomBytes.toString('hex'));
       
       // Define base odds (for pokeball)
       const baseOdds: Record<string, number> = {
@@ -893,11 +908,15 @@ export class DatabaseStorage {
       
       console.log(`🎲 Using ${mysteryPack.packType} odds:`, hitCardOdds);
       
-      // Select hit card based on odds
-      const random = Math.random();
+      // Select hit card based on odds - use crypto.randomBytes for better randomness
+      const hitRandomBytes = randomBytes(4);
+      const random = hitRandomBytes.readUInt32BE(0) / 0xffffffff;
       let selectedHitCard = null;
       
       console.log("🎲 Random number for hit selection:", random);
+      console.log("🎲 Timestamp:", Date.now());
+      console.log("🎲 User ID:", userId);
+      console.log("🎲 Random bytes:", hitRandomBytes.toString('hex'));
       
       // Calculate cumulative odds for hit card selection
       const hitTiers = ['SSS', 'SS', 'S', 'A', 'B', 'C'];
@@ -909,8 +928,12 @@ export class DatabaseStorage {
         if (random < cumulativeOdds) {
           const hitCards = packCardsWithDetails.filter(card => card.tier?.trim() === tier);
           if (hitCards.length > 0) {
-            selectedHitCard = hitCards[Math.floor(Math.random() * hitCards.length)];
+            // Use crypto for card selection within tier
+            const cardRandomBytes = randomBytes(4);
+            const cardRandom = cardRandomBytes.readUInt32BE(0) / 0xffffffff;
+            selectedHitCard = hitCards[Math.floor(cardRandom * hitCards.length)];
             console.log(`🎲 Hit card selected from tier ${tier}:`, selectedHitCard);
+            console.log(`🎲 Card selection random:`, cardRandom);
             break;
           }
         }
@@ -920,8 +943,12 @@ export class DatabaseStorage {
       if (!selectedHitCard) {
         const fallbackCards = packCardsWithDetails.filter(card => card.tier?.trim() === 'C');
         if (fallbackCards.length > 0) {
-          selectedHitCard = fallbackCards[Math.floor(Math.random() * fallbackCards.length)];
+          // Use crypto for fallback card selection
+          const fallbackRandomBytes = randomBytes(4);
+          const fallbackRandom = fallbackRandomBytes.readUInt32BE(0) / 0xffffffff;
+          selectedHitCard = fallbackCards[Math.floor(fallbackRandom * fallbackCards.length)];
           console.log("🎲 Fallback hit card selected (C tier):", selectedHitCard);
+          console.log("🎲 Fallback random:", fallbackRandom);
         } else {
           // Ultimate fallback - use common card
           selectedHitCard = selectedCommonCard;
@@ -1219,12 +1246,63 @@ export class DatabaseStorage {
   }
 
   async getSystemStats(): Promise<any> {
-    return {
-      totalUsers: 0,
-      totalRevenue: "0.00",
-      totalPacksOpened: 0,
-      totalCardsPulled: 0
-    };
+    try {
+      console.log('🔍 Fetching system stats...');
+      
+      // Get total users count
+      const userCountResult = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const totalUsers = userCountResult[0]?.count || 0;
+      console.log('👥 User count result:', userCountResult, 'Total users:', totalUsers);
+
+      // Get total revenue from transactions (include raffle entries and purchases)
+      const revenueResult = await db.select({ 
+        total: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` 
+      }).from(transactions).where(
+        sql`${transactions.type} IN ('purchase', 'raffle_entry', 'credit_reload')`
+      );
+      const totalRevenue = Number(revenueResult[0]?.total || 0);
+      console.log('💰 Revenue result:', revenueResult, 'Total revenue:', totalRevenue);
+
+      // Get top spenders (list of top 5 spending users) - include raffle entries and purchases
+      const topSpendersResult = await db
+        .select({
+          userId: transactions.userId,
+          totalSpent: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+          email: users.email,
+          username: users.username
+        })
+        .from(transactions)
+        .leftJoin(users, eq(transactions.userId, users.id))
+        .where(
+          sql`${transactions.type} IN ('purchase', 'raffle_entry', 'credit_reload')`
+        )
+        .groupBy(transactions.userId, users.email, users.username)
+        .orderBy(sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0) DESC`)
+        .limit(5);
+
+      const topSpenders = topSpendersResult.map(spender => ({
+        totalSpent: Number(spender.totalSpent || 0).toFixed(2),
+        email: spender.email || 'Unknown',
+        username: spender.username || 'Unknown',
+        userId: spender.userId
+      }));
+      console.log('🏆 Top spenders result:', topSpendersResult, 'Processed:', topSpenders);
+
+      const result = {
+        totalUsers,
+        totalRevenue: totalRevenue.toFixed(2),
+        topSpenders
+      };
+      console.log('📊 Final stats result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error fetching system stats:', error);
+      return {
+        totalUsers: 0,
+        totalRevenue: "0.00",
+        topSpenders: []
+      };
+    }
   }
 
   async createInventoryCard(cardData: any): Promise<any> {
@@ -1279,16 +1357,184 @@ export class DatabaseStorage {
     // Placeholder implementation
   }
 
-  async getAllSystemSettings(): Promise<any[]> {
-    return [];
+  async getAllSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings).orderBy(desc(systemSettings.updatedAt));
   }
 
-  async updateSystemSetting(settingKey: string, settingValue: any, userId: string): Promise<any> {
-    return { key: settingKey, value: settingValue };
+  async getSystemSetting(key: string): Promise<SystemSetting | null> {
+    const result = await db.select().from(systemSettings).where(eq(systemSettings.key, key)).limit(1);
+    return result[0] || null;
   }
 
-  async createShippingRequest(requestData: any): Promise<any> {
-    return { id: `shipping-${Date.now()}` };
+  async updateSystemSetting(settingKey: string, settingValue: any, userId: string): Promise<SystemSetting> {
+    const existing = await this.getSystemSetting(settingKey);
+    
+    if (existing) {
+      // Update existing setting
+      const result = await db
+        .update(systemSettings)
+        .set({ 
+          value: settingValue.toString(),
+          updatedBy: userId,
+          updatedAt: new Date()
+        })
+        .where(eq(systemSettings.key, settingKey))
+        .returning();
+      return result[0];
+    } else {
+      // Create new setting
+      const result = await db
+        .insert(systemSettings)
+        .values({
+          id: `setting-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          key: settingKey,
+          value: settingValue.toString(),
+          type: typeof settingValue === 'boolean' ? 'boolean' : 
+                typeof settingValue === 'number' ? 'number' : 'string',
+          updatedBy: userId
+        })
+        .returning();
+      return result[0];
+    }
+  }
+
+  async createSystemSetting(settingData: InsertSystemSetting): Promise<SystemSetting> {
+    const result = await db.insert(systemSettings).values({
+      ...settingData,
+      id: `setting-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }).returning();
+    return result[0];
+  }
+
+  // ============================================================================
+  // SHIPPING METHODS
+  // ============================================================================
+
+  async getUserAddresses(userId: string): Promise<UserAddress[]> {
+    return await db.select().from(userAddresses).where(eq(userAddresses.userId, userId)).orderBy(desc(userAddresses.isDefault), desc(userAddresses.createdAt));
+  }
+
+  async createUserAddress(addressData: InsertUserAddress): Promise<UserAddress> {
+    const result = await db.insert(userAddresses).values({
+      ...addressData,
+      id: `addr-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }).returning();
+    return result[0];
+  }
+
+  async updateUserAddress(addressId: string, addressData: Partial<InsertUserAddress>): Promise<UserAddress> {
+    const result = await db.update(userAddresses)
+      .set({ ...addressData, updatedAt: new Date() })
+      .where(eq(userAddresses.id, addressId))
+      .returning();
+    return result[0];
+  }
+
+  async deleteUserAddress(addressId: string): Promise<void> {
+    await db.delete(userAddresses).where(eq(userAddresses.id, addressId));
+  }
+
+  async setDefaultAddress(userId: string, addressId: string): Promise<void> {
+    // First, unset all default addresses for this user
+    await db.update(userAddresses)
+      .set({ isDefault: false, updatedAt: new Date() })
+      .where(and(eq(userAddresses.userId, userId), eq(userAddresses.isDefault, true)));
+    
+    // Then set the new default
+    await db.update(userAddresses)
+      .set({ isDefault: true, updatedAt: new Date() })
+      .where(eq(userAddresses.id, addressId));
+  }
+
+  async createShippingRequest(requestData: InsertShippingRequest): Promise<ShippingRequest> {
+    const result = await db.insert(shippingRequests).values({
+      ...requestData,
+      id: `ship-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }).returning();
+    return result[0];
+  }
+
+  async getUserShippingRequests(userId: string): Promise<(ShippingRequest & { address: UserAddress })[]> {
+    return await db.select({
+      id: shippingRequests.id,
+      userId: shippingRequests.userId,
+      addressId: shippingRequests.addressId,
+      items: shippingRequests.items,
+      totalValue: shippingRequests.totalValue,
+      status: shippingRequests.status,
+      trackingNumber: shippingRequests.trackingNumber,
+      notes: shippingRequests.notes,
+      createdAt: shippingRequests.createdAt,
+      updatedAt: shippingRequests.updatedAt,
+      address: {
+        id: userAddresses.id,
+        userId: userAddresses.userId,
+        name: userAddresses.name,
+        address: userAddresses.address,
+        city: userAddresses.city,
+        state: userAddresses.state,
+        postalCode: userAddresses.postalCode,
+        country: userAddresses.country,
+        phone: userAddresses.phone,
+        isDefault: userAddresses.isDefault,
+        createdAt: userAddresses.createdAt,
+        updatedAt: userAddresses.updatedAt,
+      }
+    })
+    .from(shippingRequests)
+    .innerJoin(userAddresses, eq(shippingRequests.addressId, userAddresses.id))
+    .where(eq(shippingRequests.userId, userId))
+    .orderBy(desc(shippingRequests.createdAt));
+  }
+
+  async getAllShippingRequests(): Promise<(ShippingRequest & { address: UserAddress; user: User })[]> {
+    return await db.select({
+      id: shippingRequests.id,
+      userId: shippingRequests.userId,
+      addressId: shippingRequests.addressId,
+      items: shippingRequests.items,
+      totalValue: shippingRequests.totalValue,
+      status: shippingRequests.status,
+      trackingNumber: shippingRequests.trackingNumber,
+      notes: shippingRequests.notes,
+      createdAt: shippingRequests.createdAt,
+      updatedAt: shippingRequests.updatedAt,
+      address: {
+        id: userAddresses.id,
+        userId: userAddresses.userId,
+        name: userAddresses.name,
+        address: userAddresses.address,
+        city: userAddresses.city,
+        state: userAddresses.state,
+        postalCode: userAddresses.postalCode,
+        country: userAddresses.country,
+        phone: userAddresses.phone,
+        isDefault: userAddresses.isDefault,
+        createdAt: userAddresses.createdAt,
+        updatedAt: userAddresses.updatedAt,
+      },
+      user: {
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        credits: users.credits,
+        isAdmin: false, // TODO: Add isAdmin field to users schema if needed
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      }
+    })
+    .from(shippingRequests)
+    .innerJoin(userAddresses, eq(shippingRequests.addressId, userAddresses.id))
+    .innerJoin(users, eq(shippingRequests.userId, users.id))
+    .orderBy(desc(shippingRequests.createdAt));
+  }
+
+  async updateShippingRequest(requestId: string, updateData: Partial<InsertShippingRequest>): Promise<ShippingRequest> {
+    const result = await db.update(shippingRequests)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(shippingRequests.id, requestId))
+      .returning();
+    return result[0];
   }
 }
 

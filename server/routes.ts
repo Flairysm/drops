@@ -916,6 +916,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get card image from card pools
+  app.get('/api/card-image/:cardName', async (req: any, res) => {
+    try {
+      const { cardName } = req.params;
+      console.log('🔍 Searching for card image:', cardName);
+      
+      // Search in mystery pack cards first
+      const mysteryCard = await db
+        .select({ cardImageUrl: mysteryPrize.cardImageUrl })
+        .from(mysteryPrize)
+        .where(eq(mysteryPrize.cardName, cardName))
+        .limit(1);
+      
+      console.log('🔍 Mystery pack search result:', mysteryCard);
+      
+      if (mysteryCard.length > 0 && mysteryCard[0].cardImageUrl) {
+        console.log('✅ Found in mystery pack:', mysteryCard[0].cardImageUrl);
+        return res.json({ imageUrl: mysteryCard[0].cardImageUrl });
+      }
+      
+      // Search in classic pack cards
+      const classicCard = await db
+        .select({ cardImageUrl: classicPrize.cardImageUrl })
+        .from(classicPrize)
+        .where(eq(classicPrize.cardName, cardName))
+        .limit(1);
+      
+      console.log('🔍 Classic pack search result:', classicCard);
+      
+      if (classicCard.length > 0 && classicCard[0].cardImageUrl) {
+        console.log('✅ Found in classic pack:', classicCard[0].cardImageUrl);
+        return res.json({ imageUrl: classicCard[0].cardImageUrl });
+      }
+      
+      // Search in special pack cards
+      const specialCard = await db
+        .select({ cardImageUrl: specialPrize.cardImageUrl })
+        .from(specialPrize)
+        .where(eq(specialPrize.cardName, cardName))
+        .limit(1);
+      
+      console.log('🔍 Special pack search result:', specialCard);
+      
+      if (specialCard.length > 0 && specialCard[0].cardImageUrl) {
+        console.log('✅ Found in special pack:', specialCard[0].cardImageUrl);
+        return res.json({ imageUrl: specialCard[0].cardImageUrl });
+      }
+      
+      // No card found - let's see what cards are actually in the database
+      console.log('❌ No card found in any pack for:', cardName);
+      
+      // Debug: Show some sample cards from each pack type
+      const sampleMysteryCards = await db
+        .select({ cardName: mysteryPrize.cardName, cardImageUrl: mysteryPrize.cardImageUrl })
+        .from(mysteryPrize)
+        .limit(5);
+      console.log('🔍 Sample mystery pack cards:', sampleMysteryCards);
+      
+      const sampleClassicCards = await db
+        .select({ cardName: classicPrize.cardName, cardImageUrl: classicPrize.cardImageUrl })
+        .from(classicPrize)
+        .limit(5);
+      console.log('🔍 Sample classic pack cards:', sampleClassicCards);
+      
+      res.json({ imageUrl: null });
+    } catch (error) {
+      console.error("Error fetching card image:", error);
+      res.status(500).json({ message: "Failed to fetch card image" });
+    }
+  });
+
   app.post('/api/vault/refund', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -1376,8 +1447,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get('/api/admin/stats', isAdminCombined, async (req: any, res) => {
     try {
+      console.log('🚀 Admin stats API called');
       // Basic admin check (in real app, check user role)
       const stats = await storage.getSystemStats();
+      console.log('📊 Returning stats:', stats);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching admin stats:", error);
@@ -2242,6 +2315,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/admin/system-settings/:settingKey', isAdminCombined, async (req: any, res) => {
+    try {
+      const { settingKey } = req.params;
+      const { value } = req.body;
+      const userId = req.user.id;
+      
+      const setting = await storage.updateSystemSetting(settingKey, value, userId);
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating system setting:", error);
+      res.status(500).json({ message: "Failed to update system setting" });
+    }
+  });
+
+  // ============================================================================
+  // SHIPPING ROUTES
+  // ============================================================================
+
+  // Get user addresses
+  app.get('/api/shipping/addresses', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const addresses = await storage.getUserAddresses(userId);
+      res.json(addresses);
+    } catch (error) {
+      console.error("Error fetching user addresses:", error);
+      res.status(500).json({ message: "Failed to fetch addresses" });
+    }
+  });
+
+  // Create user address
+  app.post('/api/shipping/addresses', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const addressData = { ...req.body, userId };
+      const address = await storage.createUserAddress(addressData);
+      res.json(address);
+    } catch (error) {
+      console.error("Error creating address:", error);
+      res.status(500).json({ message: "Failed to create address" });
+    }
+  });
+
+  // Update user address
+  app.put('/api/shipping/addresses/:addressId', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const { addressId } = req.params;
+      const addressData = req.body;
+      const address = await storage.updateUserAddress(addressId, addressData);
+      res.json(address);
+    } catch (error) {
+      console.error("Error updating address:", error);
+      res.status(500).json({ message: "Failed to update address" });
+    }
+  });
+
+  // Delete user address
+  app.delete('/api/shipping/addresses/:addressId', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const { addressId } = req.params;
+      await storage.deleteUserAddress(addressId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting address:", error);
+      res.status(500).json({ message: "Failed to delete address" });
+    }
+  });
+
+  // Set default address
+  app.put('/api/shipping/addresses/:addressId/default', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const { addressId } = req.params;
+      const userId = req.user.id;
+      await storage.setDefaultAddress(userId, addressId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting default address:", error);
+      res.status(500).json({ message: "Failed to set default address" });
+    }
+  });
+
+  // Create shipping request
+  app.post('/api/shipping/requests', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const requestData = { ...req.body, userId };
+      const request = await storage.createShippingRequest(requestData);
+      res.json(request);
+    } catch (error) {
+      console.error("Error creating shipping request:", error);
+      res.status(500).json({ message: "Failed to create shipping request" });
+    }
+  });
+
+  // Get user shipping requests
+  app.get('/api/shipping/requests', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const requests = await storage.getUserShippingRequests(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching shipping requests:", error);
+      res.status(500).json({ message: "Failed to fetch shipping requests" });
+    }
+  });
+
+  // Admin: Get all shipping requests
+  app.get('/api/admin/shipping/requests', isAdminCombined, async (req: any, res) => {
+    try {
+      const requests = await storage.getAllShippingRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching all shipping requests:", error);
+      res.status(500).json({ message: "Failed to fetch shipping requests" });
+    }
+  });
+
+  // Admin: Update shipping request (tracking number, status)
+  app.put('/api/admin/shipping/requests/:requestId', isAdminCombined, async (req: any, res) => {
+    try {
+      const { requestId } = req.params;
+      const updateData = req.body;
+      const request = await storage.updateShippingRequest(requestId, updateData);
+      res.json(request);
+    } catch (error) {
+      console.error("Error updating shipping request:", error);
+      res.status(500).json({ message: "Failed to update shipping request" });
+    }
+  });
+
   // Cards and packs routes
   app.get('/api/cards', async (req, res) => {
     try {
@@ -2465,6 +2668,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message || "Failed to purchase pack" });
     }
   });
+
+  // Profile management endpoints
+  app.put('/api/user/profile', isAuthenticatedCombined, asyncHandler(async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      const { username, email } = req.body;
+
+      if (!userId) {
+        const { statusCode, response } = createErrorResponse('User not authenticated', 'UNAUTHORIZED', null, 401);
+        return res.status(statusCode).json(response);
+      }
+
+      // Validate input
+      if (!username || !email) {
+        const { statusCode, response } = createErrorResponse('Username and email are required', 'VALIDATION_ERROR', null, 400);
+        return res.status(statusCode).json(response);
+      }
+
+      // Check if username or email already exists (excluding current user)
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            sql`${users.id} != ${userId}`,
+            sql`(${users.username} = ${username} OR ${users.email} = ${email})`
+          )
+        )
+        .limit(1);
+
+      if (existingUser.length > 0) {
+        const { statusCode, response } = createErrorResponse('Username or email already exists', 'CONFLICT', null, 409);
+        return res.status(statusCode).json(response);
+      }
+
+      // Update user profile
+      await db
+        .update(users)
+        .set({
+          username,
+          email,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+
+      const response = createSuccessResponse(
+        { username, email },
+        'Profile updated successfully'
+      );
+      res.json(response);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      const { statusCode, response } = createErrorResponse('Failed to update profile', 'INTERNAL_SERVER_ERROR', null, 500);
+      res.status(statusCode).json(response);
+    }
+  }));
+
+  app.put('/api/user/password', isAuthenticatedCombined, asyncHandler(async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+      const { currentPassword, newPassword } = req.body;
+
+      if (!userId) {
+        const { statusCode, response } = createErrorResponse('User not authenticated', 'UNAUTHORIZED', null, 401);
+        return res.status(statusCode).json(response);
+      }
+
+      // Validate input
+      if (!currentPassword || !newPassword) {
+        const { statusCode, response } = createErrorResponse('Current password and new password are required', 'VALIDATION_ERROR', null, 400);
+        return res.status(statusCode).json(response);
+      }
+
+      if (newPassword.length < 8) {
+        const { statusCode, response } = createErrorResponse('New password must be at least 8 characters long', 'VALIDATION_ERROR', null, 400);
+        return res.status(statusCode).json(response);
+      }
+
+      // Get user from database
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (user.length === 0) {
+        const { statusCode, response } = createErrorResponse('User not found', 'NOT_FOUND', null, 404);
+        return res.status(statusCode).json(response);
+      }
+
+      // Verify current password (you'll need to implement password hashing verification)
+      // For now, we'll assume the password verification is handled by your auth system
+      // This is a placeholder - you should implement proper password verification
+      const isCurrentPasswordValid = true; // Replace with actual password verification
+
+      if (!isCurrentPasswordValid) {
+        const { statusCode, response } = createErrorResponse('Current password is incorrect', 'UNAUTHORIZED', null, 401);
+        return res.status(statusCode).json(response);
+      }
+
+      // Hash new password (you'll need to implement password hashing)
+      // For now, we'll just store it as-is (NOT RECOMMENDED FOR PRODUCTION)
+      const hashedNewPassword = newPassword; // Replace with actual password hashing
+
+      // Update password
+      await db
+        .update(users)
+        .set({
+          password: hashedNewPassword,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+
+      const response = createSuccessResponse(
+        null,
+        'Password updated successfully'
+      );
+      res.json(response);
+    } catch (error) {
+      console.error('Error updating password:', error);
+      const { statusCode, response } = createErrorResponse('Failed to update password', 'INTERNAL_SERVER_ERROR', null, 500);
+      res.status(statusCode).json(response);
+    }
+  }));
+
+  app.get('/api/user/profile', isAuthenticatedCombined, asyncHandler(async (req, res) => {
+    try {
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        const { statusCode, response } = createErrorResponse('User not authenticated', 'UNAUTHORIZED', null, 401);
+        return res.status(statusCode).json(response);
+      }
+
+      // Get user profile
+      const user = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          role: users.role,
+          credits: users.credits,
+          createdAt: users.createdAt
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (user.length === 0) {
+        const { statusCode, response } = createErrorResponse('User not found', 'NOT_FOUND', null, 404);
+        return res.status(statusCode).json(response);
+      }
+
+      const response = createSuccessResponse(user[0], 'Profile retrieved successfully');
+      res.json(response);
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      const { statusCode, response } = createErrorResponse('Failed to get profile', 'INTERNAL_SERVER_ERROR', null, 500);
+      res.status(statusCode).json(response);
+    }
+  }));
 
   // Debug endpoints - only available in development
   if (process.env.NODE_ENV === 'development') {

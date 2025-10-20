@@ -19,6 +19,9 @@ import Vault from "@/pages/vault";
 import Admin from "@/pages/admin";
 import Reload from "@/pages/reload";
 import Purchase from "@/pages/purchase";
+import Profile from "@/pages/profile";
+import Shipping from "@/pages/shipping";
+import ShippingAdmin from "@/pages/shippingadmin";
 import NotFound from "@/pages/not-found";
 
 function RouterComponent() {
@@ -85,6 +88,9 @@ function RouterComponent() {
           <Route path="/vault" component={Vault} />
           <Route path="/reload" component={Reload} />
           <Route path="/admin" component={Admin} />
+          <Route path="/profile" component={Profile} />
+          <Route path="/shipping" component={Shipping} />
+          <Route path="/shippingadmin" component={ShippingAdmin} />
           <Route path="/purchase/:type/:id" component={Purchase} />
         </>
       )}

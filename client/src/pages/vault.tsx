@@ -8,12 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { Package, RefreshCw, Truck, Filter, Grid, List } from "lucide-react";
 import type { UserCard } from "@shared/schema";
 import { motion } from "framer-motion";
+
 
 export default function Vault() {
   const { toast } = useToast();
@@ -22,6 +26,13 @@ export default function Vault() {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [filterTier, setFilterTier] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  
+  // Shipping popup state
+  const [showShippingPopup, setShowShippingPopup] = useState(false);
+  const [userAddresses, setUserAddresses] = useState<any[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<string>("");
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+  const [isCreatingShippingRequest, setIsCreatingShippingRequest] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -155,11 +166,13 @@ export default function Vault() {
   };
 
   const handleCardSelect = (cardId: string) => {
-    setSelectedCards(prev => 
-      prev.includes(cardId) 
+    setSelectedCards(prev => {
+      const newSelection = prev.includes(cardId) 
         ? prev.filter(id => id !== cardId)
-        : [...prev, cardId]
-    );
+        : [...prev, cardId];
+      console.log('🔍 Card selection updated:', { cardId, newSelection, count: newSelection.length });
+      return newSelection;
+    });
   };
 
   const calculateRefundValue = () => {
@@ -171,6 +184,150 @@ export default function Vault() {
       const refundValue = parseFloat(card.refundCredit.toString());
       return total + (refundValue * card.quantity);
     }, 0);
+  };
+
+  const handleShipSelected = async () => {
+    console.log('🚢 handleShipSelected called with selectedCards:', selectedCards.length);
+    
+    if (selectedCards.length === 0) {
+      toast({
+        title: "No cards selected",
+        description: "Please select cards to ship.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Limit the number of cards that can be shipped at once to prevent storage quota issues
+    const MAX_SHIPPING_CARDS = 30; // Reduced limit due to image URL size
+    if (selectedCards.length > MAX_SHIPPING_CARDS) {
+      console.log('❌ Too many cards selected:', selectedCards.length, '>', MAX_SHIPPING_CARDS);
+      toast({
+        title: "Too many cards selected",
+        description: `Please select no more than ${MAX_SHIPPING_CARDS} cards to ship at once.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Fetch user addresses
+    setIsLoadingAddresses(true);
+    try {
+      const response = await apiRequest("GET", "/api/shipping/addresses");
+      const addresses = await response.json();
+      setUserAddresses(addresses);
+      
+      if (addresses.length === 0) {
+        toast({
+          title: "No addresses found",
+          description: "Please add an address first before shipping cards.",
+          variant: "destructive",
+        });
+        setIsLoadingAddresses(false);
+        return;
+      }
+      
+      // Set default address if available
+      const defaultAddress = addresses.find((addr: any) => addr.isDefault);
+      if (defaultAddress) {
+        setSelectedAddress(defaultAddress.id);
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch addresses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load addresses. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoadingAddresses(false);
+      return;
+    }
+    
+    setIsLoadingAddresses(false);
+    setShowShippingPopup(true);
+  };
+
+  const fetchUserAddresses = async () => {
+    setIsLoadingAddresses(true);
+    try {
+      const response = await apiRequest("GET", "/api/shipping/addresses");
+      const addresses = await response.json();
+      setUserAddresses(addresses);
+    } catch (error) {
+      console.error('❌ Failed to fetch addresses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load addresses.",
+        variant: "destructive",
+      });
+    }
+    setIsLoadingAddresses(false);
+  };
+
+  const createShippingRequest = async () => {
+    if (!selectedAddress) {
+      toast({
+        title: "No address selected",
+        description: "Please select a shipping address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingShippingRequest(true);
+    
+    try {
+      // Prepare the selected cards data
+      const selectedCardsData = vaultCards?.filter(card => selectedCards.includes(card.id))
+        .map(card => {
+          console.log('🔍 Vault card data:', JSON.stringify(card, null, 2));
+          return {
+            id: card.id,
+            name: card.cardName,
+            tier: card.cardTier,
+            qty: card.quantity,
+            credit: card.refundCredit,
+            imageUrl: card.cardImageUrl,
+            cardImageUrl: card.cardImageUrl
+          };
+        }) || [];
+
+      const totalValue = selectedCardsData.reduce((total, card) => {
+        return total + (parseFloat(card.credit?.toString() || '0') * card.qty);
+      }, 0);
+
+      const requestData = {
+        addressId: selectedAddress,
+        items: selectedCardsData,
+        totalValue: totalValue
+      };
+
+      const response = await apiRequest("POST", "/api/shipping/requests", requestData);
+      
+      toast({
+        title: "🎉 Shipping Request Created!",
+        description: `Your request #${response.data?.id?.slice(-8) || 'N/A'} has been submitted successfully. We'll process it within 1-2 business days.`,
+      });
+
+      // Close popup and clear selection
+      setShowShippingPopup(false);
+      setSelectedCards([]);
+      setSelectedAddress("");
+      
+      // Refresh vault data
+      queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
+      
+    } catch (error) {
+      console.error('❌ Failed to create shipping request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create shipping request. Please try again.",
+        variant: "destructive",
+      });
+    }
+    
+    setIsCreatingShippingRequest(false);
   };
 
   // No need for tier mapping anymore since we're using direct tier codes
@@ -452,11 +609,16 @@ export default function Vault() {
                   <Button
                     size="sm"
                     disabled={selectedCards.length === 0}
+                    onClick={() => {
+                      console.log('🚢 Ship button clicked, selected cards:', selectedCards.length);
+                      handleShipSelected();
+                    }}
                     className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0 disabled:bg-[#374151] disabled:text-[#9CA3AF]"
                     data-testid="button-ship-selected"
+                    title={selectedCards.length === 0 ? "Select cards first to ship them" : `Ship ${selectedCards.length} selected cards`}
                   >
                     <Truck className="w-4 h-4 mr-2" />
-                    Ship Cards
+                    Ship Cards {selectedCards.length > 0 && `(${selectedCards.length})`}
                   </Button>
                 </div>
               </div>
@@ -501,7 +663,7 @@ export default function Vault() {
             ) : (
               <motion.div 
                 className={viewMode === "grid" 
-                  ? "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-2" 
+                  ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2"
                   : "space-y-4"
                 }
                 initial={{ opacity: 0 }}
@@ -548,6 +710,125 @@ export default function Vault() {
         </div>
       </main>
       
+      {/* Shipping Popup Dialog */}
+      <Dialog open={showShippingPopup} onOpenChange={setShowShippingPopup}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background border border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Truck className="w-5 h-5" />
+              Ship Selected Cards
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Review your selected cards and choose a shipping address
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Selected Cards Summary */}
+            <div>
+              <h3 className="font-semibold mb-3 text-foreground">Selected Cards ({selectedCards.length})</h3>
+              <div className="max-h-40 overflow-y-auto space-y-2">
+                {vaultCards?.filter(card => selectedCards.includes(card.id)).map((card) => (
+                  <div key={card.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg border border-border">
+                    <div className="w-12 h-16 bg-gradient-to-br from-[#7C3AED] to-[#22D3EE] rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                      {card.cardImageUrl ? (
+                        <img 
+                          src={card.cardImageUrl} 
+                          alt={card.cardName}
+                          className="w-full h-full object-cover rounded"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`absolute inset-0 flex items-center justify-center ${card.cardImageUrl ? 'hidden' : 'flex'}`}>
+                        <span className="text-xs font-bold text-white">{card.cardTier}</span>
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-foreground truncate">{card.cardName}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {card.cardTier} • Qty: {card.quantity}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Address Selection */}
+            <div>
+              <Label htmlFor="address" className="text-foreground">Shipping Address *</Label>
+              {isLoadingAddresses ? (
+                <div className="mt-2 p-3 bg-muted rounded-lg text-center border border-border">
+                  <div className="text-muted-foreground">Loading addresses...</div>
+                </div>
+              ) : userAddresses.length === 0 ? (
+                <div className="mt-2 p-3 bg-muted rounded-lg text-center border border-border">
+                  <div className="text-muted-foreground mb-2">No addresses found</div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setShowShippingPopup(false);
+                      window.location.href = '/shipping?tab=manage';
+                    }}
+                    className="border-border text-foreground hover:bg-muted"
+                  >
+                    Add Address
+                  </Button>
+                </div>
+              ) : (
+                <select
+                  id="address"
+                  value={selectedAddress}
+                  onChange={(e) => setSelectedAddress(e.target.value)}
+                  className="w-full mt-1 p-3 border border-border rounded-md focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] bg-background text-foreground text-sm"
+                >
+                  <option value="" className="text-foreground">Select an address</option>
+                  {userAddresses.map((address) => (
+                    <option key={address.id} value={address.id} className="text-foreground">
+                      {address.name} - {address.address}, {address.city}, {address.state}
+                      {address.isDefault && " (Default)"}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowShippingPopup(false)}
+              disabled={isCreatingShippingRequest}
+              className="w-full sm:w-auto border-border text-foreground hover:bg-muted"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={createShippingRequest}
+              disabled={!selectedAddress || isCreatingShippingRequest || userAddresses.length === 0}
+              className="w-full sm:w-auto bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white"
+            >
+              {isCreatingShippingRequest ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Truck className="w-4 h-4 mr-2" />
+                  Create Shipping Request
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Navigation Footer */}
       <NavigationFooter />
     </div>

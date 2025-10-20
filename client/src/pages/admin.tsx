@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ImageUpload } from "@/components/ImageUpload";
 import { apiRequest } from "@/lib/queryClient";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
@@ -29,7 +29,8 @@ import {
   Search,
   Filter,
   Gift,
-  Trophy
+  Trophy,
+  Truck
 } from "lucide-react";
 
 export default function Admin() {
@@ -82,6 +83,11 @@ export default function Admin() {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [systemSettings, setSystemSettings] = useState<any[]>([]);
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [isUpdatingMaintenance, setIsUpdatingMaintenance] = useState(false);
+  
+  // Shipments state (for notification badge only)
+  const [shipments, setShipments] = useState<any[]>([]);
   const [manageSection, setManageSection] = useState<"classic" | "special" | "mystery">("classic");
   const [mysterySection, setMysterySection] = useState<"view" | "edit" | "add">("view");
   const [mysteryPackCards, setMysteryPackCards] = useState<Array<{
@@ -213,6 +219,29 @@ export default function Admin() {
       return matchesSearch && matchesTier;
     });
   };
+
+  // Use React Query for users to enable auto-refresh
+  const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = useQuery({
+    queryKey: ['/api/admin/users'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/admin/users');
+      return response.json();
+    },
+    enabled: activeTab === 'users', // Only fetch when users tab is active
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+  });
+
+  // Update users state when query data changes
+  useEffect(() => {
+    if (usersData) {
+      setUsers(usersData);
+    }
+  }, [usersData]);
+
+  // Update loading state when query loading changes
+  useEffect(() => {
+    setIsLoadingUsers(usersLoading);
+  }, [usersLoading]);
   
   // View Prize Dialog State
   const [showViewPrizeDialog, setShowViewPrizeDialog] = useState(false);
@@ -252,9 +281,7 @@ export default function Admin() {
         });
         
         if (response.ok) {
-          // Refresh user data to show updated credits immediately
-          await refreshUserData(selectedUser.id);
-      setShowUserDialog(false);
+          setShowUserDialog(false);
           // Refresh the users list
           fetchUsers();
         } else {
@@ -266,24 +293,6 @@ export default function Admin() {
     }
   };
 
-  // Function to refresh user data (useful when credits are updated directly in database)
-  const refreshUserData = async (userId: string) => {
-    try {
-      const response = await apiRequest('POST', `/api/admin/refresh-user/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('User data refreshed:', data);
-        // Update the user in the local state
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user.id === userId ? { ...user, credits: data.user.credits } : user
-          )
-        );
-      }
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
-    }
-  };
 
   // Fetch admin statistics
   const fetchAdminStats = async () => {
@@ -299,18 +308,9 @@ export default function Admin() {
     }
   };
 
-  // Fetch users
+  // Fetch users (now using React Query)
   const fetchUsers = async () => {
-    setIsLoadingUsers(true);
-    try {
-      const response = await apiRequest('GET', '/api/admin/users');
-      const usersData = await response.json();
-      setUsers(usersData);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setIsLoadingUsers(false);
-    }
+    await refetchUsers();
   };
 
   // Fetch system settings
@@ -320,10 +320,62 @@ export default function Admin() {
       const response = await apiRequest('GET', '/api/admin/system-settings');
       const settingsData = await response.json();
       setSystemSettings(settingsData);
+      
+      // Find maintenance mode setting
+      const maintenanceSetting = settingsData.find((setting: any) => setting.key === 'maintenance_mode');
+      if (maintenanceSetting) {
+        setMaintenanceMode(maintenanceSetting.value === 'true');
+      }
     } catch (error) {
       console.error('Error fetching system settings:', error);
     } finally {
       setIsLoadingSettings(false);
+    }
+  };
+
+  // Toggle maintenance mode
+  const toggleMaintenanceMode = async () => {
+    setIsUpdatingMaintenance(true);
+    try {
+      const newValue = !maintenanceMode;
+      const response = await apiRequest('PUT', '/api/admin/system-settings/maintenance_mode', {
+        value: newValue
+      });
+      
+      if (response.ok) {
+        setMaintenanceMode(newValue);
+        toast({
+          title: "Maintenance Mode Updated",
+          description: `Maintenance mode has been ${newValue ? 'enabled' : 'disabled'}.`,
+        });
+      } else {
+        throw new Error('Failed to update maintenance mode');
+      }
+    } catch (error) {
+      console.error('Error updating maintenance mode:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update maintenance mode. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingMaintenance(false);
+    }
+  };
+
+  // ============================================================================
+  // SHIPMENTS FUNCTIONS (for notification badge only)
+  // ============================================================================
+
+  // Fetch all shipping requests (for notification badge)
+  const fetchShipments = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/admin/shipping/requests');
+      const data = await response.json();
+      setShipments(data);
+    } catch (error) {
+      console.error('Error fetching shipments:', error);
+      // Don't show error toast for badge updates
     }
   };
 
@@ -396,7 +448,9 @@ export default function Admin() {
       fetchClassicPacks();
     } else if (activeTab === 'overview') {
       fetchAdminStats();
-    } else if (activeTab === 'user') {
+      // Always fetch shipments for notification badge
+      fetchShipments();
+    } else if (activeTab === 'users') {
       fetchUsers();
     } else if (activeTab === 'settings') {
       fetchSystemSettings();
@@ -461,6 +515,15 @@ export default function Admin() {
       fetchMysteryPackCards();
     }
   }, [activeTab, manageSection, mysterySection, mysteryPacks]);
+
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['overview', 'users', 'manage', 'raffles'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, []);
 
 
 
@@ -1748,41 +1811,62 @@ export default function Admin() {
           </div>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-6xl mx-auto grid-cols-5 mb-8">
-              <TabsTrigger value="overview" data-testid="tab-overview">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="users" data-testid="tab-users">
-                <Users className="w-4 h-4 mr-2" />
-                Users
-              </TabsTrigger>
-              <TabsTrigger value="manage" data-testid="tab-manage">
-                <Package className="w-4 h-4 mr-2" />
-                Manage
-              </TabsTrigger>
-              <TabsTrigger value="raffles" data-testid="tab-raffles">
-                <Gift className="w-4 h-4 mr-2" />
-                Raffles
-              </TabsTrigger>
-              <TabsTrigger value="settings" data-testid="tab-settings">
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </TabsTrigger>
-            </TabsList>
+            <div className="flex flex-wrap justify-center gap-2 mb-8">
+              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-muted/50">
+                <TabsTrigger 
+                  value="overview" 
+                  data-testid="tab-overview"
+                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  title="Overview"
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  <span className="text-xs">Overview</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="users" 
+                  data-testid="tab-users"
+                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  title="Users"
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-xs">Users</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="manage" 
+                  data-testid="tab-manage"
+                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  title="Manage Packs"
+                >
+                  <Package className="w-5 h-5" />
+                  <span className="text-xs">Manage</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="raffles" 
+                  data-testid="tab-raffles"
+                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  title="Raffles"
+                >
+                  <Gift className="w-5 h-5" />
+                  <span className="text-xs">Raffles</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Overview Tab */}
             <TabsContent value="overview">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-3xl font-bold">
                       {isLoadingStats ? '...' : (adminStats?.totalUsers || 0)}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Registered users
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -1792,84 +1876,152 @@ export default function Admin() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
+                    <div className="text-3xl font-bold">
                       RM {isLoadingStats ? '...' : (adminStats?.totalRevenue || '0.00')}
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      All-time revenue
+                    </p>
                   </CardContent>
                 </Card>
 
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Top Spender</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">Top Spenders</CardTitle>
+                    <Trophy className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      RM {isLoadingStats ? '...' : (adminStats?.topSpender?.totalSpent || '0.00')}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {isLoadingStats ? '...' : (adminStats?.topSpender?.email || 'No data')}
-                    </p>
+                    {isLoadingStats ? (
+                      <div className="text-center py-4">
+                        <div className="text-muted-foreground">Loading...</div>
+                      </div>
+                    ) : adminStats?.topSpenders?.length > 0 ? (
+                      <div className="space-y-2">
+                        {adminStats.topSpenders.slice(0, 3).map((spender: any, index: number) => (
+                          <div key={spender.userId} className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                index === 0 ? 'bg-yellow-500 text-white' : 
+                                index === 1 ? 'bg-gray-400 text-white' : 
+                                'bg-orange-600 text-white'
+                              }`}>
+                                {index + 1}
+                              </div>
+                              <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+                                {spender.username}
+                              </span>
+                            </div>
+                            <span className="text-sm font-semibold text-yellow-600">
+                              RM {spender.totalSpent}
+                            </span>
+                          </div>
+                        ))}
+                        {adminStats.topSpenders.length > 3 && (
+                          <div className="text-xs text-muted-foreground text-center pt-1">
+                            +{adminStats.topSpenders.length - 3} more
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <div className="text-muted-foreground">No purchases yet</div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {/* Additional Stats Section */}
+              <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="gaming-card">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Recent SS Card</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold">System Overview</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {isLoadingStats ? '...' : (adminStats?.recentSS?.cardName || 'No SS cards')}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Active Raffles</span>
+                        <span className="font-semibold">{raffles.filter(r => r.status === 'active').length}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Completed Raffles</span>
+                        <span className="font-semibold">{raffles.filter(r => r.status === 'completed').length}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Total Raffles</span>
+                        <span className="font-semibold">{raffles.length}</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {isLoadingStats ? '...' : (adminStats?.recentSS?.pulledBy || 'No data')}
-                    </p>
+                  </CardContent>
+                </Card>
+
+
+                <Card className="gaming-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <Button 
+                        onClick={() => setActiveTab('raffles')}
+                        className="w-full justify-start"
+                        variant="outline"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create New Raffle
+                      </Button>
+                      <Button 
+                        onClick={() => setActiveTab('users')}
+                        className="w-full justify-start"
+                        variant="outline"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Manage Users
+                      </Button>
+                      <Button 
+                        onClick={fetchAdminStats}
+                        className="w-full justify-start"
+                        variant="outline"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh Stats
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
 
                 <Card className="gaming-card">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Recent SSS Card</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold">System Settings</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {isLoadingStats ? '...' : (adminStats?.recentSSS?.cardName || 'No SSS cards')}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">Maintenance Mode</h4>
+                          <p className="text-sm text-muted-foreground">Temporarily disable user access</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium">
+                            {maintenanceMode ? 'Enabled' : 'Disabled'}
+                          </span>
+                          <Button 
+                            variant={maintenanceMode ? "destructive" : "outline"} 
+                            size="sm"
+                            onClick={toggleMaintenanceMode}
+                            disabled={isUpdatingMaintenance}
+                          >
+                            {isUpdatingMaintenance ? (
+                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Settings className="w-4 h-4 mr-2" />
+                            )}
+                            {maintenanceMode ? 'Disable' : 'Enable'}
+                          </Button>
+                        </div>
+                      </div>
+                      
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {isLoadingStats ? '...' : (adminStats?.recentSSS?.pulledBy || 'No data')}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="gaming-card">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Daily P&L</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                      {isLoadingStats ? '...' : `+RM ${adminStats?.dailyPL || '0.00'}`}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Today</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="gaming-card">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Monthly P&L</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                      {isLoadingStats ? '...' : `+RM ${adminStats?.monthlyPL || '0.00'}`}
-                    </div>
-                    <p className="text-xs text-muted-foreground">This Month</p>
                   </CardContent>
                 </Card>
               </div>
@@ -1920,16 +2072,6 @@ export default function Admin() {
                             {user.isBanned && (
                               <Badge variant="destructive">Banned</Badge>
                             )}
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => refreshUserData(user.id)}
-                              title="Refresh user data (useful when credits are updated directly in database)"
-                            >
-                              <RefreshCw className="w-3 h-3 mr-1" />
-                              Refresh
-                            </Button>
                             
                             <Button
                               variant="outline"
@@ -2511,58 +2653,6 @@ export default function Admin() {
               </div>
             </TabsContent>
 
-            {/* Settings Tab */}
-            <TabsContent value="settings">
-                <Card className="gaming-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5" />
-                      System Settings
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoadingSettings ? (
-                      <div className="text-center py-8">
-                        <div className="text-muted-foreground">Loading settings...</div>
-                      </div>
-                    ) : systemSettings.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Settings className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium mb-2">No System Settings</h3>
-                        <p className="text-muted-foreground">No system settings configured yet.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {systemSettings.map((setting) => (
-                          <div key={setting.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                            <div className="flex-1">
-                              <div className="font-medium">{setting.settingKey}</div>
-                        <div className="text-sm text-muted-foreground">
-                                {setting.description || 'No description available'}
-                        </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Last updated: {new Date(setting.updatedAt).toLocaleString()}
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium">
-                                {setting.settingValue ? 'Enabled' : 'Disabled'}
-                              </span>
-                      <Button
-                                variant={setting.settingValue ? "destructive" : "default"}
-                                size="sm"
-                                onClick={() => updateSystemSetting(setting.settingKey, !setting.settingValue)}
-                              >
-                                {setting.settingValue ? 'Disable' : 'Enable'}
-                      </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-            </TabsContent>
           </Tabs>
 
           {/* User Action Dialog */}
@@ -3790,6 +3880,7 @@ export default function Admin() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
 
         </div>
       </div>
