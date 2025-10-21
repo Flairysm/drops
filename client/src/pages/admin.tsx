@@ -412,7 +412,7 @@ export default function Admin() {
       
       if (response.ok) {
         const packs = await response.json();
-        console.log('🔄 Fetched fresh mystery packs:', packs);
+        console.log('Fetched fresh mystery packs:', packs);
         setMysteryPacks(packs);
         // Auto-select the first pack if none is selected
         if (packs.length > 0 && !selectedMysteryPack) {
@@ -463,7 +463,7 @@ export default function Admin() {
   useEffect(() => {
     if (activeTab === 'manage') {
       const interval = setInterval(() => {
-        console.log('🔄 Auto-refreshing pack data...');
+        console.log('Auto-refreshing pack data...');
         fetchSpecialPacks();
         fetchClassicPacks();
         fetchMysteryPacks();
@@ -494,7 +494,7 @@ export default function Admin() {
       const response = await apiRequest('GET', `/api/admin/mystery-packs/${pokeballPack.id}?_t=${timestamp}`);
       if (response.ok) {
         const packData = await response.json();
-        console.log('🔄 Fetched fresh mystery pack cards:', packData.cards?.length || 0, 'cards');
+        console.log('Fetched fresh mystery pack cards:', packData.cards?.length || 0, 'cards');
         
         // Force a complete state reset to ensure re-render
         setMysteryPackCards([]);
@@ -542,7 +542,7 @@ export default function Admin() {
 
   // Special Pool Management
   const handleAddPool = async () => {
-    console.log('🔄 Creating special pack with data:', newPool);
+    console.log('Creating special pack with data:', newPool);
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim() && newPool.totalCards.trim()) {
       try {
         const response = await apiRequest('POST', '/api/admin/special-packs', {
@@ -606,7 +606,7 @@ export default function Admin() {
   const handleUpdatePool = async () => {
     if (editingPool && editingPool.name.trim() && editingPool.description.trim() && editingPool.image.trim()) {
       try {
-        console.log('🔄 Updating special pack:', editingPool);
+        console.log('Updating special pack:', editingPool);
         
         const response = await apiRequest('PUT', `/api/admin/special-packs/${editingPool.id}`, {
           name: editingPool.name.trim(),
@@ -643,7 +643,7 @@ export default function Admin() {
 
   // Classic Pool Management
   const handleAddClassicPool = async () => {
-    console.log('🔄 Creating classic pack with data:', newPool);
+    console.log('Creating classic pack with data:', newPool);
     if (newPool.name.trim() && newPool.description.trim() && newPool.image.trim() && newPool.price.trim()) {
       try {
         const response = await authenticatedFetch('http://localhost:3000/api/admin/classic-packs', {
@@ -1261,7 +1261,7 @@ export default function Admin() {
   // Fetch special packs from API
   const fetchSpecialPacks = async () => {
     try {
-      console.log('🔄 Fetching special packs...');
+      console.log('Fetching special packs...');
       // Add cache-busting parameter to ensure fresh data
       const timestamp = Date.now();
       const response = await apiRequest('GET', `/api/admin/special-packs?_t=${timestamp}`);
@@ -1279,7 +1279,7 @@ export default function Admin() {
 
   // Manual refresh function for all pack data
   const refreshAllPackData = async () => {
-    console.log('🔄 Manually refreshing all pack data...');
+    console.log('Manually refreshing all pack data...');
     await Promise.all([
       fetchSpecialPacks(),
       fetchClassicPacks(),
@@ -1296,7 +1296,7 @@ export default function Admin() {
       const response = await apiRequest('GET', `/api/admin/classic-packs?_t=${timestamp}`);
       if (response.ok) {
         const packs = await response.json();
-        console.log('🔄 Fetched fresh classic packs:', packs);
+        console.log('Fetched fresh classic packs:', packs);
         setClassicPools(packs);
       } else {
         console.error('Failed to fetch classic packs');
@@ -1309,13 +1309,13 @@ export default function Admin() {
   // Raffle management functions
   const fetchRaffles = async () => {
     try {
-      console.log('🔄 Fetching raffles...');
+      console.log('Fetching raffles...');
       const response = await apiRequest("GET", "/api/admin/raffles");
-      console.log('🔍 Admin fetchRaffles response:', response);
+      console.log('Admin fetchRaffles response:', response);
       const data = await response.json();
-      console.log('🔍 Admin fetchRaffles parsed data:', data);
+      console.log('Admin fetchRaffles parsed data:', data);
       if (data.success) {
-        console.log('🔍 Admin setting raffles:', data.raffles);
+        console.log('Admin setting raffles:', data.raffles);
         setRaffles(data.raffles);
         console.log('✅ Raffles state updated, current length:', data.raffles.length);
       } else {
@@ -1555,11 +1555,11 @@ export default function Admin() {
 
   const handleUpdatePrize = async () => {
     try {
-      console.log('🔍 Full prizeEditForm:', prizeEditForm);
-      console.log('🔍 PrizeEditForm.prizes:', prizeEditForm.prizes);
-      console.log('🔍 First prize object:', prizeEditForm.prizes[0]);
-      console.log('🔍 First prize imageUrl:', prizeEditForm.prizes[0]?.imageUrl);
-      console.log('🔍 Sending prize update data:', { prizes: prizeEditForm.prizes });
+      console.log('Full prizeEditForm:', prizeEditForm);
+      console.log('PrizeEditForm.prizes:', prizeEditForm.prizes);
+      console.log('First prize object:', prizeEditForm.prizes[0]);
+      console.log('First prize imageUrl:', prizeEditForm.prizes[0]?.imageUrl);
+      console.log('Sending prize update data:', { prizes: prizeEditForm.prizes });
       const response = await apiRequest("PUT", `/api/admin/raffles/${editingRaffle.id}`, { prizes: prizeEditForm.prizes });
       const data = await response.json();
       if (data.success) {
@@ -2511,8 +2511,8 @@ export default function Admin() {
                   <CardContent>
                     <div className="space-y-4">
                       {(() => {
-                        console.log('🔍 Admin current raffles state:', raffles);
-                        console.log('🔍 Admin raffles length:', raffles.length);
+                        console.log('Admin current raffles state:', raffles);
+                        console.log('Admin raffles length:', raffles.length);
                         return raffles.length === 0;
                       })() ? (
                         <div className="text-center py-8 text-gray-400">
@@ -2781,7 +2781,7 @@ export default function Admin() {
                 <ImageUpload
                     value={newPool.image}
                     onChange={(value) => {
-                      console.log('🖼️ ImageUpload onChange called with:', value);
+                      console.log('ImageUpload onChange called with:', value);
                       setNewPool({ ...newPool, image: value });
                     }}
                     placeholder="https://example.com/pack-image.jpg"
@@ -2836,13 +2836,13 @@ export default function Admin() {
                 </div>
                 <Button 
                   onClick={() => {
-                    console.log('🔄 Special pack button clicked, current form state:', newPool);
+                    console.log('Special pack button clicked, current form state:', newPool);
                     handleAddPool();
                   }}
                   className="mt-4"
                   disabled={(() => {
                     const isValid = !newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.totalCards.trim() || !newPool.description.trim();
-                    console.log('🔄 Special pack form validation:', {
+                    console.log('Special pack form validation:', {
                       name: !!newPool.name.trim(),
                       image: !!newPool.image.trim(),
                       price: !!newPool.price.trim(),
@@ -2903,7 +2903,7 @@ export default function Admin() {
                   <ImageUpload
                     value={newPool.image}
                     onChange={(value) => {
-                      console.log('🖼️ Classic ImageUpload onChange called with:', value);
+                      console.log('Classic ImageUpload onChange called with:', value);
                       setNewPool({ ...newPool, image: value });
                     }}
                     placeholder="https://example.com/pack-image.jpg"
@@ -2943,13 +2943,13 @@ export default function Admin() {
                 </div>
                 <Button 
                   onClick={() => {
-                    console.log('🔄 Classic pack button clicked, current form state:', newPool);
+                    console.log('Classic pack button clicked, current form state:', newPool);
                     handleAddClassicPool();
                   }}
                   className="mt-4"
                   disabled={(() => {
                     const isValid = !newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.description.trim();
-                    console.log('🔄 Classic pack form validation:', {
+                    console.log('Classic pack form validation:', {
                       name: !!newPool.name.trim(),
                       image: !!newPool.image.trim(),
                       price: !!newPool.price.trim(),
@@ -3723,7 +3723,7 @@ export default function Admin() {
               {!editingRaffle && (
                 <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                   <p className="text-sm text-blue-300">
-                    💡 <strong>Note:</strong> After creating the raffle, you can edit the prize details (name, type, value) by clicking the edit button on the raffle card.
+                    <strong>Note:</strong> After creating the raffle, you can edit the prize details (name, type, value) by clicking the edit button on the raffle card.
                   </p>
                 </div>
               )}

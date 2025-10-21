@@ -215,37 +215,52 @@ export class DatabaseStorage {
 
       // Return cards to prize pool based on card source
       for (const card of cardsToRefund) {
+        console.log(`🔄 Processing refund for card: ${card.cardName}, source: ${card.cardSource}, packSource: ${card.packSource}`);
+        
         if (card.cardSource === 'classic') {
           // Return to classic prize pool
-          await tx
+          console.log(`📦 Returning classic card "${card.cardName}" to pack "${card.packSource}"`);
+          const updateResult = await tx
             .update(classicPrize)
             .set({ quantity: sql`${classicPrize.quantity} + 1` })
             .where(and(
               eq(classicPrize.packId, card.packSource || ''),
               eq(classicPrize.cardName, card.cardName)
-            ));
+            ))
+            .returning();
+          console.log(`✅ Classic prize pool update result:`, updateResult.length, 'rows affected');
         } else if (card.cardSource === 'special') {
           // Return to special prize pool
-          await tx
+          console.log(`📦 Returning special card "${card.cardName}" to pack "${card.packSource}"`);
+          const updateResult = await tx
             .update(specialPrize)
             .set({ quantity: sql`${specialPrize.quantity} + 1` })
             .where(and(
               eq(specialPrize.packId, card.packSource || ''),
               eq(specialPrize.cardName, card.cardName)
-            ));
+            ))
+            .returning();
+          console.log(`✅ Special prize pool update result:`, updateResult.length, 'rows affected');
         } else if (card.cardSource === 'mystery') {
-          // Return to mystery prize pool
-          await tx
+          // Return to mystery prize pool - always return to the base mystery-pokeball pool
+          // since all mystery packs use the same shared pool
+          console.log(`📦 Returning mystery card "${card.cardName}" to base mystery pool (mystery-pokeball)`);
+          
+          const updateResult = await tx
             .update(mysteryPrize)
             .set({ quantity: sql`${mysteryPrize.quantity} + 1` })
             .where(and(
-              eq(mysteryPrize.packId, card.packSource || ''),
+              eq(mysteryPrize.packId, 'mystery-pokeball'),
               eq(mysteryPrize.cardName, card.cardName)
-            ));
+            ))
+            .returning();
+          console.log(`✅ Mystery prize pool update result:`, updateResult.length, 'rows affected');
         } else if (card.cardSource === 'raffle_prize') {
           // Raffle prize cards don't need to be returned to any prize pool
           // They are one-time rewards, just give credits back
           console.log(`🎁 Raffle prize card "${card.cardName}" refunded - no quantity returned to prize pool`);
+        } else {
+          console.log(`⚠️ Unknown card source "${card.cardSource}" for card "${card.cardName}"`);
         }
       }
 
@@ -850,60 +865,33 @@ export class DatabaseStorage {
       console.log("🎲 Common card random:", commonRandom);
       console.log("🎲 Common card random bytes:", commonRandomBytes.toString('hex'));
       
-      // Define base odds (for pokeball)
-      const baseOdds: Record<string, number> = {
-        D: 0.0,    // 0% D (not used for hit card)
-        C: 0.848,  // 84.8% C
-        B: 0.06,   // 6% B
-        A: 0.045,  // 4.5% A
-        S: 0.035,  // 3.5% S
-        SS: 0.01,  // 1% SS
-        SSS: 0.002 // 0.2% SSS
-      };
-      
-      // Define pack-specific odds based on pack type
+      // Use odds from database if available, otherwise fallback to default
       let hitCardOdds: Record<string, number>;
-      switch (mysteryPack.packType) {
-        case 'pokeball':
-          hitCardOdds = baseOdds;
-          break;
-        case 'greatball':
-          hitCardOdds = {
-            D: 0.0,    // 0% D
-            C: 0.40,   // 40% C
-            B: 0.30,   // 30% B
-            A: 0.15,   // 15% A
-            S: 0.10,   // 10% S
-            SS: 0.04,  // 4% SS
-            SSS: 0.01  // 1% SSS
-          };
-          break;
-        case 'ultraball':
-          // Ultraball guarantees B or above
-          hitCardOdds = {
-            D: 0.0,    // 0% D
-            C: 0.0,    // 0% C
-            B: 0.60,   // 60% B
-            A: 0.25,   // 25% A
-            S: 0.10,   // 10% S
-            SS: 0.04,  // 4% SS
-            SSS: 0.01  // 1% SSS
-          };
-          break;
-        case 'masterball':
-          // Masterball guarantees A or above
-          hitCardOdds = {
-            D: 0.0,    // 0% D
-            C: 0.0,    // 0% C
-            B: 0.0,    // 0% B
-            A: 0.50,   // 50% A
-            S: 0.30,   // 30% S
-            SS: 0.15,  // 15% SS
-            SSS: 0.05  // 5% SSS
-          };
-          break;
-        default:
-          hitCardOdds = baseOdds;
+      
+      if (mysteryPack.odds && typeof mysteryPack.odds === 'object') {
+        // Use database odds
+        hitCardOdds = {
+          D: mysteryPack.odds.D || 0.0,
+          C: mysteryPack.odds.C || 0.0,
+          B: mysteryPack.odds.B || 0.0,
+          A: mysteryPack.odds.A || 0.0,
+          S: mysteryPack.odds.S || 0.0,
+          SS: mysteryPack.odds.SS || 0.0,
+          SSS: mysteryPack.odds.SSS || 0.0
+        };
+        console.log(`🎲 Using database odds for ${mysteryPack.packType}:`, hitCardOdds);
+      } else {
+        // Fallback to default odds if database odds not available
+        console.log(`⚠️ No database odds found for ${mysteryPack.packType}, using fallback odds`);
+        hitCardOdds = {
+          D: 0.0,    // 0% D (not used for hit card)
+          C: 0.25,   // 25% C
+          B: 0.20,   // 20% B
+          A: 0.15,   // 15% A
+          S: 0.05,   // 5% S
+          SS: 0.02,  // 2% SS
+          SSS: 0.01  // 1% SSS
+        };
       }
       
       console.log(`🎲 Using ${mysteryPack.packType} odds:`, hitCardOdds);
@@ -1447,11 +1435,52 @@ export class DatabaseStorage {
   }
 
   async createShippingRequest(requestData: InsertShippingRequest): Promise<ShippingRequest> {
-    const result = await db.insert(shippingRequests).values({
-      ...requestData,
-      id: `ship-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    }).returning();
-    return result[0];
+    return await db.transaction(async (tx) => {
+      // Create the shipping request
+      const result = await tx.insert(shippingRequests).values({
+        ...requestData,
+        id: `ship-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      }).returning();
+
+      // Remove the shipped cards from user's vault
+      if (requestData.items && Array.isArray(requestData.items)) {
+        console.log('📦 Shipping request items:', JSON.stringify(requestData.items, null, 2));
+        const cardIds = requestData.items.map((item: any) => item.id).filter(Boolean);
+        console.log('🆔 Extracted card IDs:', cardIds);
+        
+        if (cardIds.length > 0) {
+          console.log(`🚚 Removing ${cardIds.length} cards from vault for shipping request ${result[0].id}`);
+          
+          // First, check if the cards exist in the vault
+          const existingCards = await tx
+            .select()
+            .from(userCards)
+            .where(and(
+              inArray(userCards.id, cardIds),
+              eq(userCards.userId, requestData.userId)
+            ));
+          
+          console.log(`🔍 Found ${existingCards.length} cards in vault to remove:`, existingCards.map(c => c.id));
+          
+          // Delete the cards from user's vault
+          const deleteResult = await tx
+            .delete(userCards)
+            .where(and(
+              inArray(userCards.id, cardIds),
+              eq(userCards.userId, requestData.userId)
+            ))
+            .returning();
+          
+          console.log(`✅ Successfully removed ${deleteResult.length} cards from vault. Deleted cards:`, deleteResult.map(c => ({ id: c.id, name: c.cardName })));
+        } else {
+          console.log('⚠️ No valid card IDs found in shipping request items');
+        }
+      } else {
+        console.log('⚠️ No items found in shipping request or items is not an array');
+      }
+
+      return result[0];
+    });
   }
 
   async getUserShippingRequests(userId: string): Promise<(ShippingRequest & { address: UserAddress })[]> {

@@ -28,7 +28,7 @@ function RouterComponent() {
   const { isAuthenticated, isLoading } = useAuth();
   
   // Debug logging
-  console.log('🔍 Router state:', { isAuthenticated, isLoading });
+  console.log('Router state:', { isAuthenticated, isLoading });
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);

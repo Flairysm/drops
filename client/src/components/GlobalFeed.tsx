@@ -19,9 +19,9 @@ export function GlobalFeed({ limit = 50 }: GlobalFeedProps) {
   });
 
   // Debug logging
-  console.log('📰 GlobalFeed - isLoading:', isLoading);
-  console.log('📰 GlobalFeed - error:', error);
-  console.log('📰 GlobalFeed - feedData:', feedData);
+  console.log('GlobalFeed - isLoading:', isLoading);
+  console.log('GlobalFeed - error:', error);
+  console.log('GlobalFeed - feedData:', feedData);
 
   const tierColors = {
     D: "d",

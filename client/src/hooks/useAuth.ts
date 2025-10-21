@@ -25,7 +25,7 @@ export function useAuth() {
   };
 
   // Debug logging
-  console.log('🔍 useAuth state:', { user, isLoading, error, isAuthenticated });
+  console.log('useAuth state:', { user, isLoading, error, isAuthenticated });
 
   return {
     user,

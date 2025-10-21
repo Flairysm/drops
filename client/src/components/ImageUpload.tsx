@@ -88,7 +88,7 @@ export function ImageUpload({
   };
 
   const handleFileUpload = async (file: File) => {
-    console.log('🖼️ Starting file upload:', {
+    console.log('Starting file upload:', {
       name: file.name,
       size: file.size,
       type: file.type
@@ -104,18 +104,18 @@ export function ImageUpload({
     
     try {
       // Compress the image before converting to data URL
-      console.log('🖼️ Compressing image...');
+      console.log('Compressing image...');
       const compressedDataUrl = await compressImage(file, 800, 0.7);
       
-      console.log('🖼️ ✅ Image compressed and converted to data URL');
-      console.log('🖼️ Compressed size:', compressedDataUrl.length, 'characters');
+      console.log('Image compressed and converted to data URL');
+      console.log('Compressed size:', compressedDataUrl.length, 'characters');
       
       onChange(compressedDataUrl);
       setUploadMode('url');
       setIsUploading(false);
       
     } catch (error) {
-      console.error('🖼️ ❌ Image compression failed:', error);
+      console.error('Image compression failed:', error);
       alert(`Image processing failed: ${error.message || 'Please try again.'}`);
       setIsUploading(false);
     }

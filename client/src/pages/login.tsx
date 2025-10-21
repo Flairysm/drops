@@ -33,20 +33,20 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
-      console.log('🔐 Attempting login with:', data.email);
+      console.log('Attempting login with:', data.email);
       const response = await apiRequest("POST", "/api/auth/login", data);
-      console.log('🔐 Login response:', response);
+      console.log('Login response:', response);
       const responseData = await response.json();
-      console.log('🔐 Login response data:', responseData);
+      console.log('Login response data:', responseData);
       return responseData;
     },
     onSuccess: (response) => {
-      console.log('🔐 Login mutation success:', response);
+      console.log('Login mutation success:', response);
       
       // Store JWT token in localStorage if provided
       if (response.token) {
         localStorage.setItem('authToken', response.token);
-        console.log('🔐 JWT token stored:', response.token.substring(0, 20) + '...');
+        console.log('JWT token stored:', response.token.substring(0, 20) + '...');
       } else {
         console.log('❌ No JWT token in response:', response);
       }
@@ -57,13 +57,13 @@ export default function Login() {
       });
       
       // Force a refetch of user data and clear any cached data
-      console.log('🔐 Clearing query cache and refetching user data...');
+      console.log('Clearing query cache and refetching user data...');
       queryClient.clear();
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       // Small delay to ensure cache is cleared before redirect
       setTimeout(() => {
-        console.log('🔐 Redirecting to home page...');
+        console.log('Redirecting to home page...');
         setLocation("/home");
       }, 100);
     },

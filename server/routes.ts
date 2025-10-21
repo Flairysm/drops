@@ -1108,6 +1108,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to check mystery packs and cards
+  app.get('/api/debug/mystery-data', async (req, res) => {
+    try {
+      // Get all mystery packs
+      const mysteryPacks = await db.select().from(mysteryPack);
+      console.log('🔍 Mystery packs:', mysteryPacks);
+      
+      // Get all mystery prizes
+      const mysteryPrizes = await db.select().from(mysteryPrize);
+      console.log('🔍 Mystery prizes:', mysteryPrizes);
+      
+      res.json({
+        success: true,
+        mysteryPacks,
+        mysteryPrizes
+      });
+    } catch (error) {
+      console.error('❌ Error fetching mystery data:', error);
+      res.status(500).json({ error: 'Failed to fetch mystery data' });
+    }
+  });
+
   // Simple test endpoint to verify routing
   app.post('/api/vault/test-simple', isAuthenticatedCombined, async (req: any, res) => {
     res.json({ success: true, message: "Simple test endpoint working" });
@@ -3871,59 +3893,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     createValidationMiddleware(raffleSchemas.joinRaffle),
     isAuthenticatedCombined, 
     asyncHandler(async (req, res) => {
-      const { id } = req.params;
-      const { slots } = req.body;
-      const userId = (req as any).user?.id;
+      try {
+        const { id } = req.params;
+        const { slots } = req.body;
+        const userId = (req as any).user?.id;
 
-      if (!userId) {
-        const { statusCode, response } = createErrorResponse('User not authenticated', 'UNAUTHORIZED', null, 401);
-        return res.status(statusCode).json(response);
-      }
-
-      // Use database transaction to prevent race conditions
-      const result = await db.transaction(async (tx) => {
-        // Get raffle details with row-level lock
-        const raffleDetails = await tx
-          .select()
-          .from(raffles)
-          .where(and(eq(raffles.id, id), eq(raffles.isActive, true)))
-          .limit(1)
-          .for('update'); // Row-level lock to prevent race conditions
-
-        if (raffleDetails.length === 0) {
-          throw new Error('Raffle not found or inactive');
+        if (!userId) {
+          const { statusCode, response } = createErrorResponse('User not authenticated', 'UNAUTHORIZED', null, 401);
+          return res.status(statusCode).json(response);
         }
 
-        const raffle = raffleDetails[0];
+        // Use database transaction to prevent race conditions
+        const result = await db.transaction(async (tx) => {
+          // Get raffle details with row-level lock
+          const raffleDetails = await tx
+            .select()
+            .from(raffles)
+            .where(and(eq(raffles.id, id), eq(raffles.isActive, true)))
+            .limit(1)
+            .for('update'); // Row-level lock to prevent race conditions
 
-        // Check if raffle is still active
-        if (raffle.status !== 'active') {
-          throw new Error('Raffle is no longer active');
-        }
+          if (raffleDetails.length === 0) {
+            throw new Error('Raffle not found or inactive');
+          }
 
-        // Check if there are enough slots available
-        const availableSlots = raffle.totalSlots - (raffle.filledSlots || 0);
-        if (slots > availableSlots) {
-          throw new Error(`Only ${availableSlots} slots available`);
-        }
+          const raffle = raffleDetails[0];
 
-        const totalCost = Number(raffle.pricePerSlot) * slots;
+          // Check if raffle is still active
+          if (raffle.status !== 'active') {
+            throw new Error('Raffle is no longer active');
+          }
 
-        // Check user credits
-        const user = await storage.getUser(userId);
-        if (!user || Number(user.credits) < totalCost) {
-          throw new Error('Insufficient credits');
-        }
+          // Check if there are enough slots available
+          const availableSlots = raffle.totalSlots - (raffle.filledSlots || 0);
+          if (slots > availableSlots) {
+            throw new Error(`Only ${availableSlots} slots available`);
+          }
 
-        // Create entry
-        await tx.insert(raffleEntries).values({
-          raffleId: id,
-          userId: userId,
-          slots: slots,
-          totalCost: totalCost.toString()
-        });
+          const totalCost = Number(raffle.pricePerSlot) * slots;
 
-        // Update raffle filled slots atomically
+          // Check user credits
+          const user = await storage.getUser(userId);
+          if (!user || Number(user.credits) < totalCost) {
+            throw new Error('Insufficient credits');
+          }
+
+          // Create entry
+          await tx.insert(raffleEntries).values({
+            raffleId: id,
+            userId: userId,
+            slots: slots,
+            totalCost: totalCost.toString()
+          });
+
+          // Update raffle filled slots atomically
         const newFilledSlots = (raffle.filledSlots || 0) + slots;
         await tx
           .update(raffles)
@@ -3947,25 +3970,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
           packType: 'raffle'
         });
 
-        return {
-          success: true,
-          message: `Successfully joined raffle with ${slots} slots`,
-          totalCost: totalCost,
-          raffle,
-          newFilledSlots
-        };
-      });
+          return {
+            success: true,
+            message: `Successfully joined raffle with ${slots} slots`,
+            totalCost: totalCost,
+            raffle,
+            newFilledSlots
+          };
+        });
 
-      // Check if raffle is now full and auto-draw (outside transaction)
-      if (result.raffle.autoDraw && result.newFilledSlots >= result.raffle.totalSlots) {
-        await drawRaffleWinners(id);
+        // Check if raffle is now full and auto-draw (outside transaction)
+        if (result.raffle.autoDraw && result.newFilledSlots >= result.raffle.totalSlots) {
+          await drawRaffleWinners(id);
+        }
+
+        const response = createSuccessResponse(
+          { totalCost: result.totalCost },
+          result.message
+        );
+        res.json(response);
+      } catch (error) {
+        console.error('Error joining raffle:', error);
+        
+        // Handle specific error cases
+        if (error instanceof Error) {
+          if (error.message.includes('Insufficient credits')) {
+            const { statusCode, response } = createErrorResponse(
+              'Insufficient credits to join raffle',
+              'INSUFFICIENT_CREDITS',
+              null,
+              400
+            );
+            return res.status(statusCode).json(response);
+          }
+          
+          if (error.message.includes('Only') && error.message.includes('slots available')) {
+            const { statusCode, response } = createErrorResponse(
+              error.message,
+              'INSUFFICIENT_SLOTS',
+              null,
+              400
+            );
+            return res.status(statusCode).json(response);
+          }
+          
+          if (error.message.includes('Raffle is no longer active')) {
+            const { statusCode, response } = createErrorResponse(
+              'Raffle is no longer active',
+              'RAFFLE_INACTIVE',
+              null,
+              400
+            );
+            return res.status(statusCode).json(response);
+          }
+          
+          if (error.message.includes('Raffle not found')) {
+            const { statusCode, response } = createErrorResponse(
+              'Raffle not found or inactive',
+              'RAFFLE_NOT_FOUND',
+              null,
+              404
+            );
+            return res.status(statusCode).json(response);
+          }
+        }
+        
+        // Generic error response
+        const { statusCode, response } = createErrorResponse(
+          'Failed to join raffle',
+          'INTERNAL_ERROR',
+          null,
+          500
+        );
+        res.status(statusCode).json(response);
       }
-
-      const response = createSuccessResponse(
-        { totalCost: result.totalCost },
-        result.message
-      );
-      res.json(response);
     }));
 
   // Admin: Get all raffles (including completed ones with winners)

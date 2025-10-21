@@ -25,7 +25,7 @@ interface GameResult {
       color: "from-purple-500 to-pink-500", 
       bgColor: "bg-purple-500/20", 
       borderColor: "border-purple-500/50", 
-      icon: "🔮"
+      icon: "Dice"
     },
     { 
       id: "fire", 
@@ -33,7 +33,7 @@ interface GameResult {
       color: "from-red-500 to-orange-500", 
       bgColor: "bg-red-500/20", 
       borderColor: "border-red-500/50", 
-      icon: "🔥"
+      icon: "Fire"
     },
     { 
       id: "grass", 
@@ -49,7 +49,7 @@ interface GameResult {
       color: "from-blue-500 to-cyan-500", 
       bgColor: "bg-blue-500/20", 
       borderColor: "border-blue-500/50", 
-      icon: "💧"
+      icon: "Water"
     },
     { 
       id: "electric", 

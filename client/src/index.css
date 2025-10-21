@@ -251,6 +251,35 @@
   .tier-sss {
     @apply text-[hsl(var(--tier-sss))];
   }
+
+  /* Tier background colors */
+  .bg-d {
+    @apply bg-[hsl(var(--tier-d))];
+  }
+
+  .bg-c {
+    @apply bg-[hsl(var(--tier-c))];
+  }
+
+  .bg-b {
+    @apply bg-[hsl(var(--tier-b))];
+  }
+
+  .bg-a {
+    @apply bg-[hsl(var(--tier-a))];
+  }
+
+  .bg-s {
+    @apply bg-[hsl(var(--tier-s))];
+  }
+
+  .bg-ss {
+    @apply bg-[hsl(var(--tier-ss))];
+  }
+
+  .bg-sss {
+    @apply bg-[hsl(var(--tier-sss))];
+  }
 }
 
 @layer utilities {

@@ -33,6 +33,21 @@ export default function Vault() {
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isCreatingShippingRequest, setIsCreatingShippingRequest] = useState(false);
+  
+  // Shipping success popup state
+  const [showShippingSuccessPopup, setShowShippingSuccessPopup] = useState(false);
+  const [shippingSuccessData, setShippingSuccessData] = useState<{
+    requestId: string;
+    totalCards: number;
+    totalValue: number;
+  } | null>(null);
+  
+  // Refund success popup state
+  const [showRefundSuccessPopup, setShowRefundSuccessPopup] = useState(false);
+  const [refundSuccessData, setRefundSuccessData] = useState<{
+    cardCount: number;
+    totalAmount: number;
+  } | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -53,50 +68,54 @@ export default function Vault() {
     queryKey: ["/api/vault"],
     enabled: isAuthenticated,
     queryFn: async () => {
-      console.log('🔍 Vault query function called');
+      console.log('Vault query function called');
       const response = await apiRequest("GET", "/api/vault");
       const data = await response.json();
-      console.log('🔍 Vault query response:', data);
-      console.log('🔍 Vault cards count:', data?.length || 0);
+      console.log('Vault query response:', data);
+      console.log('Vault cards count:', data?.length || 0);
       return data;
     },
   });
 
   const refundMutation = useMutation({
     mutationFn: async (cardIds: string[]) => {
-      // For common cards (D tier), collect all individual common card IDs
+      // Show loading toast
+      toast({
+        title: "Processing Refund...",
+        description: "Please wait while we process your refund request.",
+        duration: 3000,
+      });
+
+      // Process only the specifically selected cards
       const allCardIds: string[] = [];
       let totalRefundAmount = 0;
       
       for (const cardId of cardIds) {
         const selectedCard = vaultCards?.find(c => c.id === cardId);
-        if (selectedCard?.cardTier === 'D') {
-          // For common cards, find all individual common cards with the same properties
-          const commonCards = vaultCards?.filter(c => 
-            c.cardTier === 'D' && 
-            c.cardName === selectedCard.cardName &&
-            c.cardImageUrl === selectedCard.cardImageUrl &&
-            c.refundCredit === selectedCard.refundCredit
-          ) || [];
-          
-          // Add all individual common card IDs and calculate total refund
-          commonCards.forEach(card => {
-            allCardIds.push(card.id);
-            totalRefundAmount += parseFloat(card.refundCredit.toString());
-          });
-        } else {
-          // For C-SSS cards, add the individual card ID
+        if (selectedCard) {
+          // Add the individual card ID (regardless of tier)
           allCardIds.push(cardId);
-          totalRefundAmount += parseFloat(selectedCard?.refundCredit.toString() || '0');
+          totalRefundAmount += parseFloat(selectedCard.refundCredit.toString());
         }
       }
       
       // Remove duplicates
       const uniqueCardIds = [...new Set(allCardIds)];
       
+      // Limit the number of cards that can be refunded at once
+      const MAX_REFUND_CARDS = 50;
+      if (uniqueCardIds.length > MAX_REFUND_CARDS) {
+        toast({
+          title: "Too many cards selected",
+          description: `Please select no more than ${MAX_REFUND_CARDS} cards to refund at once.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Make the refund API request first
-      console.log("🚀 Starting refund processing for card IDs:", uniqueCardIds);
-      console.log("🚀 Making API request to /api/vault/refund");
+      console.log("Starting refund processing for card IDs:", uniqueCardIds);
+      console.log("Making API request to /api/vault/refund");
       
       const response = await apiRequest("POST", "/api/vault/refund", { cardIds: uniqueCardIds });
       console.log("✅ Refund request successful:", response);
@@ -104,12 +123,13 @@ export default function Vault() {
       const data = await response.json();
       console.log("✅ Refund response data:", data);
       
-      // Clear selected cards and show success message
+      // Clear selected cards and show success popup
       setSelectedCards([]);
-      toast({
-        title: "Cards Refunded",
-        description: `Successfully refunded ${uniqueCardIds.length} cards for ${Math.floor(totalRefundAmount)} credits`,
+      setRefundSuccessData({
+        cardCount: uniqueCardIds.length,
+        totalAmount: Math.floor(totalRefundAmount)
       });
+      setShowRefundSuccessPopup(true);
       
       // Invalidate and refetch the vault data to get the updated list
       await queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
@@ -141,9 +161,9 @@ export default function Vault() {
     },
   });
 
-  console.log('🔍 Vault component render - vaultCards:', vaultCards);
-  console.log('🔍 Vault component render - vaultLoading:', vaultLoading);
-  console.log('🔍 Vault component render - vaultCards length:', vaultCards?.length || 0);
+  console.log('Vault component render - vaultCards:', vaultCards);
+  console.log('Vault component render - vaultLoading:', vaultLoading);
+  console.log('Vault component render - vaultCards length:', vaultCards?.length || 0);
 
   if (isLoading) {
     return (
@@ -154,14 +174,12 @@ export default function Vault() {
   }
 
   const handleSelectAll = () => {
-    const originalFilteredCards = vaultCards?.filter(card => 
-      filterTier === "all" || card.cardTier === getTierMapping(filterTier)
-    ) || [];
+    const allCardIds = originalFilteredCards.map(card => card.id);
     
-    if (selectedCards.length === originalFilteredCards.length && originalFilteredCards.length > 0) {
+    if (selectedCards.length === allCardIds.length && allCardIds.length > 0) {
       setSelectedCards([]);
     } else {
-      setSelectedCards(originalFilteredCards.map(card => card.id));
+      setSelectedCards(allCardIds);
     }
   };
 
@@ -170,10 +188,11 @@ export default function Vault() {
       const newSelection = prev.includes(cardId) 
         ? prev.filter(id => id !== cardId)
         : [...prev, cardId];
-      console.log('🔍 Card selection updated:', { cardId, newSelection, count: newSelection.length });
+      console.log('Card selection updated:', { cardId, newSelection, count: newSelection.length });
       return newSelection;
     });
   };
+
 
   const calculateRefundValue = () => {
     if (!vaultCards) return 0;
@@ -187,7 +206,7 @@ export default function Vault() {
   };
 
   const handleShipSelected = async () => {
-    console.log('🚢 handleShipSelected called with selectedCards:', selectedCards.length);
+    console.log('handleShipSelected called with selectedCards:', selectedCards.length);
     
     if (selectedCards.length === 0) {
       toast({
@@ -199,7 +218,7 @@ export default function Vault() {
     }
 
     // Limit the number of cards that can be shipped at once to prevent storage quota issues
-    const MAX_SHIPPING_CARDS = 30; // Reduced limit due to image URL size
+    const MAX_SHIPPING_CARDS = 50; // Increased limit to match refund limit
     if (selectedCards.length > MAX_SHIPPING_CARDS) {
       console.log('❌ Too many cards selected:', selectedCards.length, '>', MAX_SHIPPING_CARDS);
       toast({
@@ -281,7 +300,7 @@ export default function Vault() {
       // Prepare the selected cards data
       const selectedCardsData = vaultCards?.filter(card => selectedCards.includes(card.id))
         .map(card => {
-          console.log('🔍 Vault card data:', JSON.stringify(card, null, 2));
+          console.log('Vault card data:', JSON.stringify(card, null, 2));
           return {
             id: card.id,
             name: card.cardName,
@@ -303,11 +322,18 @@ export default function Vault() {
         totalValue: totalValue
       };
 
+      console.log('Sending shipping request data:', JSON.stringify(requestData, null, 2));
       const response = await apiRequest("POST", "/api/shipping/requests", requestData);
+      const responseData = await response.json();
       
-      toast({
-        title: "🎉 Shipping Request Created!",
-        description: `Your request #${response.data?.id?.slice(-8) || 'N/A'} has been submitted successfully. We'll process it within 1-2 business days.`,
+      console.log('Shipping request response:', responseData);
+      
+      // Show success popup with summary
+      setShowShippingSuccessPopup(true);
+      setShippingSuccessData({
+        requestId: responseData.id?.slice(-8) || 'N/A',
+        totalCards: selectedCards.length,
+        totalValue: totalValue
       });
 
       // Close popup and clear selection
@@ -587,7 +613,7 @@ export default function Vault() {
                     className="bg-[#26263A]/50 border-[#26263A] text-[#E5E7EB] hover:bg-[#26263A]"
                     data-testid="button-select-all"
                   >
-                    {selectedCards.length === originalFilteredCards.length ? "Deselect All" : "Select All"}
+                    {selectedCards.length === originalFilteredCards.length ? "Deselect All" : `Select All (${originalFilteredCards.length})`}
                   </Button>
 
                   <Button
@@ -599,18 +625,23 @@ export default function Vault() {
                     data-testid="button-refund-selected"
                   >
                     {refundMutation.isPending ? (
-                      <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                        Refunding...
+                      </>
                     ) : (
-                      <RefreshCw className="w-4 h-4 mr-2" />
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refund Selected
+                      </>
                     )}
-                    Refund Selected
                   </Button>
 
                   <Button
                     size="sm"
                     disabled={selectedCards.length === 0}
                     onClick={() => {
-                      console.log('🚢 Ship button clicked, selected cards:', selectedCards.length);
+                      console.log('Ship button clicked, selected cards:', selectedCards.length);
                       handleShipSelected();
                     }}
                     className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0 disabled:bg-[#374151] disabled:text-[#9CA3AF]"
@@ -689,6 +720,7 @@ export default function Vault() {
                       />
                     </div>
                     
+                    
                     <CardDisplay 
                       card={{
                         id: userCard.id,
@@ -728,32 +760,62 @@ export default function Vault() {
             <div>
               <h3 className="font-semibold mb-3 text-foreground">Selected Cards ({selectedCards.length})</h3>
               <div className="max-h-40 overflow-y-auto space-y-2">
-                {vaultCards?.filter(card => selectedCards.includes(card.id)).map((card) => (
-                  <div key={card.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg border border-border">
-                    <div className="w-12 h-16 bg-gradient-to-br from-[#7C3AED] to-[#22D3EE] rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                      {card.cardImageUrl ? (
-                        <img 
-                          src={card.cardImageUrl} 
-                          alt={card.cardName}
-                          className="w-full h-full object-cover rounded"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className={`absolute inset-0 flex items-center justify-center ${card.cardImageUrl ? 'hidden' : 'flex'}`}>
-                        <span className="text-xs font-bold text-white">{card.cardTier}</span>
+                {(() => {
+                  // Group selected cards by their properties
+                  const selectedCardsData = vaultCards?.filter(card => selectedCards.includes(card.id)) || [];
+                  const groupedSelectedCards = selectedCardsData.reduce((groups, card) => {
+                    const key = `${card.cardName}-${card.cardTier}`;
+                    if (!groups[key]) {
+                      groups[key] = {
+                        cardName: card.cardName,
+                        cardTier: card.cardTier,
+                        cardImageUrl: card.cardImageUrl,
+                        quantity: 0,
+                        firstCard: card
+                      };
+                    }
+                    groups[key].quantity += card.quantity || 1;
+                    return groups;
+                  }, {} as Record<string, {
+                    cardName: string;
+                    cardTier: string;
+                    cardImageUrl: string;
+                    quantity: number;
+                    firstCard: any;
+                  }>);
+
+                  return Object.values(groupedSelectedCards).map((groupedCard, index) => (
+                    <div key={`${groupedCard.cardName}-${groupedCard.cardTier}-${index}`} className="flex items-center gap-3 p-3 bg-muted rounded-lg border border-border">
+                      <div className="w-12 h-16 bg-gradient-to-br from-[#7C3AED] to-[#22D3EE] rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+                        {groupedCard.cardImageUrl ? (
+                          <img 
+                            src={groupedCard.cardImageUrl} 
+                            alt={groupedCard.cardName}
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div className={`absolute inset-0 flex items-center justify-center ${groupedCard.cardImageUrl ? 'hidden' : 'flex'}`}>
+                          <span className="text-xs font-bold text-white">{groupedCard.cardTier}</span>
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-foreground truncate">{groupedCard.cardName}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {groupedCard.cardTier}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="text-sm text-muted-foreground">
+                          Quantity: <span className="text-foreground font-medium">{groupedCard.quantity}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-foreground truncate">{card.cardName}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {card.cardTier} • Qty: {card.quantity}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
 
@@ -826,6 +888,72 @@ export default function Vault() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Success Popup */}
+      <Dialog open={showRefundSuccessPopup} onOpenChange={setShowRefundSuccessPopup}>
+        <DialogContent className="max-w-md bg-gray-800 border-green-600">
+          <DialogHeader className="pb-4 border-b border-green-600">
+            <DialogTitle className="text-center text-2xl font-bold text-green-400">
+              Refund Success
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between items-center">
+                <span className="text-[#9CA3AF]">Total cards:</span>
+                <span className="text-white font-semibold">{refundSuccessData?.cardCount}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#9CA3AF]">Total amount refunded:</span>
+                <span className="font-bold bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent">
+                  {refundSuccessData?.totalAmount} CR
+                </span>
+              </div>
+            </div>
+            <div className="text-sm text-[#9CA3AF] text-center mb-6">
+              Your credits have been added to your account.
+            </div>
+            <Button 
+              onClick={() => setShowRefundSuccessPopup(false)}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0"
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Shipping Success Popup */}
+      <Dialog open={showShippingSuccessPopup} onOpenChange={setShowShippingSuccessPopup}>
+        <DialogContent className="max-w-md bg-gray-800 border-gray-700">
+          <DialogHeader className="pb-4 border-b border-gray-700">
+            <DialogTitle className="text-center text-2xl font-bold text-white">
+              Shipping Request Created
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between items-center">
+                <span className="text-[#9CA3AF]">Request ID:</span>
+                <span className="text-white font-semibold">#{shippingSuccessData?.requestId}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#9CA3AF]">Total cards:</span>
+                <span className="text-white font-semibold">{shippingSuccessData?.totalCards}</span>
+              </div>
+            </div>
+            <div className="text-sm text-[#9CA3AF] text-center mb-6">
+              Your shipping request has been submitted successfully. We'll process it within 1-2 business days.
+            </div>
+            <Button 
+              onClick={() => setShowShippingSuccessPopup(false)}
+              className="w-full bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0"
+            >
+              Continue
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

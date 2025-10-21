@@ -45,7 +45,7 @@ export function Navigation() {
     onSuccess: () => {
       // Clear JWT token from localStorage
       localStorage.removeItem('authToken');
-      console.log('🔐 JWT token cleared from localStorage');
+      console.log('JWT token cleared from localStorage');
       
       queryClient.clear(); // Clear all cached data
       toast({

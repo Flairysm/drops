@@ -10,17 +10,80 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
-  MapPin, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Check, 
-  Package, 
-  Truck,
-  Home,
-  Star
+  Calendar
 } from "lucide-react";
+
+// Card Image Component that fetches image from card pool database
+function CardImageComponent({ item }: { item: any }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCardImage = async () => {
+      try {
+        // First try to use existing imageUrl or cardImageUrl
+        if (item.imageUrl || item.cardImageUrl) {
+          setImageUrl(item.imageUrl || item.cardImageUrl);
+          setIsLoading(false);
+          return;
+        }
+
+        // If no image URL, fetch from card pool database
+        console.log('Fetching card image for:', item.name);
+        const response = await apiRequest("GET", `/api/card-image/${encodeURIComponent(item.name)}`);
+        const data = await response.json();
+        
+        console.log('API response:', data);
+        
+        if (data.imageUrl) {
+          setImageUrl(data.imageUrl);
+          console.log('✅ Fetched card image from database:', data.imageUrl, 'for card:', item.name);
+        } else {
+          console.log('❌ No card image found in database for:', item.name);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching card image:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCardImage();
+  }, [item.name, item.imageUrl, item.cardImageUrl]);
+
+  return (
+    <div className="w-20 h-24 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative flex-shrink-0">
+      {isLoading ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <span className="text-xs text-white">Loading...</span>
+        </div>
+      ) : imageUrl ? (
+        <img 
+          src={imageUrl} 
+          alt={item.name}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            console.log('❌ Image failed to load:', imageUrl);
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling.style.display = 'flex';
+          }}
+          onLoad={() => {
+            console.log('✅ Image loaded successfully:', imageUrl);
+          }}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <span className="text-xs text-white">No Image</span>
+        </div>
+      )}
+      <div className="absolute inset-0 flex items-center justify-center hidden">
+        <span className="text-xs font-bold text-white">{item.tier}</span>
+      </div>
+    </div>
+  );
+}
 
 interface UserAddress {
   id: string;
@@ -55,7 +118,7 @@ export default function Shipping() {
     switch (status) {
       case 'pending':
         return 'bg-yellow-500 text-white';
-      case 'shipped':
+      case 'shipping':
         return 'bg-blue-500 text-white';
       case 'delivered':
         return 'bg-green-500 text-white';
@@ -69,6 +132,10 @@ export default function Shipping() {
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
+  
+  // Detail modal state
+  const [selectedRequest, setSelectedRequest] = useState<ShippingRequest | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   
   // Address form state
   const [isAddingAddress, setIsAddingAddress] = useState(false);
@@ -253,6 +320,11 @@ export default function Shipping() {
     setIsAddingAddress(true);
   };
 
+  const openDetailModal = (request: ShippingRequest) => {
+    setSelectedRequest(request);
+    setIsDetailModalOpen(true);
+  };
+
 
   const createShippingRequest = async () => {
     if (!selectedAddress) {
@@ -289,7 +361,7 @@ export default function Shipping() {
       if (response.ok) {
         const responseData = await response.json();
         toast({
-          title: "🎉 Shipping Request Created!",
+          title: "Shipping Request Created!",
           description: `Your request #${responseData.id?.slice(-8) || 'N/A'} has been submitted successfully. We'll process it within 1-2 business days.`,
         });
         
@@ -336,33 +408,88 @@ export default function Shipping() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative overflow-hidden">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4 flex items-center justify-center gap-3">
+
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        {/* Main background image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('data:image/svg+xml;base64,${btoa(`
+              <svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#1e1b4b" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#312e81" stop-opacity="1"/>
+                  </radialGradient>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#4c1d95" stroke-width="0.5" opacity="0.3"/>
+                  </pattern>
+                </defs>
+                <rect width="1920" height="1080" fill="url(#bg)"/>
+                <rect width="1920" height="1080" fill="url(#grid)"/>
+                <circle cx="200" cy="200" r="100" fill="#7c3aed" opacity="0.1"/>
+                <circle cx="1720" cy="880" r="150" fill="#a855f7" opacity="0.1"/>
+                <circle cx="960" cy="540" r="200" fill="#c084fc" opacity="0.05"/>
+              </svg>
+            `)}')`
+          }}
+        />
+        
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
+        
+        {/* Additional floating particles */}
+        <div className="absolute inset-0">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-cyan-400/60 rounded-full animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            ></div>
+          ))}
+        </div>
+      </div>
+
+      <main className="pt-16 pb-16 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+          {/* Header */}
+          <div className="py-6 text-center mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4">
               <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
-                <Truck className="w-10 h-10 inline mr-3" />
-              Shipping Center
+                SHIPPING CENTER
               </span>
             </h1>
-            <p className="text-muted-foreground text-lg">Manage your addresses and track your shipments</p>
+            <p className="text-base text-[#E5E7EB] max-w-3xl mx-auto">
+              Manage your addresses and track your shipments
+            </p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
-              <TabsTrigger value="pending" className="flex items-center gap-2">
-                <Package className="w-4 h-4" />
+            <TabsList className="grid w-full grid-cols-3 mb-8 bg-[#26263A]/50 border-[#26263A]">
+              <TabsTrigger 
+                value="pending" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#7C3AED] data-[state=active]:to-[#22D3EE] data-[state=active]:text-white data-[state=active]:border-0"
+              >
                 Pending
               </TabsTrigger>
-              <TabsTrigger value="completed" className="flex items-center gap-2">
-                <Check className="w-4 h-4" />
+              <TabsTrigger 
+                value="completed" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#7C3AED] data-[state=active]:to-[#22D3EE] data-[state=active]:text-white data-[state=active]:border-0"
+              >
                 Completed
               </TabsTrigger>
-              <TabsTrigger value="manage" className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                Manage Addresses
+              <TabsTrigger 
+                value="manage" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#7C3AED] data-[state=active]:to-[#22D3EE] data-[state=active]:text-white data-[state=active]:border-0"
+              >
+                Addresses
               </TabsTrigger>
             </TabsList>
 
@@ -370,85 +497,70 @@ export default function Shipping() {
             <TabsContent value="pending" className="space-y-6">
               <Card className="gaming-card">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="w-5 h-5" />
-                    Pending Shipments
-                  </CardTitle>
+                  <CardTitle>Pending Shipments</CardTitle>
                   <p className="text-muted-foreground">Orders currently being processed</p>
                 </CardHeader>
                 <CardContent>
-                  {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipped').length === 0 ? (
+                  {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
-                      <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                       <p className="text-muted-foreground">No pending shipments</p>
                       <p className="text-sm text-muted-foreground">Go to your vault to select cards for shipping</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {shippingRequests
-                        .filter(req => req.status === 'pending' || req.status === 'shipped')
+                        .filter(req => req.status === 'pending' || req.status === 'shipping')
                         .map((request) => (
-                        <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                        <Card key={request.id} className="gaming-card hover:glow-effect transition-all">
                           <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-3">
-                                <Badge className={`${getStatusColor(request.status)}`}>
-                                  {request.status === 'pending' ? '⏳ Pending' : '📦 Shipped'}
-                                </Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  Request #{request.id?.slice(-8) || 'N/A'}
-                                </span>
-                              </div>
-                              <span className="text-sm text-muted-foreground">
-                                {new Date(request.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                            
-                            <div className="grid md:grid-cols-2 gap-4">
-                              <div>
-                                <h4 className="font-semibold mb-2">Items ({request.items?.length || 0})</h4>
-                                <div className="space-y-2">
-                                  {request.items?.map((item: any, index: number) => (
-                                    <div key={index} className="flex items-center gap-2 text-sm">
-                                      <span className="font-medium">{item.name}</span>
-                                      <span className="text-muted-foreground">x{item.quantity}</span>
-                                    </div>
-                                  ))}
+                            <div className="space-y-4">
+                              {/* Header Row */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <Badge className={`${getStatusColor(request.status)} px-3 py-1`}>
+                                    {request.status === 'pending' ? 'Processing' : 'Shipping'}
+                                  </Badge>
+                                  <div className="text-sm text-muted-foreground">
+                                    Request #{request.id?.slice(-8) || 'N/A'}
+                                  </div>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {new Date(request.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
                               
-                              <div>
-                                <h4 className="font-semibold mb-2">Shipping Address</h4>
-                                <div className="text-sm text-muted-foreground">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <MapPin className="w-4 h-4" />
-                                    <span>{request.address?.name}</span>
+                              {/* Content Row */}
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium">
+                                    {request.items?.length || 0} items
                                   </div>
-                                  <div className="ml-6">
-                                    <div>{request.address?.address}</div>
-                                    <div>{request.address?.city}, {request.address?.state} {request.address?.postalCode}</div>
-                                    <div>{request.address?.country}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {request.address?.name} • {request.address?.city}, {request.address?.state}
                                   </div>
+                                  {request.status === 'shipping' && request.trackingNumber && (
+                                    <div 
+                                      className="text-xs text-blue-400 font-medium cursor-pointer hover:text-blue-300 transition-colors"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(request.trackingNumber);
+                                        // You could add a toast notification here if needed
+                                      }}
+                                      title="Click to copy tracking number"
+                                    >
+                                      <div>Tracking</div>
+                                      <div>{request.trackingNumber}</div>
+                                    </div>
+                                  )}
                                 </div>
+                                <Button 
+                                  size="sm"
+                                  onClick={() => openDetailModal(request)}
+                                  className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0"
+                                >
+                                  View Details
+                                </Button>
                               </div>
                             </div>
-                            
-                            {request.trackingNumber && (
-                              <div className="mt-4 p-3 bg-muted rounded-lg">
-                                <div className="flex items-center gap-2">
-                                  <Truck className="w-4 h-4" />
-                                  <span className="font-medium">Tracking Number:</span>
-                                  <span className="font-mono">{request.trackingNumber}</span>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {request.notes && (
-                              <div className="mt-4">
-                                <h4 className="font-semibold mb-2">Notes</h4>
-                                <p className="text-sm text-muted-foreground">{request.notes}</p>
-                              </div>
-                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -462,78 +574,57 @@ export default function Shipping() {
             <TabsContent value="completed" className="space-y-6">
               <Card className="gaming-card">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Check className="w-5 h-5" />
-                    Completed Shipments
-                  </CardTitle>
+                  <CardTitle>Completed Shipments</CardTitle>
                   <p className="text-muted-foreground">Successfully delivered orders</p>
                 </CardHeader>
                 <CardContent>
                   {shippingRequests.filter(req => req.status === 'delivered').length === 0 ? (
                     <div className="text-center py-8">
-                      <Check className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                       <p className="text-muted-foreground">No completed shipments</p>
                       <p className="text-sm text-muted-foreground">Your delivered orders will appear here</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {shippingRequests
                         .filter(req => req.status === 'delivered')
                         .map((request) => (
-                        <Card key={request.id} className="hover:shadow-lg transition-shadow">
+                        <Card key={request.id} className="gaming-card hover:glow-effect transition-all">
                           <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-3">
-                                <Badge className="bg-green-500 text-white">
-                                  ✅ Delivered
-                                </Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  Request #{request.id?.slice(-8) || 'N/A'}
-                                </span>
-                              </div>
-                              <span className="text-sm text-muted-foreground">
-                                {new Date(request.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                            
-                            <div className="grid md:grid-cols-2 gap-4">
-                              <div>
-                                <h4 className="font-semibold mb-2">Items ({request.items?.length || 0})</h4>
-                                <div className="space-y-2">
-                                  {request.items?.map((item: any, index: number) => (
-                                    <div key={index} className="flex items-center gap-2 text-sm">
-                                      <span className="font-medium">{item.name}</span>
-                                      <span className="text-muted-foreground">x{item.quantity}</span>
-                                    </div>
-                                  ))}
+                            <div className="space-y-4">
+                              {/* Header Row */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <Badge className="bg-green-500 text-white px-3 py-1">
+                                    Delivered
+                                  </Badge>
+                                  <div className="text-sm text-muted-foreground">
+                                    Request #{request.id?.slice(-8) || 'N/A'}
+                                  </div>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {new Date(request.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
                               
-                              <div>
-                                <h4 className="font-semibold mb-2">Shipping Address</h4>
-                                <div className="text-sm text-muted-foreground">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <MapPin className="w-4 h-4" />
-                                    <span>{request.address?.name}</span>
+                              {/* Content Row */}
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium">
+                                    {request.items?.length || 0} items
                                   </div>
-                                  <div className="ml-6">
-                                    <div>{request.address?.address}</div>
-                                    <div>{request.address?.city}, {request.address?.state} {request.address?.postalCode}</div>
-                                    <div>{request.address?.country}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {request.address?.name} • {request.address?.city}, {request.address?.state}
                                   </div>
                                 </div>
+                                <Button 
+                                  size="sm"
+                                  onClick={() => openDetailModal(request)}
+                                  className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0"
+                                >
+                                  View Details
+                                </Button>
                               </div>
                             </div>
-                            
-                            {request.trackingNumber && (
-                              <div className="mt-4 p-3 bg-muted rounded-lg">
-                                <div className="flex items-center gap-2">
-                                  <Truck className="w-4 h-4" />
-                                  <span className="font-medium">Tracking Number:</span>
-                                  <span className="font-mono">{request.trackingNumber}</span>
-                                </div>
-                              </div>
-                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -548,15 +639,11 @@ export default function Shipping() {
               <Card className="gaming-card">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                      <Home className="w-5 h-5" />
-                      Your Addresses
-                    </CardTitle>
+                    <CardTitle className="text-xl font-semibold">Your Addresses</CardTitle>
                     <Button 
                       onClick={() => setIsAddingAddress(true)}
-                      className="flex items-center gap-2"
+                      className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0"
                     >
-                      <Plus className="w-4 h-4" />
                       Add Address
                     </Button>
                   </div>
@@ -568,61 +655,63 @@ export default function Shipping() {
                     </div>
                   ) : addresses.length === 0 ? (
                     <div className="text-center py-8">
-                      <MapPin className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                       <div className="text-muted-foreground mb-4">No addresses saved yet</div>
-                      <Button onClick={() => setIsAddingAddress(true)}>
+                      <Button 
+                        onClick={() => setIsAddingAddress(true)}
+                        className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0"
+                      >
                         Add Your First Address
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-3">
                       {addresses.map((address) => (
-                        <Card key={address.id} className="relative">
+                        <Card key={address.id} className="gaming-card hover:glow-effect transition-all">
                           <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{address.name}</h3>
-                                {address.isDefault && (
-                                  <Badge variant="secondary" className="flex items-center gap-1">
-                                    <Star className="w-3 h-3" />
-                                    Default
-                                  </Badge>
-                                )}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div>
+                                  <div className="font-semibold flex items-center gap-2">
+                                    {address.name}
+                                    {address.isDefault && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        Default
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {address.city}, {address.state} • {address.country}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex gap-1">
+                              <div className="flex items-center gap-2">
+                                {!address.isDefault && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSetDefault(address.id)}
+                                    className="text-xs bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0"
+                                  >
+                                    Set Default
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => startEditingAddress(address)}
+                                  className="text-xs"
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  Edit
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleDeleteAddress(address.id)}
+                                  className="text-xs text-red-400 hover:text-red-300"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  Delete
                                 </Button>
                               </div>
                             </div>
-                            <div className="text-sm text-muted-foreground space-y-1">
-                              <div>{address.address}</div>
-                              <div>{address.city}, {address.state} {address.postalCode}</div>
-                              <div>{address.country}</div>
-                              {address.phone && <div>Phone: {address.phone}</div>}
-                            </div>
-                            {!address.isDefault && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="mt-3 w-full"
-                                onClick={() => handleSetDefault(address.id)}
-                              >
-                                <Check className="w-4 h-4 mr-2" />
-                                Set as Default
-                              </Button>
-                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -723,10 +812,18 @@ export default function Shipping() {
                       </div>
                       
                       <div className="flex gap-2">
-                        <Button type="submit">
+                        <Button 
+                          type="submit"
+                          className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white border-0"
+                        >
                           {editingAddress ? 'Update Address' : 'Add Address'}
                         </Button>
-                        <Button type="button" variant="outline" onClick={resetAddressForm}>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={resetAddressForm}
+                          className="border-[#26263A] text-[#E5E7EB] hover:bg-[#26263A]"
+                        >
                           Cancel
                         </Button>
                       </div>
@@ -738,12 +835,164 @@ export default function Shipping() {
 
           </Tabs>
         </div>
-      </div>
+      </main>
       
-      {/* Add spacing before footer */}
-      <div className="h-20"></div>
+      {/* Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="pb-4 border-b border-gray-700">
+            <DialogTitle className="text-xl font-semibold">Shipping Request Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <div className="space-y-6 pt-4">
+              {/* Status and Basic Info */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <Badge className={`${getStatusColor(selectedRequest.status)} px-3 py-1 text-sm`}>
+                      {selectedRequest.status === 'pending' ? 'Processing' : 
+                       selectedRequest.status === 'shipping' ? 'Shipping' : 'Delivered'}
+                    </Badge>
+                    <div>
+                      <div className="font-semibold text-white">Request #{selectedRequest.id?.slice(-8) || 'N/A'}</div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(selectedRequest.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div>
+                <h3 className="font-semibold mb-4 text-lg text-white">
+                  Items ({selectedRequest.items?.length || 0})
+                </h3>
+                <div className="grid gap-3">
+                  {(() => {
+                    // Group items by their properties
+                    const groupedItems = (selectedRequest.items || []).reduce((groups: any, item: any) => {
+                      const key = `${item.name || item.card?.name || 'Unknown'}-${item.tier || item.card?.tier || 'Unknown'}`;
+                      if (!groups[key]) {
+                        groups[key] = {
+                          name: item.name || item.card?.name || 'Unknown Card',
+                          tier: item.tier || item.card?.tier,
+                          quantity: 0,
+                          firstItem: item
+                        };
+                      }
+                      groups[key].quantity += (item.quantity || item.qty || 1);
+                      return groups;
+                    }, {});
+
+                    return Object.values(groupedItems).map((groupedItem: any, index: number) => (
+                      <Card key={index} className="bg-gray-800/30 border-gray-700">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            {/* Card Image */}
+                            <div className="relative">
+                              <CardImageComponent item={groupedItem.firstItem} />
+                              {/* Tier Badge */}
+                              {groupedItem.tier && (
+                                <div className="absolute top-1 right-1">
+                                  <Badge className="bg-gray-600 text-white ring-1 ring-white/40 shadow-md shadow-black/30 px-1.5 py-0.5 rounded-full text-xs font-bold">
+                                    {groupedItem.tier}
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Card Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-white text-lg mb-1">
+                                {groupedItem.name}
+                              </div>
+                              {groupedItem.tier && (
+                                <div className="text-sm text-muted-foreground">
+                                  Tier: <span className="text-white font-medium">{groupedItem.tier}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Quantity Badge */}
+                            <Badge variant="outline" className="flex-shrink-0 bg-gray-700 border-gray-600 text-white">
+                              {groupedItem.quantity}x
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <h3 className="font-semibold mb-4 text-lg text-white">
+                  Shipping Address
+                </h3>
+                <Card className="bg-gray-800/30 border-gray-700">
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <div className="font-semibold text-white text-lg">{selectedRequest.address?.name}</div>
+                      <div className="text-sm text-muted-foreground">{selectedRequest.address?.address}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {selectedRequest.address?.city}, {selectedRequest.address?.state} {selectedRequest.address?.postalCode}
+                      </div>
+                      <div className="text-sm text-muted-foreground">{selectedRequest.address?.country}</div>
+                      {selectedRequest.address?.phone && (
+                        <div className="text-sm text-muted-foreground">
+                          Phone: <span className="text-white font-medium">{selectedRequest.address.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Tracking Information */}
+              {selectedRequest.trackingNumber && (
+                <div>
+                  <h3 className="font-semibold mb-4 text-lg text-white">
+                    Tracking Information
+                  </h3>
+                  <Card className="bg-gray-800/30 border-gray-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium text-white">Tracking Number:</span>
+                        <span className="font-mono bg-gray-700 text-white px-3 py-2 rounded border border-gray-600">
+                          {selectedRequest.trackingNumber}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedRequest.notes && (
+                <div>
+                  <h3 className="font-semibold mb-4 text-lg text-white">Notes</h3>
+                  <Card className="bg-gray-800/30 border-gray-700">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground leading-relaxed">{selectedRequest.notes}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       
       <NavigationFooter />
     </div>
   );
 }
+
+
+
+
+

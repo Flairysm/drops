@@ -92,6 +92,17 @@ export default function Home() {
   const handleConfirmJoin = async () => {
     if (!selectedRaffle || slotsToJoin < 1) return;
 
+    // Check user credits before attempting to join
+    const totalCost = selectedRaffle.pricePerSlot * slotsToJoin;
+    if (user && user.credits < totalCost) {
+      toast({
+        title: "Insufficient Credits",
+        description: `You need ${totalCost} credits to join with ${slotsToJoin} slot(s). You have ${user.credits} credits.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Additional validation
     const availableSlots = selectedRaffle.totalSlots - (selectedRaffle.filledSlots || 0);
     if (slotsToJoin > availableSlots) {
@@ -128,56 +139,43 @@ export default function Home() {
           title: "Success!",
           description: `Successfully joined raffle with ${slotsToJoin} slot(s)!`,
         });
+      } else {
+        // Handle server error responses
+        toast({
+          title: "Error",
+          description: data.message || "Failed to join raffle. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error: any) {
       console.error('Error joining raffle:', error);
       
-      let errorMessage = 'Failed to join raffle';
-      let errorTitle = 'Error';
-      
-      if (error.message) {
-        if (error.message.includes('Insufficient credits')) {
-          errorTitle = 'Insufficient Credits';
-          errorMessage = 'You don\'t have enough credits to join this raffle. Please purchase more credits or reduce the number of slots.';
-        } else if (error.message.includes('Only') && error.message.includes('slots available')) {
-          errorTitle = 'Not Enough Slots';
-          const availableSlots = selectedRaffle ? 
-            selectedRaffle.totalSlots - (selectedRaffle.filledSlots || 0) : 0;
-          errorMessage = `Only ${availableSlots} slots are available in this raffle. Please reduce the number of slots you want to join.`;
-        } else if (error.message.includes('Raffle is no longer active')) {
-          errorTitle = 'Raffle Closed';
-          errorMessage = 'This raffle is no longer accepting entries.';
-        } else if (error.message.includes('Raffle not found')) {
-          errorTitle = 'Raffle Not Found';
-          errorMessage = 'This raffle could not be found or has been removed.';
-        } else if (error.message.includes('Invalid number of slots')) {
-          errorTitle = 'Invalid Input';
-          errorMessage = 'Please enter a valid number of slots (at least 1).';
-        } else if (error.message.includes('User not authenticated')) {
-          errorTitle = 'Authentication Error';
-          errorMessage = 'Please log in again to join raffles.';
-        } else {
-          const match = error.message.match(/\d+:\s*{.*?"error":"([^"]+)"}/);
-          if (match) {
-            const serverError = match[1];
-            if (serverError === 'Insufficient credits') {
-              errorTitle = 'Insufficient Credits';
-              errorMessage = 'You don\'t have enough credits to join this raffle. Please purchase more credits or reduce the number of slots.';
-            } else if (serverError === 'Failed to join raffle') {
-              errorTitle = 'Server Error';
-              errorMessage = 'There was a problem joining the raffle. Please try again later.';
-            } else {
-              errorMessage = serverError;
-            }
-          }
-        }
+      // Handle specific error cases
+      if (error.message?.includes('Insufficient credits')) {
+        toast({
+          title: "Insufficient Credits",
+          description: "You don't have enough credits to join this raffle.",
+          variant: "destructive"
+        });
+      } else if (error.message?.includes('slots available')) {
+        toast({
+          title: "No Slots Available",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else if (error.message?.includes('no longer active')) {
+        toast({
+          title: "Raffle Inactive",
+          description: "This raffle is no longer active.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to join raffle. Please try again.",
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: errorTitle,
-        description: errorMessage,
-        variant: "destructive",
-      });
     } finally {
       setIsJoining(false);
     }
@@ -1029,10 +1027,17 @@ export default function Home() {
             </Button>
             <Button 
               onClick={handleConfirmJoin}
-              disabled={isJoining || !selectedRaffle || slotsToJoin < 1}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              disabled={
+                isJoining || 
+                !selectedRaffle || 
+                slotsToJoin < 1 || 
+                (user && user.credits < (selectedRaffle.pricePerSlot * slotsToJoin))
+              }
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isJoining ? 'Joining...' : 'Join Raffle'}
+              {isJoining ? 'Joining...' : 
+               (user && user.credits < (selectedRaffle?.pricePerSlot * slotsToJoin)) ? 'Insufficient Credits' : 
+               'Join Raffle'}
             </Button>
           </DialogFooter>
         </DialogContent>

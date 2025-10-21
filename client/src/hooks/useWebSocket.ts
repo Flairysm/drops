@@ -27,7 +27,7 @@ export function useWebSocket() {
         wsRef.current = ws;
 
         ws.onopen = () => {
-          console.log('🔌 WebSocket connected');
+          console.log('WebSocket connected');
           setIsConnected(true);
           setConnectionError(null);
         };
@@ -35,7 +35,7 @@ export function useWebSocket() {
         ws.onmessage = (event) => {
           try {
             const message: WebSocketMessage = JSON.parse(event.data);
-            console.log('📡 WebSocket message received:', message);
+            console.log('WebSocket message received:', message);
 
             // Handle different message types
             switch (message.type) {
@@ -71,20 +71,20 @@ export function useWebSocket() {
         };
 
         ws.onclose = (event) => {
-          console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+          console.log('WebSocket disconnected:', event.code, event.reason);
           setIsConnected(false);
           
           // Attempt to reconnect after 3 seconds
           setTimeout(() => {
             if (wsRef.current?.readyState === WebSocket.CLOSED) {
-              console.log('🔄 Attempting to reconnect WebSocket...');
+              console.log('Attempting to reconnect WebSocket...');
               connect();
             }
           }, 3000);
         };
 
         ws.onerror = (error) => {
-          console.error('🔌 WebSocket error:', error);
+          console.error('WebSocket error:', error);
           setConnectionError('Connection error');
           setIsConnected(false);
         };

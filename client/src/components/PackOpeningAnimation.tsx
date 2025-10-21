@@ -241,7 +241,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             >
               <button
                 onClick={(e) => {
-                  console.log('🔥 BUTTON CLICKED! 🔥');
+                  console.log('BUTTON CLICKED!');
                   console.log('Event:', e);
                   console.log('Event target:', e.target);
                   console.log('Event currentTarget:', e.currentTarget);
@@ -274,7 +274,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 style={{ pointerEvents: 'auto', zIndex: 10000 }}
                 type="button"
               >
-                🔥 TAP TO REVEAL HIT CARD 🔥
+                TAP TO REVEAL HIT CARD
               </button>
             </motion.div>
             );

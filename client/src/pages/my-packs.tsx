@@ -59,14 +59,14 @@ export default function MyPacks() {
 
   const openPackMutation = useMutation({
     mutationFn: async (packId: string) => {
-      console.log('🚀 Starting pack opening for ID:', packId);
+      console.log('Starting pack opening for ID:', packId);
       const response = await apiRequest("POST", `/api/packs/open/${packId}`);
       const result = await response.json();
       console.log('✅ Pack opening successful:', result);
       return result;
     },
     onSuccess: (result, packId) => {
-      console.log('🎉 Pack opening mutation success for ID:', packId);
+      console.log('Pack opening mutation success for ID:', packId);
       setPackOpenData(result);
       setShowAnimation(true);
       setOpeningPack(null);
@@ -113,11 +113,10 @@ export default function MyPacks() {
   };
 
 
-  const getPackTypeDisplay = (packType: string) => {
-    // Now tier field directly stores the pack type (pokeball, greatball, ultraball, masterball)
-    console.log(`Pack display: packType="${packType}"`);
+  const getPackTypeDisplay = (displayKey: string) => {
+    console.log(`Pack display: displayKey="${displayKey}"`);
     
-    switch ((packType || '').toLowerCase()) {
+    switch ((displayKey || '').toLowerCase()) {
       case 'pokeball':
         return { 
           name: "Pokeball Pack", 
@@ -154,18 +153,36 @@ export default function MyPacks() {
           bgColor: "bg-purple-50",
           tier: "Legendary"
         };
-      case 'pe etb':
+      case 'classic':
         return { 
-          name: "PE ETB", 
+          name: "Classic Pack", 
           color: "from-orange-600 to-yellow-400", 
           borderColor: "border-orange-500",
           textColor: "text-orange-600",
           bgColor: "bg-orange-50",
+          tier: "Classic"
+        };
+      case 'special':
+        return { 
+          name: "Special Pack", 
+          color: "from-green-600 to-emerald-400", 
+          borderColor: "border-green-500",
+          textColor: "text-green-600",
+          bgColor: "bg-green-50",
           tier: "Special"
+        };
+      case 'raffle_physical':
+        return { 
+          name: "Raffle Prize", 
+          color: "from-indigo-600 to-purple-400", 
+          borderColor: "border-indigo-500",
+          textColor: "text-indigo-600",
+          bgColor: "bg-indigo-50",
+          tier: "Prize"
         };
       default:
         return { 
-          name: packType || "Mystery Pack", 
+          name: displayKey || "Mystery Pack", 
           color: "from-gray-600 to-gray-400", 
           borderColor: "border-gray-500",
           textColor: "text-gray-600",
@@ -175,31 +192,64 @@ export default function MyPacks() {
     }
   };
 
-  // Group packs by tier and count them
+  // Group packs by pack type and tier for proper display
   const groupedPacks = (userPacks as any[] || []).reduce((acc: any, pack: any) => {
-    let tier = pack.tier || 'unknown';
-    // Treat 'classic' tier as 'pokeball' for display purposes
-    if (tier === 'classic') {
-      tier = 'pokeball';
+    let displayKey = pack.tier || 'unknown';
+    
+    // Skip packs that reference non-existent packs (like Mega Evolution Booster Pack)
+    if (displayKey.toLowerCase().includes('mega evolution') || 
+        displayKey.toLowerCase().includes('booster pack')) {
+      return acc;
     }
-    if (!acc[tier]) {
-      acc[tier] = [];
+    
+    // For classic packs, use 'classic' as the display key
+    if (pack.packType === 'classic') {
+      displayKey = 'classic';
+    }
+    // For special packs, use 'special' as the display key
+    else if (pack.packType === 'special') {
+      displayKey = 'special';
+    }
+    // For raffle physical prizes, use 'raffle_physical' as the display key
+    else if (pack.packType === 'raffle_physical') {
+      displayKey = 'raffle_physical';
+    }
+    // For mystery packs, use the tier (pokeball, greatball, ultraball, masterball)
+    else if (pack.packType === 'mystery') {
+      displayKey = pack.tier || 'pokeball';
+    }
+    
+    if (!acc[displayKey]) {
+      acc[displayKey] = [];
     }
     // Only include packs that are not currently being opened
     if (pack.id !== openingPack) {
-      acc[tier].push(pack);
+      acc[displayKey].push(pack);
     }
     return acc;
   }, {});
 
-  // Get all unique tiers from user's packs, with standard tiers first
+  // Get all unique display keys from user's packs, with standard tiers first
   const standardTiers = ['pokeball', 'greatball', 'ultraball', 'masterball'];
-  const userTiers = (userPacks as any[] || []).map(pack => pack.tier).filter(Boolean);
-  const uniqueUserTiers = [...new Set(userTiers)];
+  const userDisplayKeys = (userPacks as any[] || []).map(pack => {
+    // Skip packs that reference non-existent packs (like Mega Evolution Booster Pack)
+    if (pack.tier && (pack.tier.toLowerCase().includes('mega evolution') || 
+                     pack.tier.toLowerCase().includes('booster pack'))) {
+      return null;
+    }
+    
+    if (pack.packType === 'classic') return 'classic';
+    if (pack.packType === 'special') return 'special';
+    if (pack.packType === 'raffle_physical') return 'raffle_physical';
+    return pack.tier || 'unknown';
+  }).filter(Boolean);
+  const uniqueUserDisplayKeys = [...new Set(userDisplayKeys)];
   
-  // Filter out 'classic' tier since it's the same as 'pokeball' for display purposes
-  const filteredUserTiers = uniqueUserTiers.filter(tier => tier !== 'classic');
-  const packTiers = [...standardTiers, ...filteredUserTiers.filter(tier => !standardTiers.includes(tier))];
+  const packTiers = [...standardTiers, ...uniqueUserDisplayKeys.filter(key => 
+    !standardTiers.includes(key) && 
+    !key.toLowerCase().includes('mega evolution') &&
+    !key.toLowerCase().includes('booster pack')
+  )];
 
   // Pokemon pack images component
   const PackImage = ({ packType, size = 'large' }: { packType: string; size?: 'small' | 'large' }) => {
@@ -213,6 +263,12 @@ export default function MyPacks() {
           return "/assets/ultraball.png";
         case 'masterball':
           return "/assets/masterball.png";
+        case 'classic':
+          return "/assets/classic-image.png"; // Use classic pack image for classic packs
+        case 'special':
+          return "/assets/classic-image.png"; // Use classic pack image for special packs
+        case 'raffle_physical':
+          return "/assets/classic-image.png"; // Use classic pack image for raffle prizes
         case 'luxury':
           return "/assets/masterball.png"; // Use masterball for luxury pack
         case 'pe etb':

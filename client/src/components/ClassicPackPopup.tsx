@@ -49,7 +49,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
       const timestamp = Date.now();
       const response = await apiRequest('GET', `/api/admin/classic-packs/${pack.id}?_t=${timestamp}`);
       const data = await response.json();
-      console.log('🔄 Fetched fresh pack data:', data);
+      console.log('Fetched fresh pack data:', data);
       setPackData(data);
     } catch (error) {
       console.error('Error fetching pack details:', error);
@@ -68,16 +68,16 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
     
     setIsOpening(true);
     try {
-      console.log('🎮 Opening Black Bolt pack:', pack.id);
+      console.log('Opening Black Bolt pack:', pack.id);
       const response = await apiRequest('POST', `/api/classic-packs/purchase/${pack.id}`);
-      console.log('🎮 Response status:', response.status);
+      console.log('Response status:', response.status);
       const result = await response.json();
-      console.log('🎮 Response result:', result);
-      console.log('🎮 Response result keys:', Object.keys(result));
-      console.log('🎮 Response result.success:', result.success);
+      console.log('Response result:', result);
+      console.log('Response result keys:', Object.keys(result));
+      console.log('Response result.success:', result.success);
       
       if (result.success) {
-        console.log('🎮 Pack opening successful, showing animation');
+        console.log('Pack opening successful, showing animation');
         
         // Transform the result to match PackOpeningAnimation format
         const transformedResult = {
@@ -89,10 +89,10 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
           }))
         };
         
-        console.log('🎮 Transformed result:', transformedResult);
+        console.log('Transformed result:', transformedResult);
         
         // Set the pack result and show animation
-        console.log('🎬 Setting pack result and showing animation:', transformedResult);
+        console.log('Setting pack result and showing animation:', transformedResult);
         setPackResult(transformedResult);
         setShowAnimation(true);
         
@@ -100,11 +100,11 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       } else {
-        console.error('🎮 Pack opening failed:', result.message);
+        console.error('Pack opening failed:', result.message);
         throw new Error(result.message || 'Failed to open pack');
       }
     } catch (error: any) {
-      console.error('🎮 Error opening pack:', error);
+      console.error('Error opening pack:', error);
       toast({
         title: "Error Opening Pack",
         description: error.message || "Failed to open pack",

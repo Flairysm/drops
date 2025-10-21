@@ -80,11 +80,11 @@ function CardImageComponent({ item }: { item: any }) {
         }
 
         // If no image URL, fetch from card pool database
-        console.log('🔍 Fetching card image for:', item.name);
+        console.log('Fetching card image for:', item.name);
         const response = await apiRequest("GET", `/api/card-image/${encodeURIComponent(item.name)}`);
         const data = await response.json();
         
-        console.log('🔍 API response:', data);
+        console.log('API response:', data);
         
         if (data.imageUrl) {
           setImageUrl(data.imageUrl);
@@ -136,6 +136,74 @@ function CardImageComponent({ item }: { item: any }) {
         <div className="font-medium text-foreground truncate">{item.name}</div>
         <div className="text-sm text-muted-foreground">
           {item.tier} • Qty: {item.qty}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Grouped Card Component for condensed display
+function GroupedCardComponent({ groupedItem }: { groupedItem: any }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCardImage = async () => {
+      try {
+        // First try to use existing imageUrl or cardImageUrl
+        if (groupedItem.firstItem.imageUrl || groupedItem.firstItem.cardImageUrl) {
+          setImageUrl(groupedItem.firstItem.imageUrl || groupedItem.firstItem.cardImageUrl);
+          setIsLoading(false);
+          return;
+        }
+
+        // If no image URL, fetch from card pool database
+        const response = await apiRequest("GET", `/api/card-image/${encodeURIComponent(groupedItem.name)}`);
+        const data = await response.json();
+        
+        if (data.imageUrl) {
+          setImageUrl(data.imageUrl);
+        }
+      } catch (error) {
+        console.error('Error fetching card image:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCardImage();
+  }, [groupedItem.name, groupedItem.firstItem.imageUrl, groupedItem.firstItem.cardImageUrl]);
+
+  return (
+    <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+      <div className="w-12 h-16 bg-gradient-to-br from-[#7C3AED] to-[#22D3EE] rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+        {isLoading ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-xs text-white">Loading...</span>
+          </div>
+        ) : imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={groupedItem.name}
+            className="w-full h-full object-cover rounded"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling.style.display = 'flex';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-xs text-white">No Image</span>
+          </div>
+        )}
+        <div className="absolute inset-0 flex items-center justify-center hidden">
+          <span className="text-xs font-bold text-white">{groupedItem.tier}</span>
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-foreground truncate">{groupedItem.name}</div>
+        <div className="text-sm text-muted-foreground">
+          {groupedItem.tier} • Qty: {groupedItem.quantity}
         </div>
       </div>
     </div>
@@ -210,7 +278,7 @@ export default function ShippingAdmin() {
   const getShipmentStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'shipped': return 'bg-blue-100 text-blue-800';
+      case 'shipping': return 'bg-blue-100 text-blue-800';
       case 'delivered': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -234,11 +302,11 @@ export default function ShippingAdmin() {
   const updateTrackingNumber = async () => {
     if (!selectedShipment) return;
     
-    // Validate tracking number is required when marking as shipped
-    if (shipmentStatus === 'shipped' && !trackingNumber.trim()) {
+    // Validate tracking number is required when marking as shipping
+    if (shipmentStatus === 'shipping' && !trackingNumber.trim()) {
       toast({
         title: "Validation Error",
-        description: "Tracking number is required when marking shipment as shipped",
+        description: "Tracking number is required when marking shipment as shipping",
         variant: "destructive",
       });
       return;
@@ -252,7 +320,7 @@ export default function ShippingAdmin() {
       
       const statusMessages = {
         pending: "Shipment marked as pending",
-        shipped: "Shipment marked as shipped with tracking number",
+        shipping: "Shipment marked as shipping with tracking number",
         delivered: "Shipment marked as delivered"
       };
       
@@ -308,57 +376,8 @@ export default function ShippingAdmin() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-20 pb-8">
         <div className="max-w-7xl mx-auto">
-          {/* Admin Navigation */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/admin'}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Admin
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/admin?tab=overview'}
-                className="flex flex-col items-center gap-1 p-3 h-auto min-w-[80px]"
-                title="Overview"
-              >
-                <TrendingUp className="w-5 h-5" />
-                <span className="text-xs">Overview</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/admin?tab=users'}
-                className="flex flex-col items-center gap-1 p-3 h-auto min-w-[80px]"
-                title="Users"
-              >
-                <Users className="w-5 h-5" />
-                <span className="text-xs">Users</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/admin?tab=manage'}
-                className="flex flex-col items-center gap-1 p-3 h-auto min-w-[80px]"
-                title="Manage Packs"
-              >
-                <Package className="w-5 h-5" />
-                <span className="text-xs">Manage</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/admin?tab=raffles'}
-                className="flex flex-col items-center gap-1 p-3 h-auto min-w-[80px]"
-                title="Raffles"
-              >
-                <Gift className="w-5 h-5" />
-                <span className="text-xs">Raffles</span>
-              </Button>
-            </div>
-          </div>
 
           {/* Header */}
           <div className="text-center mb-8">
@@ -419,7 +438,7 @@ export default function ShippingAdmin() {
                     <div className="text-center py-8">
                       <div className="text-muted-foreground">Loading shipping requests...</div>
                     </div>
-                  ) : shipments.filter(s => s.status === 'pending' || s.status === 'shipped').length === 0 ? (
+                  ) : shipments.filter(s => s.status === 'pending' || s.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
                       <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                       <p className="text-muted-foreground">No pending shipments</p>
@@ -427,7 +446,7 @@ export default function ShippingAdmin() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {shipments.filter(s => s.status === 'pending' || s.status === 'shipped').map((shipment) => (
+                      {shipments.filter(s => s.status === 'pending' || s.status === 'shipping').map((shipment) => (
                     <Card key={shipment.id} className="hover:shadow-lg transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between gap-4">
@@ -440,8 +459,8 @@ export default function ShippingAdmin() {
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge className={`${getShipmentStatusColor(shipment.status)} px-2 py-1 text-xs font-medium whitespace-nowrap`}>
-                              {shipment.status === 'pending' && '⏳ Pending'}
-                              {shipment.status === 'shipped' && '📦 Shipped'}
+                              {shipment.status === 'pending' && 'Pending'}
+                              {shipment.status === 'shipping' && 'Shipping'}
                             </Badge>
                             <div className="flex gap-1">
                               <Button
@@ -552,29 +571,29 @@ export default function ShippingAdmin() {
                 id="status"
                 value={shipmentStatus}
                 onChange={(e) => setShipmentStatus(e.target.value)}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] focus:outline-none"
               >
                 <option value="pending">Pending</option>
-                <option value="shipped">Shipped</option>
+                <option value="shipping">Shipping</option>
                 <option value="delivered">Delivered</option>
               </select>
               <p className="text-xs text-muted-foreground mt-1">
-                {shipmentStatus === 'shipped' && "Tracking number is required when marking as shipped"}
+                {shipmentStatus === 'shipping' && "Tracking number is required when marking as shipping"}
               </p>
             </div>
             <div>
               <Label htmlFor="trackingNumber">
-                Tracking Number {shipmentStatus === 'shipped' && '*'}
+                Tracking Number {shipmentStatus === 'shipping' && '*'}
               </Label>
               <Input
                 id="trackingNumber"
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Enter tracking number"
-                className={shipmentStatus === 'shipped' && !trackingNumber.trim() ? 'border-red-500' : ''}
+                className={shipmentStatus === 'shipping' && !trackingNumber.trim() ? 'border-red-500' : ''}
               />
-              {shipmentStatus === 'shipped' && !trackingNumber.trim() && (
-                <p className="text-xs text-red-500 mt-1">Tracking number is required for shipped status</p>
+              {shipmentStatus === 'shipping' && !trackingNumber.trim() && (
+                <p className="text-xs text-red-500 mt-1">Tracking number is required for shipping status</p>
               )}
             </div>
           </div>
@@ -584,7 +603,7 @@ export default function ShippingAdmin() {
             </Button>
             <Button 
               onClick={updateTrackingNumber}
-              disabled={shipmentStatus === 'shipped' && !trackingNumber.trim()}
+              disabled={shipmentStatus === 'shipping' && !trackingNumber.trim()}
             >
               Update Status
             </Button>
@@ -594,7 +613,7 @@ export default function ShippingAdmin() {
 
       {/* Shipment Details Dialog */}
       <Dialog open={showShipmentDetailsDialog} onOpenChange={setShowShipmentDetailsDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Shipment Details</DialogTitle>
             <DialogDescription>
@@ -639,9 +658,9 @@ export default function ShippingAdmin() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Status:</span>
                       <Badge className={`${getShipmentStatusColor(selectedShipment.status)} px-2 py-1 text-xs`}>
-                        {selectedShipment.status === 'pending' && '⏳ Pending'}
-                        {selectedShipment.status === 'shipped' && '📦 Shipped'}
-                        {selectedShipment.status === 'delivered' && '✅ Delivered'}
+                        {selectedShipment.status === 'pending' && 'Pending'}
+                        {selectedShipment.status === 'shipping' && 'Shipping'}
+                        {selectedShipment.status === 'delivered' && 'Delivered'}
                       </Badge>
                     </div>
                   </div>
@@ -653,12 +672,26 @@ export default function ShippingAdmin() {
                 <div className="bg-muted/50 p-4 rounded-lg border">
                   {Array.isArray(selectedShipment.items) && selectedShipment.items.length > 0 ? (
                     <div className="space-y-3">
-                      {selectedShipment.items.map((item: any, index: number) => {
-                        console.log('Item data:', JSON.stringify(item, null, 2));
-                        return (
-                        <CardImageComponent key={index} item={item} />
-                        );
-                      })}
+                      {(() => {
+                        // Group items by their properties
+                        const groupedItems = selectedShipment.items.reduce((groups: any, item: any) => {
+                          const key = `${item.name || item.card?.name || 'Unknown'}-${item.tier || item.card?.tier || 'Unknown'}`;
+                          if (!groups[key]) {
+                            groups[key] = {
+                              name: item.name || item.card?.name || 'Unknown Card',
+                              tier: item.tier || item.card?.tier,
+                              quantity: 0,
+                              firstItem: item
+                            };
+                          }
+                          groups[key].quantity += (item.quantity || item.qty || 1);
+                          return groups;
+                        }, {});
+
+                        return Object.values(groupedItems).map((groupedItem: any, index: number) => (
+                          <GroupedCardComponent key={index} groupedItem={groupedItem} />
+                        ));
+                      })()}
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-center py-4">No items data available</p>
@@ -674,7 +707,7 @@ export default function ShippingAdmin() {
                     <div className="text-muted-foreground">{selectedShipment.address.address}</div>
                     <div className="text-muted-foreground">{selectedShipment.address.city}, {selectedShipment.address.state} {selectedShipment.address.postalCode}</div>
                     <div className="text-muted-foreground">{selectedShipment.address.country}</div>
-                    {selectedShipment.address.phone && <div className="text-muted-foreground">📞 {selectedShipment.address.phone}</div>}
+                    {selectedShipment.address.phone && <div className="text-muted-foreground">Phone: {selectedShipment.address.phone}</div>}
                   </div>
                 </div>
               </div>

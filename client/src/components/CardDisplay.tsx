@@ -29,6 +29,8 @@ export function CardDisplay({
 
   const tierColor = tierColors[card.tier as keyof typeof tierColors] || "d";
 
+  const tierBgColor = "#6b7280"; // Generic grey for all tiers
+
   if (viewMode === "list") {
     return (
       <Card 
@@ -62,39 +64,31 @@ export function CardDisplay({
                   className="w-full h-full object-cover"
                 />
               )}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1">
-                <div className="text-white text-xs font-semibold truncate drop-shadow-md">
-                  {card.tier}
-                </div>
-              </div>
             </div>
             
             <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold" data-testid={`text-card-name-${card.id}`}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-lg" data-testid={`text-card-name-${card.id}`}>
                   {card.name}
                 </h3>
-                <Badge className={`tier-${tierColor} bg-black/70 text-white ring-1 ring-white/30 shadow-md shadow-black/30 px-2 py-0.5 rounded-full`}> 
+                <Badge className={`tier-${tierColor} text-white ring-1 ring-white/30 shadow-md shadow-black/30 px-3 py-1 rounded-full font-bold`} style={{
+                  backgroundColor: tierBgColor
+                }}> 
                   {card.tier}
                 </Badge>
               </div>
-              {/* Pack type removed: not present on Card type */}
-              <div className="flex items-center space-x-4 text-sm">
-                <span className="text-muted-foreground">
-                  Credit Value: <span className="font-semibold text-accent">{card.credits || card.marketValue} CR</span>
-                </span>
-                {userCard && (
-                  <>
-                    <span className="text-muted-foreground">
-                      Refund Value: <span className="font-semibold text-legendary">{userCard.refundCredit} CR</span>
-                    </span>
-                    {userCard.quantity && userCard.quantity > 1 && (
-                      <span className="text-muted-foreground">
-                        Quantity: <span className="font-semibold text-primary">{userCard.quantity}x</span>
-                      </span>
-                    )}
-                  </>
+              <div className="flex items-center space-x-6 text-sm">
+                {userCard && userCard.quantity && userCard.quantity > 1 && (
+                  <span className="text-muted-foreground">
+                    Quantity: <span className="font-bold text-primary">{userCard.quantity}x</span>
+                  </span>
                 )}
+                <span className="text-muted-foreground flex items-center">
+                  <div className="w-4 h-4 bg-[#0B0B12] rounded-sm flex items-center justify-center mr-2">
+                    <span className="text-[#22D3EE] text-xs font-bold">₵</span>
+                  </div>
+                  <span className="font-semibold text-accent">{userCard?.refundCredit || card.credits || card.marketValue}</span>
+                </span>
               </div>
             </div>
           </div>
@@ -136,46 +130,49 @@ export function CardDisplay({
           )}
           
           <div className="absolute top-1.5 right-1.5">
-            <Badge className={`tier-${tierColor} bg-black/70 text-white ring-1 ring-white/40 shadow-md shadow-black/30 px-2 py-0.5 rounded-full`}>
+            <Badge className={`tier-${tierColor} text-white ring-1 ring-white/40 shadow-md shadow-black/30 px-2 py-0.5 rounded-full font-bold`} style={{
+              backgroundColor: tierBgColor
+            }}>
               {card.tier}
             </Badge>
           </div>
         </div>
         {/* On mobile, move text below image. On larger screens, keep overlay for richness. */}
-        <div className="block sm:hidden px-2 pt-2">
+        <div className="block sm:hidden px-2 pt-2 pb-2">
           <div className="text-white">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold truncate" data-testid={`text-card-name-${card.id}`}>
-                {card.name}
-              </div>
-              <Badge className={`tier-${tierColor} bg-black/70 text-white ring-1 ring-white/30 shadow-md shadow-black/30 px-2 py-0.5 rounded-full`}>
-                {card.tier}
-              </Badge>
+            <div className="text-xs font-semibold truncate mb-1" data-testid={`text-card-name-${card.id}`}>
+              {card.name}
             </div>
-            <div className="text-[10px] text-gray-300 mt-0.5">
-              Credit Value: {userCard?.refundCredit || card.credits || card.marketValue} CR
-              {userCard?.quantity && userCard.quantity > 1 && (
-                <span className="ml-1 text-primary font-bold">
-                  {userCard.quantity}x
-                </span>
-              )}
+            {userCard?.quantity && userCard.quantity > 1 && (
+              <div className="text-[10px] text-primary font-bold mb-1">
+                Qty: {userCard.quantity}
+              </div>
+            )}
+            <div className="text-[10px] text-gray-300 flex items-center">
+              <div className="w-3 h-3 bg-[#0B0B12] rounded-sm flex items-center justify-center mr-1">
+                <span className="text-[#22D3EE] text-[8px] font-bold">₵</span>
+              </div>
+              {userCard?.refundCredit || card.credits || card.marketValue}
             </div>
           </div>
         </div>
         <div className="hidden sm:block">
           <div className="relative">
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3">
               <div className="text-white">
-                <div className="text-sm font-semibold truncate drop-shadow-lg" data-testid={`text-card-name-${card.id}`}>
+                <div className="text-sm font-bold truncate drop-shadow-lg mb-1" data-testid={`text-card-name-${card.id}`}>
                   {card.name}
                 </div>
-                <div className="text-xs text-gray-200 drop-shadow-md">
-                  Credit Value: {userCard?.refundCredit || card.credits || card.marketValue} CR
-                  {userCard?.quantity && userCard.quantity > 1 && (
-                    <span className="ml-2 text-primary font-bold">
-                      {userCard.quantity}x
-                    </span>
-                  )}
+                {userCard?.quantity && userCard.quantity > 1 && (
+                  <div className="text-xs text-primary font-bold drop-shadow-md mb-1">
+                    Qty: {userCard.quantity}
+                  </div>
+                )}
+                <div className="text-xs text-gray-100 drop-shadow-md font-medium flex items-center">
+                  <div className="w-3 h-3 bg-[#0B0B12] rounded-sm flex items-center justify-center mr-1">
+                    <span className="text-[#22D3EE] text-[8px] font-bold">₵</span>
+                  </div>
+                  {userCard?.refundCredit || card.credits || card.marketValue}
                 </div>
               </div>
             </div>
