@@ -4329,6 +4329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .orderBy(rafflePrizes.position);
 
       console.log('🎲 Found prizes:', prizes.length);
+      console.log('🎲 Prizes details:', prizes.map(p => ({ position: p.position, name: p.name, type: p.type })));
 
       if (prizes.length === 0) {
         throw new Error('No prizes found for this raffle');
@@ -4353,8 +4354,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Draw winners
       const winners = [];
-      const maxWinners = Math.min(raffleData.maxWinners || 1, allSlots.length, prizes.length);
+      // Draw winners based on the number of prizes available, not maxWinners
+      const maxWinners = Math.min(prizes.length, allSlots.length);
       const winningUserIds = new Set(); // Track users who won main prizes
+      
+      console.log(`🎲 Drawing ${maxWinners} winners from ${allSlots.length} slots for ${prizes.length} prizes`);
 
       for (let i = 0; i < maxWinners; i++) {
         const randomIndex = Math.floor(Math.random() * allSlots.length);
