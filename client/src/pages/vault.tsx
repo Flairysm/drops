@@ -28,7 +28,7 @@ export default function Vault() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [allCards, setAllCards] = useState<UserCard[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasMoreCards, setHasMoreCards] = useState(true);
+  const [hasMoreCards, setHasMoreCards] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Load more cards when button is clicked
@@ -43,7 +43,8 @@ export default function Vault() {
       if (data.cards && data.cards.length > 0) {
         setAllCards(prev => [...prev, ...data.cards]);
         setCurrentPage(prev => prev + 1);
-        setHasMoreCards(data.pagination.hasNextPage);
+        // Only show "Load More" if there are more pages AND we got cards in this response
+        setHasMoreCards(data.pagination.hasNextPage && data.cards.length > 0);
       } else {
         setHasMoreCards(false);
       }
@@ -115,7 +116,9 @@ export default function Vault() {
     if (vaultData?.cards) {
       setAllCards(vaultData.cards);
       setCurrentPage(1);
-      setHasMoreCards(vaultData.pagination?.hasNextPage || false);
+      // Only show "Load More" if there are actually more pages AND we have cards
+      const hasMore = vaultData.pagination?.hasNextPage && vaultData.cards.length > 0;
+      setHasMoreCards(hasMore);
     }
   }, [vaultData]);
 
@@ -189,7 +192,7 @@ export default function Vault() {
       // Reset the vault state to force a fresh load
       setAllCards([]);
       setCurrentPage(1);
-      setHasMoreCards(true);
+      setHasMoreCards(false);
       
       return { success: true, refundedCards: uniqueCardIds.length, totalRefund: totalRefundAmount };
     },
@@ -403,7 +406,7 @@ export default function Vault() {
       // Reset the vault state to force a fresh load
       setAllCards([]);
       setCurrentPage(1);
-      setHasMoreCards(true);
+      setHasMoreCards(false);
       
     } catch (error) {
       console.error('❌ Failed to create shipping request:', error);
