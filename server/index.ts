@@ -6,6 +6,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from 'url';
+import rateLimit from 'express-rate-limit';
 
 // Fixed import.meta.dirname issue for production builds
 const __filename = fileURLToPath(import.meta.url);
@@ -13,11 +14,31 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+
 // IMPORTANT: Session middleware must be set up BEFORE CORS
 // This will be done in registerRoutes via setupAuth()
 
-// Disable caching globally for the entire app - NUCLEAR OPTION
+// Security middleware
 app.use((req, res, next) => {
+  // Security headers
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
+  });
+  
   // Remove any existing cache headers
   res.removeHeader('ETag');
   res.removeHeader('Last-Modified');
@@ -36,34 +57,33 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configure CORS to allow requests from all origins for development
+// Configure CORS based on environment
 // NOTE: CORS must come AFTER session middleware (which is set up in registerRoutes)
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // In production, be strict about origins
+    if (isProduction) {
+      if (!origin) return callback(new Error('No origin provided'), false);
+      
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      return callback(new Error('Not allowed by CORS'), false);
+    }
+    
+    // In development, allow localhost and no origin
     if (!origin) return callback(null, true);
     
-    // Allow all localhost variations
     if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0')) {
       return callback(null, true);
     }
     
-    // Allow specific production domains
-    const allowedOrigins = [
-      'https://dropss.vercel.app',
-      'https://dropss-cpqc83t8f-bryants-projects-322ba146.vercel.app'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
     // For development, allow any origin
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'));
+    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

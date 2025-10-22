@@ -52,11 +52,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Health check endpoint
   app.get('/api/health', async (req, res) => {
-    res.json({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development'
-    });
+    try {
+      // Check database connection
+      await db.execute(sql`SELECT 1`);
+      
+      res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        database: 'connected',
+        environment: process.env.NODE_ENV || 'development'
+      });
+    } catch (error) {
+      res.status(503).json({ 
+        status: 'error', 
+        timestamp: new Date().toISOString(),
+        database: 'disconnected',
+        error: 'Database connection failed'
+      });
+    }
   });
 
   // Test endpoint to assign packs to user
@@ -91,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               isOpened: false,
             });
             totalAdded++;
-          } catch (error) {
+          } catch (error: any) {
             console.error(`❌ Error adding ${packType.tier} pack ${i + 1}:`, error.message);
           }
         }
@@ -1274,7 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sampleRecords: sampleResult.rows,
         message: "Global feed table check completed"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error checking global feed table:", error);
       res.status(500).json({ message: "Failed to check global feed table", error: error.message });
     }
@@ -1772,17 +1785,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { cardId } = req.params;
       
-      // Check if card exists in special pack cards (simplified system)
+      // Check if card exists in special pack prizes
       const specialPackResult = await db
         .select()
-        .from(specialPack)
-        .where(eq(specialPack.cardName, cardId)); // Using cardName as identifier
+        .from(specialPrize)
+        .where(eq(specialPrize.cardName, cardId));
       
-      // Check if card exists in mystery pack cards (simplified system)
+      // Check if card exists in mystery pack prizes
       const mysteryPackResult = await db
         .select()
-        .from(mysteryPack)
-        .where(eq(mysteryPack.cardName, cardId)); // Using cardName as identifier
+        .from(mysteryPrize)
+        .where(eq(mysteryPrize.cardName, cardId));
       
       res.json({ 
         success: true, 
@@ -3022,11 +3035,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         SELECT odds FROM mystery_pack WHERE id = 'mystery-masterball'
       `);
       
-      if (masterballResult.length === 0) {
+      if (masterballResult.rows.length === 0) {
         return res.status(404).json({ error: 'Masterball pack not found' });
       }
       
-      const currentOdds = masterballResult[0].odds as Record<string, number>;
+      const currentOdds = masterballResult.rows[0].odds as Record<string, number>;
       console.log('📊 Current Masterball odds:', currentOdds);
       
       // Calculate tier ranges for 1-1000 system with current odds
@@ -3092,7 +3105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error showing pack odds:', error);
       res.status(500).json({ error: 'Failed to show pack odds', details: error.message });
     }
@@ -3127,41 +3140,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       
       const { db } = await import('./db');
-      const { classicPackCards, inventory } = await import('../shared/schema');
+      const { classicPrize } = await import('../shared/schema');
       const { eq, and, gt } = await import('drizzle-orm');
       
       // Get all cards (including quantity = 0) - simplified system
       const allCards = await db
         .select({
-          id: classicPackCards.id,
-          packId: classicPackCards.packId,
-          cardName: classicPackCards.cardName,
-          cardImageUrl: classicPackCards.cardImageUrl,
-          cardTier: classicPackCards.cardTier,
-          refundCredit: classicPackCards.refundCredit,
-          quantity: classicPackCards.quantity,
-          cardSource: classicPackCards.cardSource,
+          id: classicPrize.id,
+          packId: classicPrize.packId,
+          cardName: classicPrize.cardName,
+          cardImageUrl: classicPrize.cardImageUrl,
+          cardTier: classicPrize.cardTier,
+          refundCredit: classicPrize.refundCredit,
+          quantity: classicPrize.quantity,
         })
-        .from(classicPackCards)
-        .where(eq(classicPackCards.packId, packId));
+        .from(classicPrize)
+        .where(eq(classicPrize.packId, packId));
       
       // Get only cards with quantity > 0 - simplified system
       const availableCards = await db
         .select({
-          id: classicPackCards.id,
-          packId: classicPackCards.packId,
-          cardName: classicPackCards.cardName,
-          cardImageUrl: classicPackCards.cardImageUrl,
-          cardTier: classicPackCards.cardTier,
-          refundCredit: classicPackCards.refundCredit,
-          quantity: classicPackCards.quantity,
-          cardSource: classicPackCards.cardSource,
+          id: classicPrize.id,
+          packId: classicPrize.packId,
+          cardName: classicPrize.cardName,
+          cardImageUrl: classicPrize.cardImageUrl,
+          cardTier: classicPrize.cardTier,
+          refundCredit: classicPrize.refundCredit,
+          quantity: classicPrize.quantity,
         })
-        .from(classicPackCards)
+        .from(classicPrize)
         .where(
           and(
-            eq(classicPackCards.packId, packId),
-            gt(classicPackCards.quantity, 0)
+            eq(classicPrize.packId, packId),
+            gt(classicPrize.quantity, 0)
           )
         );
       
@@ -4248,8 +4259,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Remove undefined fields
       Object.keys(raffleUpdateData).forEach(key => {
-        if (raffleUpdateData[key] === undefined) {
-          delete raffleUpdateData[key];
+        if ((raffleUpdateData as any)[key] === undefined) {
+          delete (raffleUpdateData as any)[key];
         }
       });
 
@@ -4444,7 +4455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           console.log(`🎁 Awarded pack "${prize.name}" to user ${winner.userId}`);
         } else if (prize.type === 'credits' && prize.value && winner.userId) {
-          await storage.updateUserCredits(winner.userId, Number(prize.value));
+          await storage.updateUserCredits(winner.userId, prize.value.toString());
           console.log(`💰 Awarded ${prize.value} credits to user ${winner.userId}`);
         } else if (prize.type === 'physical' && winner.userId) {
           // For physical prizes, add directly to vault as a card
@@ -4535,8 +4546,7 @@ async function simulateGame(gameType: string, betAmount: number): Promise<GameRe
     return {
       cardId: `dice-${Date.now()}`,
       tier: tier,
-      gameType,
-      dice: dice // Include dice results for display
+      gameType
     };
   }
 

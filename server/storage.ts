@@ -210,8 +210,7 @@ export class DatabaseStorage {
         await tx
           .update(userCards)
           .set({ 
-            quantity: newQuantity,
-            updatedAt: new Date()
+            quantity: newQuantity
           })
           .where(eq(userCards.id, existingGroupedCard[0].id));
         

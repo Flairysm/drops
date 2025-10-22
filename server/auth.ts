@@ -8,21 +8,26 @@ import { registrationSchema, loginSchema } from '@shared/schema';
 
 const SALT_ROUNDS = 12;
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET or SESSION_SECRET environment variable is required');
+}
 const JWT_EXPIRES_IN = '7d'; // 7 days
 
 export function getSession() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     // store: sessionStore, // Commented out PostgreSQL store temporarily
-    resave: true,
+    resave: false,
     saveUninitialized: false,
     name: 'drops.sid',
     cookie: {
       httpOnly: true,
-      secure: false, // TEMPORARILY DISABLE SECURE COOKIES TO TEST
+      secure: isProduction, // Use secure cookies in production
       maxAge: SESSION_TTL,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'strict' : 'lax',
       path: '/',
       domain: undefined,
     },
@@ -38,12 +43,15 @@ export function setupAuth(app: Express) {
     try {
       setTimeout(async () => {
         try {
-          let adminUser = await storage.getUserByEmail('admin@drops.app');
+          const adminEmail = process.env.ADMIN_EMAIL || 'admin@drops.app';
+          const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+          
+          let adminUser = await storage.getUserByEmail(adminEmail);
           if (!adminUser) {
-            const hashedPassword = await bcrypt.hash('admin123', 12);
+            const hashedPassword = await bcrypt.hash(adminPassword, 12);
             adminUser = await storage.createUser({
               username: 'admin',
-              email: 'admin@drops.app',
+              email: adminEmail,
               password: hashedPassword,
               role: 'admin',
               credits: "1000",
