@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get system health status
-      let healthStatus = { status: 'healthy', metrics: {}, alerts: [] };
+      let healthStatus: any = { status: 'healthy', metrics: {}, alerts: [] };
       try {
         const { getHealthStatus } = await import('./monitoring');
         healthStatus = getHealthStatus();
@@ -2848,19 +2848,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(statusCode).json(response);
       }
 
-      // Verify current password (you'll need to implement password hashing verification)
-      // For now, we'll assume the password verification is handled by your auth system
-      // This is a placeholder - you should implement proper password verification
-      const isCurrentPasswordValid = true; // Replace with actual password verification
+      // Verify current password using bcrypt
+      const bcrypt = await import('bcrypt');
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user[0].password);
 
       if (!isCurrentPasswordValid) {
         const { statusCode, response } = createErrorResponse('Current password is incorrect', 'UNAUTHORIZED', null, 401);
         return res.status(statusCode).json(response);
       }
 
-      // Hash new password (you'll need to implement password hashing)
-      // For now, we'll just store it as-is (NOT RECOMMENDED FOR PRODUCTION)
-      const hashedNewPassword = newPassword; // Replace with actual password hashing
+      // Hash new password using bcrypt
+      const hashedNewPassword = await bcrypt.hash(newPassword, 12);
 
       // Update password
       await db
