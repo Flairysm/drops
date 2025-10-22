@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
@@ -26,6 +26,38 @@ export default function Vault() {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [filterTier, setFilterTier] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [allCards, setAllCards] = useState<UserCard[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreCards, setHasMoreCards] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Load more cards when button is clicked
+  const handleLoadMore = async () => {
+    if (!hasMoreCards || isLoadingMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+      const response = await apiRequest("GET", `/api/vault?page=${currentPage + 1}&limit=16`);
+      const data = await response.json();
+      
+      if (data.cards && data.cards.length > 0) {
+        setAllCards(prev => [...prev, ...data.cards]);
+        setCurrentPage(prev => prev + 1);
+        setHasMoreCards(data.pagination.hasNextPage);
+      } else {
+        setHasMoreCards(false);
+      }
+    } catch (error) {
+      console.error("Error loading more cards:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load more cards. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
   
   // Shipping popup state
   const [showShippingPopup, setShowShippingPopup] = useState(false);
@@ -64,18 +96,30 @@ export default function Vault() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: vaultCards, isLoading: vaultLoading } = useQuery<UserCard[]>({
-    queryKey: ["/api/vault"],
+  const { data: vaultData, isLoading: vaultLoading } = useQuery({
+    queryKey: ["/api/vault", 1, 16],
     enabled: isAuthenticated,
     queryFn: async () => {
-      console.log('Vault query function called');
-      const response = await apiRequest("GET", "/api/vault");
+      console.log('Vault query function called - page 1, limit 16');
+      const response = await apiRequest("GET", "/api/vault?page=1&limit=16");
       const data = await response.json();
       console.log('Vault query response:', data);
-      console.log('Vault cards count:', data?.length || 0);
+      console.log('Vault cards count:', data?.cards?.length || 0);
+      console.log('Total cards:', data?.pagination?.totalCount || 0);
       return data;
     },
   });
+
+  // Update allCards when initial data loads
+  React.useEffect(() => {
+    if (vaultData?.cards) {
+      setAllCards(vaultData.cards);
+      setCurrentPage(1);
+      setHasMoreCards(vaultData.pagination?.hasNextPage || false);
+    }
+  }, [vaultData]);
+
+  const vaultCards = allCards;
 
   const refundMutation = useMutation({
     mutationFn: async (cardIds: string[]) => {
@@ -93,9 +137,16 @@ export default function Vault() {
       for (const cardId of cardIds) {
         const selectedCard = vaultCards?.find(c => c.id === cardId);
         if (selectedCard) {
-          // Add the individual card ID (regardless of tier)
-          allCardIds.push(cardId);
-          totalRefundAmount += parseFloat(selectedCard.refundCredit.toString());
+          // For grouped common cards, send the grouped card ID directly
+          if (selectedCard.id.startsWith('grouped-Common-Cards-D')) {
+            allCardIds.push(cardId);
+            // Calculate total refund amount by multiplying by quantity
+            totalRefundAmount += parseFloat(selectedCard.refundCredit.toString()) * (selectedCard.quantity || 1);
+          } else {
+            // For regular cards, add the individual card ID
+            allCardIds.push(cardId);
+            totalRefundAmount += parseFloat(selectedCard.refundCredit.toString());
+          }
         }
       }
       
@@ -134,6 +185,11 @@ export default function Vault() {
       // Invalidate and refetch the vault data to get the updated list
       await queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Reset the vault state to force a fresh load
+      setAllCards([]);
+      setCurrentPage(1);
+      setHasMoreCards(true);
       
       return { success: true, refundedCards: uniqueCardIds.length, totalRefund: totalRefundAmount };
     },
@@ -344,6 +400,11 @@ export default function Vault() {
       // Refresh vault data
       queryClient.invalidateQueries({ queryKey: ["/api/vault"] });
       
+      // Reset the vault state to force a fresh load
+      setAllCards([]);
+      setCurrentPage(1);
+      setHasMoreCards(true);
+      
     } catch (error) {
       console.error('❌ Failed to create shipping request:', error);
       toast({
@@ -361,37 +422,11 @@ export default function Vault() {
     return filterValue; // Direct mapping since database now uses D, C, B, A, S, SS, SSS
   };
 
-  // Function to condense only common cards (D tier)
+  // Function to condense only common cards (D tier) - hit cards are already grouped by backend
   const condenseCards = (cards: UserCard[]) => {
-    const condensedCards: UserCard[] = [];
-    const commonCardMap = new Map<string, UserCard>();
-    
-    cards.forEach(userCard => {
-      // Only condense common cards (D tier)
-      if (userCard.cardTier === 'D') {
-        // Create a unique key based on card properties for commons
-        const key = `${userCard.cardName}-${userCard.cardImageUrl}-${userCard.cardTier}-${userCard.refundCredit}`;
-        
-        if (commonCardMap.has(key)) {
-          // If common card already exists, add to quantity
-          const existingCard = commonCardMap.get(key)!;
-          existingCard.quantity += userCard.quantity;
-        } else {
-          // Create new condensed common card entry
-          commonCardMap.set(key, {
-            ...userCard,
-            // Use the first card's ID as the representative ID
-            id: userCard.id
-          });
-        }
-      } else {
-        // Keep C to SSS cards separate (no condensation)
-        condensedCards.push(userCard);
-      }
-    });
-    
-    // Add all condensed common cards and individual C-SSS cards
-    return [...condensedCards, ...Array.from(commonCardMap.values())];
+    // The backend already handles grouping, so we just return the cards as-is
+    // The backend groups D-tier cards and keeps hit cards separate
+    return cards;
   };
 
   const filteredCards = condenseCards(
@@ -692,7 +727,7 @@ export default function Vault() {
                 </Button>
               </motion.div>
             ) : (
-              <motion.div 
+              <motion.div
                 className={viewMode === "grid" 
                   ? "grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2"
                   : "space-y-4"
@@ -736,6 +771,55 @@ export default function Vault() {
                     />
                   </motion.div>
                 ))}
+              </motion.div>
+            )}
+
+            {/* Loading More Cards Indicator */}
+            {isLoadingMore && (
+              <motion.div 
+                className="flex justify-center items-center gap-4 mt-8 mb-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#7C3AED]"></div>
+                  <span className="text-sm text-[#9CA3AF]">Loading more cards...</span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Cards Info */}
+            {vaultData && (
+              <motion.div 
+                className="flex justify-center items-center gap-4 mt-8 mb-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-[#9CA3AF]">
+                    Showing {vaultCards.length} of {vaultData.pagination?.totalCount || 0} cards
+                  </span>
+                  {hasMoreCards && (
+                    <Button
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                      className="bg-[#1E1E2E] hover:bg-[#2A2A3E] text-white border-[#26263A]"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          Load More (16)
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </motion.div>
             )}
           </motion.section>

@@ -119,11 +119,6 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
     setShowAnimation(false);
     setPackResult(null);
     // Don't close the dialog - return to the Black Bolt popup
-    toast({
-      title: "Pack Opened!",
-      description: "Your cards have been added to your vault!",
-      variant: "default",
-    });
   };
 
   const revealCardsProgressively = (cards: any[]) => {

@@ -105,11 +105,6 @@ export default function MyPacks() {
   const handleAnimationComplete = () => {
     setShowAnimation(false);
     setPackOpenData(null);
-    toast({
-      title: "Pack Opened!",
-      description: "Your cards have been added to your vault!",
-      variant: "default",
-    });
   };
 
 
@@ -414,7 +409,6 @@ export default function MyPacks() {
             transition={{ duration: 0.6 }}
           >
             <div className="flex items-center justify-center gap-2 sm:gap-3">
-              <Gift className="h-6 w-6 sm:h-8 sm:w-8 text-[#22D3EE]" />
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
                 <span className="bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#22D3EE] bg-clip-text text-transparent">
                   My Packs
@@ -658,7 +652,7 @@ export default function MyPacks() {
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-[#3b82f6]">B:</span>
-                  <span className="font-semibold text-[#E5E7EB]">60%</span>
+                  <span className="font-semibold text-[#E5E7EB]">50%</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[#8b5cf6]">A:</span>
@@ -666,15 +660,15 @@ export default function MyPacks() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[#f59e0b]">S:</span>
-                  <span className="font-semibold text-[#E5E7EB]">10%</span>
+                  <span className="font-semibold text-[#E5E7EB]">15%</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[#ec4899]">SS:</span>
-                  <span className="font-semibold text-[#E5E7EB]">4%</span>
+                  <span className="font-semibold text-[#E5E7EB]">7%</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[#ef4444]">SSS:</span>
-                  <span className="font-semibold text-[#E5E7EB]">1%</span>
+                  <span className="font-semibold text-[#E5E7EB]">3%</span>
                 </div>
               </div>
             </motion.div>

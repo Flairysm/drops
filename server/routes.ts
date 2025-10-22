@@ -908,8 +908,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/vault', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const userCards = await storage.getUserCards(userId);
-      res.json(userCards);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 16;
+      const offset = (page - 1) * limit;
+
+      console.log(`📦 Vault request - userId: ${userId}, page: ${page}, limit: ${limit}, offset: ${offset}`);
+
+      // Get paginated grouped cards and total unique count
+      const [userCards, totalCount] = await Promise.all([
+        storage.getUserCardsGrouped(userId, limit, offset),
+        storage.getUserCardsGroupedCount(userId)
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      const hasNextPage = page < totalPages;
+      const hasPrevPage = page > 1;
+
+      res.json({
+        cards: userCards,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalCount,
+          limit,
+          hasNextPage,
+          hasPrevPage
+        }
+      });
     } catch (error) {
       console.error("Error fetching vault:", error);
       res.status(500).json({ message: "Failed to fetch vault" });
@@ -2978,78 +3003,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug endpoint to update mystery pack odds
-  app.post('/api/debug/update-mystery-pack-odds', async (req, res) => {
+  // Debug endpoint to show current odds and what the new 1-1000 system would do
+  app.get('/api/debug/show-pack-odds', async (req, res) => {
     try {
+      console.log('🧪 Showing current pack odds and 1-1000 system...');
       
-      // Update Pokeball Mystery Pack odds
-      await db.execute(sql`
-        UPDATE mystery_packs 
-        SET odds = '{
-          "SSS": 0.01,
-          "SS": 0.02, 
-          "S": 0.05,
-          "A": 0.15,
-          "B": 0.20,
-          "C": 0.25,
-          "D": 0.32
-        }'::jsonb
-        WHERE id = 'e140f1bd-8277-436c-aa03-14bdc354da46'
+      // Get current Masterball odds
+      const masterballResult = await db.execute(sql`
+        SELECT odds FROM mystery_pack WHERE id = 'mystery-masterball'
       `);
       
-      // Update Greatball Mystery Pack odds
-      await db.execute(sql`
-        UPDATE mystery_packs 
-        SET odds = '{
-          "SSS": 0.02,
-          "SS": 0.03, 
-          "S": 0.08,
-          "A": 0.20,
-          "B": 0.25,
-          "C": 0.30,
-          "D": 0.12
-        }'::jsonb
-        WHERE id = 'fc1479fc-0254-4cec-a81b-a84509d4f0b6'
-      `);
+      if (masterballResult.length === 0) {
+        return res.status(404).json({ error: 'Masterball pack not found' });
+      }
       
-      // Update Ultraball Mystery Pack odds
-      await db.execute(sql`
-        UPDATE mystery_packs 
-        SET odds = '{
-          "SSS": 0.03,
-          "SS": 0.05, 
-          "S": 0.10,
-          "A": 0.25,
-          "B": 0.30,
-          "C": 0.20,
-          "D": 0.07
-        }'::jsonb
-        WHERE id = '1a373648-35ba-42a7-a0be-294cec7efb16'
-      `);
+      const currentOdds = masterballResult[0].odds as Record<string, number>;
+      console.log('📊 Current Masterball odds:', currentOdds);
       
-      // Update Masterball Mystery Pack odds
-      await db.execute(sql`
-        UPDATE mystery_packs 
-        SET odds = '{
-          "SSS": 0.05,
-          "SS": 0.08, 
-          "S": 0.12,
-          "A": 0.30,
-          "B": 0.25,
-          "C": 0.15,
-          "D": 0.05
-        }'::jsonb
-        WHERE id = '35f87706-28e3-452b-ab85-1cca72dfc32a'
-      `);
+      // Calculate tier ranges for 1-1000 system with current odds
+      const currentTierRanges = {
+        SSS: { start: 1, end: Math.floor(currentOdds.SSS * 1000) },
+        SS: { start: Math.floor(currentOdds.SSS * 1000) + 1, end: Math.floor((currentOdds.SSS + currentOdds.SS) * 1000) },
+        S: { start: Math.floor((currentOdds.SSS + currentOdds.SS) * 1000) + 1, end: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S) * 1000) },
+        A: { start: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S) * 1000) + 1, end: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S + currentOdds.A) * 1000) },
+        B: { start: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S + currentOdds.A) * 1000) + 1, end: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S + currentOdds.A + currentOdds.B) * 1000) },
+        C: { start: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S + currentOdds.A + currentOdds.B) * 1000) + 1, end: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S + currentOdds.A + currentOdds.B + currentOdds.C) * 1000) },
+        D: { start: Math.floor((currentOdds.SSS + currentOdds.SS + currentOdds.S + currentOdds.A + currentOdds.B + currentOdds.C) * 1000) + 1, end: 1000 }
+      };
       
+      // Calculate tier ranges for 1-1000 system with NEW odds (from image)
+      const newOdds = {
+        SSS: 0.05,
+        SS: 0.15, 
+        S: 0.30,
+        A: 0.50,
+        B: 0.0,
+        C: 0.0,
+        D: 0.0
+      };
+      
+      const newTierRanges = {
+        SSS: { start: 1, end: Math.floor(newOdds.SSS * 1000) },
+        SS: { start: Math.floor(newOdds.SSS * 1000) + 1, end: Math.floor((newOdds.SSS + newOdds.SS) * 1000) },
+        S: { start: Math.floor((newOdds.SSS + newOdds.SS) * 1000) + 1, end: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S) * 1000) },
+        A: { start: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S) * 1000) + 1, end: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S + newOdds.A) * 1000) },
+        B: { start: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S + newOdds.A) * 1000) + 1, end: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S + newOdds.A + newOdds.B) * 1000) },
+        C: { start: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S + newOdds.A + newOdds.B) * 1000) + 1, end: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S + newOdds.A + newOdds.B + newOdds.C) * 1000) },
+        D: { start: Math.floor((newOdds.SSS + newOdds.SS + newOdds.S + newOdds.A + newOdds.B + newOdds.C) * 1000) + 1, end: 1000 }
+      };
+      
+      console.log('🎯 Current tier ranges (1-1000):', currentTierRanges);
+      console.log('🎯 NEW tier ranges (1-1000):', newTierRanges);
       
       res.json({
         success: true,
-        message: 'Successfully updated mystery pack odds'
+        message: 'Current vs New pack odds comparison',
+        currentOdds,
+        newOdds,
+        currentTierRanges,
+        newTierRanges,
+        comparison: {
+          current: {
+            SSS: `${currentOdds.SSS * 100}% chance (${currentTierRanges.SSS.start}-${currentTierRanges.SSS.end})`,
+            SS: `${currentOdds.SS * 100}% chance (${currentTierRanges.SS.start}-${currentTierRanges.SS.end})`,
+            S: `${currentOdds.S * 100}% chance (${currentTierRanges.S.start}-${currentTierRanges.S.end})`,
+            A: `${currentOdds.A * 100}% chance (${currentTierRanges.A.start}-${currentTierRanges.A.end})`,
+            B: `${currentOdds.B * 100}% chance (${currentTierRanges.B.start}-${currentTierRanges.B.end})`,
+            C: `${currentOdds.C * 100}% chance (${currentTierRanges.C.start}-${currentTierRanges.C.end})`,
+            D: `${currentOdds.D * 100}% chance (${currentTierRanges.D.start}-${currentTierRanges.D.end})`
+          },
+          new: {
+            SSS: `${newOdds.SSS * 100}% chance (${newTierRanges.SSS.start}-${newTierRanges.SSS.end})`,
+            SS: `${newOdds.SS * 100}% chance (${newTierRanges.SS.start}-${newTierRanges.SS.end})`,
+            S: `${newOdds.S * 100}% chance (${newTierRanges.S.start}-${newTierRanges.S.end})`,
+            A: `${newOdds.A * 100}% chance (${newTierRanges.A.start}-${newTierRanges.A.end})`,
+            B: `${newOdds.B * 100}% chance (${newTierRanges.B.start}-${newTierRanges.B.end})`,
+            C: `${newOdds.C * 100}% chance (${newTierRanges.C.start}-${newTierRanges.C.end})`,
+            D: `${newOdds.D * 100}% chance (${newTierRanges.D.start}-${newTierRanges.D.end})`
+          }
+        }
       });
     } catch (error) {
-      console.error('❌ Error updating mystery pack odds:', error);
-      res.status(500).json({ error: 'Failed to update mystery pack odds' });
+      console.error('❌ Error showing pack odds:', error);
+      res.status(500).json({ error: 'Failed to show pack odds', details: error.message });
     }
   });
 

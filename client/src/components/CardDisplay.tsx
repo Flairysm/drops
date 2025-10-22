@@ -87,7 +87,7 @@ export function CardDisplay({
                   <div className="w-4 h-4 bg-[#0B0B12] rounded-sm flex items-center justify-center mr-2">
                     <span className="text-[#22D3EE] text-xs font-bold">₵</span>
                   </div>
-                  <span className="font-semibold text-accent">{userCard?.refundCredit || card.credits || card.marketValue}</span>
+                  <span className="font-semibold text-accent">{userCard?.refundCredit || card.marketValue}</span>
                 </span>
               </div>
             </div>
@@ -152,7 +152,7 @@ export function CardDisplay({
               <div className="w-3 h-3 bg-[#0B0B12] rounded-sm flex items-center justify-center mr-1">
                 <span className="text-[#22D3EE] text-[8px] font-bold">₵</span>
               </div>
-              {userCard?.refundCredit || card.credits || card.marketValue}
+              {userCard?.refundCredit || card.marketValue}
             </div>
           </div>
         </div>
@@ -172,7 +172,7 @@ export function CardDisplay({
                   <div className="w-3 h-3 bg-[#0B0B12] rounded-sm flex items-center justify-center mr-1">
                     <span className="text-[#22D3EE] text-[8px] font-bold">₵</span>
                   </div>
-                  {userCard?.refundCredit || card.credits || card.marketValue}
+                  {userCard?.refundCredit || card.marketValue}
                 </div>
               </div>
             </div>

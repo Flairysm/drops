@@ -146,8 +146,8 @@ export class DatabaseStorage {
   // USER CARDS METHODS
   // ============================================================================
 
-  async getUserCards(userId: string): Promise<UserCard[]> {
-    console.log("getUserCards called for userId:", userId);
+  async getUserCards(userId: string, limit: number = 50, offset: number = 0): Promise<UserCard[]> {
+    console.log("getUserCards called for userId:", userId, "limit:", limit, "offset:", offset);
     const result = await db
       .select()
       .from(userCards)
@@ -155,10 +155,246 @@ export class DatabaseStorage {
         eq(userCards.userId, userId),
         eq(userCards.isRefunded, false) // Only return non-refunded cards
       ))
-      .orderBy(desc(userCards.createdAt));
+      .orderBy(desc(userCards.createdAt))
+      .limit(limit)
+      .offset(offset);
 
     console.log("Final getUserCards result:", result.length, "cards");
     return result;
+  }
+
+  // Helper function to clean up individual D-tier cards and group them
+  async cleanupAndGroupD_tierCards(userId: string): Promise<void> {
+    console.log("🧹 Cleaning up individual D-tier cards for user:", userId);
+    
+    // First, check if there's already a grouped D-tier card
+    const existingGroupedCard = await db
+      .select()
+      .from(userCards)
+      .where(and(
+        eq(userCards.userId, userId),
+        eq(userCards.isRefunded, false),
+        eq(userCards.cardTier, 'D'),
+        sql`${userCards.id} LIKE 'grouped-Common-Cards-D%'`
+      ))
+      .limit(1);
+    
+    // Get all individual D-tier cards (not grouped ones)
+    const individualDTierCards = await db
+      .select()
+      .from(userCards)
+      .where(and(
+        eq(userCards.userId, userId),
+        eq(userCards.isRefunded, false),
+        eq(userCards.cardTier, 'D'),
+        sql`${userCards.id} NOT LIKE 'grouped-Common-Cards-D%'`
+      ));
+    
+    if (individualDTierCards.length === 0) {
+      console.log("🧹 No individual D-tier cards to clean up");
+      return;
+    }
+    
+    console.log(`🧹 Found ${individualDTierCards.length} individual D-tier cards to group`);
+    
+    // Calculate total quantity from individual cards
+    const individualQuantity = individualDTierCards.reduce((sum, card) => sum + (card.quantity || 1), 0);
+    
+    // Use transaction to ensure atomicity
+    await db.transaction(async (tx) => {
+      if (existingGroupedCard.length > 0) {
+        // Update existing grouped card with additional quantity
+        const currentQuantity = existingGroupedCard[0].quantity || 0;
+        const newQuantity = currentQuantity + individualQuantity;
+        
+        await tx
+          .update(userCards)
+          .set({ 
+            quantity: newQuantity,
+            updatedAt: new Date()
+          })
+          .where(eq(userCards.id, existingGroupedCard[0].id));
+        
+        console.log(`🧹 Updated existing grouped D-tier card: ${currentQuantity} + ${individualQuantity} = ${newQuantity}`);
+      } else {
+        // Create new grouped card
+        const groupedCardId = `grouped-Common-Cards-D-${Date.now()}`;
+        const groupedCard = {
+          id: groupedCardId,
+          userId: userId,
+          cardName: 'Common Cards',
+          cardTier: 'D',
+          cardImageUrl: '/assets/Commons.png',
+          quantity: individualQuantity,
+          refundCredit: 1,
+          cardSource: 'mystery', // Always set to 'mystery' for D-tier cards
+          packSource: 'mystery-pokeball', // Always set to 'mystery-pokeball' for D-tier cards
+          isRefunded: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        await tx.insert(userCards).values(groupedCard);
+        console.log(`🧹 Created new grouped D-tier card with quantity ${individualQuantity}`);
+      }
+      
+      // Mark all individual D-tier cards as refunded (soft delete)
+      await tx
+        .update(userCards)
+        .set({ 
+          isRefunded: true,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(userCards.userId, userId),
+          eq(userCards.isRefunded, false),
+          eq(userCards.cardTier, 'D'),
+          sql`${userCards.id} NOT LIKE 'grouped-Common-Cards-D%'`
+        ));
+    });
+    
+    console.log(`🧹 Successfully grouped ${individualDTierCards.length} individual D-tier cards`);
+  }
+
+  // New function to get grouped cards (common cards grouped together)
+  async getUserCardsGrouped(userId: string, limit: number = 16, offset: number = 0): Promise<UserCard[]> {
+    console.log("getUserCardsGrouped called for userId:", userId, "limit:", limit, "offset:", offset);
+    
+    // First, clean up individual D-tier cards and group them
+    await this.cleanupAndGroupD_tierCards(userId);
+    
+    // Get all non-refunded cards for the user
+    const allCards = await db
+      .select()
+      .from(userCards)
+      .where(and(
+        eq(userCards.userId, userId),
+        eq(userCards.isRefunded, false)
+      ))
+      .orderBy(desc(userCards.createdAt));
+
+    // Separate D-tier cards from hit cards
+    const dTierCards: UserCard[] = [];
+    const hitCards: UserCard[] = [];
+    
+    for (const card of allCards) {
+      if (card.cardTier === 'D') {
+        dTierCards.push(card);
+      } else {
+        hitCards.push(card);
+      }
+    }
+
+    // Create grouped cards - common cards first, then hit cards
+    const groupedCards: UserCard[] = [];
+    
+    // First, add grouped D-tier cards (common cards)
+    const commonCardGroups = new Map<string, UserCard[]>();
+    
+    for (const card of dTierCards) {
+      // If it's already a grouped card, just add it directly
+      if (card.id.startsWith('grouped-Common-Cards-D')) {
+        groupedCards.push(card);
+      } else {
+        // Group individual D-tier cards together as "Common Cards"
+        if (!commonCardGroups.has('Common Cards')) {
+          commonCardGroups.set('Common Cards', []);
+        }
+        commonCardGroups.get('Common Cards')!.push(card);
+      }
+    }
+    
+    // Add grouped common cards first
+    for (const [name, cards] of commonCardGroups) {
+      const firstCard = cards[0];
+      const totalQuantity = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
+      const individualCardIds = cards.map(card => card.id);
+      
+      groupedCards.push({
+        ...firstCard,
+        cardName: 'Common Cards', // Override with generic name
+        cardImageUrl: '/assets/Commons.png', // Use Commons.png image
+        quantity: totalQuantity,
+        id: `grouped-Common-Cards-D`, // Unique ID for grouped card
+        individualCardIds: individualCardIds // Store individual card IDs for refunding
+      } as UserCard & { individualCardIds: string[] });
+    }
+    
+    // Add hit cards (keep them separate, sorted by tier, then by creation date)
+    hitCards.sort((a, b) => {
+      // Sort by tier priority (SSS > SS > S > A > B > C > D)
+      const tierOrder = { 'SSS': 6, 'SS': 5, 'S': 4, 'A': 3, 'B': 2, 'C': 1, 'D': 0 };
+      const tierDiff = (tierOrder[b.cardTier as keyof typeof tierOrder] || 0) - (tierOrder[a.cardTier as keyof typeof tierOrder] || 0);
+      if (tierDiff !== 0) return tierDiff;
+      
+      // If same tier, sort by creation date (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    
+    groupedCards.push(...hitCards);
+    
+    // Apply pagination
+    const paginatedCards = groupedCards.slice(offset, offset + limit);
+    
+    console.log("Final getUserCardsGrouped result:", paginatedCards.length, "unique card images");
+    console.log("Total unique cards available:", groupedCards.length);
+    
+    return paginatedCards;
+  }
+
+  async getUserCardsCount(userId: string): Promise<number> {
+    console.log("getUserCardsCount called for userId:", userId);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userCards)
+      .where(and(
+        eq(userCards.userId, userId),
+        eq(userCards.isRefunded, false)
+      ));
+    
+    const count = result[0]?.count || 0;
+    console.log("Total user cards count:", count);
+    return count;
+  }
+
+  // Get count of unique card images (grouped)
+  async getUserCardsGroupedCount(userId: string): Promise<number> {
+    console.log("getUserCardsGroupedCount called for userId:", userId);
+    
+    // Get all non-refunded cards for the user
+    const allCards = await db
+      .select()
+      .from(userCards)
+      .where(and(
+        eq(userCards.userId, userId),
+        eq(userCards.isRefunded, false)
+      ));
+
+    // Separate D-tier cards from hit cards
+    const dTierCards: UserCard[] = [];
+    const hitCards: UserCard[] = [];
+    
+    for (const card of allCards) {
+      if (card.cardTier === 'D') {
+        dTierCards.push(card);
+      } else {
+        hitCards.push(card);
+      }
+    }
+
+    // Count unique card images
+    let uniqueCount = 0;
+    
+    // Count common cards as one group (if any exist)
+    if (dTierCards.length > 0) {
+      uniqueCount++; // Count common cards as one group
+    }
+    
+    // Count each hit card separately
+    uniqueCount += hitCards.length;
+    
+    console.log("Total unique card images count:", uniqueCount);
+    return uniqueCount;
   }
 
   async addUserCard(cardData: InsertUserCard): Promise<UserCard> {
@@ -187,7 +423,12 @@ export class DatabaseStorage {
       // Calculate total refund amount
       let totalRefund = 0;
       for (const card of cardsToRefund) {
-        totalRefund += parseInt(card.refundCredit.toString());
+        // For grouped D-tier cards, multiply by quantity
+        if (card.id.startsWith('grouped-Common-Cards-D')) {
+          totalRefund += parseInt(card.refundCredit.toString()) * (card.quantity || 1);
+        } else {
+          totalRefund += parseInt(card.refundCredit.toString());
+        }
       }
 
       console.log(`💰 Total refund amount: ${totalRefund} credits`);
@@ -216,6 +457,12 @@ export class DatabaseStorage {
       // Return cards to prize pool based on card source
       for (const card of cardsToRefund) {
         console.log(`🔄 Processing refund for card: ${card.cardName}, source: ${card.cardSource}, packSource: ${card.packSource}`);
+        
+        // Skip returning D-tier cards to prize pool since they're fixed assets
+        if (card.cardTier === 'D' || card.id.startsWith('grouped-Common-Cards-D')) {
+          console.log(`ℹ️ Skipping prize pool return for D-tier card (fixed asset): ${card.cardName}`);
+          continue;
+        }
         
         if (card.cardSource === 'classic') {
           // Return to classic prize pool
@@ -833,52 +1080,144 @@ export class DatabaseStorage {
         .from(mysteryPrize)
         .where(eq(mysteryPrize.packId, 'mystery-pokeball'));
       
-      console.log("🎲 Found pack cards in shared pool:", packCards.length);
+      console.log("🎲 Found pack cards in shared pool:", packCards.length, "(D-tier cards excluded - fixed assets)");
       
       if (packCards.length === 0) {
         throw new Error("No cards found in mystery pack pool");
       }
       
-      // Get card details for each pack card
-      const packCardsWithDetails = packCards.map(pc => ({
-        name: pc.cardName,
-        tier: pc.cardTier,
-        quantity: pc.quantity,
-        imageUrl: pc.cardImageUrl,
-        refundCredit: pc.refundCredit
-      }));
+      // Get card details for each pack card (exclude D-tier as they're fixed assets)
+      const packCardsWithDetails = packCards
+        .filter(pc => pc.cardTier?.trim() !== 'D') // Exclude D-tier cards (fixed assets)
+        .map(pc => ({
+          name: pc.cardName,
+          tier: pc.cardTier,
+          quantity: pc.quantity,
+          imageUrl: pc.cardImageUrl,
+          refundCredit: pc.refundCredit
+        }));
       
-      // Filter common cards (D tier) for the first 7 cards
-      const commonCards = packCardsWithDetails.filter(card => card.tier?.trim() === 'D');
-      console.log("🎲 Common cards found:", commonCards.length);
-      
-      if (commonCards.length === 0) {
-        throw new Error("No common cards found in mystery pack pool");
-      }
-      
-      // Select a random common card for the first 7 cards - use crypto for better randomness
-      const { randomBytes } = await import('crypto');
-      const commonRandomBytes = randomBytes(4);
-      const commonRandom = commonRandomBytes.readUInt32BE(0) / 0xffffffff;
-      const selectedCommonCard = commonCards[Math.floor(commonRandom * commonCards.length)];
-      
-      console.log("🎲 Common card random:", commonRandom);
-      console.log("🎲 Common card random bytes:", commonRandomBytes.toString('hex'));
+      // Use fixed D-tier card (unlimited asset - no inventory management needed)
+      const fixedCommonCard = {
+        name: 'Common Cards',
+        tier: 'D',
+        quantity: 999999, // Unlimited quantity
+        imageUrl: '/assets/Commons.png',
+        refundCredit: 1
+      };
+      console.log("🎲 Using fixed D-tier card (unlimited asset):", fixedCommonCard.name);
       
       // Use odds from database if available, otherwise fallback to default
-      let hitCardOdds: Record<string, number>;
+      let hitCardOdds: Record<string, number> = {
+        D: 0.0,
+        C: 0.0,
+        B: 0.0,
+        A: 0.0,
+        S: 0.0,
+        SS: 0.0,
+        SSS: 0.0
+      };
       
-      if (mysteryPack.odds && typeof mysteryPack.odds === 'object') {
-        // Use database odds
+      // Handle custom odds for specific pack types first (these override database odds)
+      if (mysteryPack.packType === 'pokeball' || mysteryPack.packType === 'greatball' || 
+          mysteryPack.packType === 'ultraball' || mysteryPack.packType === 'masterball') {
+        // Use custom odds for these pack types
+        if (mysteryPack.packType === 'pokeball') {
+          console.log(`🎲 Using custom pokeball odds (1-1000 system) - Base Odds`);
+          hitCardOdds = {
+            D: 0.0,    // 0% D (not used for hit card)
+            C: 0.848,  // 84.8% C (1-848)
+            B: 0.06,   // 6% B (849-908)
+            A: 0.045,  // 4.5% A (909-953)
+            S: 0.035,  // 3.5% S (954-988)
+            SS: 0.01,  // 1% SS (989-998)
+            SSS: 0.002 // 0.2% SSS (999-1000)
+          };
+          console.log(`🎲 Pokeball custom odds:`, hitCardOdds);
+        } else if (mysteryPack.packType === 'greatball') {
+          console.log(`🎲 Using custom greatball odds (1-1000 system) - Improved Odds`);
+          hitCardOdds = {
+            D: 0.0,    // 0% D (not used for hit card)
+            C: 0.40,   // 40% C (1-400)
+            B: 0.30,   // 30% B (401-700)
+            A: 0.15,   // 15% A (701-850)
+            S: 0.10,   // 10% S (851-950)
+            SS: 0.04,  // 4% SS (951-990)
+            SSS: 0.01  // 1% SSS (991-1000)
+          };
+          console.log(`🎲 Greatball custom odds:`, hitCardOdds);
+        } else if (mysteryPack.packType === 'ultraball') {
+          console.log(`🎲 FORCING custom ultraball odds (1-1000 system) - B+ Guaranteed, Enhanced High Tiers`);
+          console.log(`🎲 Database odds before override:`, mysteryPack.odds);
+          hitCardOdds = {
+            D: 0.0,    // 0% D (not used for hit card)
+            C: 0.0,    // 0% C (B+ guaranteed)
+            B: 0.45,   // 45% B (551-1000)
+            A: 0.25,   // 25% A (301-550)
+            S: 0.20,   // 20% S (101-300)
+            SS: 0.08,  // 8% SS (21-100)
+            SSS: 0.02  // 2% SSS (1-20)
+          };
+          console.log(`🎲 Ultraball FORCED custom odds:`, hitCardOdds);
+        } else if (mysteryPack.packType === 'masterball') {
+          console.log(`🎲 Using custom masterball odds (1-1000 system) - A+ Guaranteed`);
+          hitCardOdds = {
+            D: 0.0,    // 0% D (not used for hit card)
+            C: 0.0,    // 0% C (A+ guaranteed)
+            B: 0.0,    // 0% B (A+ guaranteed)
+            A: 0.50,   // 50% A (1-500)
+            S: 0.30,   // 30% S (501-800)
+            SS: 0.15,  // 15% SS (801-950)
+            SSS: 0.05  // 5% SSS (951-1000)
+          };
+          console.log(`🎲 Masterball custom odds:`, hitCardOdds);
+        }
+      } else if (mysteryPack.odds && typeof mysteryPack.odds === 'object') {
+        // Use database odds for other pack types
+        const odds = mysteryPack.odds as Record<string, number>;
         hitCardOdds = {
-          D: mysteryPack.odds.D || 0.0,
-          C: mysteryPack.odds.C || 0.0,
-          B: mysteryPack.odds.B || 0.0,
-          A: mysteryPack.odds.A || 0.0,
-          S: mysteryPack.odds.S || 0.0,
-          SS: mysteryPack.odds.SS || 0.0,
-          SSS: mysteryPack.odds.SSS || 0.0
+          D: odds.D || 0.0,
+          C: odds.C || 0.0,
+          B: odds.B || 0.0,
+          A: odds.A || 0.0,
+          S: odds.S || 0.0,
+          SS: odds.SS || 0.0,
+          SSS: odds.SSS || 0.0
         };
+        
+        // For other mystery packs, use database odds or fallback
+        const totalOdds = Object.values(hitCardOdds).reduce((sum, odd) => sum + odd, 0);
+        console.log(`🎲 Original odds for ${mysteryPack.packType}:`, hitCardOdds);
+        console.log(`🎲 Total odds: ${totalOdds}`);
+        
+        // Detect the current range based on total odds and scale to 1-1000
+        let currentRange = 1000; // Default assumption
+        if (totalOdds <= 0.3) currentRange = 300; // 1-300 system
+        else if (totalOdds <= 0.6) currentRange = 600; // 1-600 system
+        else if (totalOdds <= 0.8) currentRange = 800; // 1-800 system
+        else if (totalOdds < 1.0) currentRange = 1000; // Already close to 1-1000
+        
+        if (currentRange !== 1000) {
+          console.log(`🎲 Detected ${mysteryPack.packType} with 1-${currentRange} odds system, scaling to 1-1000`);
+          console.log(`🎲 Scaling factor: ${1000/currentRange}`);
+          
+          // Scale odds to 1-1000 system
+          const scaleFactor = 1000 / currentRange;
+          hitCardOdds = {
+            D: hitCardOdds.D * scaleFactor,
+            C: hitCardOdds.C * scaleFactor,
+            B: hitCardOdds.B * scaleFactor,
+            A: hitCardOdds.A * scaleFactor,
+            S: hitCardOdds.S * scaleFactor,
+            SS: hitCardOdds.SS * scaleFactor,
+            SSS: hitCardOdds.SSS * scaleFactor
+          };
+          
+          console.log(`🎲 Scaled odds for 1-1000 system:`, hitCardOdds);
+        } else {
+          console.log(`🎲 ${mysteryPack.packType} already using 1-1000 system`);
+        }
+        
         console.log(`🎲 Using database odds for ${mysteryPack.packType}:`, hitCardOdds);
       } else {
         // Fallback to default odds if database odds not available
@@ -896,34 +1235,83 @@ export class DatabaseStorage {
       
       console.log(`🎲 Using ${mysteryPack.packType} odds:`, hitCardOdds);
       
-      // Select hit card based on odds - use crypto.randomBytes for better randomness
+      // NEW SYSTEM: 1-1000 number generator for precise odds
+      // Generate random number from 1-1000 (inclusive)
+      const { randomBytes } = await import('crypto');
       const hitRandomBytes = randomBytes(4);
-      const random = hitRandomBytes.readUInt32BE(0) / 0xffffffff;
+      const randomInt = (hitRandomBytes.readUInt32BE(0) % 1000) + 1; // 1-1000
       let selectedHitCard = null;
       
-      console.log("🎲 Random number for hit selection:", random);
+      console.log("🎲 Random number (1-1000):", randomInt);
       console.log("🎲 Timestamp:", Date.now());
       console.log("🎲 User ID:", userId);
       console.log("🎲 Random bytes:", hitRandomBytes.toString('hex'));
       
-      // Calculate cumulative odds for hit card selection
-      const hitTiers = ['SSS', 'SS', 'S', 'A', 'B', 'C'];
-      let cumulativeOdds = 0;
+      console.log("🎲 Current hitCardOdds being used:", hitCardOdds);
+      console.log("🎲 Pack type:", mysteryPack.packType);
+      
+      // Initialize tier ranges based on pack type
+      let tierRanges: Record<string, { start: number; end: number }>;
+      
+      if (mysteryPack.packType === 'ultraball') {
+        // Ultraball specific ranges: Your exact ranges
+        console.log("🎲 Using ultraball custom ranges");
+        tierRanges = {
+          C: { start: 0, end: 0 },      // C tier not possible
+          SSS: { start: 1, end: 20 },   // 1-20 SSS
+          SS: { start: 21, end: 100 },  // 21-100 SS
+          S: { start: 101, end: 300 },  // 101-300 S
+          A: { start: 301, end: 550 },  // 301-550 A
+          B: { start: 551, end: 1000 }  // 551-1000 B
+        };
+      } else if (hitCardOdds.C === 0) {
+        // Handle edge case where C tier is 0% (like masterball B+ guaranteed)
+        console.log("🎲 Detected C tier is 0%, recalculating ranges for B+ guaranteed");
+        tierRanges = {
+          C: { start: 0, end: 0 }, // C tier not possible
+          B: { start: 1, end: Math.floor(hitCardOdds.B * 1000) },
+          A: { start: Math.floor(hitCardOdds.B * 1000) + 1, end: Math.floor((hitCardOdds.B + hitCardOdds.A) * 1000) },
+          S: { start: Math.floor((hitCardOdds.B + hitCardOdds.A) * 1000) + 1, end: Math.floor((hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) },
+          SS: { start: Math.floor((hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) + 1, end: Math.floor((hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) },
+          SSS: { start: Math.floor((hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) + 1, end: Math.floor((hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS + hitCardOdds.SSS) * 1000) }
+        };
+      } else {
+        // Default cumulative ranges for other packs
+        tierRanges = {
+          C: { start: 1, end: Math.floor(hitCardOdds.C * 1000) },
+          B: { start: Math.floor(hitCardOdds.C * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B) * 1000) },
+          A: { start: Math.floor((hitCardOdds.C + hitCardOdds.B) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A) * 1000) },
+          S: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) },
+          SS: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) },
+          SSS: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS + hitCardOdds.SSS) * 1000) }
+        };
+      }
+      
+      console.log("🎲 Tier ranges:", tierRanges);
+      
+      // Find which tier the random number falls into
+      const hitTiers = mysteryPack.packType === 'ultraball' ? ['C', 'SSS', 'SS', 'S', 'A', 'B'] : ['C', 'B', 'A', 'S', 'SS', 'SSS'];
+      let selectedTier = null;
       
       for (const tier of hitTiers) {
-        cumulativeOdds += hitCardOdds[tier];
-        console.log(`🎲 Checking tier ${tier}: odds=${hitCardOdds[tier]}, cumulative=${cumulativeOdds}, random=${random}, selected=${random < cumulativeOdds}`);
-        if (random < cumulativeOdds) {
-          const hitCards = packCardsWithDetails.filter(card => card.tier?.trim() === tier);
-          if (hitCards.length > 0) {
-            // Use crypto for card selection within tier
-            const cardRandomBytes = randomBytes(4);
-            const cardRandom = cardRandomBytes.readUInt32BE(0) / 0xffffffff;
-            selectedHitCard = hitCards[Math.floor(cardRandom * hitCards.length)];
-            console.log(`🎲 Hit card selected from tier ${tier}:`, selectedHitCard);
-            console.log(`🎲 Card selection random:`, cardRandom);
-            break;
-          }
+        const range = tierRanges[tier];
+        console.log(`🎲 Checking tier ${tier}: range=${range.start}-${range.end}, random=${randomInt}, inRange=${randomInt >= range.start && randomInt <= range.end}`);
+        
+        if (randomInt >= range.start && randomInt <= range.end) {
+          selectedTier = tier;
+          break;
+        }
+      }
+      
+      if (selectedTier) {
+        const hitCards = packCardsWithDetails.filter(card => card.tier?.trim() === selectedTier);
+        if (hitCards.length > 0) {
+          // Use crypto for card selection within tier
+          const cardRandomBytes = randomBytes(4);
+          const cardRandom = cardRandomBytes.readUInt32BE(0) / 0xffffffff;
+          selectedHitCard = hitCards[Math.floor(cardRandom * hitCards.length)];
+          console.log(`🎲 Hit card selected from tier ${selectedTier}:`, selectedHitCard);
+          console.log(`🎲 Card selection random:`, cardRandom);
         }
       }
       
@@ -951,10 +1339,10 @@ export class DatabaseStorage {
       for (let i = 0; i < 7; i++) {
         selectedCards.push({
           id: `card-${Date.now()}-${i}`,
-          name: selectedCommonCard.name,
-          tier: selectedCommonCard.tier,
-          imageUrl: selectedCommonCard.imageUrl,
-          marketValue: selectedCommonCard.refundCredit.toString(),
+          name: fixedCommonCard.name,
+          tier: fixedCommonCard.tier,
+          imageUrl: fixedCommonCard.imageUrl,
+          marketValue: fixedCommonCard.refundCredit.toString(),
           isHit: false,
           position: i
         });
@@ -972,14 +1360,7 @@ export class DatabaseStorage {
       });
       
       // Deduct cards from the shared pokeball pool
-      // Deduct 7 common cards
-      await tx
-        .update(mysteryPrize)
-        .set({ quantity: sql`${mysteryPrize.quantity} - 7` })
-        .where(and(
-          eq(mysteryPrize.packId, 'mystery-pokeball'),
-          eq(mysteryPrize.cardName, selectedCommonCard.name)
-        ));
+      // Note: Common cards (D tier) are unlimited and don't need inventory deduction
 
       // Deduct 1 hit card
       await tx
@@ -1017,110 +1398,166 @@ export class DatabaseStorage {
   }
 
   private async openClassicPack(classicPack: ClassicPack, userId: string): Promise<PackOpenResult> {
+    console.log("🎲 Opening classic pack:", classicPack.id);
+    
     return await db.transaction(async (tx) => {
       // Get all cards from the classic pack's prize pool
-      const prizePoolCards = await tx
-          .select()
+      const packCards = await tx
+        .select()
         .from(classicPrize)
         .where(eq(classicPrize.packId, classicPack.id));
       
-      if (prizePoolCards.length === 0) {
-        throw new Error("No cards found in classic pack prize pool");
+      console.log("🎲 Found pack cards in classic pool:", packCards.length, "(D-tier cards excluded - fixed assets)");
+      
+      if (packCards.length === 0) {
+        throw new Error("No cards found in classic pack pool");
       }
       
-      // Separate D-tier cards from other tiers
-      const dTierCards = prizePoolCards.filter(card => card.cardTier === 'D');
-      const hitTierCards = prizePoolCards.filter(card => card.cardTier !== 'D');
+      // Get card details for each pack card (exclude D-tier as they're fixed assets)
+      const packCardsWithDetails = packCards
+        .filter(pc => pc.cardTier?.trim() !== 'D') // Exclude D-tier cards (fixed assets)
+        .map(pc => ({
+          name: pc.cardName,
+          tier: pc.cardTier,
+          quantity: pc.quantity,
+          imageUrl: pc.cardImageUrl,
+          refundCredit: pc.refundCredit
+        }));
       
-      if (dTierCards.length === 0) {
-        throw new Error("No D-tier cards found in classic pack prize pool");
-      }
+      // Use fixed D-tier card (unlimited asset - no inventory management needed)
+      const fixedCommonCard = {
+        name: 'Common Cards',
+        tier: 'D',
+        quantity: 999999, // Unlimited quantity
+        imageUrl: '/assets/Commons.png',
+        refundCredit: 1
+      };
+      console.log("🎲 Using fixed D-tier card (unlimited asset):", fixedCommonCard.name);
       
-      if (hitTierCards.length === 0) {
-        throw new Error("No hit cards (non-D tier) found in classic pack prize pool");
-      }
+      // Use pokeball custom odds (same as mystery pack pokeball)
+      console.log(`🎲 Using custom pokeball odds for classic pack (1-1000 system) - Base Odds`);
+      const hitCardOdds = {
+        D: 0.0,    // 0% D (not used for hit card)
+        C: 0.848,  // 84.8% C (1-848)
+        B: 0.06,   // 6% B (849-908)
+        A: 0.045,  // 4.5% A (909-953)
+        S: 0.035,  // 3.5% S (954-988)
+        SS: 0.01,  // 1% SS (989-998)
+        SSS: 0.002 // 0.2% SSS (999-1000)
+      };
+      console.log(`🎲 Classic pack pokeball custom odds:`, hitCardOdds);
       
-      const selectedCards = [];
+      console.log(`🎲 Using classic pack odds:`, hitCardOdds);
       
-      // Select 7 guaranteed D-tier cards
-      for (let i = 0; i < 7; i++) {
-        const randomDCard = dTierCards[Math.floor(Math.random() * dTierCards.length)];
-        selectedCards.push({
-          id: `cpc-${Date.now()}-${i}`,
-          name: randomDCard.cardName,
-          tier: randomDCard.cardTier,
-          imageUrl: randomDCard.cardImageUrl,
-          marketValue: randomDCard.refundCredit.toString(),
-          isHit: false,
-          position: i
-        });
+      // NEW SYSTEM: 1-1000 number generator for precise odds
+      // Generate random number from 1-1000 (inclusive)
+      const { randomBytes } = await import('crypto');
+      const hitRandomBytes = randomBytes(4);
+      const randomInt = (hitRandomBytes.readUInt32BE(0) % 1000) + 1; // 1-1000
+      let selectedHitCard = null;
+      
+      console.log("🎲 Random number (1-1000):", randomInt);
+      console.log("🎲 Timestamp:", Date.now());
+      console.log("🎲 User ID:", userId);
+      console.log("🎲 Random bytes:", hitRandomBytes.toString('hex'));
+      
+      console.log("🎲 Current hitCardOdds being used:", hitCardOdds);
+      console.log("🎲 Pack type: classic");
+      
+      // Use default cumulative ranges for pokeball odds
+      const tierRanges: Record<string, { start: number; end: number }> = {
+        C: { start: 1, end: Math.floor(hitCardOdds.C * 1000) },
+        B: { start: Math.floor(hitCardOdds.C * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B) * 1000) },
+        A: { start: Math.floor((hitCardOdds.C + hitCardOdds.B) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A) * 1000) },
+        S: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) },
+        SS: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) },
+        SSS: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS + hitCardOdds.SSS) * 1000) }
+      };
+      
+      console.log("🎲 Tier ranges:", tierRanges);
+      
+      // Find which tier the random number falls into
+      const hitTiers = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
+      let selectedTier = null;
+      
+      for (const tier of hitTiers) {
+        const range = tierRanges[tier];
+        console.log(`🎲 Checking tier ${tier}: range=${range.start}-${range.end}, random=${randomInt}, inRange=${randomInt >= range.start && randomInt <= range.end}`);
         
-        // Deduct the D-tier card from the prize pool
-        await tx
-          .update(classicPrize)
-          .set({ quantity: sql`${classicPrize.quantity} - 1` })
-          .where(and(
-            eq(classicPrize.packId, classicPack.id),
-            eq(classicPrize.cardName, randomDCard.cardName)
-          ));
-      }
-      
-      // Select 1 hit card with weighted odds (non-D tier)
-      // Using array to ensure proper order
-      const hitCardOdds = [
-        { tier: 'C', odds: 0.50 },   // 50% chance
-        { tier: 'B', odds: 0.30 },   // 30% chance  
-        { tier: 'A', odds: 0.15 },   // 15% chance
-        { tier: 'S', odds: 0.04 },   // 4% chance
-        { tier: 'SS', odds: 0.008 }, // 0.8% chance
-        { tier: 'SSS', odds: 0.002 } // 0.2% chance
-      ];
-      
-      const random = Math.random();
-      console.log(`🎲 Classic pack hit card selection - Random number: ${random}`);
-      let selectedTier = 'C'; // Default fallback
-      let cumulativeOdds = 0;
-      
-      for (const { tier, odds } of hitCardOdds) {
-        cumulativeOdds += odds;
-        console.log(`🎲 Checking tier ${tier}: odds=${odds}, cumulative=${cumulativeOdds}, random=${random}, selected=${random < cumulativeOdds}`);
-        if (random < cumulativeOdds) {
+        if (randomInt >= range.start && randomInt <= range.end) {
           selectedTier = tier;
           break;
         }
       }
       
-      console.log(`🎲 Selected tier: ${selectedTier}`);
+      if (selectedTier) {
+        const hitCards = packCardsWithDetails.filter(card => card.tier?.trim() === selectedTier);
+        if (hitCards.length > 0) {
+          // Use crypto for card selection within tier
+          const cardRandomBytes = randomBytes(4);
+          const cardRandom = cardRandomBytes.readUInt32BE(0) / 0xffffffff;
+          selectedHitCard = hitCards[Math.floor(cardRandom * hitCards.length)];
+          console.log(`🎲 Hit card selected from tier ${selectedTier}:`, selectedHitCard);
+          console.log(`🎲 Card selection random:`, cardRandom);
+        }
+      }
       
-      // Find cards of the selected tier
-      const tierCards = hitTierCards.filter(card => card.cardTier === selectedTier);
-      console.log(`🎲 Available cards for tier ${selectedTier}: ${tierCards.length}`);
+      // If no hit card selected (shouldn't happen with proper odds), fallback to C tier
+      if (!selectedHitCard) {
+        const fallbackCards = packCardsWithDetails.filter(card => card.tier?.trim() === 'C');
+        if (fallbackCards.length > 0) {
+          // Use crypto for fallback card selection
+          const fallbackRandomBytes = randomBytes(4);
+          const fallbackRandom = fallbackRandomBytes.readUInt32BE(0) / 0xffffffff;
+          selectedHitCard = fallbackCards[Math.floor(fallbackRandom * fallbackCards.length)];
+          console.log("🎲 Fallback hit card selected (C tier):", selectedHitCard);
+          console.log("🎲 Fallback random:", fallbackRandom);
+        } else {
+          // Ultimate fallback - use common card
+          selectedHitCard = selectedCommonCard;
+          console.log("🎲 Ultimate fallback - using common card as hit:", selectedHitCard);
+        }
+      }
       
-      const randomHitCard = tierCards.length > 0 
-        ? tierCards[Math.floor(Math.random() * tierCards.length)]
-        : hitTierCards[Math.floor(Math.random() * hitTierCards.length)]; // Fallback to any hit card
+      // Create the pack result - 7 common cards + 1 hit card
+      const selectedCards = [];
       
-      console.log(`🎲 Final hit card selected: ${randomHitCard.cardName} (${randomHitCard.cardTier})`);
+      // Add 7 common cards (D tier)
+      for (let i = 0; i < 7; i++) {
+        selectedCards.push({
+          id: `card-${Date.now()}-${i}`,
+          name: fixedCommonCard.name,
+          tier: fixedCommonCard.tier,
+          imageUrl: fixedCommonCard.imageUrl,
+          marketValue: fixedCommonCard.refundCredit.toString(),
+          isHit: false,
+          position: i
+        });
+      }
       
+      // Add 1 hit card at position 7
       selectedCards.push({
-        id: `cpc-${Date.now()}-7`,
-        name: randomHitCard.cardName,
-        tier: randomHitCard.cardTier,
-        imageUrl: randomHitCard.cardImageUrl,
-        marketValue: randomHitCard.refundCredit.toString(),
-        isHit: true, // This is the hit card
+        id: `card-${Date.now()}-7`,
+        name: selectedHitCard.name,
+        tier: selectedHitCard.tier,
+        imageUrl: selectedHitCard.imageUrl,
+        marketValue: selectedHitCard.refundCredit.toString(),
+        isHit: true,
         position: 7
       });
       
-      // Deduct the hit card from the prize pool
+      // Deduct cards from the classic pack pool
+      // Note: Common cards (D tier) are unlimited and don't need inventory deduction
+
+      // Deduct 1 hit card
       await tx
         .update(classicPrize)
         .set({ quantity: sql`${classicPrize.quantity} - 1` })
         .where(and(
           eq(classicPrize.packId, classicPack.id),
-          eq(classicPrize.cardName, randomHitCard.cardName)
+          eq(classicPrize.cardName, selectedHitCard.name)
         ));
-      
+
       // Add cards to user's collection
       for (const card of selectedCards) {
         await tx.insert(userCards).values({
@@ -1137,7 +1574,7 @@ export class DatabaseStorage {
           cardSource: 'classic'
         });
       }
-      
+
       return {
         success: true,
         packCards: selectedCards,
@@ -1148,50 +1585,175 @@ export class DatabaseStorage {
   }
 
   private async openSpecialPack(specialPack: SpecialPack, userId: string): Promise<PackOpenResult> {
+    console.log("🎲 Opening special pack:", specialPack.id);
+    
     return await db.transaction(async (tx) => {
       // Get all cards from the special pack's prize pool
-      const prizePoolCards = await tx
+      const packCards = await tx
         .select()
         .from(specialPrize)
         .where(eq(specialPrize.packId, specialPack.id));
       
-      if (prizePoolCards.length === 0) {
-        throw new Error("No cards found in special pack prize pool");
+      console.log("🎲 Found pack cards in special pool:", packCards.length, "(D-tier cards excluded - fixed assets)");
+      
+      if (packCards.length === 0) {
+        throw new Error("No cards found in special pack pool");
       }
       
-      // Select 8 random cards from the prize pool
+      // Get card details for each pack card (exclude D-tier as they're fixed assets)
+      const packCardsWithDetails = packCards
+        .filter(pc => pc.cardTier?.trim() !== 'D') // Exclude D-tier cards (fixed assets)
+        .map(pc => ({
+          name: pc.cardName,
+          tier: pc.cardTier,
+          quantity: pc.quantity,
+          imageUrl: pc.cardImageUrl,
+          refundCredit: pc.refundCredit
+        }));
+      
+      // Use fixed D-tier card (unlimited asset - no inventory management needed)
+      const fixedCommonCard = {
+        name: 'Common Cards',
+        tier: 'D',
+        quantity: 999999, // Unlimited quantity
+        imageUrl: '/assets/Commons.png',
+        refundCredit: 1
+      };
+      console.log("🎲 Using fixed D-tier card (unlimited asset):", fixedCommonCard.name);
+      
+      // Use pokeball custom odds (same as mystery pack pokeball)
+      console.log(`🎲 Using custom pokeball odds for special pack (1-1000 system) - Base Odds`);
+      const hitCardOdds = {
+        D: 0.0,    // 0% D (not used for hit card)
+        C: 0.848,  // 84.8% C (1-848)
+        B: 0.06,   // 6% B (849-908)
+        A: 0.045,  // 4.5% A (909-953)
+        S: 0.035,  // 3.5% S (954-988)
+        SS: 0.01,  // 1% SS (989-998)
+        SSS: 0.002 // 0.2% SSS (999-1000)
+      };
+      console.log(`🎲 Special pack pokeball custom odds:`, hitCardOdds);
+      
+      console.log(`🎲 Using special pack odds:`, hitCardOdds);
+      
+      // NEW SYSTEM: 1-1000 number generator for precise odds
+      // Generate random number from 1-1000 (inclusive)
+      const { randomBytes } = await import('crypto');
+      const hitRandomBytes = randomBytes(4);
+      const randomInt = (hitRandomBytes.readUInt32BE(0) % 1000) + 1; // 1-1000
+      let selectedHitCard = null;
+      
+      console.log("🎲 Random number (1-1000):", randomInt);
+      console.log("🎲 Timestamp:", Date.now());
+      console.log("🎲 User ID:", userId);
+      console.log("🎲 Random bytes:", hitRandomBytes.toString('hex'));
+      
+      console.log("🎲 Current hitCardOdds being used:", hitCardOdds);
+      console.log("🎲 Pack type: special");
+      
+      // Use default cumulative ranges for pokeball odds
+      const tierRanges: Record<string, { start: number; end: number }> = {
+        C: { start: 1, end: Math.floor(hitCardOdds.C * 1000) },
+        B: { start: Math.floor(hitCardOdds.C * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B) * 1000) },
+        A: { start: Math.floor((hitCardOdds.C + hitCardOdds.B) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A) * 1000) },
+        S: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) },
+        SS: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) },
+        SSS: { start: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS) * 1000) + 1, end: Math.floor((hitCardOdds.C + hitCardOdds.B + hitCardOdds.A + hitCardOdds.S + hitCardOdds.SS + hitCardOdds.SSS) * 1000) }
+      };
+      
+      console.log("🎲 Tier ranges:", tierRanges);
+      
+      // Find which tier the random number falls into
+      const hitTiers = ['C', 'B', 'A', 'S', 'SS', 'SSS'];
+      let selectedTier = null;
+      
+      for (const tier of hitTiers) {
+        const range = tierRanges[tier];
+        console.log(`🎲 Checking tier ${tier}: range=${range.start}-${range.end}, random=${randomInt}, inRange=${randomInt >= range.start && randomInt <= range.end}`);
+        
+        if (randomInt >= range.start && randomInt <= range.end) {
+          selectedTier = tier;
+          break;
+        }
+      }
+      
+      if (selectedTier) {
+        const hitCards = packCardsWithDetails.filter(card => card.tier?.trim() === selectedTier);
+        if (hitCards.length > 0) {
+          // Use crypto for card selection within tier
+          const cardRandomBytes = randomBytes(4);
+          const cardRandom = cardRandomBytes.readUInt32BE(0) / 0xffffffff;
+          selectedHitCard = hitCards[Math.floor(cardRandom * hitCards.length)];
+          console.log(`🎲 Hit card selected from tier ${selectedTier}:`, selectedHitCard);
+          console.log(`🎲 Card selection random:`, cardRandom);
+        }
+      }
+      
+      // If no hit card selected (shouldn't happen with proper odds), fallback to C tier
+      if (!selectedHitCard) {
+        const fallbackCards = packCardsWithDetails.filter(card => card.tier?.trim() === 'C');
+        if (fallbackCards.length > 0) {
+          // Use crypto for fallback card selection
+          const fallbackRandomBytes = randomBytes(4);
+          const fallbackRandom = fallbackRandomBytes.readUInt32BE(0) / 0xffffffff;
+          selectedHitCard = fallbackCards[Math.floor(fallbackRandom * fallbackCards.length)];
+          console.log("🎲 Fallback hit card selected (C tier):", selectedHitCard);
+          console.log("🎲 Fallback random:", fallbackRandom);
+        } else {
+          // Ultimate fallback - use common card
+          selectedHitCard = selectedCommonCard;
+          console.log("🎲 Ultimate fallback - using common card as hit:", selectedHitCard);
+        }
+      }
+      
+      // Create the pack result - 7 common cards + 1 hit card
       const selectedCards = [];
-      for (let i = 0; i < 8; i++) {
-        const randomCard = prizePoolCards[Math.floor(Math.random() * prizePoolCards.length)];
+      
+      // Add 7 common cards (D tier)
+      for (let i = 0; i < 7; i++) {
         selectedCards.push({
-          id: `spc-${Date.now()}-${i}`,
-          name: randomCard.cardName,
-          tier: randomCard.cardTier,
-          imageUrl: randomCard.cardImageUrl,
-          marketValue: randomCard.refundCredit.toString(),
-          isHit: i === 7, // Last card is always the hit
+          id: `card-${Date.now()}-${i}`,
+          name: fixedCommonCard.name,
+          tier: fixedCommonCard.tier,
+          imageUrl: fixedCommonCard.imageUrl,
+          marketValue: fixedCommonCard.refundCredit.toString(),
+          isHit: false,
           position: i
         });
-        
-        // Deduct the card from the prize pool
-        await tx
-          .update(specialPrize)
-          .set({ quantity: sql`${specialPrize.quantity} - 1` })
-          .where(and(
-            eq(specialPrize.packId, specialPack.id),
-            eq(specialPrize.cardName, randomCard.cardName)
-          ));
       }
       
+      // Add 1 hit card at position 7
+      selectedCards.push({
+        id: `card-${Date.now()}-7`,
+        name: selectedHitCard.name,
+        tier: selectedHitCard.tier,
+        imageUrl: selectedHitCard.imageUrl,
+        marketValue: selectedHitCard.refundCredit.toString(),
+        isHit: true,
+        position: 7
+      });
+      
+      // Deduct cards from the special pack pool
+      // Note: Common cards (D tier) are unlimited and don't need inventory deduction
+
+      // Deduct 1 hit card
+      await tx
+        .update(specialPrize)
+        .set({ quantity: sql`${specialPrize.quantity} - 1` })
+        .where(and(
+          eq(specialPrize.packId, specialPack.id),
+          eq(specialPrize.cardName, selectedHitCard.name)
+        ));
+
       // Add cards to user's collection
       for (const card of selectedCards) {
         await tx.insert(userCards).values({
           id: `uc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            userId,
-            cardName: card.name,
+          userId,
+          cardName: card.name,
           cardImageUrl: card.imageUrl,
-            cardTier: card.tier,
-            refundCredit: parseInt(card.marketValue),
+          cardTier: card.tier,
+          refundCredit: parseInt(card.marketValue),
           quantity: 1,
           isRefunded: false,
           isShipped: false,
@@ -1199,7 +1761,7 @@ export class DatabaseStorage {
           cardSource: 'special'
         });
       }
-      
+
       return {
         success: true,
         packCards: selectedCards,
@@ -1443,7 +2005,7 @@ export class DatabaseStorage {
       }).returning();
 
       // Remove the shipped cards from user's vault
-      if (requestData.items && Array.isArray(requestData.items)) {
+      if (requestData.items && Array.isArray(requestData.items) && requestData.userId) {
         console.log('📦 Shipping request items:', JSON.stringify(requestData.items, null, 2));
         const cardIds = requestData.items.map((item: any) => item.id).filter(Boolean);
         console.log('🆔 Extracted card IDs:', cardIds);
@@ -1516,7 +2078,7 @@ export class DatabaseStorage {
     .orderBy(desc(shippingRequests.createdAt));
   }
 
-  async getAllShippingRequests(): Promise<(ShippingRequest & { address: UserAddress; user: User })[]> {
+  async getAllShippingRequests(): Promise<(ShippingRequest & { address: UserAddress; user: Pick<User, 'id' | 'email' | 'username' | 'credits' | 'createdAt' | 'updatedAt'> })[]> {
     return await db.select({
       id: shippingRequests.id,
       userId: shippingRequests.userId,
@@ -1547,7 +2109,6 @@ export class DatabaseStorage {
         email: users.email,
         username: users.username,
         credits: users.credits,
-        isAdmin: false, // TODO: Add isAdmin field to users schema if needed
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       }
