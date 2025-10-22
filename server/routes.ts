@@ -24,7 +24,8 @@ import {
   raffles,
   rafflePrizes,
   raffleEntries,
-  raffleWinners
+  raffleWinners,
+  insertShippingRequestSchema
 } from "@shared/schema";
 
 // Game result interface
@@ -361,6 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Add card to user vault with correct pull value
         await storage.addUserCard({
+          id: `uc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           userId,
           cardName: card.name,
           cardImageUrl: card.imageUrl,
@@ -1531,30 +1533,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/cards', isAdminCombined, async (req: any, res) => {
-    try {
-      // Redirect to inventory since cards table was removed
-      const cardData = insertInventorySchema.parse(req.body);
-      const card = await storage.createInventoryCard(cardData);
-      res.json(card);
-    } catch (error) {
-      console.error("Error creating card:", error);
-      res.status(500).json({ message: "Failed to create card" });
-    }
-  });
+  // LEGACY ADMIN ROUTE - COMMENTED OUT (references non-existent inventory functionality)
+  // app.post('/api/admin/cards', isAdminCombined, async (req: any, res) => {
+  //   try {
+  //     // Redirect to inventory since cards table was removed
+  //     const cardData = insertInventorySchema.parse(req.body);
+  //     const card = await storage.createInventoryCard(cardData);
+  //     res.json(card);
+  //   } catch (error) {
+  //     console.error("Error creating card:", error);
+  //     res.status(500).json({ message: "Failed to create card" });
+  //   }
+  // });
 
-  app.patch('/api/admin/cards/:id', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      // Redirect to inventory since cards table was removed
-      const cardData = insertInventorySchema.partial().parse(req.body);
-      const card = await storage.updateInventoryCard(id, cardData);
-      res.json(card);
-    } catch (error) {
-      console.error("Error updating card:", error);
-      res.status(500).json({ message: "Failed to update card" });
-    }
-  });
+  // LEGACY ADMIN ROUTE - COMMENTED OUT (references non-existent inventory functionality)
+  // app.patch('/api/admin/cards/:id', isAdminCombined, async (req: any, res) => {
+  //   try {
+  //     const { id } = req.params;
+  //     // Redirect to inventory since cards table was removed
+  //     const cardData = insertInventorySchema.partial().parse(req.body);
+  //     const card = await storage.updateInventoryCard(id, cardData);
+  //     res.json(card);
+  //   } catch (error) {
+  //     console.error("Error updating card:", error);
+  //     res.status(500).json({ message: "Failed to update card" });
+  //   }
+  // });
 
   app.patch('/api/admin/cards/:id/stock', isAdminCombined, async (req: any, res) => {
     try {
@@ -1654,28 +1658,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/virtual-library', isAdminCombined, async (req: any, res) => {
-    try {
-      const cardData = insertVirtualLibrarySchema.parse(req.body);
-      const virtualLibraryCard = await storage.createVirtualLibraryCard(cardData);
-      res.json(virtualLibraryCard);
-    } catch (error) {
-      console.error("Error creating virtual library card:", error);
-      res.status(500).json({ message: "Failed to create virtual library card" });
-    }
-  });
+  // LEGACY ADMIN ROUTE - COMMENTED OUT (references non-existent virtual library functionality)
+  // app.post('/api/admin/virtual-library', isAdminCombined, async (req: any, res) => {
+  //   try {
+  //     const cardData = insertVirtualLibrarySchema.parse(req.body);
+  //     const virtualLibraryCard = await storage.createVirtualLibraryCard(cardData);
+  //     res.json(virtualLibraryCard);
+  //   } catch (error) {
+  //     console.error("Error creating virtual library card:", error);
+  //     res.status(500).json({ message: "Failed to create virtual library card" });
+  //   }
+  // });
 
-  app.patch('/api/admin/virtual-library/:id', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const cardData = insertVirtualLibrarySchema.partial().parse(req.body);
-      const virtualLibraryCard = await storage.updateVirtualLibraryCard(id, cardData);
-      res.json(virtualLibraryCard);
-    } catch (error) {
-      console.error("Error updating virtual library card:", error);
-      res.status(500).json({ message: "Failed to update virtual library card" });
-    }
-  });
+  // LEGACY ADMIN ROUTE - COMMENTED OUT (references non-existent virtual library functionality)
+  // app.patch('/api/admin/virtual-library/:id', isAdminCombined, async (req: any, res) => {
+  //   try {
+  //     const { id } = req.params;
+  //     const cardData = insertVirtualLibrarySchema.partial().parse(req.body);
+  //     const virtualLibraryCard = await storage.updateVirtualLibraryCard(id, cardData);
+  //     res.json(virtualLibraryCard);
+  //   } catch (error) {
+  //     console.error("Error updating virtual library card:", error);
+  //     res.status(500).json({ message: "Failed to update virtual library card" });
+  //   }
+  // });
 
   app.delete('/api/admin/virtual-library/:id', isAdminCombined, async (req: any, res) => {
     try {
@@ -1699,28 +1705,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/inventory', isAdminCombined, async (req: any, res) => {
-    try {
-      const cardData = insertInventorySchema.parse(req.body);
-      const inventoryCard = await storage.createInventoryCard(cardData);
-      res.json(inventoryCard);
-    } catch (error: any) {
-      console.error("Error creating inventory card:", error);
-      res.status(500).json({ message: "Failed to create inventory card", error: error.message });
-    }
-  });
+  // LEGACY ADMIN ROUTE - COMMENTED OUT (references non-existent inventory functionality)
+  // app.post('/api/admin/inventory', isAdminCombined, async (req: any, res) => {
+  //   try {
+  //     const cardData = insertInventorySchema.parse(req.body);
+  //     const inventoryCard = await storage.createInventoryCard(cardData);
+  //     res.json(inventoryCard);
+  //   } catch (error: any) {
+  //     console.error("Error creating inventory card:", error);
+  //     res.status(500).json({ message: "Failed to create inventory card", error: error.message });
+  //   }
+  // });
 
-  app.patch('/api/admin/inventory/:id', isAdminCombined, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const cardData = insertInventorySchema.partial().parse(req.body);
-      const inventoryCard = await storage.updateInventoryCard(id, cardData);
-      res.json(inventoryCard);
-    } catch (error) {
-      console.error("Error updating inventory card:", error);
-      res.status(500).json({ message: "Failed to update inventory card" });
-    }
-  });
+  // LEGACY ADMIN ROUTE - COMMENTED OUT (references non-existent inventory functionality)
+  // app.patch('/api/admin/inventory/:id', isAdminCombined, async (req: any, res) => {
+  //   try {
+  //     const { id } = req.params;
+  //     const cardData = insertInventorySchema.partial().parse(req.body);
+  //     const inventoryCard = await storage.updateInventoryCard(id, cardData);
+  //     res.json(inventoryCard);
+  //   } catch (error) {
+  //     console.error("Error updating inventory card:", error);
+  //     res.status(500).json({ message: "Failed to update inventory card" });
+  //   }
+  // });
 
   app.delete('/api/admin/inventory/:id', isAdminCombined, async (req: any, res) => {
     try {
@@ -1751,7 +1759,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/test-special-packs', async (req: any, res) => {
     try {
-      const result = await db.select().from(specialPacks);
+      const result = await db.select().from(specialPack);
       res.json({ success: true, result });
     } catch (error: any) {
       console.error('Special packs test error:', error);
@@ -1765,23 +1773,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { cardId } = req.params;
       
       // Check if card exists in special pack cards (simplified system)
-      const specialPackCardsResult = await db
+      const specialPackResult = await db
         .select()
-        .from(specialPackCards)
-        .where(eq(specialPackCards.cardName, cardId)); // Using cardName as identifier
+        .from(specialPack)
+        .where(eq(specialPack.cardName, cardId)); // Using cardName as identifier
       
       // Check if card exists in mystery pack cards (simplified system)
-      const mysteryPackCardsResult = await db
+      const mysteryPackResult = await db
         .select()
-        .from(mysteryPackCards)
-        .where(eq(mysteryPackCards.cardName, cardId)); // Using cardName as identifier
+        .from(mysteryPack)
+        .where(eq(mysteryPack.cardName, cardId)); // Using cardName as identifier
       
       res.json({ 
         success: true, 
         cardId,
-        specialPackCards: specialPackCardsResult.length,
-        mysteryPackCards: mysteryPackCardsResult.length,
-        message: `Card ${cardId} is used in ${specialPackCardsResult.length} special pack(s) and ${mysteryPackCardsResult.length} mystery pack(s)`
+        specialPack: specialPackResult.length,
+        mysteryPack: mysteryPackResult.length,
+        message: `Card ${cardId} is used in ${specialPackResult.length} special pack(s) and ${mysteryPackResult.length} mystery pack(s)`
       });
     } catch (error: any) {
       console.error('Cascade delete test error:', error);
@@ -1789,16 +1797,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test endpoint to check inventory table directly
-  app.get('/api/test-inventory', async (req: any, res) => {
-    try {
-      const result = await db.select().from(inventory);
-      res.json({ success: true, result, count: result.length });
-    } catch (error: any) {
-      console.error('Inventory test error:', error);
-      res.status(500).json({ success: false, error: error.message, stack: error.stack });
-    }
-  });
+  // LEGACY TEST ENDPOINT - COMMENTED OUT (references non-existent inventory table)
+  // app.get('/api/test-inventory', async (req: any, res) => {
+  //   try {
+  //     const result = await db.select().from(inventory);
+  //     res.json({ success: true, result, count: result.length });
+  //   } catch (error: any) {
+  //     console.error('Inventory test error:', error);
+  //     res.status(500).json({ success: false, error: error.message, stack: error.stack });
+  //   }
+  // });
 
   // Test endpoint to add tier column
   app.get('/api/fix-inventory-tier', async (req: any, res) => {
@@ -1811,9 +1819,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.execute(sql`UPDATE inventory SET tier = 'D' WHERE tier IS NULL;`);
       
       // Test the query again
-      const result = await db.select().from(inventory);
+      // const result = await db.select().from(inventory);
       
-      res.json({ success: true, message: 'Tier column added successfully', result, count: result.length });
+      res.json({ success: true, message: 'Tier column added successfully' });
     } catch (error: any) {
       console.error('Fix inventory tier error:', error);
       res.status(500).json({ success: false, error: error.message, stack: error.stack });
@@ -1831,7 +1839,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.execute(sql`UPDATE special_packs SET pack_type = 'special' WHERE pack_type IS NULL;`);
       
       // Test the query again
-      const result = await db.select().from(specialPacks);
+      const result = await db.select().from(specialPack);
       
       res.json({ success: true, message: 'PackType column added successfully', result, count: result.length });
     } catch (error: any) {
@@ -1889,6 +1897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const packData = {
+        id: `sp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name,
         description,
         imageUrl: image,
@@ -2171,6 +2180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       
       const packData = {
+        id: `mp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name,
         description,
         imageUrl: image,
@@ -2197,8 +2207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         description,
         imageUrl: image,
-        price: price ? price.toString() : undefined,
-        totalPacks: totalCards ? parseInt(totalCards) : undefined
+        price: price ? price.toString() : undefined
       });
 
       res.json(pack);
@@ -2608,8 +2617,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ 
-        success: true,
-        ...packResult
+        ...packResult,
+        success: true
       });
 
     } catch (error: any) {
@@ -2705,8 +2714,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const response = { 
-        success: true,
-        ...packResult
+        ...packResult,
+        success: true
       };
       res.json(response);
 

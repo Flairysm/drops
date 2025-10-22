@@ -230,8 +230,7 @@ export class DatabaseStorage {
           cardSource: 'mystery', // Always set to 'mystery' for D-tier cards
           packSource: 'mystery-pokeball', // Always set to 'mystery-pokeball' for D-tier cards
           isRefunded: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          createdAt: new Date()
         };
         
         await tx.insert(userCards).values(groupedCard);
@@ -242,8 +241,7 @@ export class DatabaseStorage {
       await tx
         .update(userCards)
         .set({ 
-          isRefunded: true,
-          updatedAt: new Date()
+          isRefunded: true
         })
         .where(and(
           eq(userCards.userId, userId),
@@ -328,7 +326,7 @@ export class DatabaseStorage {
       if (tierDiff !== 0) return tierDiff;
       
       // If same tier, sort by creation date (newest first)
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return new Date(b.createdAt || new Date()).getTime() - new Date(a.createdAt || new Date()).getTime();
     });
     
     groupedCards.push(...hitCards);
@@ -1327,7 +1325,7 @@ export class DatabaseStorage {
           console.log("🎲 Fallback random:", fallbackRandom);
         } else {
           // Ultimate fallback - use common card
-          selectedHitCard = selectedCommonCard;
+          selectedHitCard = fixedCommonCard;
           console.log("🎲 Ultimate fallback - using common card as hit:", selectedHitCard);
         }
       }
@@ -1514,7 +1512,7 @@ export class DatabaseStorage {
           console.log("🎲 Fallback random:", fallbackRandom);
         } else {
           // Ultimate fallback - use common card
-          selectedHitCard = selectedCommonCard;
+          selectedHitCard = fixedCommonCard;
           console.log("🎲 Ultimate fallback - using common card as hit:", selectedHitCard);
         }
       }
@@ -1701,7 +1699,7 @@ export class DatabaseStorage {
           console.log("🎲 Fallback random:", fallbackRandom);
         } else {
           // Ultimate fallback - use common card
-          selectedHitCard = selectedCommonCard;
+          selectedHitCard = fixedCommonCard;
           console.log("🎲 Ultimate fallback - using common card as hit:", selectedHitCard);
         }
       }
