@@ -7,6 +7,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
+import { metricsMiddleware } from './monitoring';
 
 // Fixed import.meta.dirname issue for production builds
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +25,9 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+
+// Add metrics middleware
+app.use(metricsMiddleware);
 
 // IMPORTANT: Session middleware must be set up BEFORE CORS
 // This will be done in registerRoutes via setupAuth()

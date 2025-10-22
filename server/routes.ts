@@ -56,11 +56,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check database connection
       await db.execute(sql`SELECT 1`);
       
+      // Check cache health (if available)
+      let cacheStatus = 'not_configured';
+      try {
+        const { checkCacheHealth } = await import('./cache');
+        const cacheHealth = await checkCacheHealth();
+        cacheStatus = cacheHealth.status;
+      } catch (error) {
+        // Cache not available, that's okay
+      }
+      
+      // Get system health status
+      let healthStatus = { status: 'healthy', metrics: {}, alerts: [] };
+      try {
+        const { getHealthStatus } = await import('./monitoring');
+        healthStatus = getHealthStatus();
+      } catch (error) {
+        // Monitoring not available, that's okay
+      }
+      
       res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
         database: 'connected',
-        environment: process.env.NODE_ENV || 'development'
+        cache: cacheStatus,
+        environment: process.env.NODE_ENV || 'development',
+        health: healthStatus
       });
     } catch (error) {
       res.status(503).json({ 

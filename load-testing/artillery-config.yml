@@ -1,0 +1,173 @@
+# ============================================================================
+# LOAD TESTING CONFIGURATION
+# ============================================================================
+# Artillery load testing configuration for Drops application
+
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    
+    # Ramp up phase
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp up load"
+    
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 50
+      name: "Sustained load"
+    
+    # Peak load phase
+    - duration: 120
+      arrivalRate: 100
+      name: "Peak load"
+    
+    # Cool down phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Cool down"
+
+  defaults:
+    headers:
+      User-Agent: "Artillery Load Test"
+      Content-Type: "application/json"
+
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+  # Performance thresholds
+  ensure:
+    p95: 2000  # 95th percentile response time should be under 2 seconds
+    p99: 5000  # 99th percentile response time should be under 5 seconds
+    maxErrorRate: 5  # Error rate should be under 5%
+
+scenarios:
+  # ============================================================================
+  # HEALTH CHECK SCENARIO
+  # ============================================================================
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/health"
+          name: "Health Check"
+
+  # ============================================================================
+  # AUTHENTICATION SCENARIO
+  # ============================================================================
+  - name: "Authentication Flow"
+    weight: 20
+    flow:
+      # Register new user
+      - post:
+          url: "/api/register"
+          json:
+            username: "loadtest-{{ $randomString() }}"
+            email: "loadtest-{{ $randomString() }}@example.com"
+            password: "testpassword123"
+          name: "User Registration"
+          capture:
+            - json: "$.user.id"
+              as: "userId"
+      
+      # Login
+      - post:
+          url: "/api/login"
+          json:
+            email: "loadtest-{{ $randomString() }}@example.com"
+            password: "testpassword123"
+          name: "User Login"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+
+  # ============================================================================
+  # PACK OPERATIONS SCENARIO
+  # ============================================================================
+  - name: "Pack Operations"
+    weight: 30
+    flow:
+      # Get available packs
+      - get:
+          url: "/api/packs/mystery"
+          name: "Get Mystery Packs"
+      
+      - get:
+          url: "/api/packs/classic"
+          name: "Get Classic Packs"
+      
+      - get:
+          url: "/api/packs/special"
+          name: "Get Special Packs"
+      
+      # Open a pack (if user has credits)
+      - post:
+          url: "/api/packs/open"
+          json:
+            packId: "test-pokeball-{{ $randomString() }}"
+            packType: "pokeball"
+          name: "Open Pack"
+          ifTrue: "{{ $randomInt(1, 10) <= 3 }}"  # 30% chance
+
+  # ============================================================================
+  # VAULT OPERATIONS SCENARIO
+  # ============================================================================
+  - name: "Vault Operations"
+    weight: 25
+    flow:
+      # Get user vault
+      - get:
+          url: "/api/vault"
+          qs:
+            page: 1
+            limit: 16
+          name: "Get Vault Page 1"
+      
+      # Get more vault pages
+      - get:
+          url: "/api/vault"
+          qs:
+            page: "{{ $randomInt(1, 5) }}"
+            limit: 16
+          name: "Get Vault Page N"
+          ifTrue: "{{ $randomInt(1, 10) <= 4 }}"  # 40% chance
+
+  # ============================================================================
+  # GLOBAL FEED SCENARIO
+  # ============================================================================
+  - name: "Global Feed"
+    weight: 15
+    flow:
+      # Get global feed
+      - get:
+          url: "/api/feed"
+          qs:
+            limit: 20
+            minTier: "A"
+          name: "Get Global Feed"
+
+# ============================================================================
+# CUSTOM METRICS
+# ============================================================================
+before:
+  - log: "Starting load test for Drops application"
+
+after:
+  - log: "Load test completed"
+
+# ============================================================================
+# ENVIRONMENT-SPECIFIC CONFIGURATIONS
+# ============================================================================
+# Production testing (uncomment and modify for production)
+# config:
+#   target: 'https://your-production-domain.com'
+#   phases:
+#     - duration: 300
+#       arrivalRate: 20
+#       name: "Production Load Test"
