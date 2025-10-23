@@ -126,13 +126,6 @@ export default function Vault() {
 
   const refundMutation = useMutation({
     mutationFn: async (cardIds: string[]) => {
-      // Show loading toast
-      toast({
-        title: "Processing Refund...",
-        description: "Please wait while we process your refund request.",
-        duration: 3000,
-      });
-
       // Process only the specifically selected cards
       const allCardIds: string[] = [];
       let totalRefundAmount = 0;

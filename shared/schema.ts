@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey(),
   username: varchar("username").unique(),
   email: varchar("email").unique(),
+  phone: varchar("phone", { length: 20 }),
   password: varchar("password_hash"), // Map to password_hash column in database
   role: varchar("role", { length: 50 }).default("user").notNull(), // user, admin
   credits: decimal("credits", { precision: 10, scale: 2 }).default("0.00"),

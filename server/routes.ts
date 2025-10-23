@@ -2763,7 +2763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/user/profile', isAuthenticatedCombined, asyncHandler(async (req, res) => {
     try {
       const userId = (req as any).user?.id;
-      const { username, email } = req.body;
+      const { username, phone } = req.body;
 
       if (!userId) {
         const { statusCode, response } = createErrorResponse('User not authenticated', 'UNAUTHORIZED', null, 401);
@@ -2771,40 +2771,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate input
-      if (!username || !email) {
-        const { statusCode, response } = createErrorResponse('Username and email are required', 'VALIDATION_ERROR', null, 400);
+      if (!username) {
+        const { statusCode, response } = createErrorResponse('Username is required', 'VALIDATION_ERROR', null, 400);
         return res.status(statusCode).json(response);
       }
 
-      // Check if username or email already exists (excluding current user)
+      // Check if username already exists (excluding current user)
       const existingUser = await db
         .select()
         .from(users)
         .where(
           and(
             sql`${users.id} != ${userId}`,
-            sql`(${users.username} = ${username} OR ${users.email} = ${email})`
+            sql`${users.username} = ${username}`
           )
         )
         .limit(1);
 
       if (existingUser.length > 0) {
-        const { statusCode, response } = createErrorResponse('Username or email already exists', 'CONFLICT', null, 409);
+        const { statusCode, response } = createErrorResponse('Username already exists', 'CONFLICT', null, 409);
         return res.status(statusCode).json(response);
       }
 
-      // Update user profile
+      // Update user profile (phone is optional)
+      const updateData: any = {
+        username,
+        updatedAt: new Date()
+      };
+      
+      if (phone !== undefined) {
+        updateData.phone = phone;
+      }
+
       await db
         .update(users)
-        .set({
-          username,
-          email,
-          updatedAt: new Date()
-        })
+        .set(updateData)
         .where(eq(users.id, userId));
 
       const response = createSuccessResponse(
-        { username, email },
+        { username, phone },
         'Profile updated successfully'
       );
       res.json(response);
@@ -2850,6 +2855,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify current password using bcrypt
       const bcrypt = await import('bcrypt');
+      if (!user[0].password) {
+        const { statusCode, response } = createErrorResponse('No password set for this account', 'BAD_REQUEST', null, 400);
+        return res.status(statusCode).json(response);
+      }
       const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user[0].password);
 
       if (!isCurrentPasswordValid) {
@@ -2896,6 +2905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: users.id,
           username: users.username,
           email: users.email,
+          phone: users.phone,
           role: users.role,
           credits: users.credits,
           createdAt: users.createdAt

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
 import { useToast } from '../hooks/use-toast';
-import { User, Mail, Calendar, CreditCard, Settings, Shield, Eye, EyeOff, Home, ArrowLeft, ChevronDown, Lock, FileText, HelpCircle, MessageSquare } from 'lucide-react';
+import { User, Mail, Calendar, CreditCard, Settings, Shield, Eye, EyeOff, Home, ArrowLeft, ChevronDown } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
 import { Navigation } from '../components/Navigation';
@@ -67,17 +67,17 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setProfile({
-        id: (user as any).id,
-        username: (user as any).username,
-        email: (user as any).email,
-        phone: (user as any).phone || '', // Ensure phone is set
-        role: (user as any).role,
-        credits: (user as any).credits,
-        createdAt: (user as any).createdAt || new Date().toISOString(),
-        lastLogin: (user as any).lastLogin
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone || '', // Ensure phone is set
+        role: user.role,
+        credits: user.credits,
+        createdAt: user.createdAt || new Date().toISOString(),
+        lastLogin: user.lastLogin
       });
       // Parse phone number to extract country code and number
-      const phone = (user as any).phone || '';
+      const phone = user.phone || '';
       let countryCode = '+60'; // Default to Malaysia
       let phoneNumber = '';
 
@@ -92,7 +92,7 @@ export default function Profile() {
       }
 
       setProfileData({
-        username: (user as any).username,
+        username: user.username,
         phone: phoneNumber,
         countryCode: countryCode,
         currentPassword: '',
@@ -110,7 +110,7 @@ export default function Profile() {
     try {
       const response = await apiRequest('PUT', '/api/user/profile', {
         username: profileData.username,
-        phone: (profileData.countryCode || '+60') + (profileData.phone || '')
+        phone: profileData.countryCode + profileData.phone
       });
 
       const data = await response.json();
@@ -128,12 +128,7 @@ export default function Profile() {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
-      // If it's an authentication error, redirect to home
-      if (error.message && error.message.includes('401')) {
-        window.location.href = '/';
-        return;
-      }
+    } catch (error) {
       toast({
         title: "Error",
         description: "An error occurred while updating your profile",
@@ -156,7 +151,7 @@ export default function Profile() {
       return;
     }
 
-    if ((profileData.newPassword || '').length < 6) {
+    if (profileData.newPassword.length < 6) {
       toast({
         title: "Password Too Short",
         description: "Password must be at least 6 characters long.",
@@ -192,12 +187,7 @@ export default function Profile() {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
-      // If it's an authentication error, redirect to home
-      if (error.message && error.message.includes('401')) {
-        window.location.href = '/';
-        return;
-      }
+    } catch (error) {
       toast({
         title: "Error",
         description: "An error occurred while updating your password",
@@ -239,59 +229,42 @@ export default function Profile() {
   }
 
   if (!profile) {
-    // Redirect to home page instead of showing error
-    window.location.href = '/';
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0B0B12] via-[#1A1A2E] to-[#16213E] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-[#E5E7EB]">Profile not found</p>
+          <Link href="/">
+            <Button className="mt-4 bg-gradient-to-r from-[#00E6A8] to-[#22D3EE] hover:from-[#00D4A3] hover:to-[#1BC5D9] text-white border-0 shadow-lg">
+              <Home className="w-4 h-4 mr-2" />
+              Go Home
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0B0B12] via-[#1A1A2E] to-[#16213E]">
-      <div className="pt-12">
-        <Navigation />
-      </div>
+      <Navigation />
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Enhanced Header Section */}
-          <div className="relative mb-8">
-            {/* Background gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#22D3EE]/10 via-[#00E6A8]/10 to-[#22D3EE]/10 rounded-2xl blur-xl"></div>
-            
-            {/* Header content */}
-            <div className="relative bg-[#0B0B12]/30 backdrop-blur-sm border border-[#26263A]/50 rounded-2xl p-6">
-              {/* Centered title section */}
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center space-x-3 mb-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#22D3EE] to-[#00E6A8] rounded-xl flex items-center justify-center shadow-[0_0_12px_rgba(34,211,238,0.4)]">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-[#E5E7EB] bg-gradient-to-r from-[#E5E7EB] to-[#22D3EE] bg-clip-text text-transparent">
-                      Profile Settings
-                    </h1>
-                  </div>
-                </div>
-                <p className="text-[#9CA3AF] text-sm">Manage your account settings and preferences</p>
-              </div>
-              
-              {/* Back button - below and centered */}
-              <div className="flex justify-center">
-                <Link href="/home">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-[#26263A]/50 transition-all duration-200 border border-[#26263A]/30 hover:border-[#22D3EE]/30"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Home
-                  </Button>
-                </Link>
-              </div>
+          <div className="flex items-center space-x-4 mb-8">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-[#26263A]/50">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-[#E5E7EB]">Profile Settings</h1>
+              <p className="text-[#9CA3AF]">Manage your account settings and preferences</p>
             </div>
           </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 bg-[#0B0B12]/50 border border-[#26263A]">
+            <TabsList className="grid w-full grid-cols-2 bg-[#0B0B12]/50 border border-[#26263A]">
               <TabsTrigger value="profile" className="data-[state=active]:bg-[#22D3EE] data-[state=active]:text-white">
                 <User className="w-4 h-4 mr-2" />
                 Profile
@@ -299,10 +272,6 @@ export default function Profile() {
               <TabsTrigger value="security" className="data-[state=active]:bg-[#22D3EE] data-[state=active]:text-white">
                 <Shield className="w-4 h-4 mr-2" />
                 Security
-              </TabsTrigger>
-              <TabsTrigger value="privacy" className="data-[state=active]:bg-[#22D3EE] data-[state=active]:text-white">
-                <Lock className="w-4 h-4 mr-2" />
-                Privacy
               </TabsTrigger>
             </TabsList>
 
@@ -482,151 +451,6 @@ export default function Profile() {
                 </CardContent>
               </Card>
             </TabsContent>
-
-            <TabsContent value="privacy" className="space-y-6">
-              {/* FAQ Section */}
-              <Card className="bg-[#0B0B12]/50 border border-[#26263A] backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-[#E5E7EB] flex items-center">
-                    <HelpCircle className="w-5 h-5 mr-2 text-[#22D3EE]" />
-                    Frequently Asked Questions
-                  </CardTitle>
-                  <CardDescription className="text-[#9CA3AF]">
-                    Quick answers to common questions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">How do I open packs?</h4>
-                      <p className="text-[#9CA3AF] text-sm">Go to the "Play" section, select your desired pack type, and click "Open Pack" to reveal your cards.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">What are the pack odds?</h4>
-                      <p className="text-[#9CA3AF] text-sm">Each pack type has different odds. Check the "My Packs" section to see detailed odds for each pack tier.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">How do I get credits?</h4>
-                      <p className="text-[#9CA3AF] text-sm">Click the "Reload" button in the navigation to purchase credits and continue playing.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Can I refund my cards?</h4>
-                      <p className="text-[#9CA3AF] text-sm">Yes! Go to your "Vault", select cards you want to refund, and click "Refund Selected Cards".</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Contact Us Section */}
-              <Card className="bg-[#0B0B12]/50 border border-[#26263A] backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-[#E5E7EB] flex items-center">
-                    <MessageSquare className="w-5 h-5 mr-2 text-[#22D3EE]" />
-                    Contact Us
-                  </CardTitle>
-                  <CardDescription className="text-[#9CA3AF]">
-                    Get in touch with our support team
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-3 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <Mail className="w-5 h-5 text-[#22D3EE]" />
-                      <div>
-                        <p className="font-medium text-[#E5E7EB]">Email Support</p>
-                        <p className="text-[#9CA3AF] text-sm">support@drops.app</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <User className="w-5 h-5 text-[#22D3EE]" />
-                      <div>
-                        <p className="font-medium text-[#E5E7EB]">Phone Support</p>
-                        <p className="text-[#9CA3AF] text-sm">+60 123-456-7890</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <Calendar className="w-5 h-5 text-[#22D3EE]" />
-                      <div>
-                        <p className="font-medium text-[#E5E7EB]">Support Hours</p>
-                        <p className="text-[#9CA3AF] text-sm">24/7 Available</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Privacy Policy Section */}
-              <Card className="bg-[#0B0B12]/50 border border-[#26263A] backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-[#E5E7EB] flex items-center">
-                    <FileText className="w-5 h-5 mr-2 text-[#22D3EE]" />
-                    Privacy Policy
-                  </CardTitle>
-                  <CardDescription className="text-[#9CA3AF]">
-                    How we protect your data
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Data Collection</h4>
-                      <p className="text-[#9CA3AF] text-sm">We only collect necessary information to provide our services and improve your experience.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Data Security</h4>
-                      <p className="text-[#9CA3AF] text-sm">Your data is encrypted and stored securely using industry-standard security measures.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Third-Party Sharing</h4>
-                      <p className="text-[#9CA3AF] text-sm">We do not sell or share your personal information with third parties without your consent.</p>
-                    </div>
-                    <Button className="w-full bg-gradient-to-r from-[#7C2D12] to-[#EA580C] hover:from-[#9A3412] hover:to-[#C2410C] text-white border-0">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Read Full Policy
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Terms and Conditions Section */}
-              <Card className="bg-[#0B0B12]/50 border border-[#26263A] backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-[#E5E7EB] flex items-center">
-                    <Shield className="w-5 h-5 mr-2 text-[#22D3EE]" />
-                    Terms and Conditions
-                  </CardTitle>
-                  <CardDescription className="text-[#9CA3AF]">
-                    Rules and guidelines for using our platform
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Account Usage</h4>
-                      <p className="text-[#9CA3AF] text-sm">You are responsible for maintaining the security of your account and all activities that occur under it.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Payment Terms</h4>
-                      <p className="text-[#9CA3AF] text-sm">All purchases are final. Credits are non-refundable but can be used for pack openings and other services.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Prohibited Activities</h4>
-                      <p className="text-[#9CA3AF] text-sm">No cheating, exploiting, or attempting to manipulate the platform in any way.</p>
-                    </div>
-                    <div className="p-4 bg-[#151521]/30 rounded-lg border border-[#26263A]/30">
-                      <h4 className="font-semibold text-[#E5E7EB] mb-2">Service Availability</h4>
-                      <p className="text-[#9CA3AF] text-sm">We strive for 99.9% uptime but cannot guarantee uninterrupted service.</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-center">
-                    <Button className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1D4ED8] hover:to-[#2563EB] text-white border-0">
-                      <Shield className="w-4 h-4 mr-2" />
-                      Read Full Terms
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
 
           {/* Profile Overview Card */}
@@ -710,9 +534,7 @@ export default function Profile() {
         </div>
       </div>
       
-      <div className="pb-12">
-        <NavigationFooter />
-      </div>
+      <NavigationFooter />
     </div>
   );
 }

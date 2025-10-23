@@ -15,13 +15,20 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Rate limiting
+// Rate limiting - more lenient in development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // 1000 requests in dev, 100 in production
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for favicon requests in development
+    if (process.env.NODE_ENV === 'development' && req.url === '/favicon.ico') {
+      return true;
+    }
+    return false;
+  }
 });
 
 app.use(limiter);

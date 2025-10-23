@@ -158,11 +158,12 @@ export default function Play() {
     if (!selectedRaffle || slotsToJoin < 1) return;
 
     // Check user credits before attempting to join
-    const totalCost = selectedRaffle.pricePerSlot * slotsToJoin;
-    if (user && user.credits < totalCost) {
+    const totalCost = parseFloat(selectedRaffle.pricePerSlot || '0') * slotsToJoin;
+    const userCredits = parseFloat((user as any)?.credits || '0');
+    if (user && userCredits < totalCost) {
       toast({
         title: "Insufficient Credits",
-        description: `You need ${totalCost} credits to join with ${slotsToJoin} slot(s). You have ${user.credits} credits.`,
+        description: `You need ${totalCost} credits to join with ${slotsToJoin} slot(s). You have ${userCredits} credits.`,
         variant: "destructive"
       });
       return;
@@ -870,12 +871,12 @@ export default function Play() {
                 isJoining || 
                 !selectedRaffle || 
                 slotsToJoin < 1 || 
-                (user && user.credits < (selectedRaffle.pricePerSlot * slotsToJoin))
+                (user ? parseFloat((user as any)?.credits || '0') < (parseFloat(selectedRaffle.pricePerSlot || '0') * slotsToJoin) : false)
               }
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isJoining ? 'Joining...' : 
-               (user && user.credits < (selectedRaffle?.pricePerSlot * slotsToJoin)) ? 'Insufficient Credits' : 
+               (user ? parseFloat((user as any)?.credits || '0') < (parseFloat(selectedRaffle?.pricePerSlot || '0') * slotsToJoin) : false) ? 'Insufficient Credits' : 
                'Join Raffle'}
             </Button>
           </DialogFooter>
