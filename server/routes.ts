@@ -1,15 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin, isAdminCombined } from "./auth";
-import { db } from "./db";
+import { storage } from "./storage.js";
+import { setupAuth, isAuthenticated, isAuthenticatedCombined, isAdmin, isAdminCombined } from "./auth.js";
+import { db } from "./db.js";
 import { sql, eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
 import path from "path";
 import { fileURLToPath } from 'url';
 import fileUpload from 'express-fileupload';
-import { handleError, createErrorResponse, createSuccessResponse, asyncHandler } from './utils/errorHandler';
-import { createValidationMiddleware, createParamValidationMiddleware, raffleSchemas, commonSchemas } from './utils/validation';
+import { handleError, createErrorResponse, createSuccessResponse, asyncHandler } from './utils/errorHandler.js';
+import { createValidationMiddleware, createParamValidationMiddleware, raffleSchemas, commonSchemas } from './utils/validation.js';
 import { 
   classicPack,
   classicPrize,

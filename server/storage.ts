@@ -41,7 +41,7 @@ import {
   type ShippingRequest,
   type InsertShippingRequest,
 } from "@shared/schema";
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq, and, desc, sql, inArray, gte } from "drizzle-orm";
 
 // ============================================================================
