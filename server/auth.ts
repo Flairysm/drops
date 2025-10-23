@@ -1,14 +1,15 @@
 import bcrypt from 'bcrypt';
 import session from 'express-session';
 import type { Express, RequestHandler } from 'express';
-import connectPg from 'connect-pg-simple';
+// import connectPg from 'connect-pg-simple';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { storage } from './storage.js';
 import { registrationSchema, loginSchema } from '../shared/schema.js';
 
 const SALT_ROUNDS = 12;
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret';
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET or SESSION_SECRET environment variable is required');
 }
@@ -50,6 +51,7 @@ export function setupAuth(app: Express) {
           if (!adminUser) {
             const hashedPassword = await bcrypt.hash(adminPassword, 12);
             adminUser = await storage.createUser({
+              id: crypto.randomUUID(),
               username: 'admin',
               email: adminEmail,
               password: hashedPassword,
@@ -94,6 +96,7 @@ export function setupAuth(app: Express) {
 
       // Create user
       const user = await storage.createUser({
+        id: crypto.randomUUID(),
         username,
         email,
         password: hashedPassword,
@@ -146,12 +149,9 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Invalid email or password" });
       }
 
-      // Check if user is banned or suspended
-      if (user.isBanned) {
-        return res.status(403).json({ message: "Account is banned" });
-      }
-      if (user.isSuspended) {
-        return res.status(403).json({ message: "Account is suspended" });
+      // Check if user is active
+      if (user.isActive === false) {
+        return res.status(403).json({ message: "Account is inactive" });
       }
 
       // Log them in by setting session
@@ -172,7 +172,7 @@ export function setupAuth(app: Express) {
         userId: user.id,
         sessionId: req.sessionID,
         sessionData: req.session,
-        jwtToken: token.substring(0, 20) + '...' // Log first 20 chars for debugging
+        jwtToken: token ? token.substring(0, 20) + '...' : 'no-token' // Log first 20 chars for debugging
       });
 
       // Save session to ensure it's persisted

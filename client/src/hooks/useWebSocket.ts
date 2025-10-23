@@ -16,14 +16,24 @@ export function useWebSocket() {
     // Get WebSocket URL
     const getWebSocketUrl = () => {
       if (import.meta.env.PROD) {
-        return 'wss://drops-backend-production-b145.up.railway.app/ws';
+        // For now, disable WebSocket in production since Vercel doesn't support WebSockets
+        // TODO: Implement WebSocket support with Supabase Realtime or alternative
+        return null;
       }
       return 'ws://localhost:3000/ws';
     };
 
     const connect = () => {
       try {
-        const ws = new WebSocket(getWebSocketUrl());
+        const wsUrl = getWebSocketUrl();
+        if (!wsUrl) {
+          console.log('WebSocket disabled in production');
+          setIsConnected(false);
+          setConnectionError('WebSocket not available in production');
+          return;
+        }
+        
+        const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
         ws.onopen = () => {

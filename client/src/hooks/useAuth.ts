@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
+import { getQueryFn, authRequest } from "@/lib/queryClient";
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -9,7 +9,7 @@ export function useAuth() {
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     refetchOnWindowFocus: false,
-    refetchOnMount: true, // Changed back to true to ensure user data is fetched
+    refetchOnMount: false, // Temporarily disable to avoid 401 errors
     refetchOnReconnect: false,
     staleTime: 30000, // Cache for 30 seconds
     gcTime: 300000, // Keep in cache for 5 minutes

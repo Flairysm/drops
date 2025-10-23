@@ -10,12 +10,53 @@ async function throwIfResNotOk(res: Response) {
 // Get the base URL for API calls
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
-    // In production, use Supabase Edge Functions
-    return 'https://orgjlvvrirnpszenxjha.supabase.co/functions/v1/pokemon-game';
+    // In production, use the same domain as the frontend (no CORS issues)
+    return '';
   }
   // In development, use local backend on port 3000
   return 'http://localhost:3000';
 };
+
+// Special function for auth requests using same domain
+export async function authRequest(
+  method: string,
+  url: string,
+  data?: unknown | undefined,
+  options?: { timeout?: number }
+): Promise<Response> {
+  // Use same domain for auth requests (no CORS issues)
+  const fullUrl = url;
+  
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Create AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = options?.timeout ? setTimeout(() => controller.abort(), options.timeout) : null;
+  
+  try {
+    const res = await fetch(fullUrl, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "omit",
+      signal: controller.signal,
+    });
+
+    if (timeoutId) clearTimeout(timeoutId);
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout - please try again');
+    }
+    throw error;
+  }
+}
 
 export async function apiRequest(
   method: string,
@@ -24,9 +65,8 @@ export async function apiRequest(
   options?: { timeout?: number }
 ): Promise<Response> {
   const baseUrl = getApiBaseUrl();
-  // For Supabase Edge Functions, remove /api prefix since the function handles both
-  const cleanUrl = url.startsWith('/api/') ? url.substring(4) : url;
-  const fullUrl = baseUrl ? `${baseUrl}${cleanUrl}` : url;
+  // For Vercel serverless functions, use full URL with /api prefix
+  const fullUrl = baseUrl ? `${baseUrl}${url}` : url;
   
   // Get JWT token from localStorage
   const token = localStorage.getItem('authToken');
@@ -58,7 +98,7 @@ export async function apiRequest(
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
+      credentials: "omit", // Temporarily disable credentials to allow wildcard CORS
       signal: controller.signal,
     });
 
@@ -75,6 +115,49 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+// Special query function for auth endpoints using same domain
+export const getAuthQueryFn: <T>(options: {
+  on401: UnauthorizedBehavior;
+}) => QueryFunction<T> =
+  ({ on401: unauthorizedBehavior }) =>
+  async ({ queryKey }) => {
+    // Use same domain for auth queries (no CORS issues)
+    const path = queryKey.join("/").replace(/^\/+/, ""); // Remove leading slashes
+    const fullUrl = `/${path}`;
+    
+    // Get JWT token from localStorage
+    const token = localStorage.getItem('authToken');
+    const headers: Record<string, string> = {};
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('Auth Query with JWT:', { url: fullUrl, hasToken: true });
+    } else {
+      console.log('Auth Query without JWT:', { url: fullUrl, hasToken: false });
+    }
+    
+    const res = await fetch(fullUrl, {
+      credentials: "omit",
+      headers,
+    });
+
+    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      return null;
+    }
+
+    if (!res.ok) {
+      // For auth endpoints, treat 401 as null instead of error
+      if (res.status === 401 && unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      throw new Error(`${res.status}: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    return data;
+  };
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
@@ -83,9 +166,7 @@ export const getQueryFn: <T>(options: {
     const baseUrl = getApiBaseUrl();
     // Fix double slash issue by properly joining URL parts
     const path = queryKey.join("/").replace(/^\/+/, ""); // Remove leading slashes
-    // For Supabase Edge Functions, remove /api prefix
-    const cleanPath = path.startsWith('api/') ? path.substring(4) : path;
-    const fullUrl = baseUrl ? `${baseUrl}/${cleanPath}` : `/${path}`;
+    const fullUrl = baseUrl ? `${baseUrl}/${path}` : `/${path}`;
     
     // Get JWT token from localStorage
     const token = localStorage.getItem('authToken');
@@ -100,7 +181,7 @@ export const getQueryFn: <T>(options: {
     }
     
     const res = await fetch(fullUrl, {
-      credentials: "include",
+      credentials: "omit", // Temporarily disable credentials to allow wildcard CORS
       headers,
     });
 

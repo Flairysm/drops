@@ -48,21 +48,21 @@ app.get('/api/health', (req: Request, res: Response) => {
 try {
   await registerRoutes(app);
   console.log('✅ Routes registered successfully');
-} catch (error) {
+} catch (error: any) {
   console.error('❌ Failed to register routes:', error);
   // Add a simple test endpoint even if routes fail
   app.get('/api/test', (req: Request, res: Response) => {
     res.json({ 
       status: 'ok', 
       message: 'Basic API is working',
-      error: error.message 
+      error: error?.message || 'Unknown error'
     });
   });
   app.get('/api/*', (req: Request, res: Response) => {
     res.status(500).json({ 
       error: 'Server initialization failed',
       message: 'Routes could not be registered',
-      details: error.message
+      details: error?.message || 'Unknown error'
     });
   });
 }
