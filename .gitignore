@@ -60,3 +60,4 @@ setup-*.ts
 # Test files
 test-*.sql
 *-test.sql
+.vercel
