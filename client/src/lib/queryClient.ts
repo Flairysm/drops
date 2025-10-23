@@ -10,8 +10,8 @@ async function throwIfResNotOk(res: Response) {
 // Get the base URL for API calls
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
-    // In production, use Vercel serverless functions (same domain)
-    return '';
+    // In production, use Supabase Edge Functions
+    return 'https://orgjlvvrirnpszenxjha.supabase.co/functions/v1/pokemon-game';
   }
   // In development, use local backend on port 3000
   return 'http://localhost:3000';
