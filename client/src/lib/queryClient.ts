@@ -24,7 +24,9 @@ export async function apiRequest(
   options?: { timeout?: number }
 ): Promise<Response> {
   const baseUrl = getApiBaseUrl();
-  const fullUrl = baseUrl ? `${baseUrl}${url}` : url;
+  // For Supabase Edge Functions, remove /api prefix since the function handles both
+  const cleanUrl = url.startsWith('/api/') ? url.substring(4) : url;
+  const fullUrl = baseUrl ? `${baseUrl}${cleanUrl}` : url;
   
   // Get JWT token from localStorage
   const token = localStorage.getItem('authToken');
@@ -81,7 +83,9 @@ export const getQueryFn: <T>(options: {
     const baseUrl = getApiBaseUrl();
     // Fix double slash issue by properly joining URL parts
     const path = queryKey.join("/").replace(/^\/+/, ""); // Remove leading slashes
-    const fullUrl = baseUrl ? `${baseUrl}/${path}` : `/${path}`;
+    // For Supabase Edge Functions, remove /api prefix
+    const cleanPath = path.startsWith('api/') ? path.substring(4) : path;
+    const fullUrl = baseUrl ? `${baseUrl}/${cleanPath}` : `/${path}`;
     
     // Get JWT token from localStorage
     const token = localStorage.getItem('authToken');
