@@ -14,7 +14,7 @@ const app = express();
 // CORS configuration for production
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-app.vercel.app', 'https://your-custom-domain.com'] 
+    ? ['https://dropstcg.vercel.app', 'https://dropstcg-*.vercel.app'] 
     : true,
   credentials: true
 }));
@@ -37,23 +37,28 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    hasJwtSecret: !!process.env.JWT_SECRET
   });
 });
 
-// Register all API routes
-registerRoutes(app);
-
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  const clientPath = path.join(__dirname, '../client/dist');
-  app.use(express.static(clientPath));
-  
-  // Handle client-side routing
-  app.get('*', (req: Request, res: Response) => {
-    res.sendFile(path.join(clientPath, 'index.html'));
+// Register all API routes with error handling
+try {
+  await registerRoutes(app);
+  console.log('✅ Routes registered successfully');
+} catch (error) {
+  console.error('❌ Failed to register routes:', error);
+  app.get('/api/*', (req: Request, res: Response) => {
+    res.status(500).json({ 
+      error: 'Server initialization failed',
+      message: 'Routes could not be registered'
+    });
   });
 }
+
+// Note: Static file serving is handled by Vercel's static build
+// This server only handles API routes
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
