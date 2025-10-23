@@ -3,8 +3,8 @@ import session from 'express-session';
 import type { Express, RequestHandler } from 'express';
 import connectPg from 'connect-pg-simple';
 import jwt from 'jsonwebtoken';
-import { storage } from './storage';
-import { registrationSchema, loginSchema } from '@shared/schema';
+import { storage } from './storage.js';
+import { registrationSchema, loginSchema } from '../shared/schema.js';
 
 const SALT_ROUNDS = 12;
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week

@@ -40,7 +40,7 @@ import {
   type InsertUserAddress,
   type ShippingRequest,
   type InsertShippingRequest,
-} from "@shared/schema";
+} from "../shared/schema.js";
 import { db } from "./db.js";
 import { eq, and, desc, sql, inArray, gte } from "drizzle-orm";
 

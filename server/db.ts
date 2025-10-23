@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import * as schema from "@shared/schema";
+import * as schema from "../shared/schema.js";
 
 // For development, use a default database URL if not set
 const databaseUrl = process.env.DATABASE_URL || 'postgresql://localhost:5432/drops_dev';

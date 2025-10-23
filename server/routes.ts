@@ -26,7 +26,7 @@ import {
   raffleEntries,
   raffleWinners,
   insertShippingRequestSchema
-} from "@shared/schema";
+} from "../shared/schema.js";
 
 // Game result interface
 interface GameResult {
