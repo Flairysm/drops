@@ -141,10 +141,6 @@ export function FindPikachuGame() {
       setShowShuffleAnimation(true);
       setCardsReady(false);
       
-      toast({
-        title: "Game Started!",
-        description: `${FIND_PIKACHU_COST} credits deducted. Find the Pikachus!`,
-      });
       // Invalidate user credits query
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       

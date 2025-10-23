@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Package, BarChart3, Gift, Play, Sparkles, X, Coins } from "lucide-react";
+import { Package, BarChart3, Gift, Play, Sparkles, X, Coins, Target } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +42,7 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
     }
   }, [isOpen, pack?.id]);
 
-  const fetchPackDetails = async () => {
+const fetchPackDetails = async () => {
     setIsLoading(true);
     try {
       // Add cache-busting parameter to ensure fresh data
@@ -63,12 +63,13 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
     }
   };
 
+
   const handleOpenPack = async () => {
     if (!pack?.id) return;
     
     setIsOpening(true);
     try {
-      console.log('Opening Special pack:', pack.id);
+      // console.log('Opening Special pack:', pack.id);
       const response = await apiRequest('POST', `/api/special-packs/purchase/${pack.id}`);
       console.log('Response status:', response.status);
       const result = await response.json();
@@ -197,6 +198,9 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
               {pack.name}
             </span>
           </DialogTitle>
+          <DialogDescription className="text-gray-400 text-lg">
+            {pack.description || "A special pack containing various cards with different rarities."}
+          </DialogDescription>
           <div className="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full mt-3"></div>
         </DialogHeader>
 
@@ -327,10 +331,29 @@ export function SpecialPackPopup({ pack, isOpen, onClose, onOpenPack }: SpecialP
             <TabsContent value="stats" className="mt-6">
               <Card className="gaming-card bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Pack Statistics</h3>
-                  <div className="text-center text-gray-300">
-                    <p>Pack statistics are displayed above the description.</p>
-                    <p className="text-sm text-gray-400 mt-2">Check the Prize Pool tab to see available cards.</p>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Target className="w-5 h-5 mr-2 text-yellow-400" />
+                    Pack Odds
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { tier: 'SSS', odds: 0.005, color: 'text-red-400' },
+                      { tier: 'SS', odds: 0.015, color: 'text-orange-400' },
+                      { tier: 'S', odds: 0.05, color: 'text-yellow-400' },
+                      { tier: 'A', odds: 0.10, color: 'text-green-400' },
+                      { tier: 'B', odds: 0.25, color: 'text-blue-400' },
+                      { tier: 'C', odds: 0.58, color: 'text-purple-400' }
+                    ].map(({ tier, odds, color }) => {
+                      const percentage = (odds * 100).toFixed(1);
+                      return (
+                        <div key={tier} className="text-center p-3 bg-gray-800/50 rounded-lg">
+                          <div className={`text-lg font-bold ${color}`}>
+                            {percentage}%
+                          </div>
+                          <div className="text-sm text-gray-400">Tier {tier}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

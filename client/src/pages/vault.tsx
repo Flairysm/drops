@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
-import { Package, RefreshCw, Truck, Filter, Grid, List } from "lucide-react";
+import { Package, RefreshCw, Truck, Filter, Grid, List, Search } from "lucide-react";
 import type { UserCard } from "@shared/schema";
 import { motion } from "framer-motion";
 
@@ -26,6 +26,7 @@ export default function Vault() {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [filterTier, setFilterTier] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [allCards, setAllCards] = useState<UserCard[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreCards, setHasMoreCards] = useState(false);
@@ -426,14 +427,22 @@ export default function Vault() {
   };
 
   const filteredCards = condenseCards(
-    vaultCards?.filter(card => 
-      filterTier === "all" || card.cardTier === getTierMapping(filterTier)
-    ) || []
+    vaultCards?.filter(card => {
+      const matchesTier = filterTier === "all" || card.cardTier === getTierMapping(filterTier);
+      const matchesSearch = searchQuery === "" || 
+        card.cardName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.cardTier?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesTier && matchesSearch;
+    }) || []
   );
 
-  const originalFilteredCards = vaultCards?.filter(card => 
-    filterTier === "all" || card.cardTier === getTierMapping(filterTier)
-  ) || [];
+  const originalFilteredCards = vaultCards?.filter(card => {
+    const matchesTier = filterTier === "all" || card.cardTier === getTierMapping(filterTier);
+    const matchesSearch = searchQuery === "" || 
+      card.cardName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      card.cardTier?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTier && matchesSearch;
+  }) || [];
 
   const tierCounts = originalFilteredCards?.reduce((acc, card) => {
     // Database now uses direct tier codes (D, C, B, A, S, SS, SSS)
@@ -574,9 +583,7 @@ export default function Vault() {
               <div className="flex items-center justify-between gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#22D3EE]" data-testid="text-total-cards">
-                    {vaultCards?.filter(card => 
-                      filterTier === "all" || card.cardTier === getTierMapping(filterTier)
-                    ).reduce((sum, card) => sum + card.quantity, 0) || 0}
+                    {originalFilteredCards.reduce((sum, card) => sum + card.quantity, 0)}
                   </div>
                   <div className="text-sm text-[#9CA3AF]">Total Cards</div>
                 </div>
@@ -604,26 +611,47 @@ export default function Vault() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Filter className="w-4 h-4 text-[#9CA3AF]" />
-                  {tiers.map((tier) => (
-                    <Button
-                      key={tier.value}
-                      variant={filterTier === tier.value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFilterTier(tier.value)}
-                      className={filterTier === tier.value 
-                        ? "bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0" 
-                        : "bg-[#26263A]/50 border-[#26263A] text-[#E5E7EB] hover:bg-[#26263A]"
-                      }
-                      data-testid={`filter-${tier.value}`}
+              <div className="flex flex-col space-y-4">
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+                  <Input
+                    type="text"
+                    placeholder="Search cards by name or tier..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10 bg-[#26263A]/50 border-[#26263A] text-[#E5E7EB] placeholder-[#9CA3AF] focus:border-[#7C3AED] focus:ring-[#7C3AED]"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#9CA3AF] hover:text-[#E5E7EB] transition-colors"
                     >
-                      {tier.label} ({tier.count})
-                    </Button>
-                  ))}
+                      ✕
+                    </button>
+                  )}
                 </div>
+
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                  {/* Filters */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Filter className="w-4 h-4 text-[#9CA3AF]" />
+                    {tiers.map((tier) => (
+                      <Button
+                        key={tier.value}
+                        variant={filterTier === tier.value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFilterTier(tier.value)}
+                        className={filterTier === tier.value 
+                          ? "bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] text-white border-0" 
+                          : "bg-[#26263A]/50 border-[#26263A] text-[#E5E7EB] hover:bg-[#26263A]"
+                        }
+                        data-testid={`filter-${tier.value}`}
+                      >
+                        {tier.label} ({tier.count})
+                      </Button>
+                    ))}
+                  </div>
 
                 {/* View Mode & Actions */}
                 <div className="flex flex-wrap items-center gap-2">
@@ -683,6 +711,7 @@ export default function Vault() {
                     Ship Cards {selectedCards.length > 0 && `(${selectedCards.length})`}
                   </Button>
                 </div>
+                </div>
               </div>
             </motion.div>
 
@@ -706,12 +735,19 @@ export default function Vault() {
               >
                 <Package className="w-16 h-16 mx-auto mb-4 text-[#9CA3AF]" />
                 <h3 className="text-xl font-bold mb-2 text-[#E5E7EB]">
-                  {filterTier === "all" ? "No Cards Yet" : `No ${tiers.find(t => t.value === filterTier)?.label} Cards`}
+                  {searchQuery 
+                    ? "No Cards Found" 
+                    : filterTier === "all" 
+                      ? "No Cards Yet" 
+                      : `No ${tiers.find(t => t.value === filterTier)?.label} Cards`
+                  }
                 </h3>
                 <p className="text-[#9CA3AF] mb-6">
-                  {filterTier === "all" 
-                    ? "Start playing games to build your collection!" 
-                    : "Try a different filter or play more games to find these cards."
+                  {searchQuery 
+                    ? `No cards match "${searchQuery}". Try a different search term or clear the search.`
+                    : filterTier === "all" 
+                      ? "Start playing games to build your collection!" 
+                      : "Try a different filter or play more games to find these cards."
                   }
                 </p>
                 <Button 

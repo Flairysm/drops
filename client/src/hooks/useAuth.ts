@@ -24,8 +24,8 @@ export function useAuth() {
     queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
   };
 
-  // Debug logging
-  console.log('useAuth state:', { user, isLoading, error, isAuthenticated });
+  // Debug logging (commented out to reduce console spam)
+  // console.log('useAuth state:', { user, isLoading, error, isAuthenticated });
 
   return {
     user,

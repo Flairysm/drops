@@ -25,7 +25,7 @@ interface GameResult {
       color: "from-purple-500 to-pink-500", 
       bgColor: "bg-purple-500/20", 
       borderColor: "border-purple-500/50", 
-      icon: "Dice"
+      icon: "🔮"
     },
     { 
       id: "fire", 
@@ -33,7 +33,7 @@ interface GameResult {
       color: "from-red-500 to-orange-500", 
       bgColor: "bg-red-500/20", 
       borderColor: "border-red-500/50", 
-      icon: "Fire"
+      icon: "🔥"
     },
     { 
       id: "grass", 
@@ -49,7 +49,7 @@ interface GameResult {
       color: "from-blue-500 to-cyan-500", 
       bgColor: "bg-blue-500/20", 
       borderColor: "border-blue-500/50", 
-      icon: "Water"
+      icon: "💧"
     },
     { 
       id: "electric", 
@@ -227,10 +227,6 @@ export function PokemonDiceGame() {
             // Invalidate user data to refresh credits
             queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
             
-            toast({
-              title: "Dice Rolled!",
-              description: `You got ${reward.matches} matches and won a ${reward.tier} pack!`,
-            });
           }, 2000); // 2 second pause
         }
       }, 200); // Update every 200ms for smooth rolling
@@ -263,10 +259,6 @@ export function PokemonDiceGame() {
       return await response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Pack Assigned!",
-        description: "Your pack has been added to your collection!",
-      });
       setShowPackDialog(false);
     },
     onError: (error: any) => {

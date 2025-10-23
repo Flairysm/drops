@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Package, BarChart3, Gift, Play, Sparkles, X, Coins } from "lucide-react";
+import { Package, BarChart3, Gift, Play, Sparkles, X, Coins, TrendingUp, PieChart, Target, Clock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +21,9 @@ interface ClassicPackPopupProps {
 
 export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicPackPopupProps) {
   const [packData, setPackData] = useState<any>(null);
+  const [packStats, setPackStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [openedCards, setOpenedCards] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -39,6 +41,7 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
   useEffect(() => {
     if (isOpen && pack?.id) {
       fetchPackDetails();
+      fetchPackStatistics();
     }
   }, [isOpen, pack?.id]);
 
@@ -60,6 +63,25 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPackStatistics = async () => {
+    setIsLoadingStats(true);
+    try {
+      const response = await apiRequest('GET', `/api/classic-packs/${pack.id}/statistics`);
+      const data = await response.json();
+      console.log('Fetched classic pack statistics:', data);
+      setPackStats(data);
+    } catch (error) {
+      console.error('Error fetching classic pack statistics:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load pack statistics",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
@@ -197,6 +219,9 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
               {pack.name}
             </span>
           </DialogTitle>
+          <DialogDescription className="text-gray-400 text-lg">
+            {pack.description || "A classic pack containing various cards with different rarities."}
+          </DialogDescription>
           <div className="w-20 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full mt-3"></div>
         </DialogHeader>
 
@@ -324,10 +349,29 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
             <TabsContent value="stats" className="mt-6">
               <Card className="gaming-card bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Pack Statistics</h3>
-                  <div className="text-center text-gray-300">
-                    <p>Pack statistics are displayed above the description.</p>
-                    <p className="text-sm text-gray-400 mt-2">Check the Prize Pool tab to see available cards.</p>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <Target className="w-5 h-5 mr-2 text-yellow-400" />
+                    Pack Odds
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { tier: 'SSS', odds: 0.005, color: 'text-red-400' },
+                      { tier: 'SS', odds: 0.015, color: 'text-orange-400' },
+                      { tier: 'S', odds: 0.05, color: 'text-yellow-400' },
+                      { tier: 'A', odds: 0.10, color: 'text-green-400' },
+                      { tier: 'B', odds: 0.25, color: 'text-blue-400' },
+                      { tier: 'C', odds: 0.58, color: 'text-purple-400' }
+                    ].map(({ tier, odds, color }) => {
+                      const percentage = (odds * 100).toFixed(1);
+                      return (
+                        <div key={tier} className="text-center p-3 bg-gray-800/50 rounded-lg">
+                          <div className={`text-lg font-bold ${color}`}>
+                            {percentage}%
+                          </div>
+                          <div className="text-sm text-gray-400">Tier {tier}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

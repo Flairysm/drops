@@ -29,8 +29,7 @@ const PACK_REWARDS = [
   { matches: "0-1", tier: "pokeball", name: "Pokeball", color: "from-red-500 to-red-600", bgColor: "bg-red-500/10", borderColor: "border-red-500/30" },
   { matches: "2", tier: "greatball", name: "Greatball", color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30" },
   { matches: "3", tier: "ultraball", name: "Ultraball", color: "from-yellow-500 to-orange-500", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/30" },
-  { matches: "4", tier: "masterball", name: "Masterball", color: "from-purple-500 to-purple-600", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30" },
-  { matches: "5", tier: "luxuryball", name: "Luxury Ball", color: "from-pink-500 to-rose-500", bgColor: "bg-pink-500/10", borderColor: "border-pink-500/30" },
+  { matches: "4-5", tier: "masterball", name: "Masterball", color: "from-purple-500 to-purple-600", bgColor: "bg-purple-500/10", borderColor: "border-purple-500/30" },
 ];
 
 interface GameState {
@@ -97,10 +96,6 @@ export function EnergyMatchGame() {
     onSuccess: () => {
       // Credits deducted successfully, invalidate user data to refresh credits
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Game Started!",
-        description: `${ENERGY_MATCH_COST} credits deducted. Good luck!`,
-      });
     },
     onError: (error: any) => {
       toast({
@@ -127,13 +122,8 @@ export function EnergyMatchGame() {
       if (matches <= 1) rewardText = "Pokeball Pack";
       else if (matches === 2) rewardText = "Greatball Pack";
       else if (matches === 3) rewardText = "Ultraball Pack";
-      else if (matches === 4) rewardText = "Masterball Pack";
-      else if (matches === 5) rewardText = "Luxury Ball Pack";
+      else if (matches >= 4) rewardText = "Masterball Pack";
 
-      toast({
-        title: "Game Complete!",
-        description: `You matched ${matches} cards! You earned a ${rewardText}!`,
-      });
     },
     onError: (error: any) => {
       toast({

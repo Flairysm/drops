@@ -276,19 +276,49 @@ export default function Admin() {
   const handleUpdateCredits = async () => {
     if (selectedUser) {
       try {
-        const response = await apiRequest('POST', '/api/user/update-credits', {
-          credits: creditAmount.toString()
+        console.log("🔧 Frontend: Updating credits for user:", {
+          userId: selectedUser.id,
+          username: selectedUser.username,
+          currentCredits: selectedUser.credits,
+          newCredits: creditAmount,
+          creditAmountType: typeof creditAmount
+        });
+
+        const response = await apiRequest('PATCH', `/api/admin/users/${selectedUser.id}/credits`, {
+          credits: creditAmount
+        });
+        
+        console.log("🔧 Frontend: Response received:", {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText
         });
         
         if (response.ok) {
+          console.log("✅ Frontend: Credit update successful");
+          toast({
+            title: "Success",
+            description: `Updated credits for ${selectedUser.username} to ${creditAmount}`,
+          });
           setShowUserDialog(false);
           // Refresh the users list
           fetchUsers();
         } else {
-          console.error('Failed to update credits');
+          const errorData = await response.json();
+          console.log("❌ Frontend: Credit update failed:", errorData);
+          toast({
+            title: "Error",
+            description: errorData.message || "Failed to update credits",
+            variant: "destructive",
+          });
         }
       } catch (error) {
-        console.error('Error updating credits:', error);
+        console.error('❌ Frontend: Error updating credits:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update credits",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -617,7 +647,7 @@ export default function Admin() {
         });
 
         const updatedPack = await response.json();
-        console.log('✅ Special pack updated successfully:', updatedPack);
+        // console.log('✅ Special pack updated successfully:', updatedPack);
         
         setSpecialPools(prev => prev.map(pool => 
           pool.id === editingPool.id 
@@ -770,10 +800,25 @@ export default function Admin() {
     const apiEndpoint = editingContentPool.id.startsWith('cp-') ? 'classic-packs' : 'special-packs';
 
     try {
-      const response = await apiRequest('POST', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards`, {
-        cardId: card.id,
+      // Use the new card data format instead of cardId
+      const cardData = {
+        cardName: card.name || card.cardName,
+        cardImageUrl: card.imageUrl || card.cardImageUrl,
+        cardTier: card.tier || card.cardTier || 'D',
+        refundCredit: card.refundCredit || card.credits || 1,
         quantity: 1
-      });
+      };
+      
+      console.log('Adding card to content with data:', cardData);
+      console.log('Original card object:', card);
+      
+      // Validate required fields
+      if (!cardData.cardName || !cardData.cardImageUrl) {
+        alert('Card is missing required fields (name or image). Please check the card data.');
+        return;
+      }
+      
+      const response = await apiRequest('POST', `/api/admin/${apiEndpoint}/${editingContentPool.id}/cards`, cardData);
 
       if (response.ok) {
         // Refresh the editing pool data with cache-busting
@@ -1129,7 +1174,10 @@ export default function Admin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          cardId: card.id,
+          cardName: card.name || card.cardName,
+          cardImageUrl: card.imageUrl || card.cardImageUrl,
+          cardTier: card.tier || card.cardTier || 'D',
+          refundCredit: card.refundCredit || card.credits || 1,
           quantity: 1
         })
       });
@@ -1267,7 +1315,7 @@ export default function Admin() {
       const response = await apiRequest('GET', `/api/admin/special-packs?_t=${timestamp}`);
       if (response.ok) {
         const packs = await response.json();
-        console.log('✅ Special packs fetched:', packs);
+        // console.log('✅ Special packs fetched:', packs);
         setSpecialPools(packs);
     } else {
         console.error('❌ Failed to fetch special packs');
@@ -1738,25 +1786,42 @@ export default function Admin() {
         return;
       }
 
-      const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${editingMysteryCard.id}`, {
+      const updateData = {
         cardName: mysteryEditCardForm.name,
         cardImageUrl: mysteryEditCardForm.imageUrl,
         cardTier: mysteryEditCardForm.tier,
         refundCredit: parseInt(mysteryEditCardForm.refundCredit) || 0,
         quantity: parseInt(mysteryEditCardForm.quantity) || 1
+      };
+
+      console.log("🔧 Frontend: Updating mystery card:", {
+        packId: pokeballPack.id,
+        cardId: editingMysteryCard.id,
+        updateData,
+        originalCard: editingMysteryCard
+      });
+
+      const response = await apiRequest('PATCH', `/api/admin/mystery-packs/${pokeballPack.id}/cards/${editingMysteryCard.id}`, updateData);
+
+      console.log("🔧 Frontend: Update response:", {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText
       });
 
       if (response.ok) {
+        console.log("✅ Frontend: Card update successful");
         // Refresh mystery pack cards
         fetchMysteryPackCards();
         setShowMysteryEditCardDialog(false);
         alert('Card updated successfully!');
       } else {
         const errorData = await response.json();
+        console.log("❌ Frontend: Card update failed:", errorData);
         alert(`Failed to update card: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error: any) {
-      console.error('Error updating mystery pack card:', error);
+      console.error('❌ Frontend: Error updating mystery card:', error);
       alert('Failed to update card. Please try again.');
     }
   };
@@ -2510,11 +2575,7 @@ export default function Admin() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {(() => {
-                        console.log('Admin current raffles state:', raffles);
-                        console.log('Admin raffles length:', raffles.length);
-                        return raffles.length === 0;
-                      })() ? (
+                      {raffles.length === 0 ? (
                         <div className="text-center py-8 text-gray-400">
                           <Gift className="w-12 h-12 mx-auto mb-4 opacity-50" />
                           <p>No active raffles found</p>
@@ -2836,22 +2897,11 @@ export default function Admin() {
                 </div>
                 <Button 
                   onClick={() => {
-                    console.log('Special pack button clicked, current form state:', newPool);
+                    // console.log('Special pack button clicked, current form state:', newPool);
                     handleAddPool();
                   }}
                   className="mt-4"
-                  disabled={(() => {
-                    const isValid = !newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.totalCards.trim() || !newPool.description.trim();
-                    console.log('Special pack form validation:', {
-                      name: !!newPool.name.trim(),
-                      image: !!newPool.image.trim(),
-                      price: !!newPool.price.trim(),
-                      totalCards: !!newPool.totalCards.trim(),
-                      description: !!newPool.description.trim(),
-                      isValid: !isValid
-                    });
-                    return isValid;
-                  })()}
+                  disabled={!newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.totalCards.trim() || !newPool.description.trim()}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Pack
@@ -2943,21 +2993,11 @@ export default function Admin() {
                 </div>
                 <Button 
                   onClick={() => {
-                    console.log('Classic pack button clicked, current form state:', newPool);
+                    // console.log('Classic pack button clicked, current form state:', newPool);
                     handleAddClassicPool();
                   }}
                   className="mt-4"
-                  disabled={(() => {
-                    const isValid = !newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.description.trim();
-                    console.log('Classic pack form validation:', {
-                      name: !!newPool.name.trim(),
-                      image: !!newPool.image.trim(),
-                      price: !!newPool.price.trim(),
-                      description: !!newPool.description.trim(),
-                      isValid: !isValid
-                    });
-                    return isValid;
-                  })()}
+                  disabled={!newPool.name.trim() || !newPool.image.trim() || !newPool.price.trim() || !newPool.description.trim()}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Classic Pack

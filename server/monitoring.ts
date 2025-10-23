@@ -1,332 +1,338 @@
-import { log } from './vite';
+import { Request, Response, NextFunction } from 'express';
+import { isProduction } from './config/environment';
 
-// ============================================================================
-// MONITORING AND METRICS COLLECTION
-// ============================================================================
+// Log levels
+export enum LogLevel {
+  ERROR = 'ERROR',
+  WARN = 'WARN',
+  INFO = 'INFO',
+  DEBUG = 'DEBUG'
+}
 
-export interface Metrics {
-  timestamp: number;
-  endpoint: string;
-  method: string;
-  statusCode: number;
-  responseTime: number;
-  userAgent?: string;
-  ip?: string;
+// Structured logging interface
+interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  context?: Record<string, any>;
   userId?: string;
+  ip?: string;
+  userAgent?: string;
+  path?: string;
+  method?: string;
+  duration?: number;
+  error?: {
+    name: string;
+    message: string;
+    stack?: string;
+  };
 }
 
-export interface SystemMetrics {
-  timestamp: number;
-  memoryUsage: NodeJS.MemoryUsage;
-  uptime: number;
-  cpuUsage?: number;
-  activeConnections?: number;
+// Performance metrics
+interface PerformanceMetrics {
+  requestCount: number;
+  averageResponseTime: number;
+  errorRate: number;
+  slowRequests: number;
+  lastReset: Date;
 }
 
-export interface DatabaseMetrics {
-  timestamp: number;
-  queryCount: number;
-  averageQueryTime: number;
-  slowQueries: number;
-  connectionPoolSize: number;
-  activeConnections: number;
-}
-
-// ============================================================================
-// METRICS COLLECTOR
-// ============================================================================
-
-export class MetricsCollector {
-  private static instance: MetricsCollector;
-  private metrics: Metrics[] = [];
-  private systemMetrics: SystemMetrics[] = [];
-  private databaseMetrics: DatabaseMetrics[] = [];
-  private maxMetricsHistory = 1000; // Keep last 1000 entries
+class Logger {
+  private static instance: Logger;
+  private metrics: PerformanceMetrics;
 
   private constructor() {
-    // Start system metrics collection
-    this.startSystemMetricsCollection();
-  }
-
-  public static getInstance(): MetricsCollector {
-    if (!MetricsCollector.instance) {
-      MetricsCollector.instance = new MetricsCollector();
-    }
-    return MetricsCollector.instance;
-  }
-
-  // ============================================================================
-  // METRICS COLLECTION
-  // ============================================================================
-
-  recordRequest(metrics: Metrics): void {
-    this.metrics.push(metrics);
-    
-    // Keep only recent metrics
-    if (this.metrics.length > this.maxMetricsHistory) {
-      this.metrics = this.metrics.slice(-this.maxMetricsHistory);
-    }
-
-    // Log slow requests
-    if (metrics.responseTime > 1000) {
-      log(`🐌 Slow request: ${metrics.method} ${metrics.endpoint} - ${metrics.responseTime}ms`);
-    }
-
-    // Log error responses
-    if (metrics.statusCode >= 400) {
-      log(`❌ Error response: ${metrics.method} ${metrics.endpoint} - ${metrics.statusCode}`);
-    }
-  }
-
-  recordSystemMetrics(metrics: SystemMetrics): void {
-    this.systemMetrics.push(metrics);
-    
-    if (this.systemMetrics.length > this.maxMetricsHistory) {
-      this.systemMetrics = this.systemMetrics.slice(-this.maxMetricsHistory);
-    }
-  }
-
-  recordDatabaseMetrics(metrics: DatabaseMetrics): void {
-    this.databaseMetrics.push(metrics);
-    
-    if (this.databaseMetrics.length > this.maxMetricsHistory) {
-      this.databaseMetrics = this.databaseMetrics.slice(-this.maxMetricsHistory);
-    }
-  }
-
-  // ============================================================================
-  // METRICS RETRIEVAL
-  // ============================================================================
-
-  getRequestMetrics(timeWindowMinutes: number = 60): Metrics[] {
-    const cutoff = Date.now() - (timeWindowMinutes * 60 * 1000);
-    return this.metrics.filter(m => m.timestamp > cutoff);
-  }
-
-  getSystemMetrics(timeWindowMinutes: number = 60): SystemMetrics[] {
-    const cutoff = Date.now() - (timeWindowMinutes * 60 * 1000);
-    return this.systemMetrics.filter(m => m.timestamp > cutoff);
-  }
-
-  getDatabaseMetrics(timeWindowMinutes: number = 60): DatabaseMetrics[] {
-    const cutoff = Date.now() - (timeWindowMinutes * 60 * 1000);
-    return this.databaseMetrics.filter(m => m.timestamp > cutoff);
-  }
-
-  // ============================================================================
-  // ANALYTICS
-  // ============================================================================
-
-  getRequestAnalytics(timeWindowMinutes: number = 60): {
-    totalRequests: number;
-    averageResponseTime: number;
-    errorRate: number;
-    slowRequests: number;
-    topEndpoints: Array<{ endpoint: string; count: number; avgTime: number }>;
-  } {
-    const metrics = this.getRequestMetrics(timeWindowMinutes);
-    
-    if (metrics.length === 0) {
-      return {
-        totalRequests: 0,
-        averageResponseTime: 0,
-        errorRate: 0,
-        slowRequests: 0,
-        topEndpoints: []
-      };
-    }
-
-    const totalRequests = metrics.length;
-    const averageResponseTime = metrics.reduce((sum, m) => sum + m.responseTime, 0) / totalRequests;
-    const errorRate = (metrics.filter(m => m.statusCode >= 400).length / totalRequests) * 100;
-    const slowRequests = metrics.filter(m => m.responseTime > 1000).length;
-
-    // Group by endpoint
-    const endpointStats = new Map<string, { count: number; totalTime: number }>();
-    metrics.forEach(m => {
-      const existing = endpointStats.get(m.endpoint) || { count: 0, totalTime: 0 };
-      endpointStats.set(m.endpoint, {
-        count: existing.count + 1,
-        totalTime: existing.totalTime + m.responseTime
-      });
-    });
-
-    const topEndpoints = Array.from(endpointStats.entries())
-      .map(([endpoint, stats]) => ({
-        endpoint,
-        count: stats.count,
-        avgTime: stats.totalTime / stats.count
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-
-    return {
-      totalRequests,
-      averageResponseTime,
-      errorRate,
-      slowRequests,
-      topEndpoints
+    this.metrics = {
+      requestCount: 0,
+      averageResponseTime: 0,
+      errorRate: 0,
+      slowRequests: 0,
+      lastReset: new Date()
     };
   }
 
-  getSystemAnalytics(timeWindowMinutes: number = 60): {
-    averageMemoryUsage: number;
-    peakMemoryUsage: number;
-    uptime: number;
-    memoryTrend: 'increasing' | 'decreasing' | 'stable';
-  } {
-    const metrics = this.getSystemMetrics(timeWindowMinutes);
-    
-    if (metrics.length === 0) {
-      return {
-        averageMemoryUsage: 0,
-        peakMemoryUsage: 0,
-        uptime: 0,
-        memoryTrend: 'stable'
-      };
+  public static getInstance(): Logger {
+    if (!Logger.instance) {
+      Logger.instance = new Logger();
     }
-
-    const memoryUsages = metrics.map(m => m.memoryUsage.heapUsed);
-    const averageMemoryUsage = memoryUsages.reduce((sum, usage) => sum + usage, 0) / memoryUsages.length;
-    const peakMemoryUsage = Math.max(...memoryUsages);
-    const uptime = metrics[metrics.length - 1]?.uptime || 0;
-
-    // Determine memory trend
-    const firstHalf = memoryUsages.slice(0, Math.floor(memoryUsages.length / 2));
-    const secondHalf = memoryUsages.slice(Math.floor(memoryUsages.length / 2));
-    const firstAvg = firstHalf.reduce((sum, usage) => sum + usage, 0) / firstHalf.length;
-    const secondAvg = secondHalf.reduce((sum, usage) => sum + usage, 0) / secondHalf.length;
-    
-    let memoryTrend: 'increasing' | 'decreasing' | 'stable' = 'stable';
-    if (secondAvg > firstAvg * 1.1) memoryTrend = 'increasing';
-    else if (secondAvg < firstAvg * 0.9) memoryTrend = 'decreasing';
-
-    return {
-      averageMemoryUsage,
-      peakMemoryUsage,
-      uptime,
-      memoryTrend
-    };
+    return Logger.instance;
   }
 
-  // ============================================================================
-  // SYSTEM METRICS COLLECTION
-  // ============================================================================
+  private formatLog(entry: LogEntry): string {
+    const logData = {
+      ...entry,
+      timestamp: new Date().toISOString(),
+      environment: isProduction ? 'production' : 'development'
+    };
 
-  private startSystemMetricsCollection(): void {
-    // Collect system metrics every 30 seconds
-    setInterval(() => {
-      const memoryUsage = process.memoryUsage();
-      const uptime = process.uptime();
+    return JSON.stringify(logData);
+  }
+
+  public log(level: LogLevel, message: string, context?: Record<string, any>): void {
+    const entry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      context
+    };
+
+    const formattedLog = this.formatLog(entry);
+    
+    // Console output with colors for development
+    if (!isProduction) {
+      const colors = {
+        [LogLevel.ERROR]: '\x1b[31m', // Red
+        [LogLevel.WARN]: '\x1b[33m',  // Yellow
+        [LogLevel.INFO]: '\x1b[36m',  // Cyan
+        [LogLevel.DEBUG]: '\x1b[90m'  // Gray
+      };
+      console.log(`${colors[level]}${level}\x1b[0m: ${message}`, context || '');
+    } else {
+      // In production, log to console (can be redirected to file or external service)
+      console.log(formattedLog);
+    }
+  }
+
+  public error(message: string, error?: Error, context?: Record<string, any>): void {
+    const entry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level: LogLevel.ERROR,
+      message,
+      context,
+      error: error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : undefined
+    };
+
+    const formattedLog = this.formatLog(entry);
+    console.error(formattedLog);
+  }
+
+  public warn(message: string, context?: Record<string, any>): void {
+    this.log(LogLevel.WARN, message, context);
+  }
+
+  public info(message: string, context?: Record<string, any>): void {
+    this.log(LogLevel.INFO, message, context);
+  }
+
+  public debug(message: string, context?: Record<string, any>): void {
+    if (!isProduction) {
+      this.log(LogLevel.DEBUG, message, context);
+    }
+  }
+
+  // Performance tracking
+  public trackRequest(req: Request, res: Response, next: NextFunction): void {
+    const startTime = Date.now();
+    const originalSend = res.send;
+
+    res.send = function(data) {
+      const duration = Date.now() - startTime;
+      const logger = Logger.getInstance();
       
-      this.recordSystemMetrics({
-        timestamp: Date.now(),
-        memoryUsage,
-        uptime
-      });
+      // Update metrics
+      logger.updateMetrics(duration, res.statusCode >= 400);
+      
+      // Log request details
+      const logContext = {
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        duration,
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        userId: (req as any).user?.id
+      };
 
-      // Log memory warnings
-      const memoryUsageMB = memoryUsage.heapUsed / 1024 / 1024;
-      if (memoryUsageMB > 500) {
-        log(`⚠️  High memory usage: ${memoryUsageMB.toFixed(2)}MB`);
+      if (res.statusCode >= 400) {
+        logger.error(`Request failed: ${req.method} ${req.path}`, undefined, logContext);
+      } else if (duration > 2000) {
+        logger.warn(`Slow request: ${req.method} ${req.path}`, logContext);
+      } else {
+        logger.debug(`Request completed: ${req.method} ${req.path}`, logContext);
       }
-    }, 30000);
+
+      return originalSend.call(this, data);
+    };
+
+    next();
   }
 
-  // ============================================================================
-  // ALERTS
-  // ============================================================================
-
-  checkAlerts(): string[] {
-    const alerts: string[] = [];
-    const analytics = this.getRequestAnalytics(5); // Last 5 minutes
-    const systemAnalytics = this.getSystemAnalytics(5);
-
-    // High error rate
-    if (analytics.errorRate > 10) {
-      alerts.push(`High error rate: ${analytics.errorRate.toFixed(2)}%`);
+  private updateMetrics(duration: number, isError: boolean): void {
+    this.metrics.requestCount++;
+    
+    // Update average response time
+    this.metrics.averageResponseTime = 
+      (this.metrics.averageResponseTime * (this.metrics.requestCount - 1) + duration) / 
+      this.metrics.requestCount;
+    
+    // Track slow requests (>2 seconds)
+    if (duration > 2000) {
+      this.metrics.slowRequests++;
     }
-
-    // High response time
-    if (analytics.averageResponseTime > 2000) {
-      alerts.push(`High average response time: ${analytics.averageResponseTime.toFixed(2)}ms`);
+    
+    // Update error rate
+    if (isError) {
+      this.metrics.errorRate = (this.metrics.errorRate * (this.metrics.requestCount - 1) + 1) / 
+                               this.metrics.requestCount;
+    } else {
+      this.metrics.errorRate = (this.metrics.errorRate * (this.metrics.requestCount - 1)) / 
+                               this.metrics.requestCount;
     }
+  }
 
-    // High memory usage
-    const memoryUsageMB = systemAnalytics.averageMemoryUsage / 1024 / 1024;
-    if (memoryUsageMB > 1000) {
-      alerts.push(`High memory usage: ${memoryUsageMB.toFixed(2)}MB`);
-    }
+  public getMetrics(): PerformanceMetrics {
+    return { ...this.metrics };
+  }
 
-    // Memory trend
-    if (systemAnalytics.memoryTrend === 'increasing') {
-      alerts.push('Memory usage is increasing');
-    }
+  public resetMetrics(): void {
+    this.metrics = {
+      requestCount: 0,
+      averageResponseTime: 0,
+      errorRate: 0,
+      slowRequests: 0,
+      lastReset: new Date()
+    };
+  }
 
-    return alerts;
+  // Security event logging
+  public logSecurityEvent(event: string, details: Record<string, any>): void {
+    this.warn(`Security Event: ${event}`, {
+      ...details,
+      timestamp: new Date().toISOString(),
+      type: 'security'
+    });
+  }
+
+  // Business event logging
+  public logBusinessEvent(event: string, details: Record<string, any>): void {
+    this.info(`Business Event: ${event}`, {
+      ...details,
+      timestamp: new Date().toISOString(),
+      type: 'business'
+    });
   }
 }
 
 // Export singleton instance
-export const metricsCollector = MetricsCollector.getInstance();
+export const logger = Logger.getInstance();
 
-// ============================================================================
-// MIDDLEWARE
-// ============================================================================
+// Middleware for request tracking
+export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+  logger.trackRequest(req, res, next);
+};
 
-export function metricsMiddleware(req: any, res: any, next: any) {
-  const start = Date.now();
-  const originalSend = res.send;
+// Health check system
+export const healthCheck = {
+  database: async (): Promise<{ status: 'healthy' | 'unhealthy'; details?: string }> => {
+    try {
+      // This would be implemented with your actual database connection
+      // For now, returning healthy
+      return { status: 'healthy' };
+    } catch (error) {
+      logger.error('Database health check failed', error as Error);
+      return { status: 'unhealthy', details: (error as Error).message };
+    }
+  },
 
-  res.send = function(data: any) {
-    const responseTime = Date.now() - start;
+  redis: async (): Promise<{ status: 'healthy' | 'unhealthy'; details?: string }> => {
+    try {
+      // Implement Redis health check if you're using Redis
+      return { status: 'healthy' };
+    } catch (error) {
+      logger.error('Redis health check failed', error as Error);
+      return { status: 'unhealthy', details: (error as Error).message };
+    }
+  },
+
+  overall: async (): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    checks: Record<string, any>;
+    metrics: PerformanceMetrics;
+  }> => {
+    const checks = {
+      database: await healthCheck.database(),
+      redis: await healthCheck.redis(),
+    };
+
+    const metrics = logger.getMetrics();
     
-    metricsCollector.recordRequest({
-      timestamp: Date.now(),
-      endpoint: req.path,
-      method: req.method,
-      statusCode: res.statusCode,
-      responseTime,
-      userAgent: req.get('User-Agent'),
-      ip: req.ip,
-      userId: req.user?.id
+    // Determine overall status
+    let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+    
+    if (Object.values(checks).some(check => check.status === 'unhealthy')) {
+      status = 'unhealthy';
+    } else if (metrics.errorRate > 0.05 || metrics.slowRequests > 10) { // 5% error rate or >10 slow requests
+      status = 'degraded';
+    }
+
+    return {
+      status,
+      checks,
+      metrics
+    };
+  }
+};
+
+// Error tracking and alerting
+export const errorTracker = {
+  trackError: (error: Error, context?: Record<string, any>) => {
+    logger.error('Application Error', error, context);
+    
+    // In production, you might want to send this to an external service like Sentry
+    if (isProduction) {
+      // Example: Sentry.captureException(error, { extra: context });
+    }
+  },
+
+  trackUnhandledRejection: (reason: any, promise: Promise<any>) => {
+    logger.error('Unhandled Promise Rejection', new Error(reason), {
+      promise: promise.toString(),
+      reason
     });
+  },
 
-    return originalSend.call(this, data);
-  };
+  trackUncaughtException: (error: Error) => {
+    logger.error('Uncaught Exception', error);
+    // In production, you might want to gracefully shutdown
+    if (isProduction) {
+      process.exit(1);
+    }
+  }
+};
 
-  next();
+// Initialize error tracking
+if (isProduction) {
+  process.on('unhandledRejection', errorTracker.trackUnhandledRejection);
+  process.on('uncaughtException', errorTracker.trackUncaughtException);
 }
 
-// ============================================================================
-// HEALTH CHECK WITH METRICS
-// ============================================================================
+// Performance monitoring
+export const performanceMonitor = {
+  startTimer: (label: string) => {
+    const start = process.hrtime.bigint();
+    return {
+      end: () => {
+        const end = process.hrtime.bigint();
+        const duration = Number(end - start) / 1000000; // Convert to milliseconds
+        logger.debug(`Performance: ${label}`, { duration });
+        return duration;
+      }
+    };
+  },
 
-export function getHealthStatus(): {
-  status: 'healthy' | 'warning' | 'critical';
-  metrics: any;
-  alerts: string[];
-} {
-  const alerts = metricsCollector.checkAlerts();
-  const requestAnalytics = metricsCollector.getRequestAnalytics(5);
-  const systemAnalytics = metricsCollector.getSystemAnalytics(5);
-
-  let status: 'healthy' | 'warning' | 'critical' = 'healthy';
-  
-  if (alerts.length > 0) {
-    status = 'warning';
+  measureAsync: async <T>(label: string, fn: () => Promise<T>): Promise<T> => {
+    const timer = performanceMonitor.startTimer(label);
+    try {
+      const result = await fn();
+      timer.end();
+      return result;
+    } catch (error) {
+      timer.end();
+      throw error;
+    }
   }
-  
-  if (requestAnalytics.errorRate > 20 || systemAnalytics.averageMemoryUsage / 1024 / 1024 > 2000) {
-    status = 'critical';
-  }
-
-  return {
-    status,
-    metrics: {
-      requests: requestAnalytics,
-      system: systemAnalytics
-    },
-    alerts
-  };
-}
+};

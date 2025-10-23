@@ -1139,7 +1139,8 @@ export default function Play() {
                       </Badge>
                     </div>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                    {/* Simplified Summary */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-3">
                       <div>
                         <p className="text-gray-400 text-sm">Prize</p>
                         <p className="text-white font-medium">
@@ -1151,10 +1152,6 @@ export default function Play() {
                         <p className="text-white font-medium">{raffle.totalSlots}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Price per Slot</p>
-                        <p className="text-white font-medium">{raffle.pricePerSlot} credits</p>
-                      </div>
-                      <div>
                         <p className="text-gray-400 text-sm">Winners</p>
                         <p className="text-white font-medium">{raffle.maxWinners}</p>
                       </div>
@@ -1163,46 +1160,6 @@ export default function Play() {
                     <div className="text-sm text-gray-400 mb-3">
                       Drawn: {raffle.drawnAt ? new Date(raffle.drawnAt).toLocaleString() : 'N/A'}
                     </div>
-
-                    {/* Winners Section */}
-                    {raffle.winners && raffle.winners.length > 0 && (
-                      <div className="border-t border-gray-600 pt-3">
-                        <h4 className="text-white font-semibold mb-2 flex items-center">
-                          <Trophy className="w-4 h-4 text-yellow-400 mr-2" />
-                          Winners
-                        </h4>
-                        <div className="space-y-2">
-                          {raffle.winners.map((winner, index) => (
-                            <div key={winner.id} className="flex items-center justify-between bg-gray-700/50 rounded-lg p-3">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-black font-bold text-sm">
-                                  {winner.prizePosition === 1 ? '1st' : winner.prizePosition === 2 ? '2nd' : winner.prizePosition === 3 ? '3rd' : `${winner.prizePosition}th`}
-                                </div>
-                                {winner.prizeImageUrl && (
-                                  <img
-                                    src={winner.prizeImageUrl}
-                                    alt={winner.prizeName}
-                                    className="w-12 h-16 object-cover rounded border border-gray-600"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                    }}
-                                  />
-                                )}
-                                <div>
-                                  <p className="text-white font-medium">{winner.winnerUsername}</p>
-                                  <p className="text-gray-400 text-sm">Won: {winner.prizeName}</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-gray-400 text-xs">
-                                  {new Date(winner.wonAt).toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     {/* View Details Button for Completed Raffles */}
                     <div className="mt-4">
@@ -1214,7 +1171,7 @@ export default function Play() {
                         className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                       >
                         <Eye className="w-4 h-4 mr-1" />
-                        View Full Details
+                        View Details
                       </Button>
                     </div>
                   </div>

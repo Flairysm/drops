@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Navigation } from "@/components/Navigation";
@@ -7,7 +7,7 @@ import { PackOpeningAnimation } from "@/components/PackOpeningAnimation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package2, Sparkles, Gift } from "lucide-react";
+import { Package2, Sparkles, Gift, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 
@@ -48,9 +48,40 @@ interface OpenPackResult {
 export default function MyPacks() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Prize pool state
+  const [showPrizePool, setShowPrizePool] = useState(true);
+  const [mysteryPackData, setMysteryPackData] = useState<any>(null);
+  const [isLoadingPrizePool, setIsLoadingPrizePool] = useState(false);
   const [openingPack, setOpeningPack] = useState<string | null>(null);
   const [showAnimation, setShowAnimation] = useState(false);
   const [packOpenData, setPackOpenData] = useState<OpenPackResult | null>(null);
+
+  // Fetch prize pool data
+  const fetchPrizePoolData = async () => {
+    setIsLoadingPrizePool(true);
+    try {
+      // Fetch mystery pack data (pokeball pack)
+      const mysteryResponse = await apiRequest('GET', '/api/admin/mystery-packs/mystery-pokeball');
+      if (mysteryResponse.ok) {
+        setMysteryPackData(await mysteryResponse.json());
+      }
+    } catch (error) {
+      console.error('Error fetching prize pool data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load prize pool data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPrizePool(false);
+    }
+  };
+
+  // Auto-fetch prize pool data when component mounts
+  useEffect(() => {
+    fetchPrizePoolData();
+  }, []);
 
   // Fetch user's packs
   const { data: userPacks, isLoading } = useQuery({
@@ -516,6 +547,105 @@ export default function MyPacks() {
 
         </div>
 
+        {/* Prize Pool Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-12"
+        >
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center">
+              <div className="w-1 h-8 bg-gradient-to-b from-[#f59e0b] via-[#f97316] to-[#ef4444] rounded-full mr-4 shadow-[0_0_8px_rgba(245,158,11,0.3)]"></div>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Mystery Pack Prize Pool</h2>
+            </div>
+            <Button
+              onClick={() => setShowPrizePool(!showPrizePool)}
+              className="bg-gradient-to-r from-[#22D3EE] to-[#0EA5E9] hover:from-[#0EA5E9] hover:to-[#0284C7] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {showPrizePool ? 'Hide' : 'Show'} Prize Pool
+            </Button>
+          </div>
+
+          {showPrizePool && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-10"
+            >
+              {/* Mystery Pack Prize Pool */}
+              {mysteryPackData && (
+                <Card className="gaming-card bg-gradient-to-br from-gray-900 to-gray-800 border-gray-600 shadow-2xl">
+                  <CardContent className="p-8">
+                    {isLoadingPrizePool ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#22D3EE]"></div>
+                      </div>
+                    ) : mysteryPackData?.cards?.length > 0 ? (
+                      <div className="space-y-8">
+                        {['SSS', 'SS', 'S', 'A', 'B', 'C'].map((tier) => {
+                          const tierCards = mysteryPackData.cards.filter((card: any) => 
+                            (card.cardTier || 'D') === tier
+                          );
+                          
+                          if (tierCards.length === 0) return null;
+                          
+                          return (
+                            <div key={tier} className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <Badge 
+                                  className={`text-sm font-bold px-3 py-1 ${
+                                    tier === 'SSS' ? 'bg-red-500' :
+                                    tier === 'SS' ? 'bg-purple-500' :
+                                    tier === 'S' ? 'bg-blue-500' :
+                                    tier === 'A' ? 'bg-green-500' :
+                                    tier === 'B' ? 'bg-yellow-500' :
+                                    tier === 'C' ? 'bg-blue-500' :
+                                    'bg-gray-500'
+                                  } text-white`}
+                                >
+                                  {tier} Tier
+                                </Badge>
+                                <span className="text-gray-300 text-sm">
+                                  {tierCards.length} card{tierCards.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
+                                {tierCards.map((card: any, index: number) => (
+                                  <motion.div
+                                    key={`${card.id}-${index}`}
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="relative group"
+                                  >
+                                    <img 
+                                      src={card.cardImageUrl} 
+                                      alt={card.cardName}
+                                      className="w-full aspect-[3/4] rounded-lg object-cover border-2 border-gray-600 hover:border-[#22D3EE]/50 transition-colors duration-200"
+                                    />
+                                  </motion.div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-300">
+                        No cards available in this pack.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          )}
+        </motion.div>
+
         {/* Mystery Pack Odds Section */}
         <motion.div 
           className="max-w-6xl mx-auto mt-8 mb-6"
@@ -714,6 +844,7 @@ export default function MyPacks() {
             </motion.div>
           </div>
         </motion.div>
+
       </div>
       {/* Navigation Footer */}
       <NavigationFooter />

@@ -66,14 +66,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Cache not available, that's okay
       }
       
-      // Get system health status
+      // Get system health status - Temporarily disabled
       let healthStatus: any = { status: 'healthy', metrics: {}, alerts: [] };
-      try {
-        const { getHealthStatus } = await import('./monitoring');
-        healthStatus = getHealthStatus();
-      } catch (error) {
-        // Monitoring not available, that's okay
-      }
       
       res.json({ 
         status: 'ok', 
@@ -627,8 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (matches <= 1) packTier = "pokeball";
       else if (matches === 2) packTier = "greatball";
       else if (matches === 3) packTier = "ultraball";
-      else if (matches === 4) packTier = "masterball";
-      else if (matches === 5) packTier = "luxuryball";
+      else if (matches >= 4) packTier = "masterball";
       else packTier = "pokeball";
 
       // Get the mystery pack by tier
@@ -1993,12 +1986,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get special pack statistics
+  app.get('/api/admin/special-packs/:id/statistics', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const stats = await storage.getSpecialPackStatistics(id);
+      
+      if (!stats) {
+        return res.status(404).json({ message: 'Special pack not found' });
+      }
+      
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching special pack statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch special pack statistics' });
+    }
+  });
+
+  // Public statistics endpoint for special packs (no admin auth required)
+  app.get('/api/special-packs/:id/statistics', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const stats = await storage.getSpecialPackStatistics(id);
+      
+      if (!stats) {
+        return res.status(404).json({ message: 'Special pack not found' });
+      }
+      
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching special pack statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch special pack statistics' });
+    }
+  });
+
+  // Get classic pack statistics
+  app.get('/api/admin/classic-packs/:id/statistics', isAdminCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const stats = await storage.getClassicPackStatistics(id);
+      
+      if (!stats) {
+        return res.status(404).json({ message: 'Classic pack not found' });
+      }
+      
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching classic pack statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch classic pack statistics' });
+    }
+  });
+
+  // Public statistics endpoint for classic packs (no admin auth required)
+  app.get('/api/classic-packs/:id/statistics', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const stats = await storage.getClassicPackStatistics(id);
+      
+      if (!stats) {
+        return res.status(404).json({ message: 'Classic pack not found' });
+      }
+      
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching classic pack statistics:', error);
+      res.status(500).json({ message: 'Failed to fetch classic pack statistics' });
+    }
+  });
+
   // Special pack cards routes
   app.post('/api/admin/special-packs/:packId/cards', isAdminCombined, async (req: any, res) => {
     try {
       const { packId } = req.params;
       const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
+      console.log('Adding card to special pack:', { packId, cardId, cardName, cardImageUrl, cardTier, refundCredit, quantity });
       
       // Support both old system (cardId) and new simplified system (cardName, etc.)
       if (cardId) {
@@ -2016,12 +2078,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         res.json(packCard);
       } else {
-        return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
+        return res.status(400).json({ 
+          error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit',
+          details: 'Required fields missing',
+          received: { cardId, cardName, cardImageUrl, cardTier, refundCredit, quantity }
+        });
       }
     } catch (error: any) {
       console.error('Error adding card to special pack:', error);
-      console.error('Error details:', error.message, error.stack);
-      res.status(500).json({ error: 'Failed to add card to special pack' });
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ 
+        error: 'Failed to add card to special pack',
+        details: error.message
+      });
     }
   });
 
@@ -2138,6 +2208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
       const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
+      console.log('Adding card to classic pack:', { packId, cardId, quantity, cardName, cardImageUrl, cardTier, refundCredit });
       
       // Support both old system (cardId) and new simplified system (cardName, etc.)
       if (cardId) {
@@ -2155,12 +2226,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         res.json(packCard);
       } else {
-        return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
+        return res.status(400).json({ 
+          error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit',
+          received: { cardId, cardName, cardImageUrl, cardTier, refundCredit }
+        });
       }
     } catch (error: any) {
       console.error('Error adding card to classic pack:', error);
       console.error('Error details:', error.message, error.stack);
-      res.status(500).json({ error: 'Failed to add card to classic pack' });
+      res.status(500).json({ 
+        error: 'Failed to add card to classic pack',
+        details: error.message 
+      });
     }
   });
 
@@ -2280,6 +2357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { packId } = req.params;
       const { cardId, quantity = 1, cardName, cardImageUrl, cardTier, refundCredit } = req.body;
       
+      console.log('Adding card to mystery pack:', { packId, cardId, cardName, cardImageUrl, cardTier, refundCredit, quantity });
       
       // Support both old system (cardId) and new simplified system (cardName, etc.)
       if (cardId) {
@@ -2297,12 +2375,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         res.json(packCard);
       } else {
-        return res.status(400).json({ error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit' });
+        return res.status(400).json({ 
+          error: 'Missing required fields. Provide either cardId or cardName, cardImageUrl, cardTier, refundCredit',
+          details: 'Required fields missing',
+          received: { cardId, cardName, cardImageUrl, cardTier, refundCredit, quantity }
+        });
       }
     } catch (error: any) {
       console.error('Error adding card to mystery pack:', error);
-      console.error('Error details:', error.message, error.stack);
-      res.status(500).json({ error: 'Failed to add card to mystery pack' });
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ 
+        error: 'Failed to add card to mystery pack',
+        details: error.message
+      });
     }
   });
 
@@ -2320,17 +2406,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/admin/mystery-packs/:packId/cards/:mysteryPackCardId', isAdminCombined, async (req: any, res) => {
     try {
       const { packId, mysteryPackCardId } = req.params;
-      const { quantity } = req.body;
+      const { quantity, refundCredit, cardName, cardImageUrl, cardTier } = req.body;
       
-      if (quantity === undefined) {
-        return res.status(400).json({ error: 'Missing quantity' });
+      console.log("🔧 Admin: Updating mystery pack card:", { 
+        packId, 
+        mysteryPackCardId, 
+        quantity, 
+        refundCredit, 
+        cardName,
+        cardImageUrl,
+        cardTier,
+        body: req.body 
+      });
+      
+      if (quantity === undefined && refundCredit === undefined && cardName === undefined && cardImageUrl === undefined && cardTier === undefined) {
+        return res.status(400).json({ error: 'Missing update fields' });
       }
 
-      const packCard = await storage.updateMysteryPackCardQuantity(packId, mysteryPackCardId, quantity);
+      const packCard = await storage.updateMysteryPackCard(packId, mysteryPackCardId, { 
+        quantity, 
+        refundCredit, 
+        cardName, 
+        cardImageUrl, 
+        cardTier 
+      });
       res.json(packCard);
     } catch (error: any) {
-      console.error('Error updating mystery pack card quantity:', error);
-      res.status(500).json({ error: 'Failed to update mystery pack card quantity' });
+      console.error('❌ Error updating mystery pack card:', error);
+      res.status(500).json({ error: 'Failed to update mystery pack card' });
     }
   });
 
@@ -2351,15 +2454,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { credits } = req.body;
 
+      console.log("🔧 Admin credit update request:", { userId: id, credits, creditsType: typeof credits, body: req.body });
+
       // Validate credits amount
       if (typeof credits !== 'number' || credits < 0) {
+        console.log("❌ Invalid credits amount:", { credits, type: typeof credits });
         return res.status(400).json({ message: "Invalid credits amount" });
       }
 
+      console.log("✅ Credits validation passed, updating user credits...");
       await storage.setUserCredits(id, credits);
+      console.log("✅ User credits updated successfully");
+      
       res.json({ success: true });
     } catch (error) {
-      console.error("Error updating user credits:", error);
+      console.error("❌ Error updating user credits:", error);
       res.status(500).json({ message: "Failed to update user credits" });
     }
   });

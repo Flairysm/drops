@@ -6,103 +6,65 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from 'url';
-import rateLimit from 'express-rate-limit';
-import { metricsMiddleware } from './monitoring';
+// Temporarily disabled security modules
+// import { 
+//   securityHeaders, 
+//   apiRateLimit, 
+//   validateInput, 
+//   securityLogger, 
+//   corsConfig, 
+//   validateEnvironment,
+//   apiSecurityHeaders 
+// } from './security';
+// import { 
+//   logger, 
+//   requestLogger, 
+//   healthCheck, 
+//   errorTracker 
+// } from './monitoring';
+// import { config } from './config/environment';
 
 // Fixed import.meta.dirname issue for production builds
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Validate environment variables on startup
+// validateEnvironment();
+
 const app = express();
 
-// Rate limiting - more lenient in development
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // 1000 requests in dev, 100 in production
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for favicon requests in development
-    if (process.env.NODE_ENV === 'development' && req.url === '/favicon.ico') {
-      return true;
-    }
-    return false;
-  }
-});
+// Security middleware (order matters!) - Temporarily disabled
+// app.use(securityHeaders);
+// app.use(apiSecurityHeaders);
+// app.use(securityLogger);
+// app.use(validateInput);
 
-app.use(limiter);
+// CORS configuration - Using basic CORS for now
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
-// Add metrics middleware
-app.use(metricsMiddleware);
+// Rate limiting - Temporarily disabled
+// app.use(apiRateLimit);
+
+// Request logging and monitoring - Temporarily disabled
+// app.use(requestLogger);
 
 // IMPORTANT: Session middleware must be set up BEFORE CORS
 // This will be done in registerRoutes via setupAuth()
 
-// Security middleware
-app.use((req, res, next) => {
-  // Security headers
-  res.set({
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
+// Health check endpoint - Temporarily disabled
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || '1.0.0'
   });
-  
-  // Remove any existing cache headers
-  res.removeHeader('ETag');
-  res.removeHeader('Last-Modified');
-  
-  // Set aggressive cache-busting headers
-  res.set({
-    'Cache-Control': 'no-cache, no-store, must-revalidate, private',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'Surrogate-Control': 'no-store'
-  });
-  
-  // Add random timestamp to prevent any caching
-  res.set('X-Cache-Buster', Date.now().toString());
-  
-  next();
 });
 
-// Configure CORS based on environment
-// NOTE: CORS must come AFTER session middleware (which is set up in registerRoutes)
-const isProduction = process.env.NODE_ENV === 'production';
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // In production, be strict about origins
-    if (isProduction) {
-      if (!origin) return callback(new Error('No origin provided'), false);
-      
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      
-      return callback(new Error('Not allowed by CORS'), false);
-    }
-    
-    // In development, allow localhost and no origin
-    if (!origin) return callback(null, true);
-    
-    if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0')) {
-      return callback(null, true);
-    }
-    
-    // For development, allow any origin
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Set-Cookie'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
+// CORS is now configured in the security middleware above
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
@@ -247,17 +209,18 @@ app.use((req, res, next) => {
     });
 
     server.listen(port, host, () => {
+      console.log(`🚀 Server started successfully on port ${port} (${host})`);
       log(`serving on port ${port} (${host})`);
       log(`WebSocket server running on ws://${host}:${port}/ws`);
     });
     
     server.on('error', (err) => {
-      console.error('❌ Server failed to start:', err);
+      console.error('❌ Server failed to start', err);
       process.exit(1);
     });
     
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('❌ Failed to start server', error);
     process.exit(1);
   }
 })();

@@ -42,7 +42,7 @@ import {
   type InsertShippingRequest,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, gte } from "drizzle-orm";
 
 // ============================================================================
 // TYPES
@@ -80,7 +80,13 @@ export class DatabaseStorage {
   }
 
   async setUserCredits(userId: string, credits: number): Promise<void> {
-    await db.update(users).set({ credits: credits.toString() }).where(eq(users.id, userId));
+    console.log("💾 Storage: Setting user credits:", { userId, credits, creditsType: typeof credits });
+    const result = await db.update(users).set({ credits: credits.toString() }).where(eq(users.id, userId));
+    console.log("💾 Storage: Update result:", result);
+    
+    // Verify the update
+    const updatedUser = await this.getUser(userId);
+    console.log("💾 Storage: User after update:", { userId, credits: updatedUser?.credits });
   }
 
   async deductUserCredits(userId: string, amount: string): Promise<boolean> {
@@ -424,7 +430,7 @@ export class DatabaseStorage {
         if (card.id.startsWith('grouped-Common-Cards-D')) {
           totalRefund += parseInt(card.refundCredit.toString()) * (card.quantity || 1);
         } else {
-          totalRefund += parseInt(card.refundCredit.toString());
+        totalRefund += parseInt(card.refundCredit.toString());
         }
       }
 
@@ -706,6 +712,11 @@ export class DatabaseStorage {
   }
 
   async addCardToClassicPack(packId: string, cardId: string, quantity: number): Promise<any> {
+    // Validate cardId is not null or empty
+    if (!cardId || cardId.trim() === '') {
+      throw new Error('Card ID cannot be null or empty');
+    }
+
     const result = await db
       .insert(classicPrize)
       .values({
@@ -722,14 +733,19 @@ export class DatabaseStorage {
   }
 
   async addCardToClassicPackSimplified(packId: string, cardData: any): Promise<any> {
+    // Validate required fields
+    if (!cardData.cardName || !cardData.cardImageUrl || !cardData.cardTier) {
+      throw new Error('Missing required fields: cardName, cardImageUrl, and cardTier are required');
+    }
+
     const result = await db
       .insert(classicPrize)
       .values({
         id: `cpc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         packId,
-        cardName: cardData.name,
-        cardImageUrl: cardData.imageUrl,
-        cardTier: cardData.tier,
+        cardName: cardData.cardName,
+        cardImageUrl: cardData.cardImageUrl,
+        cardTier: cardData.cardTier,
         refundCredit: cardData.refundCredit || 1,
         quantity: cardData.quantity || 1,
       })
@@ -803,9 +819,254 @@ export class DatabaseStorage {
     };
   }
 
+  async getSpecialPackStatistics(id: string): Promise<any> {
+    const pack = await db.select().from(specialPack).where(eq(specialPack.id, id)).limit(1);
+    if (!pack[0]) return null;
+    
+    const cards = await db
+      .select()
+      .from(specialPrize)
+      .where(eq(specialPrize.packId, id));
+    
+    // Get pack opening statistics
+    const openedCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userPacks)
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true)
+      ));
+    
+    // Get recent pack openings (last 10)
+    const recentOpenings = await db
+      .select({
+        id: userPacks.id,
+        userId: userPacks.userId,
+        openedAt: userPacks.openedAt,
+        username: users.username
+      })
+      .from(userPacks)
+      .leftJoin(users, eq(userPacks.userId, users.id))
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true)
+      ))
+      .orderBy(desc(userPacks.openedAt))
+      .limit(10);
+    
+    // Get cards pulled from this pack (from user_cards table)
+    const cardsPulled = await db
+      .select({
+        cardName: userCards.cardName,
+        cardTier: userCards.cardTier,
+        quantity: userCards.quantity,
+        createdAt: userCards.createdAt
+      })
+      .from(userCards)
+      .where(and(
+        eq(userCards.packSource, id),
+        eq(userCards.isRefunded, false)
+      ));
+    
+    // Calculate tier distribution
+    const tierDistribution = cardsPulled.reduce((acc: any, card) => {
+      const tier = card.cardTier || 'D';
+      acc[tier] = (acc[tier] || 0) + (card.quantity || 1);
+      return acc;
+    }, {});
+    
+    // Calculate total revenue from this pack
+    const totalRevenue = (openedCount[0]?.count || 0) * parseFloat(pack[0].price || '0');
+    
+    // Get daily opening statistics (last 7 days)
+    const dailyStats = await db
+      .select({
+        date: sql<string>`DATE(${userPacks.openedAt})`,
+        count: sql<number>`count(*)`
+      })
+      .from(userPacks)
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true),
+        gte(userPacks.openedAt, sql`NOW() - INTERVAL '7 days'`)
+      ))
+      .groupBy(sql`DATE(${userPacks.openedAt})`)
+      .orderBy(sql`DATE(${userPacks.openedAt})`);
+    
+    const totalCards = pack[0].totalCards || 8;
+    const openedPacks = openedCount[0]?.count || 0;
+    const availableCards = Math.max(0, totalCards - openedPacks);
+    
+    // Special pack odds (updated to match classic pack odds)
+    const odds = {
+      D: 0.0,    // 0% D (not used for hit card)
+      C: 0.58,   // 58% C (1-580)
+      B: 0.25,   // 25% B (581-830)
+      A: 0.10,   // 10% A (831-930)
+      S: 0.05,   // 5% S (931-980)
+      SS: 0.015, // 1.5% SS (981-995)
+      SSS: 0.005 // 0.5% SSS (996-1000)
+    };
+    
+    return {
+      packInfo: {
+        id: pack[0].id,
+        name: pack[0].name,
+        price: pack[0].price,
+        totalCards,
+        openedPacks,
+        availableCards,
+        createdAt: pack[0].createdAt
+      },
+      statistics: {
+        totalOpened: openedPacks,
+        totalRevenue,
+        averagePerDay: dailyStats.length > 0 ? (openedPacks / 7).toFixed(1) : '0',
+        lastOpened: recentOpenings[0]?.openedAt || null
+      },
+      tierDistribution,
+      recentOpenings: recentOpenings.map(opening => ({
+        id: opening.id,
+        username: opening.username || 'Unknown',
+        openedAt: opening.openedAt
+      })),
+      dailyStats: dailyStats.map(stat => ({
+        date: stat.date,
+        count: stat.count
+      })),
+      odds,
+      cardPool: cards.map(card => ({
+        name: card.cardName,
+        tier: card.cardTier,
+        quantity: card.quantity,
+        imageUrl: card.cardImageUrl,
+        refundCredit: card.refundCredit
+      }))
+    };
+  }
+
   async createSpecialPack(packData: InsertSpecialPack): Promise<SpecialPack> {
     const result = await db.insert(specialPack).values(packData).returning();
     return result[0];
+  }
+
+  async getClassicPackStatistics(id: string): Promise<any> {
+    const pack = await db.select().from(classicPack).where(eq(classicPack.id, id)).limit(1);
+    if (!pack[0]) return null;
+    
+    const cards = await db
+      .select()
+      .from(classicPrize)
+      .where(eq(classicPrize.packId, id));
+    
+    // Get pack opening statistics
+    const openedCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(userPacks)
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true)
+      ));
+    
+    // Get recent pack openings (last 10)
+    const recentOpenings = await db
+      .select({
+        id: userPacks.id,
+        userId: userPacks.userId,
+        openedAt: userPacks.openedAt,
+        username: users.username
+      })
+      .from(userPacks)
+      .leftJoin(users, eq(userPacks.userId, users.id))
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true)
+      ))
+      .orderBy(desc(userPacks.openedAt))
+      .limit(10);
+    
+    // Get cards pulled from this pack (from user_cards table)
+    const cardsPulled = await db
+      .select({
+        cardName: userCards.cardName,
+        cardTier: userCards.cardTier,
+        quantity: userCards.quantity,
+        createdAt: userCards.createdAt
+      })
+      .from(userCards)
+      .where(and(
+        eq(userCards.packSource, id),
+        eq(userCards.isRefunded, false)
+      ));
+    
+    // Calculate tier distribution
+    const tierDistribution = cardsPulled.reduce((acc: any, card) => {
+      const tier = card.cardTier || 'D';
+      acc[tier] = (acc[tier] || 0) + (card.quantity || 1);
+      return acc;
+    }, {});
+    
+    // Calculate total revenue from this pack
+    const totalRevenue = (openedCount[0]?.count || 0) * parseFloat(pack[0].price || '0');
+    
+    // Get daily opening statistics (last 7 days)
+    const dailyStats = await db
+      .select({
+        date: sql<string>`DATE(${userPacks.openedAt})`,
+        count: sql<number>`count(*)`
+      })
+      .from(userPacks)
+      .where(and(
+        eq(userPacks.packId, id),
+        eq(userPacks.isOpened, true),
+        gte(userPacks.openedAt, sql`NOW() - INTERVAL '7 days'`)
+      ))
+      .groupBy(sql`DATE(${userPacks.openedAt})`)
+      .orderBy(sql`DATE(${userPacks.openedAt})`);
+    
+    // Classic pack odds (same as pokeball)
+    const odds = {
+      D: 0.0,    // 0% D (not used for hit card)
+      C: 0.848,  // 84.8% C (1-848)
+      B: 0.06,   // 6% B (849-908)
+      A: 0.045,  // 4.5% A (909-953)
+      S: 0.035,  // 3.5% S (954-988)
+      SS: 0.01,  // 1% SS (989-998)
+      SSS: 0.002 // 0.2% SSS (999-1000)
+    };
+    
+    return {
+      packInfo: {
+        id: pack[0].id,
+        name: pack[0].name,
+        price: pack[0].price,
+        createdAt: pack[0].createdAt
+      },
+      statistics: {
+        totalOpened: openedCount[0]?.count || 0,
+        totalRevenue,
+        averagePerDay: dailyStats.length > 0 ? ((openedCount[0]?.count || 0) / 7).toFixed(1) : '0',
+        lastOpened: recentOpenings[0]?.openedAt || null
+      },
+      tierDistribution,
+      recentOpenings: recentOpenings.map(opening => ({
+        id: opening.id,
+        username: opening.username || 'Unknown',
+        openedAt: opening.openedAt
+      })),
+      dailyStats: dailyStats.map(stat => ({
+        date: stat.date,
+        count: stat.count
+      })),
+      odds,
+      cardPool: cards.map(card => ({
+        name: card.cardName,
+        tier: card.cardTier,
+        quantity: card.quantity,
+        imageUrl: card.cardImageUrl,
+        refundCredit: card.refundCredit
+      }))
+    };
   }
 
   async updateSpecialPack(id: string, packData: Partial<InsertSpecialPack>): Promise<SpecialPack> {
@@ -834,14 +1095,19 @@ export class DatabaseStorage {
   }
 
   async addCardToSpecialPackSimplified(packId: string, cardData: any): Promise<any> {
+    // Validate required fields
+    if (!cardData.cardName || !cardData.cardImageUrl || !cardData.cardTier) {
+      throw new Error('Missing required fields: cardName, cardImageUrl, and cardTier are required');
+    }
+
     const result = await db
       .insert(specialPrize)
       .values({
         id: `spc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         packId,
-        cardName: cardData.name,
-        cardImageUrl: cardData.imageUrl,
-        cardTier: cardData.tier,
+        cardName: cardData.cardName,
+        cardImageUrl: cardData.cardImageUrl,
+        cardTier: cardData.cardTier,
         refundCredit: cardData.refundCredit || 1,
         quantity: cardData.quantity || 1,
       })
@@ -927,14 +1193,19 @@ export class DatabaseStorage {
   }
 
   async addCardToMysteryPackSimplified(packId: string, cardData: any): Promise<any> {
+    // Validate required fields
+    if (!cardData.cardName || !cardData.cardImageUrl || !cardData.cardTier) {
+      throw new Error('Missing required fields: cardName, cardImageUrl, and cardTier are required');
+    }
+
     const result = await db
       .insert(mysteryPrize)
       .values({
         id: `mpc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         packId,
-        cardName: cardData.name,
-        cardImageUrl: cardData.imageUrl,
-        cardTier: cardData.tier,
+        cardName: cardData.cardName,
+        cardImageUrl: cardData.cardImageUrl,
+        cardTier: cardData.cardTier,
         refundCredit: cardData.refundCredit || 1,
         quantity: cardData.quantity || 1,
       })
@@ -954,6 +1225,44 @@ export class DatabaseStorage {
       .set({ quantity })
       .where(and(eq(mysteryPrize.packId, packId), eq(mysteryPrize.id, cardId)))
       .returning();
+    return result[0];
+  }
+
+  async updateMysteryPackCard(packId: string, cardId: string, updates: { 
+    quantity?: number, 
+    refundCredit?: number, 
+    cardName?: string, 
+    cardImageUrl?: string, 
+    cardTier?: string 
+  }): Promise<any> {
+    console.log("💾 Storage: Updating mystery pack card:", { packId, cardId, updates });
+    
+    const updateData: any = {};
+    if (updates.quantity !== undefined) {
+      updateData.quantity = updates.quantity;
+    }
+    if (updates.refundCredit !== undefined) {
+      updateData.refundCredit = updates.refundCredit;
+    }
+    if (updates.cardName !== undefined) {
+      updateData.cardName = updates.cardName;
+    }
+    if (updates.cardImageUrl !== undefined) {
+      updateData.cardImageUrl = updates.cardImageUrl;
+    }
+    if (updates.cardTier !== undefined) {
+      updateData.cardTier = updates.cardTier;
+    }
+    
+    console.log("💾 Storage: Update data:", updateData);
+    
+    const result = await db
+      .update(mysteryPrize)
+      .set(updateData)
+      .where(and(eq(mysteryPrize.packId, packId), eq(mysteryPrize.id, cardId)))
+      .returning();
+    
+    console.log("💾 Storage: Update result:", result);
     return result[0];
   }
 
@@ -1087,12 +1396,12 @@ export class DatabaseStorage {
       const packCardsWithDetails = packCards
         .filter(pc => pc.cardTier?.trim() !== 'D') // Exclude D-tier cards (fixed assets)
         .map(pc => ({
-          name: pc.cardName,
-          tier: pc.cardTier,
-          quantity: pc.quantity,
-          imageUrl: pc.cardImageUrl,
-          refundCredit: pc.refundCredit
-        }));
+        name: pc.cardName,
+        tier: pc.cardTier,
+        quantity: pc.quantity,
+        imageUrl: pc.cardImageUrl,
+        refundCredit: pc.refundCredit
+      }));
       
       // Use fixed D-tier card (unlimited asset - no inventory management needed)
       const fixedCommonCard = {
@@ -1400,7 +1709,7 @@ export class DatabaseStorage {
     return await db.transaction(async (tx) => {
       // Get all cards from the classic pack's prize pool
       const packCards = await tx
-        .select()
+          .select()
         .from(classicPrize)
         .where(eq(classicPrize.packId, classicPack.id));
       
@@ -1431,16 +1740,16 @@ export class DatabaseStorage {
       };
       console.log("🎲 Using fixed D-tier card (unlimited asset):", fixedCommonCard.name);
       
-      // Use pokeball custom odds (same as mystery pack pokeball)
-      console.log(`🎲 Using custom pokeball odds for classic pack (1-1000 system) - Base Odds`);
+      // Use updated classic pack odds
+      console.log(`🎲 Using updated classic pack odds (1-1000 system) - New Odds`);
       const hitCardOdds = {
         D: 0.0,    // 0% D (not used for hit card)
-        C: 0.848,  // 84.8% C (1-848)
-        B: 0.06,   // 6% B (849-908)
-        A: 0.045,  // 4.5% A (909-953)
-        S: 0.035,  // 3.5% S (954-988)
-        SS: 0.01,  // 1% SS (989-998)
-        SSS: 0.002 // 0.2% SSS (999-1000)
+        C: 0.58,   // 58% C (1-580)
+        B: 0.25,   // 25% B (581-830)
+        A: 0.10,   // 10% A (831-930)
+        S: 0.05,   // 5% S (931-980)
+        SS: 0.015, // 1.5% SS (981-995)
+        SSS: 0.005 // 0.5% SSS (996-1000)
       };
       console.log(`🎲 Classic pack pokeball custom odds:`, hitCardOdds);
       
@@ -1554,7 +1863,7 @@ export class DatabaseStorage {
           eq(classicPrize.packId, classicPack.id),
           eq(classicPrize.cardName, selectedHitCard.name)
         ));
-
+      
       // Add cards to user's collection
       for (const card of selectedCards) {
         await tx.insert(userCards).values({
@@ -1571,7 +1880,7 @@ export class DatabaseStorage {
           cardSource: 'classic'
         });
       }
-
+      
       return {
         success: true,
         packCards: selectedCards,
@@ -1622,12 +1931,12 @@ export class DatabaseStorage {
       console.log(`🎲 Using custom pokeball odds for special pack (1-1000 system) - Base Odds`);
       const hitCardOdds = {
         D: 0.0,    // 0% D (not used for hit card)
-        C: 0.848,  // 84.8% C (1-848)
-        B: 0.06,   // 6% B (849-908)
-        A: 0.045,  // 4.5% A (909-953)
-        S: 0.035,  // 3.5% S (954-988)
-        SS: 0.01,  // 1% SS (989-998)
-        SSS: 0.002 // 0.2% SSS (999-1000)
+        C: 0.58,   // 58% C (1-580)
+        B: 0.25,   // 25% B (581-830)
+        A: 0.10,   // 10% A (831-930)
+        S: 0.05,   // 5% S (931-980)
+        SS: 0.015, // 1.5% SS (981-995)
+        SSS: 0.005 // 0.5% SSS (996-1000)
       };
       console.log(`🎲 Special pack pokeball custom odds:`, hitCardOdds);
       
@@ -1734,23 +2043,23 @@ export class DatabaseStorage {
       // Note: Common cards (D tier) are unlimited and don't need inventory deduction
 
       // Deduct 1 hit card
-      await tx
-        .update(specialPrize)
-        .set({ quantity: sql`${specialPrize.quantity} - 1` })
-        .where(and(
-          eq(specialPrize.packId, specialPack.id),
+        await tx
+          .update(specialPrize)
+          .set({ quantity: sql`${specialPrize.quantity} - 1` })
+          .where(and(
+            eq(specialPrize.packId, specialPack.id),
           eq(specialPrize.cardName, selectedHitCard.name)
-        ));
-
+          ));
+      
       // Add cards to user's collection
       for (const card of selectedCards) {
         await tx.insert(userCards).values({
           id: `uc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          userId,
-          cardName: card.name,
+            userId,
+            cardName: card.name,
           cardImageUrl: card.imageUrl,
-          cardTier: card.tier,
-          refundCredit: parseInt(card.marketValue),
+            cardTier: card.tier,
+            refundCredit: parseInt(card.marketValue),
           quantity: 1,
           isRefunded: false,
           isShipped: false,
@@ -1758,7 +2067,7 @@ export class DatabaseStorage {
           cardSource: 'special'
         });
       }
-
+      
       return {
         success: true,
         packCards: selectedCards,
