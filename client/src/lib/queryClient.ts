@@ -10,8 +10,8 @@ async function throwIfResNotOk(res: Response) {
 // Get the base URL for API calls
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
-    // In production, use Railway backend
-    return 'https://drops-backend-production-b145.up.railway.app';
+    // In production, use Vercel serverless functions (same domain)
+    return '';
   }
   // In development, use local backend on port 3000
   return 'http://localhost:3000';
@@ -24,7 +24,7 @@ export async function apiRequest(
   options?: { timeout?: number }
 ): Promise<Response> {
   const baseUrl = getApiBaseUrl();
-  const fullUrl = baseUrl + url;
+  const fullUrl = baseUrl ? `${baseUrl}${url}` : url;
   
   // Get JWT token from localStorage
   const token = localStorage.getItem('authToken');
@@ -81,7 +81,7 @@ export const getQueryFn: <T>(options: {
     const baseUrl = getApiBaseUrl();
     // Fix double slash issue by properly joining URL parts
     const path = queryKey.join("/").replace(/^\/+/, ""); // Remove leading slashes
-    const fullUrl = `${baseUrl}/${path}`;
+    const fullUrl = baseUrl ? `${baseUrl}/${path}` : `/${path}`;
     
     // Get JWT token from localStorage
     const token = localStorage.getItem('authToken');
