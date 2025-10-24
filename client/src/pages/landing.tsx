@@ -178,7 +178,7 @@ const Landing: React.FC = () => {
               ease: "easeInOut" 
             }}
           >
-            Sign up now for 30 free credits
+            Sign up now for 300 free credits
           </motion.p>
         </motion.div>
 

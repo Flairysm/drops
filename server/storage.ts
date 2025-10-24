@@ -2373,7 +2373,7 @@ export class DatabaseStorage {
     });
   }
 
-  async getUserShippingRequests(userId: string): Promise<(ShippingRequest & { address: UserAddress })[]> {
+  async getUserShippingRequests(userId: string): Promise<(ShippingRequest & { address: UserAddress | null })[]> {
     console.log('🔍 Storage: Getting shipping requests for user:', userId);
     
     // First, get the shipping requests with minimal data
@@ -2399,8 +2399,8 @@ export class DatabaseStorage {
       return [];
     }
     
-    // Get unique address IDs
-    const addressIds = [...new Set(requests.map(req => req.addressId))];
+    // Get unique address IDs (filter out null values)
+    const addressIds = [...new Set(requests.map(req => req.addressId).filter(id => id !== null))];
     
     // Fetch addresses separately
     const addresses = await db.select()
@@ -2413,7 +2413,7 @@ export class DatabaseStorage {
     // Combine requests with addresses
     const result = requests.map(request => ({
       ...request,
-      address: addressMap.get(request.addressId)!
+      address: request.addressId ? addressMap.get(request.addressId) || null : null
     }));
     
     console.log('📦 Storage: Found shipping requests:', result.length, 'requests');

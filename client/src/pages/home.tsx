@@ -11,7 +11,7 @@ import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2, Star, Crown
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import type { User } from "@shared/schema";
+import type { User } from "../../../shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
