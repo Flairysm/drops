@@ -1840,7 +1840,7 @@ export default function Admin() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
-          <p className="text-muted-foreground">Please log in to access the admin panel.</p>
+          <p className="text-gray-400">Please log in to access the admin panel.</p>
         </div>
       </div>
     );
@@ -1851,19 +1851,19 @@ export default function Admin() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground">You don't have permission to access the admin panel.</p>
+          <p className="text-gray-400">You don't have permission to access the admin panel.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center gap-4 mb-8">
-            <h1 className="text-3xl font-bold font-gaming">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold font-gaming text-white">Admin Dashboard</h1>
             <Button 
               onClick={refreshAllPackData}
               variant="outline" 
@@ -1877,7 +1877,7 @@ export default function Admin() {
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-muted/50">
+              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-gray-800/50">
                 <TabsTrigger 
                   value="overview" 
                   data-testid="tab-overview"
@@ -1885,7 +1885,7 @@ export default function Admin() {
                   title="Overview"
                 >
                   <TrendingUp className="w-5 h-5" />
-                  <span className="text-xs">Overview</span>
+                  <span className="text-xs text-white">Overview</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="users" 
@@ -1894,7 +1894,7 @@ export default function Admin() {
                   title="Users"
                 >
                   <Users className="w-5 h-5" />
-                  <span className="text-xs">Users</span>
+                  <span className="text-xs text-white">Users</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="manage" 
@@ -1903,7 +1903,7 @@ export default function Admin() {
                   title="Manage Packs"
                 >
                   <Package className="w-5 h-5" />
-                  <span className="text-xs">Manage</span>
+                  <span className="text-xs text-white">Manage</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="raffles" 
@@ -1912,7 +1912,7 @@ export default function Admin() {
                   title="Raffles"
                 >
                   <Gift className="w-5 h-5" />
-                  <span className="text-xs">Raffles</span>
+                  <span className="text-xs text-white">Raffles</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1922,14 +1922,14 @@ export default function Admin() {
               <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium text-white">Total Users</CardTitle>
+                    <Users className="h-4 w-4 text-gray-400" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-white">
                       {isLoadingStats ? '...' : (adminStats?.totalUsers || 0)}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       Registered users
                     </p>
                   </CardContent>
@@ -1937,14 +1937,14 @@ export default function Admin() {
 
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-gray-400" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">
+                    <div className="text-3xl font-bold text-white">
                       RM {isLoadingStats ? '...' : (adminStats?.totalRevenue || '0.00')}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       All-time revenue
                     </p>
                   </CardContent>
@@ -1952,13 +1952,13 @@ export default function Admin() {
 
                 <Card className="gaming-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Top Spenders</CardTitle>
-                    <Trophy className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium text-white">Top Spenders</CardTitle>
+                    <Trophy className="h-4 w-4 text-gray-400" />
                   </CardHeader>
                   <CardContent>
                     {isLoadingStats ? (
                       <div className="text-center py-4">
-                        <div className="text-muted-foreground">Loading...</div>
+                        <div className="text-gray-400">Loading...</div>
                       </div>
                     ) : adminStats?.topSpenders?.length > 0 ? (
                       <div className="space-y-2">
@@ -1972,7 +1972,7 @@ export default function Admin() {
                               }`}>
                                 {index + 1}
                               </div>
-                              <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+                              <span className="text-sm text-gray-400 truncate max-w-[120px]">
                                 {spender.username}
                               </span>
                             </div>
@@ -1982,14 +1982,14 @@ export default function Admin() {
                           </div>
                         ))}
                         {adminStats.topSpenders.length > 3 && (
-                          <div className="text-xs text-muted-foreground text-center pt-1">
+                          <div className="text-xs text-gray-400 text-center pt-1">
                             +{adminStats.topSpenders.length - 3} more
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className="text-center py-4">
-                        <div className="text-muted-foreground">No purchases yet</div>
+                        <div className="text-gray-400">No purchases yet</div>
                       </div>
                     )}
                   </CardContent>
@@ -2005,15 +2005,15 @@ export default function Admin() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Active Raffles</span>
+                        <span className="text-sm text-gray-400">Active Raffles</span>
                         <span className="font-semibold">{raffles.filter(r => r.status === 'active').length}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Completed Raffles</span>
+                        <span className="text-sm text-gray-400">Completed Raffles</span>
                         <span className="font-semibold">{raffles.filter(r => r.status === 'completed').length}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Total Raffles</span>
+                        <span className="text-sm text-gray-400">Total Raffles</span>
                         <span className="font-semibold">{raffles.length}</span>
                       </div>
                     </div>
@@ -2064,7 +2064,7 @@ export default function Admin() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium">Maintenance Mode</h4>
-                          <p className="text-sm text-muted-foreground">Temporarily disable user access</p>
+                          <p className="text-sm text-gray-400">Temporarily disable user access</p>
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium">
@@ -2112,22 +2112,22 @@ export default function Admin() {
                 <CardContent>
                     {isLoadingUsers ? (
                       <div className="text-center py-8">
-                        <div className="text-muted-foreground">Loading users...</div>
+                        <div className="text-gray-400">Loading users...</div>
                       </div>
                     ) : (
                     <div className="space-y-4">
                     {users.map((user) => (
-                        <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
+                        <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-600">
                           <div className="flex items-center space-x-4">
                             <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
                               <Users className="w-5 h-5 text-primary" />
                             </div>
                             <div>
                               <div className="font-semibold">{user.email || user.username}</div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-sm text-gray-400">
                                 Credits: {user.credits} • Spent: RM {user.totalSpent || '0.00'}
                               </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-gray-400">
                               Joined: {new Date(user.createdAt).toLocaleDateString()}
                               </div>
                             </div>
@@ -2191,9 +2191,9 @@ export default function Admin() {
 
                           {classicPools.length === 0 ? (
                             <div className="text-center py-8">
-                              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                             <h3 className="text-lg font-medium mb-2">No classic packs created</h3>
-                              <p className="text-muted-foreground">
+                              <p className="text-gray-400">
                               Click "Add" to create your first classic pack
                               </p>
                             </div>
@@ -2217,8 +2217,8 @@ export default function Admin() {
                                       />
                                       <div className="flex-1 min-w-0">
                                         <h4 className="font-medium text-lg mb-1">{pool.name}</h4>
-                                        <p className="text-sm text-muted-foreground mb-2">{pool.description}</p>
-                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                                        <p className="text-sm text-gray-400 mb-2">{pool.description}</p>
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-400">
                                           <div>Price: ${pool.price}</div>
                                         <div>Total Cards: {pool.totalPacks || pool.totalCards || 0}</div>
                                           <div>Cards Added: {pool.cards?.length || 0}</div>
@@ -2295,9 +2295,9 @@ export default function Admin() {
 
                         {specialPools.length === 0 ? (
                           <div className="text-center py-8">
-                            <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                             <h3 className="text-lg font-medium mb-2">No special packs created</h3>
-                            <p className="text-muted-foreground">
+                            <p className="text-gray-400">
                               Click "Add" to create your first special pack
                             </p>
                                   </div>
@@ -2321,8 +2321,8 @@ export default function Admin() {
                                     />
                                     <div className="flex-1 min-w-0">
                                       <h4 className="font-medium text-lg mb-1">{pool.name}</h4>
-                                      <p className="text-sm text-muted-foreground mb-2">{pool.description}</p>
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                                      <p className="text-sm text-gray-400 mb-2">{pool.description}</p>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-400">
                                         <div>Price: ${pool.price}</div>
                                         <div>Cards Added: {pool.cards?.length || 0}</div>
                                     </div>
@@ -2396,9 +2396,9 @@ export default function Admin() {
                         <CardContent>
                           {mysteryPackCards.length === 0 ? (
                             <div className="text-center py-8">
-                              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                               <h3 className="text-lg font-medium mb-2">No cards in mystery pack prize pool</h3>
-                              <p className="text-muted-foreground mb-4">
+                              <p className="text-gray-400 mb-4">
                                 Add cards from inventory to build your mystery pack prize pool
                               </p>
                               <Button 
@@ -2750,7 +2750,7 @@ export default function Admin() {
                 <div className="space-y-2">
                   <Label htmlFor="credits">Edit Credits</Label>
                 <div className="space-y-2">
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-gray-400">
                       Current Credits: <span className="font-semibold">{selectedUser?.credits}</span>
                         </div>
                     <div className="flex space-x-2">
@@ -2767,7 +2767,7 @@ export default function Admin() {
                         Update
                       </Button>
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-gray-400">
                       Change: {creditAmount - (selectedUser?.credits || 0)} credits
               </div>
                       </div>
@@ -2794,9 +2794,9 @@ export default function Admin() {
               
               <div className="space-y-4">
                     <div className="text-center py-8">
-                  <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">Transaction History</h3>
-                  <p className="text-muted-foreground">
+                  <p className="text-gray-400">
                     Transaction data will be loaded here.
                   </p>
                   </div>
@@ -3140,7 +3140,7 @@ export default function Admin() {
                       Add Card
                     </Button>
                   </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-gray-400">
                     Add new cards to this pack with all required information including name, image, tier, refund credit, and quantity.
                   </p>
                           </div>
@@ -3165,7 +3165,7 @@ export default function Admin() {
                     <div className="flex items-center gap-2">
                       <Filter className="w-4 h-4 text-gray-400" />
                       <select
-                        className="flex h-10 w-40 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-10 w-40 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm ring-offset-gray-800 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         value={editPrizeTierFilter}
                         onChange={(e) => setEditPrizeTierFilter(e.target.value)}
                       >
@@ -3193,14 +3193,14 @@ export default function Admin() {
                     )}
                   </div>
                   {editingContentPool.cards.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No prize cards in this pack yet.</p>
+                    <p className="text-gray-400 text-center py-8">No prize cards in this pack yet.</p>
                   ) : (() => {
                     const filteredCards = filterCardsForEditPrize(editingContentPool.cards);
                     return filteredCards.length === 0 ? (
                       <div className="text-center py-8">
-                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium mb-2">No cards match your search</h3>
-                        <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+                        <p className="text-gray-400">Try adjusting your search or filter criteria</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto">
@@ -3213,9 +3213,9 @@ export default function Admin() {
                           />
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{card.name}</p>
-                            <p className="text-xs text-muted-foreground">{card.credits} credits</p>
+                            <p className="text-xs text-gray-400">{card.credits} credits</p>
                             <div className="flex items-center gap-2 mt-1">
-                                  <p className="text-xs text-muted-foreground">Qty: {card.quantity}</p>
+                                  <p className="text-xs text-gray-400">Qty: {card.quantity}</p>
                           </div>
                           </div>
                           <div className="flex gap-2">
@@ -3589,7 +3589,7 @@ export default function Admin() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Prize Cards ({viewingPrizePool.cards.length})</h3>
                   {viewingPrizePool.cards.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No prize cards in this pack yet.</p>
+                    <p className="text-gray-400 text-center py-8">No prize cards in this pack yet.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {viewingPrizePool.cards.map((card) => (
@@ -3601,8 +3601,8 @@ export default function Admin() {
                           />
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{card.name}</p>
-                            <p className="text-xs text-muted-foreground">{card.credits} credits</p>
-                            <p className="text-xs text-muted-foreground">Quantity: {card.quantity}</p>
+                            <p className="text-xs text-gray-400">{card.credits} credits</p>
+                            <p className="text-xs text-gray-400">Quantity: {card.quantity}</p>
                           </div>
                         </div>
                       ))}
