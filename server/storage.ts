@@ -2375,7 +2375,9 @@ export class DatabaseStorage {
 
   async getUserShippingRequests(userId: string): Promise<(ShippingRequest & { address: UserAddress })[]> {
     console.log('🔍 Storage: Getting shipping requests for user:', userId);
-    const result = await db.select({
+    
+    // First, get the shipping requests with minimal data
+    const requests = await db.select({
       id: shippingRequests.id,
       userId: shippingRequests.userId,
       addressId: shippingRequests.addressId,
@@ -2386,26 +2388,33 @@ export class DatabaseStorage {
       notes: shippingRequests.notes,
       createdAt: shippingRequests.createdAt,
       updatedAt: shippingRequests.updatedAt,
-      address: {
-        id: userAddresses.id,
-        userId: userAddresses.userId,
-        name: userAddresses.name,
-        address: userAddresses.address,
-        city: userAddresses.city,
-        state: userAddresses.state,
-        postalCode: userAddresses.postalCode,
-        country: userAddresses.country,
-        phone: userAddresses.phone,
-        isDefault: userAddresses.isDefault,
-        createdAt: userAddresses.createdAt,
-        updatedAt: userAddresses.updatedAt,
-      }
     })
     .from(shippingRequests)
-    .innerJoin(userAddresses, eq(shippingRequests.addressId, userAddresses.id))
     .where(eq(shippingRequests.userId, userId))
     .orderBy(desc(shippingRequests.createdAt))
     .limit(50); // Limit to 50 most recent requests for performance
+    
+    if (requests.length === 0) {
+      console.log('📦 Storage: No shipping requests found');
+      return [];
+    }
+    
+    // Get unique address IDs
+    const addressIds = [...new Set(requests.map(req => req.addressId))];
+    
+    // Fetch addresses separately
+    const addresses = await db.select()
+      .from(userAddresses)
+      .where(inArray(userAddresses.id, addressIds));
+    
+    // Create address lookup map
+    const addressMap = new Map(addresses.map(addr => [addr.id, addr]));
+    
+    // Combine requests with addresses
+    const result = requests.map(request => ({
+      ...request,
+      address: addressMap.get(request.addressId)!
+    }));
     
     console.log('📦 Storage: Found shipping requests:', result.length, 'requests');
     return result;
