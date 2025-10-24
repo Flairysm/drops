@@ -901,7 +901,7 @@ export default function Vault() {
                   }>);
 
                   return Object.values(groupedSelectedCards).map((groupedCard, index) => (
-                    <div key={`${groupedCard.cardName}-${groupedCard.cardTier}-${index}`} className="flex items-center gap-3 p-3 bg-muted rounded-lg border border-border">
+                    <div key={`${groupedCard.cardName}-${groupedCard.cardTier}-${index}`} className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg border border-gray-600">
                       <div className="w-12 h-16 bg-gradient-to-br from-[#7C3AED] to-[#22D3EE] rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
                         {groupedCard.cardImageUrl ? (
                           <img 
@@ -919,14 +919,14 @@ export default function Vault() {
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-foreground truncate">{groupedCard.cardName}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="font-medium text-white truncate">{groupedCard.cardName}</div>
+                        <div className="text-sm text-gray-400">
                           {groupedCard.cardTier}
                         </div>
                       </div>
                       <div className="flex-shrink-0">
-                        <div className="text-sm text-muted-foreground">
-                          Quantity: <span className="text-foreground font-medium">{groupedCard.quantity}</span>
+                        <div className="text-sm text-gray-400">
+                          Quantity: <span className="text-white font-medium">{groupedCard.quantity}</span>
                         </div>
                       </div>
                     </div>
@@ -937,14 +937,14 @@ export default function Vault() {
 
             {/* Address Selection */}
             <div>
-              <Label htmlFor="address" className="text-foreground">Shipping Address *</Label>
+              <Label htmlFor="address" className="text-white">Shipping Address *</Label>
               {isLoadingAddresses ? (
-                <div className="mt-2 p-3 bg-muted rounded-lg text-center border border-border">
-                  <div className="text-muted-foreground">Loading addresses...</div>
+                <div className="mt-2 p-3 bg-gray-800 rounded-lg text-center border border-gray-600">
+                  <div className="text-gray-400">Loading addresses...</div>
                 </div>
               ) : userAddresses.length === 0 ? (
-                <div className="mt-2 p-3 bg-muted rounded-lg text-center border border-border">
-                  <div className="text-muted-foreground mb-2">No addresses found</div>
+                <div className="mt-2 p-3 bg-gray-800 rounded-lg text-center border border-gray-600">
+                  <div className="text-gray-400 mb-2">No addresses found</div>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -952,7 +952,7 @@ export default function Vault() {
                       setShowShippingPopup(false);
                       window.location.href = '/shipping?tab=manage';
                     }}
-                    className="border-border text-foreground hover:bg-muted"
+                    className="border-gray-600 text-white hover:bg-gray-700"
                   >
                     Add Address
                   </Button>
@@ -962,11 +962,11 @@ export default function Vault() {
                   id="address"
                   value={selectedAddress}
                   onChange={(e) => setSelectedAddress(e.target.value)}
-                  className="w-full mt-1 p-3 border border-border rounded-md focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] bg-background text-foreground text-sm"
+                  className="w-full mt-1 p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-[#7C3AED] focus:border-[#7C3AED] bg-gray-800 text-white text-sm"
                 >
-                  <option value="" className="text-foreground">Select an address</option>
+                  <option value="" className="text-white">Select an address</option>
                   {userAddresses.map((address) => (
-                    <option key={address.id} value={address.id} className="text-foreground">
+                    <option key={address.id} value={address.id} className="text-white">
                       {address.name} - {address.address}, {address.city}, {address.state}
                       {address.isDefault && " (Default)"}
                     </option>
@@ -982,7 +982,7 @@ export default function Vault() {
               variant="outline"
               onClick={() => setShowShippingPopup(false)}
               disabled={isCreatingShippingRequest}
-              className="w-full sm:w-auto border-border text-foreground hover:bg-muted"
+              className="w-full sm:w-auto border-gray-600 text-white hover:bg-gray-700"
             >
               Cancel
             </Button>
