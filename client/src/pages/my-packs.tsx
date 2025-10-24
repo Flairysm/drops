@@ -341,7 +341,7 @@ export default function MyPacks() {
 
   return (
     <>
-    <div className="min-h-screen relative overflow-hidden pb-24">
+    <div className="relative overflow-hidden pb-24">
       <Navigation />
 
       {/* Futuristic Card Hero Background */}

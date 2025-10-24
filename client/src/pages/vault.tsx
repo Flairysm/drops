@@ -465,7 +465,7 @@ export default function Vault() {
 
   return (
     <>
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="relative overflow-hidden">
       <Navigation />
 
       {/* Futuristic Card Hero Background */}

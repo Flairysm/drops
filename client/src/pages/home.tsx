@@ -252,7 +252,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="relative overflow-hidden">
       <Navigation />
       
       {/* Futuristic Card Hero Background */}

@@ -115,7 +115,7 @@ export default function Reload() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="relative overflow-hidden">
       {/* Futuristic Card Hero Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         {/* Main background image */}
