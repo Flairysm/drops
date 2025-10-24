@@ -889,7 +889,7 @@ export default function Play() {
           {/* Custom X Button */}
           <button
             onClick={() => setShowRaffleDetails(false)}
-            className="absolute right-6 top-6 w-10 h-10 flex items-center justify-center text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-600 shadow-lg z-50 !block"
+            className="absolute right-6 top-6 w-10 h-10 flex items-center justify-center text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-200 border border-red-500 shadow-lg z-50 !block"
           >
             <X className="h-5 w-5 mx-auto" />
           </button>
