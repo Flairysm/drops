@@ -50,7 +50,7 @@ export function setupAuth(app: express.Application) {
         username,
         email,
         password: hashedPassword,
-        credits: "100", // Starting credits
+        credits: "300", // Welcome bonus credits
       });
 
       // Generate JWT token
