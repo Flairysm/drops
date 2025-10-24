@@ -1839,7 +1839,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
+          <h1 className="text-2xl font-bold mb-4 text-white">Admin Access Required</h1>
           <p className="text-gray-400">Please log in to access the admin panel.</p>
         </div>
       </div>
@@ -1850,7 +1850,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold mb-4 text-white">Access Denied</h1>
           <p className="text-gray-400">You don't have permission to access the admin panel.</p>
         </div>
       </div>
@@ -2000,21 +2000,21 @@ export default function Admin() {
               <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="gaming-card">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold">System Overview</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-white">System Overview</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-400">Active Raffles</span>
-                        <span className="font-semibold">{raffles.filter(r => r.status === 'active').length}</span>
+                        <span className="font-semibold text-white">{raffles.filter(r => r.status === 'active').length}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-400">Completed Raffles</span>
-                        <span className="font-semibold">{raffles.filter(r => r.status === 'completed').length}</span>
+                        <span className="font-semibold text-white">{raffles.filter(r => r.status === 'completed').length}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-400">Total Raffles</span>
-                        <span className="font-semibold">{raffles.length}</span>
+                        <span className="font-semibold text-white">{raffles.length}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -2023,7 +2023,7 @@ export default function Admin() {
 
                 <Card className="gaming-card">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-white">Quick Actions</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -2057,17 +2057,17 @@ export default function Admin() {
 
                 <Card className="gaming-card">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold">System Settings</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-white">System Settings</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="font-medium">Maintenance Mode</h4>
+                          <h4 className="font-medium text-white">Maintenance Mode</h4>
                           <p className="text-sm text-gray-400">Temporarily disable user access</p>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium">
+                          <span className="text-sm font-medium text-white">
                             {maintenanceMode ? 'Enabled' : 'Disabled'}
                           </span>
                           <Button 
@@ -2123,7 +2123,7 @@ export default function Admin() {
                               <Users className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                              <div className="font-semibold">{user.email || user.username}</div>
+                              <div className="font-semibold text-white">{user.email || user.username}</div>
                               <div className="text-sm text-gray-400">
                                 Credits: {user.credits} • Spent: RM {user.totalSpent || '0.00'}
                               </div>
@@ -2192,7 +2192,7 @@ export default function Admin() {
                           {classicPools.length === 0 ? (
                             <div className="text-center py-8">
                               <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium mb-2">No classic packs created</h3>
+                            <h3 className="text-lg font-medium mb-2 text-white">No classic packs created</h3>
                               <p className="text-gray-400">
                               Click "Add" to create your first classic pack
                               </p>
@@ -2216,7 +2216,7 @@ export default function Admin() {
                                       }}
                                       />
                                       <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-lg mb-1">{pool.name}</h4>
+                                        <h4 className="font-medium text-lg mb-1 text-white">{pool.name}</h4>
                                         <p className="text-sm text-gray-400 mb-2">{pool.description}</p>
                                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-400">
                                           <div>Price: ${pool.price}</div>
