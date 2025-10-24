@@ -46,9 +46,9 @@ function RouterComponent() {
   // Show loading spinner only if actually loading and no timeout
   if (isLoading && !loadingTimeout) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mb-4"></div>
+        <p className="text-white text-lg font-medium">Loading...</p>
       </div>
     );
   }
@@ -56,14 +56,14 @@ function RouterComponent() {
   // If timeout reached, show error state
   if (loadingTimeout) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4 font-bold text-yellow-500">!</div>
-          <h1 className="text-2xl font-bold mb-2">Loading Timeout</h1>
-          <p className="text-muted-foreground mb-4">Something went wrong while loading</p>
+          <h1 className="text-2xl font-bold mb-2 text-white">Loading Timeout</h1>
+          <p className="text-gray-300 mb-4">Something went wrong while loading</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             Reload Page
           </button>

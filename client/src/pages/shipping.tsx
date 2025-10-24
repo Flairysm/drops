@@ -393,16 +393,21 @@ export default function Shipping() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mb-4"></div>
+        <p className="text-white text-lg font-medium">Loading...</p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-xl">Please log in to access shipping</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 font-bold text-yellow-500">🔒</div>
+          <h1 className="text-2xl font-bold mb-2 text-white">Authentication Required</h1>
+          <p className="text-gray-300 text-lg">Please log in to access shipping</p>
+        </div>
       </div>
     );
   }

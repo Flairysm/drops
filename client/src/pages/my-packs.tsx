@@ -324,15 +324,10 @@ export default function MyPacks() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pt-20 pb-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <Package2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
-              <p>Loading your packs...</p>
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mb-4"></div>
+        <Package2 className="h-12 w-12 mx-auto mb-4 text-purple-400 animate-pulse" />
+        <p className="text-white text-lg font-medium">Loading your packs...</p>
       </div>
     );
   }
