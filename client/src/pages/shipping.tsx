@@ -556,10 +556,24 @@ export default function Shipping() {
                 </CardHeader>
                 <CardContent>
                   
+                  {(() => {
+                    const pendingRequests = shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping');
+                    console.log('🔍 Rendering pending shipments:', {
+                      totalRequests: shippingRequests.length,
+                      pendingCount: pendingRequests.length,
+                      allStatuses: shippingRequests.map(r => r.status),
+                      pendingStatuses: pendingRequests.map(r => r.status)
+                    });
+                    return null;
+                  })()}
+                  
                   {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">No pending shipments</p>
                       <p className="text-sm text-muted-foreground">Go to your vault to select cards for shipping</p>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Debug: Total requests: {shippingRequests.length}, Statuses: {shippingRequests.map(r => r.status).join(', ')}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
