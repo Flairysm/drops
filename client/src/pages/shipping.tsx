@@ -235,7 +235,7 @@ export default function Shipping() {
       });
       console.log('🔍 Direct fetch response:', directResponse.status, directResponse.ok);
       
-      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 30000 });
+      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 60000 });
       console.log('🔍 Response status:', response.status, response.ok);
       
       if (!response.ok) {
@@ -253,10 +253,12 @@ export default function Shipping() {
       if (Array.isArray(data) && data.length > 0) {
         console.log('📦 First request:', data[0]);
         console.log('📦 Request statuses:', data.map(r => r.status));
+        console.log('📦 Pending requests:', data.filter(r => r.status === 'pending' || r.status === 'shipping'));
       }
       console.log('📦 Setting shipping requests state...');
       setShippingRequests(data);
       console.log('📦 Shipping requests state updated with:', data);
+      console.log('📦 State set complete, component should re-render');
     } catch (error) {
       console.error('❌ Error fetching shipping requests:', error);
       toast({
@@ -562,7 +564,8 @@ export default function Shipping() {
                       totalRequests: shippingRequests.length,
                       pendingCount: pendingRequests.length,
                       allStatuses: shippingRequests.map(r => r.status),
-                      pendingStatuses: pendingRequests.map(r => r.status)
+                      pendingStatuses: pendingRequests.map(r => r.status),
+                      shippingRequests: shippingRequests
                     });
                     return null;
                   })()}
