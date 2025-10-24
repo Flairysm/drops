@@ -143,6 +143,7 @@ export default function Shipping() {
   }, [shippingRequests]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [hasFetchedData, setHasFetchedData] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
   
   // Detail modal state
@@ -193,17 +194,19 @@ export default function Shipping() {
   }, [toast]);
 
   useEffect(() => {
-    console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading });
-    if (isAuthenticated) {
-      console.log('🔍 User is authenticated, fetching data...');
+    console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading, hasFetchedData });
+    if (isAuthenticated && !isLoading && !hasFetchedData) {
+      console.log('🔍 User is authenticated and not loading, fetching data...');
       fetchAddresses();
       fetchShippingRequests();
-    } else {
+      setHasFetchedData(true);
+    } else if (!isAuthenticated) {
       console.log('🔍 User not authenticated, clearing state...');
       setShippingRequests([]);
       setAddresses([]);
+      setHasFetchedData(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoading, hasFetchedData]); // Only run when auth state changes
 
   const fetchAddresses = async () => {
     setIsLoadingAddresses(true);
