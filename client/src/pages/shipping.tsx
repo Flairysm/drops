@@ -181,9 +181,15 @@ export default function Shipping() {
   }, [toast]);
 
   useEffect(() => {
+    console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading });
     if (isAuthenticated) {
+      console.log('🔍 User is authenticated, fetching data...');
       fetchAddresses();
       fetchShippingRequests();
+    } else {
+      console.log('🔍 User not authenticated, clearing state...');
+      setShippingRequests([]);
+      setAddresses([]);
     }
   }, [isAuthenticated]);
 
@@ -213,7 +219,9 @@ export default function Shipping() {
       const data = await response.json();
       console.log('📦 Shipping requests response:', data);
       console.log('📦 Number of requests:', Array.isArray(data) ? data.length : 'Not an array');
+      console.log('📦 Setting shipping requests state...');
       setShippingRequests(data);
+      console.log('📦 Shipping requests state updated');
     } catch (error) {
       console.error('Error fetching shipping requests:', error);
       toast({
@@ -509,6 +517,14 @@ export default function Shipping() {
                   <p className="text-muted-foreground">Orders currently being processed</p>
                 </CardHeader>
                 <CardContent>
+                  {(() => {
+                    console.log('🔍 Rendering pending shipments - current state:', {
+                      totalRequests: shippingRequests.length,
+                      requests: shippingRequests,
+                      pendingRequests: shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping')
+                    });
+                    return null;
+                  })()}
                   {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">No pending shipments</p>
