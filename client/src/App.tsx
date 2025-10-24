@@ -29,8 +29,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 function RouterComponent() {
   const { isAuthenticated, isLoading } = useAuth();
   
-  // Debug logging
-  console.log('Router state:', { isAuthenticated, isLoading });
+  // Debug logging removed for production
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);
