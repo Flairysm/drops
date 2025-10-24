@@ -75,12 +75,17 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     }, hitCardTimeout);
   }, []); // Only run once when component mounts
 
-  const handleRevealHit = () => {
-    console.log('Revealing hit card...', { revealedCards, isHitRevealed });
+  const handleRevealHit = (e?: any) => {
+    console.log('Revealing hit card...', { revealedCards, isHitRevealed, event: e?.type });
     // Make it more aggressive - allow reveal even if not all cards are shown
     if (!isHitRevealed) {
       console.log('FORCING REVEAL!');
       setIsHitRevealed(true);
+    }
+    // Prevent any default behavior
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
@@ -203,10 +208,12 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className={`relative w-12 h-16 sm:w-16 sm:h-24 ${getTierGlowColor(hitCard?.tier || '')} ${!isHitRevealed ? 'cursor-pointer' : ''}`}
-                  onClick={!isHitRevealed ? handleRevealHit : undefined}
-                  onTouchStart={!isHitRevealed ? handleRevealHit : undefined}
-                  onTouchEnd={!isHitRevealed ? handleRevealHit : undefined}
-                  onMouseDown={!isHitRevealed ? handleRevealHit : undefined}
+                  onClick={!isHitRevealed ? (e) => handleRevealHit(e) : undefined}
+                  onTouchStart={!isHitRevealed ? (e) => handleRevealHit(e) : undefined}
+                  onTouchEnd={!isHitRevealed ? (e) => handleRevealHit(e) : undefined}
+                  onTouchCancel={!isHitRevealed ? (e) => handleRevealHit(e) : undefined}
+                  onMouseDown={!isHitRevealed ? (e) => handleRevealHit(e) : undefined}
+                  onMouseUp={!isHitRevealed ? (e) => handleRevealHit(e) : undefined}
                 >
                   <img
                     src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
@@ -248,15 +255,19 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
               className="text-center mb-4"
             >
               <button
-                onClick={handleRevealHit}
-                onTouchStart={handleRevealHit}
-                onTouchEnd={handleRevealHit}
-                onMouseDown={handleRevealHit}
-                className="btn-mobile-optimized bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-6 py-3 rounded-lg font-bold text-base shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-100 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none min-h-[56px] min-w-[220px] touch-manipulation"
+                onClick={(e) => handleRevealHit(e)}
+                onTouchStart={(e) => handleRevealHit(e)}
+                onTouchEnd={(e) => handleRevealHit(e)}
+                onTouchCancel={(e) => handleRevealHit(e)}
+                onMouseDown={(e) => handleRevealHit(e)}
+                onMouseUp={(e) => handleRevealHit(e)}
+                className="btn-mobile-optimized bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-6 py-3 rounded-lg font-bold text-base shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-100 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none min-h-[64px] min-w-[240px] touch-manipulation"
                 type="button"
                 style={{ 
                   WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation'
+                  touchAction: 'manipulation',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none'
                 }}
               >
                 TAP TO REVEAL HIT CARD
