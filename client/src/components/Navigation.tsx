@@ -79,9 +79,9 @@ export function Navigation() {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B0B12]/95 backdrop-blur-xl border-b border-[#26263A]/50 shadow-2xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B0B12]/95 backdrop-blur-xl border-b border-[#26263A]/50 shadow-2xl mobile-optimized">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-16 md:h-20">
           {/* DROPS Logo from Asset */}
           <Link href="/">
             <div className="flex items-center space-x-4 cursor-pointer group" data-testid="link-home">
@@ -251,12 +251,12 @@ export function Navigation() {
 
         {/* Luxury Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-6 border-t border-[#26263A]/50 bg-[#0B0B12]/95 backdrop-blur-xl">
-            <div className="space-y-6">
+          <div className="md:hidden py-4 border-t border-[#26263A]/50 bg-[#0B0B12]/95 backdrop-blur-xl mobile-scroll-optimized">
+            <div className="space-y-4">
               {isAuthenticated && navItems.map((item) => (
                 <Link key={item.path} href={item.path}>
                   <div 
-                    className={`mx-4 px-4 py-3 rounded-2xl transition-all duration-300 cursor-pointer group ${
+                    className={`mx-4 px-4 py-3 rounded-2xl transition-all duration-300 cursor-pointer group btn-mobile-optimized ${
                       location === item.path 
                         ? "text-[#22D3EE] bg-[#151521]/50 shadow-[0_0_12px_rgba(34,211,238,0.2)] border border-[#26263A]/50" 
                         : "text-[#E5E7EB] hover:text-[#22D3EE] hover:bg-[#151521]/30"

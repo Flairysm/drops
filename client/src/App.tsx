@@ -5,24 +5,26 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
-import { useState, useEffect } from "react";
-import Home from "@/pages/home";
-import Landing from "@/pages/landing";
-import Login from "@/pages/login";
-import Register from "@/pages/register";
-import Play from "@/pages/games";
-import FindPika from "./pages/findpika";
-import EnergyMatch from "./pages/energy-match";
-import Dice from "./pages/dice";
-import MyPacks from "@/pages/my-packs";
-import Vault from "@/pages/vault";
-import Admin from "@/pages/admin";
-import Reload from "@/pages/reload";
-import Purchase from "@/pages/purchase";
-import Profile from "@/pages/profile";
-import Shipping from "@/pages/shipping";
-import ShippingAdmin from "@/pages/shippingadmin";
-import NotFound from "@/pages/not-found";
+import { useState, useEffect, Suspense, lazy } from "react";
+import "./mobile-enhancements.css";
+// Lazy load pages for better performance
+const Home = lazy(() => import("@/pages/home"));
+const Landing = lazy(() => import("@/pages/landing"));
+const Login = lazy(() => import("@/pages/login"));
+const Register = lazy(() => import("@/pages/register"));
+const Play = lazy(() => import("@/pages/games"));
+const FindPika = lazy(() => import("./pages/findpika"));
+const EnergyMatch = lazy(() => import("./pages/energy-match"));
+const Dice = lazy(() => import("./pages/dice"));
+const MyPacks = lazy(() => import("@/pages/my-packs"));
+const Vault = lazy(() => import("@/pages/vault"));
+const Admin = lazy(() => import("@/pages/admin"));
+const Reload = lazy(() => import("@/pages/reload"));
+const Purchase = lazy(() => import("@/pages/purchase"));
+const Profile = lazy(() => import("@/pages/profile"));
+const Shipping = lazy(() => import("@/pages/shipping"));
+const ShippingAdmin = lazy(() => import("@/pages/shippingadmin"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 function RouterComponent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -43,14 +45,19 @@ function RouterComponent() {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
+  // Mobile-optimized loading component
+  const MobileLoadingSpinner = () => (
+    <div className="min-h-screen flex items-center justify-center mobile-spacing">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="mobile-text text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
+
   // Show loading spinner only if actually loading and no timeout
   if (isLoading && !loadingTimeout) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <MobileLoadingSpinner />;
   }
 
   // If timeout reached, show error state
@@ -73,44 +80,48 @@ function RouterComponent() {
   }
 
   return (
-    <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/home" component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      {isAuthenticated && (
-        <>
-          <Route path="/play" component={Play} />
-          <Route path="/play/findpika" component={FindPika} />
-          <Route path="/play/energy-match" component={EnergyMatch} />
-          <Route path="/play/dice" component={Dice} />
-          <Route path="/my-packs" component={MyPacks} />
-          <Route path="/vault" component={Vault} />
-          <Route path="/reload" component={Reload} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/shipping" component={Shipping} />
-          <Route path="/shippingadmin" component={ShippingAdmin} />
-          <Route path="/purchase/:type/:id" component={Purchase} />
-        </>
-      )}
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<MobileLoadingSpinner />}>
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/home" component={Home} />
+        <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
+        {isAuthenticated && (
+          <>
+            <Route path="/play" component={Play} />
+            <Route path="/play/findpika" component={FindPika} />
+            <Route path="/play/energy-match" component={EnergyMatch} />
+            <Route path="/play/dice" component={Dice} />
+            <Route path="/my-packs" component={MyPacks} />
+            <Route path="/vault" component={Vault} />
+            <Route path="/reload" component={Reload} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/profile" component={Profile} />
+            <Route path="/shipping" component={Shipping} />
+            <Route path="/shippingadmin" component={ShippingAdmin} />
+            <Route path="/purchase/:type/:id" component={Purchase} />
+          </>
+        )}
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router>
-            <RouterComponent />
-          </Router>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <div className="mobile-optimized">
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router>
+              <RouterComponent />
+            </Router>
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </div>
   );
 }
 
