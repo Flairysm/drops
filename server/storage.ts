@@ -149,7 +149,10 @@ export class DatabaseStorage {
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(userData).returning();
+    const result = await db.insert(users).values({
+      ...userData,
+      id: userData.id || `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }).returning();
     return result[0];
   }
 
