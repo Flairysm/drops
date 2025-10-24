@@ -113,7 +113,7 @@ interface ShippingRequest {
 
 export default function Shipping() {
   console.log('🔍 Shipping component rendering...');
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const { toast } = useToast();
   
   console.log('🔍 Auth state:', { isAuthenticated, isLoading });
