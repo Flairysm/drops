@@ -111,6 +111,7 @@ interface ShippingRequest {
 }
 
 export default function Shipping() {
+  console.log('🔍 Shipping component rendering...');
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
 
@@ -511,7 +512,7 @@ export default function Shipping() {
 
             {/* Pending Tab */}
             <TabsContent value="pending" className="space-y-6">
-              <Card className="gaming-card">
+              <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                 <CardHeader>
                   <CardTitle>Pending Shipments</CardTitle>
                   <p className="text-muted-foreground">Orders currently being processed</p>
@@ -525,6 +526,13 @@ export default function Shipping() {
                     });
                     return null;
                   })()}
+                  
+                  {/* Debug display */}
+                  <div className="mb-4 p-2 bg-gray-700 rounded text-xs">
+                    <div>Total Requests: {shippingRequests.length}</div>
+                    <div>Pending/Shipping: {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length}</div>
+                    <div>All Statuses: {shippingRequests.map(r => r.status).join(', ')}</div>
+                  </div>
                   {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">No pending shipments</p>
@@ -535,7 +543,7 @@ export default function Shipping() {
                       {shippingRequests
                         .filter(req => req.status === 'pending' || req.status === 'shipping')
                         .map((request) => (
-                        <Card key={request.id} className="gaming-card hover:glow-effect transition-all">
+                        <Card key={request.id} className="bg-gray-800 border border-gray-600 shadow-lg hover:glow-effect transition-all">
                           <CardContent className="p-6">
                             <div className="space-y-4">
                               {/* Header Row */}
@@ -596,7 +604,7 @@ export default function Shipping() {
 
             {/* Completed Tab */}
             <TabsContent value="completed" className="space-y-6">
-              <Card className="gaming-card">
+              <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                 <CardHeader>
                   <CardTitle>Completed Shipments</CardTitle>
                   <p className="text-muted-foreground">Successfully delivered orders</p>
@@ -612,7 +620,7 @@ export default function Shipping() {
                       {shippingRequests
                         .filter(req => req.status === 'delivered')
                         .map((request) => (
-                        <Card key={request.id} className="gaming-card hover:glow-effect transition-all">
+                        <Card key={request.id} className="bg-gray-800 border border-gray-600 shadow-lg hover:glow-effect transition-all">
                           <CardContent className="p-6">
                             <div className="space-y-4">
                               {/* Header Row */}
@@ -660,7 +668,7 @@ export default function Shipping() {
 
             {/* Manage Addresses Tab */}
             <TabsContent value="manage" className="space-y-6">
-              <Card className="gaming-card">
+              <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl font-semibold">Your Addresses</CardTitle>
@@ -690,7 +698,7 @@ export default function Shipping() {
                   ) : (
                     <div className="space-y-3">
                       {addresses.map((address) => (
-                        <Card key={address.id} className="gaming-card hover:glow-effect transition-all">
+                        <Card key={address.id} className="bg-gray-800 border border-gray-600 shadow-lg hover:glow-effect transition-all">
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
@@ -746,7 +754,7 @@ export default function Shipping() {
 
               {/* Add/Edit Address Form */}
               {isAddingAddress && (
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader>
                     <CardTitle>
                       {editingAddress ? 'Edit Address' : 'Add New Address'}
