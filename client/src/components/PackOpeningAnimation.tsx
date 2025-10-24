@@ -65,23 +65,20 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     for (let i = 0; i < 7; i++) {
       setTimeout(() => {
         setRevealedCards(i + 1);
-      }, 500 + (i * 150)); // Start after 500ms, then 150ms intervals
+      }, 300 + (i * 100)); // Start after 300ms, then 100ms intervals (faster)
     }
     
     // After 7 commons, show hit card back with a small delay
-    const hitCardTimeout = 500 + (7 * 150) + 500;
+    const hitCardTimeout = 300 + (7 * 100) + 300; // Reduced delay
     setTimeout(() => {
       setRevealedCards(8); // Show hit card back (8th card)
     }, hitCardTimeout);
   }, []); // Only run once when component mounts
 
-  const handleRevealHit = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    
+  const handleRevealHit = () => {
+    console.log('Revealing hit card...', { revealedCards, isHitRevealed });
     if (revealedCards >= 8 && !isHitRevealed) {
-      setIsHitRevealed(true); // Reveal the hit card
+      setIsHitRevealed(true);
     }
   };
 
@@ -151,7 +148,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
         {/* 4x2 Grid - 7 Commons + 1 Hit */}
         <div className="mb-6">
-          <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-2xl mx-auto mb-6 px-2">
+          <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-lg mx-auto mb-6 px-4 justify-items-center">
             {/* Show 7 common cards first */}
             {commonCards.slice(0, 7).map((card, index) => {
               const isCardRevealed = index < revealedCards;
@@ -202,11 +199,13 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`relative w-16 h-24 sm:w-20 sm:h-28 ${getTierGlowColor(hitCard?.tier || '')}`}
+                  className={`relative w-16 h-24 sm:w-20 sm:h-28 ${getTierGlowColor(hitCard?.tier || '')} ${!isHitRevealed ? 'cursor-pointer' : ''}`}
+                  onClick={!isHitRevealed ? handleRevealHit : undefined}
+                  onTouchStart={!isHitRevealed ? handleRevealHit : undefined}
                 >
                   <img
                     src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
-                    alt={isHitRevealed ? "Hit Card" : "Hit Card Back"}
+                    alt={isHitRevealed ? "Hit Card" : "Hit Card Back - Tap to Reveal"}
                     className="w-full h-full object-cover rounded-md"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -216,6 +215,13 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                       }
                     }}
                   />
+                  {!isHitRevealed && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-md">
+                      <div className="text-white text-xs font-bold bg-black/50 px-2 py-1 rounded">
+                        TAP
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 /* Hit Card - Hidden */
@@ -236,12 +242,14 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
               className="text-center mb-4"
             >
               <button
-                onClick={() => {
-                  console.log('TAP TO REVEAL button clicked!');
-                  setIsHitRevealed(true);
-                }}
-                className="btn-mobile-optimized bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-6 py-3 rounded-lg font-bold text-base shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-300 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none min-h-[48px] min-w-[200px]"
+                onClick={handleRevealHit}
+                onTouchStart={handleRevealHit}
+                className="btn-mobile-optimized bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-6 py-3 rounded-lg font-bold text-base shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-200 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none min-h-[56px] min-w-[220px] touch-manipulation"
                 type="button"
+                style={{ 
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation'
+                }}
               >
                 TAP TO REVEAL HIT CARD
               </button>
