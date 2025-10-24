@@ -233,7 +233,7 @@ export default function Shipping() {
       });
       console.log('🔍 Direct fetch response:', directResponse.status, directResponse.ok);
       
-      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 15000 });
+      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 30000 });
       console.log('🔍 Response status:', response.status, response.ok);
       
       if (!response.ok) {
@@ -259,9 +259,10 @@ export default function Shipping() {
       console.log('📦 State set complete, component should re-render');
     } catch (error) {
       console.error('❌ Error fetching shipping requests:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
         title: "Error",
-        description: "Failed to fetch shipping requests",
+        description: `Failed to fetch shipping requests: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
