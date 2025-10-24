@@ -150,7 +150,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
         {/* 4x2 Grid - 7 Commons + 1 Hit */}
         <div className="mb-6">
-          <div className="grid grid-cols-4 gap-3 max-w-2xl mb-6">
+          <div className="grid grid-cols-4 gap-3 max-w-2xl mb-6 ml-8">
             {/* Show 7 common cards first */}
             {commonCards.slice(0, 7).map((card, index) => {
               const isCardRevealed = index < revealedCards;
