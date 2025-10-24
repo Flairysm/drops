@@ -846,8 +846,6 @@ export default function MyPacks() {
         </motion.div>
 
       </div>
-      {/* Navigation Footer */}
-      <NavigationFooter />
       
       {/* Pack Opening Animation */}
       {showAnimation && packOpenData && (
@@ -860,5 +858,8 @@ export default function MyPacks() {
         />
       )}
     </div>
+    
+    {/* Navigation Footer - Outside main container for proper viewport positioning */}
+    <NavigationFooter />
   );
 }

@@ -1073,8 +1073,9 @@ export default function Vault() {
         </DialogContent>
       </Dialog>
 
-      {/* Navigation Footer */}
-      <NavigationFooter />
     </div>
+    
+    {/* Navigation Footer - Outside main container for proper viewport positioning */}
+    <NavigationFooter />
   );
 }
