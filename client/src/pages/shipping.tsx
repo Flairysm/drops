@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { NavigationFooter } from "@/components/NavigationFooter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,12 +132,28 @@ export default function Shipping() {
   };
   
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
-  const [shippingRequests, setShippingRequests] = useState<ShippingRequest[]>([]);
   
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
-  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
-  const hasFetchedDataRef = useRef(false);
   const [activeTab, setActiveTab] = useState("pending");
+  
+  // React Query for shipping requests with caching
+  const { 
+    data: shippingRequests = [], 
+    isLoading: isLoadingRequests, 
+    refetch: refetchShippingRequests 
+  } = useQuery({
+    queryKey: ['shipping-requests', user?.id],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 10000 });
+      if (!response.ok) {
+        throw new Error('Failed to fetch shipping requests');
+      }
+      return response.json();
+    },
+    enabled: !!user?.id,
+    staleTime: 30000, // Cache for 30 seconds
+    cacheTime: 300000, // Keep in cache for 5 minutes
+  });
   
   // Detail modal state
   const [selectedRequest, setSelectedRequest] = useState<ShippingRequest | null>(null);
@@ -186,14 +203,12 @@ export default function Shipping() {
   }, [toast]);
 
   useEffect(() => {
-    console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading, hasFetchedData: hasFetchedDataRef.current });
+    console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading });
     if (isAuthenticated && !isLoading) {
-      console.log('🔍 User is authenticated and not loading, fetching data...');
+      console.log('🔍 User is authenticated and not loading, fetching addresses...');
       fetchAddresses();
-      fetchShippingRequests();
     } else if (!isAuthenticated) {
       console.log('🔍 User not authenticated, clearing state...');
-      setShippingRequests([]);
       setAddresses([]);
     }
   }, [isAuthenticated, isLoading]); // Only run when auth state changes
@@ -216,59 +231,6 @@ export default function Shipping() {
     }
   };
 
-  const fetchShippingRequests = async () => {
-    setIsLoadingRequests(true);
-    try {
-      console.log('🔍 Fetching shipping requests...');
-      
-      // Test direct fetch first
-      console.log('🔍 Testing direct fetch...');
-      const token = localStorage.getItem('authToken');
-      const directResponse = await fetch('/api/shipping/requests', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      console.log('🔍 Direct fetch response:', directResponse.status, directResponse.ok);
-      
-      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 30000 });
-      console.log('🔍 Response status:', response.status, response.ok);
-      
-      if (!response.ok) {
-        console.error('❌ API request failed:', response.status, response.statusText);
-        const errorText = await response.text();
-        console.error('❌ Error response:', errorText);
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('📦 Shipping requests response:', data);
-      console.log('📦 Response type:', typeof data);
-      console.log('📦 Is array:', Array.isArray(data));
-      console.log('📦 Number of requests:', Array.isArray(data) ? data.length : 'Not an array');
-      if (Array.isArray(data) && data.length > 0) {
-        console.log('📦 First request:', data[0]);
-        console.log('📦 Request statuses:', data.map(r => r.status));
-        console.log('📦 Pending requests:', data.filter(r => r.status === 'pending' || r.status === 'shipping'));
-      }
-      console.log('📦 Setting shipping requests state...');
-      setShippingRequests(data);
-      console.log('📦 Shipping requests state updated with:', data);
-      console.log('📦 State set complete, component should re-render');
-    } catch (error) {
-      console.error('❌ Error fetching shipping requests:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: "Error",
-        description: `Failed to fetch shipping requests: ${errorMessage}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingRequests(false);
-    }
-  };
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -419,7 +381,7 @@ export default function Shipping() {
         setIsCreatingRequest(false);
         
         // Refresh shipping requests
-        fetchShippingRequests();
+        refetchShippingRequests();
       } else {
         const errorData = await response.json();
         toast({
@@ -560,7 +522,7 @@ export default function Shipping() {
                     <button
                       onClick={() => {
                         console.log('🔄 Force refreshing shipping requests...');
-                        fetchShippingRequests();
+                        refetchShippingRequests();
                       }}
                       className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
                     >

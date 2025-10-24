@@ -2376,8 +2376,8 @@ export class DatabaseStorage {
   async getUserShippingRequests(userId: string): Promise<(ShippingRequest & { address: UserAddress | null })[]> {
     console.log('🔍 Storage: Getting shipping requests for user:', userId);
     
-    // First, get the shipping requests with minimal data
-    const requests = await db.select({
+    // Use a single JOIN query for better performance
+    const result = await db.select({
       id: shippingRequests.id,
       userId: shippingRequests.userId,
       addressId: shippingRequests.addressId,
@@ -2388,33 +2388,26 @@ export class DatabaseStorage {
       notes: shippingRequests.notes,
       createdAt: shippingRequests.createdAt,
       updatedAt: shippingRequests.updatedAt,
+      address: {
+        id: userAddresses.id,
+        userId: userAddresses.userId,
+        name: userAddresses.name,
+        address: userAddresses.address,
+        city: userAddresses.city,
+        state: userAddresses.state,
+        postalCode: userAddresses.postalCode,
+        country: userAddresses.country,
+        phone: userAddresses.phone,
+        isDefault: userAddresses.isDefault,
+        createdAt: userAddresses.createdAt,
+        updatedAt: userAddresses.updatedAt,
+      }
     })
     .from(shippingRequests)
+    .leftJoin(userAddresses, eq(shippingRequests.addressId, userAddresses.id))
     .where(eq(shippingRequests.userId, userId))
     .orderBy(desc(shippingRequests.createdAt))
-    .limit(50); // Limit to 50 most recent requests for performance
-    
-    if (requests.length === 0) {
-      console.log('📦 Storage: No shipping requests found');
-      return [];
-    }
-    
-    // Get unique address IDs (filter out null values)
-    const addressIds = [...new Set(requests.map(req => req.addressId).filter(id => id !== null))];
-    
-    // Fetch addresses separately
-    const addresses = await db.select()
-      .from(userAddresses)
-      .where(inArray(userAddresses.id, addressIds));
-    
-    // Create address lookup map
-    const addressMap = new Map(addresses.map(addr => [addr.id, addr]));
-    
-    // Combine requests with addresses
-    const result = requests.map(request => ({
-      ...request,
-      address: request.addressId ? addressMap.get(request.addressId) || null : null
-    }));
+    .limit(20); // Reduced limit for faster queries
     
     console.log('📦 Storage: Found shipping requests:', result.length, 'requests');
     return result;

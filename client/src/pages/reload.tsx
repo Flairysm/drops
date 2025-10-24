@@ -268,14 +268,14 @@ export default function Reload() {
               {/* Predefined Amount Buttons */}
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-[#E5E7EB] mb-4">Quick Select</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {creditOptions.map((option) => (
                     <motion.button
                       key={option.id}
                       onClick={() => {
                         setSelectedAmount(option.price);
                       }}
-                      className={`p-4 rounded-xl border transition-all duration-300 ${
+                      className={`p-3 rounded-xl border transition-all duration-300 ${
                         selectedAmount === option.price
                           ? 'bg-gradient-to-r from-[#7C3AED]/20 to-[#22D3EE]/20 border-[#7C3AED]/50 shadow-[0_0_15px_rgba(124,58,237,0.2)]'
                           : 'bg-[#151521]/60 border-[#26263A]/60 hover:border-[#7C3AED]/30 hover:bg-[#151521]/80'
@@ -284,10 +284,10 @@ export default function Reload() {
                       whileTap={{ scale: 0.98 }}
                     >
                       <div className="text-center">
-                        <div className="text-xl font-bold text-[#E5E7EB] mb-1">
+                        <div className="text-sm font-bold text-[#E5E7EB] mb-1">
                           {option.credits.toLocaleString()} Credits
                         </div>
-                        <div className="text-sm text-[#22D3EE] font-semibold">
+                        <div className="text-xs text-[#22D3EE] font-semibold">
                           {option.price}
                         </div>
                       </div>
