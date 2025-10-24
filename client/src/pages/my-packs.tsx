@@ -340,6 +340,7 @@ export default function MyPacks() {
   const noPacks = !userPacks || (userPacks as any[]).length === 0;
 
   return (
+    <>
     <div className="min-h-screen relative overflow-hidden pb-24">
       <Navigation />
 
@@ -861,5 +862,6 @@ export default function MyPacks() {
     
     {/* Navigation Footer - Outside main container for proper viewport positioning */}
     <NavigationFooter />
+    </>
   );
 }

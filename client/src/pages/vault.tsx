@@ -464,6 +464,7 @@ export default function Vault() {
   ];
 
   return (
+    <>
     <div className="min-h-screen relative overflow-hidden">
       <Navigation />
 
@@ -1077,5 +1078,6 @@ export default function Vault() {
     
     {/* Navigation Footer - Outside main container for proper viewport positioning */}
     <NavigationFooter />
+    </>
   );
 }
