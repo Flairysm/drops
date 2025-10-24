@@ -23,7 +23,7 @@ serve(async (req) => {
     const urlPath = new URL(url).pathname
 
     // Route handling
-    if (method === 'GET' && urlPath === '/health') {
+    if (method === 'GET' && (urlPath === '/health' || urlPath === '/api/health')) {
       return new Response(
         JSON.stringify({ 
           status: 'ok', 
@@ -37,7 +37,7 @@ serve(async (req) => {
       )
     }
 
-    if (method === 'POST' && urlPath === '/auth/login') {
+    if (method === 'POST' && (urlPath === '/auth/login' || urlPath === '/api/auth/login')) {
       const { email, password } = await req.json()
       
       // Authenticate with Supabase
@@ -69,7 +69,7 @@ serve(async (req) => {
       )
     }
 
-    if (method === 'POST' && urlPath === '/auth/register') {
+    if (method === 'POST' && (urlPath === '/auth/register' || urlPath === '/api/auth/register')) {
       const { email, password, username } = await req.json()
       
       // Register with Supabase
@@ -105,9 +105,55 @@ serve(async (req) => {
       )
     }
 
+    // Get user endpoint - Handle both authenticated and unauthenticated requests
+    if (method === 'GET' && (urlPath === '/auth/user' || urlPath === '/api/auth/user')) {
+      const authHeader = req.headers.get('authorization')
+      
+      // If no authorization header, return null (user not authenticated)
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify(null),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 
+          }
+        )
+      }
+
+      // Create Supabase client with service role key for user verification
+      const supabaseServiceClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      )
+
+      const { data, error } = await supabaseServiceClient.auth.getUser(authHeader.replace('Bearer ', ''))
+      
+      if (error) {
+        return new Response(
+          JSON.stringify(null),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 
+          }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          id: data.user.id,
+          email: data.user.email,
+          username: data.user.user_metadata?.username || data.user.email
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      )
+    }
+
     // Default response
     return new Response(
-      JSON.stringify({ error: 'Not found' }),
+      JSON.stringify({ error: 'Not found', path: urlPath }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 404 

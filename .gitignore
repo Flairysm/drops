@@ -61,3 +61,4 @@ setup-*.ts
 test-*.sql
 *-test.sql
 .vercel
+.env*.local

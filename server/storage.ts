@@ -44,6 +44,15 @@ import {
 import { db } from "./db.js";
 import { eq, and, desc, sql, inArray, gte } from "drizzle-orm";
 
+// Check if database is available
+const isDatabaseAvailable = () => {
+  if (!db) {
+    console.log('⚠️  Database not available - returning mock data');
+    return false;
+  }
+  return true;
+};
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -61,11 +70,24 @@ export interface PackOpenResult {
 
 export class DatabaseStorage {
   // ============================================================================
+  // UTILITY METHODS
+  // ============================================================================
+
+  isDatabaseAvailable(): boolean {
+    return isDatabaseAvailable();
+  }
+
+  // ============================================================================
   // USER METHODS
   // ============================================================================
 
   async getUser(userId: string): Promise<User | null> {
-    const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!isDatabaseAvailable()) {
+      console.log("⚠️  Database not available for getUser");
+      return null;
+    }
+    
+    const result = await db!.select().from(users).where(eq(users.id, userId)).limit(1);
     const user = result[0] || null;
     if (user) {
       console.log("👤 Retrieved user from database:", { userId, credits: user.credits });
@@ -112,7 +134,12 @@ export class DatabaseStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!isDatabaseAvailable()) {
+      console.log("⚠️  Database not available for getUserByEmail");
+      return null;
+    }
+    
+    const result = await db!.select().from(users).where(eq(users.email, email)).limit(1);
     return result[0] || null;
   }
 

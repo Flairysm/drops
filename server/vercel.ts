@@ -1,83 +1,76 @@
-import 'dotenv/config';
-import express, { type Request, Response, NextFunction } from "express";
-import cors from "cors";
-import { registerRoutes } from "./routes.js";
-import path from "path";
-import { fileURLToPath } from 'url';
-
-// Fixed import.meta.dirname issue for production builds
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import express from 'express';
+import cors from 'cors';
+import { setupAuth } from './auth.js';
+import { registerRoutes } from './routes.js';
+import { testDatabaseConnection } from './db.js';
 
 const app = express();
 
-// CORS configuration for production
+app.use(express.json());
+
+// CORS configuration
+const allowedOrigins = [
+  'https://dropstcg.vercel.app',
+  'http://localhost:5173', // For local development
+  'http://localhost:3000' // For local development
+];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://dropstcg.vercel.app', 'https://dropstcg-*.vercel.app'] 
-    : true,
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Security headers
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
-
 // Health check endpoint
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    hasDatabaseUrl: !!process.env.DATABASE_URL,
-    hasJwtSecret: !!process.env.JWT_SECRET,
-    message: 'Server is running! Database connection will be tested separately.'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    const dbConnected = await testDatabaseConnection();
+    
+    res.status(200).json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      database: dbConnected ? 'connected' : 'disconnected',
+      message: dbConnected ? 'Server is running with database!' : 'Server is running but database is disconnected',
+      mode: 'production'
+    });
+  } catch (error: any) {
+    console.error('Health check error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      message: 'Server error during health check',
+      error: error.message
+    });
+  }
 });
 
-// Register all API routes with error handling
+// Setup authentication
+setupAuth(app);
+
+// Register all API routes
 try {
+  console.log('🔄 Registering API routes...');
   await registerRoutes(app);
-  console.log('✅ Routes registered successfully');
+  console.log('✅ API routes registered successfully');
 } catch (error: any) {
-  console.error('❌ Failed to register routes:', error);
-  // Add a simple test endpoint even if routes fail
-  app.get('/api/test', (req: Request, res: Response) => {
-    res.json({ 
-      status: 'ok', 
-      message: 'Basic API is working',
-      error: error?.message || 'Unknown error'
-    });
-  });
-  app.get('/api/*', (req: Request, res: Response) => {
-    res.status(500).json({ 
-      error: 'Server initialization failed',
-      message: 'Routes could not be registered',
-      details: error?.message || 'Unknown error'
+  console.error('❌ Failed to register API routes:', error.message);
+  
+  // Add fallback endpoints if routes fail
+  app.get('/api/*', (req, res) => {
+    res.status(503).json({ 
+      error: 'Service temporarily unavailable',
+      message: 'API routes failed to load. Please try again later.',
+      timestamp: new Date().toISOString()
     });
   });
 }
 
-// Note: Static file serving is handled by Vercel's static build
-// This server only handles API routes
-
-// Error handling middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ 
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  });
-});
-
-// Export for Vercel
 export default app;

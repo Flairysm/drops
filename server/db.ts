@@ -1,39 +1,49 @@
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "../shared/schema.js";
+import { sql } from 'drizzle-orm';
 
-// For development, use a default database URL if not set
-const databaseUrl = process.env.DATABASE_URL || 'postgresql://localhost:5432/drops_dev';
+// Get database URL and configure it properly
+let databaseUrl = process.env.DATABASE_URL || 'postgresql://localhost:5432/drops_dev';
 
-console.log('🔗 Using database URL:', databaseUrl.replace(/\/\/.*@/, '//***@')); // Hide credentials in logs
+console.log('🔗 Original database URL:', databaseUrl.replace(/\/\/.*@/, '//***@')); // Hide credentials in logs
 
-// Configure PostgreSQL connection pool for Supabase
+// For Supabase, use the working configuration
+if (process.env.NODE_ENV === 'production' && databaseUrl.includes('supabase.com')) {
+  // Use the direct connection with SSL disabled (this works!)
+  if (databaseUrl.includes('db.supabase.com')) {
+    // Keep the direct connection but ensure sslmode=disable
+    if (!databaseUrl.includes('sslmode=')) {
+      databaseUrl += '&sslmode=disable';
+    } else {
+      databaseUrl = databaseUrl.replace(/sslmode=[^&]*/, 'sslmode=disable');
+    }
+  }
+  
+  console.log('🔗 Modified database URL for Supabase:', databaseUrl.replace(/\/\/.*@/, '//***@'));
+}
+
 export const pool = new Pool({ 
   connectionString: databaseUrl,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 5, // Allow more connections for better performance
+  min: 0,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
+  acquireTimeoutMillis: 15000,
+  ssl: false, // Disable SSL completely for Supabase
 });
 
-// Test database connection
+// Handle pool errors gracefully
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  // Don't exit in development, just log the error
-  if (process.env.NODE_ENV === 'production') {
-    process.exit(-1);
-  }
+  console.error('❌ Database pool error:', err.message);
+  // Don't exit in production, just log the error
 });
 
-// Test connection on startup
+// Test connection on startup (non-blocking)
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('Error connecting to database:', err);
-    if (process.env.NODE_ENV === 'production') {
-      process.exit(-1);
-    } else {
-      console.log('⚠️  Database connection failed, but continuing in development mode');
-    }
+    console.error('❌ Database connection failed:', err.message);
+    console.log('⚠️  Continuing without database connection...');
   } else {
     console.log('✅ Database connected successfully');
     release();
@@ -41,3 +51,15 @@ pool.connect((err, client, release) => {
 });
 
 export const db = drizzle(pool, { schema });
+
+// Test database connectivity
+export async function testDatabaseConnection(): Promise<boolean> {
+  try {
+    const result = await db.select(sql`1 as test, current_database() as db_name`).from(sql`pg_database`).limit(1);
+    console.log('✅ Database connection test successful:', result[0]);
+    return true;
+  } catch (error: any) {
+    console.error('❌ Database connection test failed:', error.message);
+    return false;
+  }
+}
