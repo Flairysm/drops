@@ -316,13 +316,13 @@ const fetchPackDetails = async () => {
 
           {/* Tabs for detailed information */}
           <Tabs defaultValue="prizepool" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-gray-900/80 to-gray-800/80 border border-gray-600/50 rounded-xl p-1">
-              <TabsTrigger value="prizepool" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-lg transition-all duration-300">
-                <Gift className="w-4 h-4 mr-2" />
+            <TabsList className="grid w-full grid-cols-2 bg-gray-800/50 border border-gray-600/30 rounded-lg p-0.5 h-8">
+              <TabsTrigger value="prizepool" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-md transition-all duration-200 text-xs px-2 py-1">
+                <Gift className="w-3 h-3 mr-1" />
                 Prize Pool
               </TabsTrigger>
-              <TabsTrigger value="stats" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-lg transition-all duration-300">
-                <BarChart3 className="w-4 h-4 mr-2" />
+              <TabsTrigger value="stats" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-md transition-all duration-200 text-xs px-2 py-1">
+                <BarChart3 className="w-3 h-3 mr-1" />
                 Statistics
               </TabsTrigger>
             </TabsList>
