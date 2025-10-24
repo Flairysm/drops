@@ -279,7 +279,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-4"
+              className="text-center mb-4 mt-8"
               style={{ touchAction: 'manipulation' }}
             >
               <button
@@ -307,7 +307,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-4"
+              className="text-center mb-4 mt-8"
             >
               <button
                 onClick={handleComplete}
