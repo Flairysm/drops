@@ -114,6 +114,8 @@ export default function Shipping() {
   console.log('🔍 Shipping component rendering...');
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  
+  console.log('🔍 Auth state:', { isAuthenticated, isLoading });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -424,6 +426,9 @@ export default function Shipping() {
     );
   }
 
+  // Debug: Show component is rendering
+  console.log('🔍 Shipping component fully rendered, auth state:', { isAuthenticated, isLoading });
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <Navigation />
@@ -528,7 +533,7 @@ export default function Shipping() {
                   })()}
                   
                   {/* Debug display */}
-                  <div className="mb-4 p-2 bg-gray-700 rounded text-xs">
+                  <div className="mb-4 p-2 bg-gray-700 rounded text-xs text-white">
                     <div>Total Requests: {shippingRequests.length}</div>
                     <div>Pending/Shipping: {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length}</div>
                     <div>All Statuses: {shippingRequests.map(r => r.status).join(', ')}</div>
