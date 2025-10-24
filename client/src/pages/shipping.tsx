@@ -133,14 +133,6 @@ export default function Shipping() {
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [shippingRequests, setShippingRequests] = useState<ShippingRequest[]>([]);
   
-  // Debug: Track shipping requests state changes
-  useEffect(() => {
-    console.log('🔍 Shipping requests state changed:', {
-      length: shippingRequests.length,
-      requests: shippingRequests,
-      statuses: shippingRequests.map(r => r.status)
-    });
-  }, [shippingRequests]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const hasFetchedDataRef = useRef(false);
@@ -563,21 +555,7 @@ export default function Shipping() {
                   <p className="text-muted-foreground">Orders currently being processed</p>
                 </CardHeader>
                 <CardContent>
-                  {(() => {
-                    console.log('🔍 Rendering pending shipments - current state:', {
-                      totalRequests: shippingRequests.length,
-                      requests: shippingRequests,
-                      pendingRequests: shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping')
-                    });
-                    return null;
-                  })()}
                   
-                  {/* Debug display */}
-                  <div className="mb-4 p-2 bg-gray-700 rounded text-xs text-white">
-                    <div>Total Requests: {shippingRequests.length}</div>
-                    <div>Pending/Shipping: {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length}</div>
-                    <div>All Statuses: {shippingRequests.map(r => r.status).join(', ')}</div>
-                  </div>
                   {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">No pending shipments</p>
