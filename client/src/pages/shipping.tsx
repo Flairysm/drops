@@ -227,8 +227,29 @@ export default function Shipping() {
     setIsLoadingRequests(true);
     try {
       console.log('🔍 Fetching shipping requests...');
-      const response = await apiRequest('GET', '/api/shipping/requests');
+      
+      // Test direct fetch first
+      console.log('🔍 Testing direct fetch...');
+      const token = localStorage.getItem('authToken');
+      const directResponse = await fetch('/api/shipping/requests', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('🔍 Direct fetch response:', directResponse.status, directResponse.ok);
+      
+      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 30000 });
       console.log('🔍 Response status:', response.status, response.ok);
+      
+      if (!response.ok) {
+        console.error('❌ API request failed:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
       console.log('📦 Shipping requests response:', data);
       console.log('📦 Response type:', typeof data);
@@ -242,7 +263,7 @@ export default function Shipping() {
       setShippingRequests(data);
       console.log('📦 Shipping requests state updated with:', data);
     } catch (error) {
-      console.error('Error fetching shipping requests:', error);
+      console.error('❌ Error fetching shipping requests:', error);
       toast({
         title: "Error",
         description: "Failed to fetch shipping requests",
