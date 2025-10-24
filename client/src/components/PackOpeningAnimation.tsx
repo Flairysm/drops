@@ -114,7 +114,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   
   return (
     <div 
-      className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" 
+      className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 mobile-optimized" 
       style={{ pointerEvents: 'auto' }}
       onClick={(e) => {
         console.log('Main container clicked');
