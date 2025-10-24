@@ -187,16 +187,14 @@ export default function Shipping() {
 
   useEffect(() => {
     console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading, hasFetchedData: hasFetchedDataRef.current });
-    if (isAuthenticated && !isLoading && !hasFetchedDataRef.current) {
+    if (isAuthenticated && !isLoading) {
       console.log('🔍 User is authenticated and not loading, fetching data...');
-      hasFetchedDataRef.current = true;
       fetchAddresses();
       fetchShippingRequests();
     } else if (!isAuthenticated) {
       console.log('🔍 User not authenticated, clearing state...');
       setShippingRequests([]);
       setAddresses([]);
-      hasFetchedDataRef.current = false;
     }
   }, [isAuthenticated, isLoading]); // Only run when auth state changes
 
@@ -553,8 +551,21 @@ export default function Shipping() {
             <TabsContent value="pending" className="space-y-6">
               <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                 <CardHeader>
-                  <CardTitle>Pending Shipments</CardTitle>
-                  <p className="text-muted-foreground">Orders currently being processed</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Pending Shipments</CardTitle>
+                      <p className="text-muted-foreground">Orders currently being processed</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        console.log('🔄 Force refreshing shipping requests...');
+                        fetchShippingRequests();
+                      }}
+                      className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
+                    >
+                      Refresh
+                    </button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   
@@ -570,7 +581,12 @@ export default function Shipping() {
                     return null;
                   })()}
                   
-                  {shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
+                  {isLoadingRequests ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Loading shipping requests...</p>
+                    </div>
+                  ) : shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">No pending shipments</p>
                       <p className="text-sm text-muted-foreground">Go to your vault to select cards for shipping</p>
