@@ -340,7 +340,7 @@ export default function MyPacks() {
   const noPacks = !userPacks || (userPacks as any[]).length === 0;
 
   return (
-    <div className="min-h-screen relative overflow-hidden pb-20">
+    <div className="min-h-screen relative overflow-hidden pb-24">
       <Navigation />
 
       {/* Futuristic Card Hero Background */}
