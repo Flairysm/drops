@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2, Star, Crown, Sparkles, Trophy, Gift, Eye } from "lucide-react";
+import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2, Star, Crown, Sparkles, Trophy, Gift, Eye, X } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -834,7 +834,15 @@ export default function Home() {
 
       {/* Raffle Details Dialog */}
       <Dialog open={showRaffleDetails} onOpenChange={setShowRaffleDetails}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700 [&>button]:hidden">
+          {/* Custom X Button */}
+          <button
+            onClick={() => setShowRaffleDetails(false)}
+            className="absolute right-6 top-6 w-10 h-10 flex items-center justify-center text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-600 shadow-lg z-50 !block"
+          >
+            <X className="h-5 w-5 mx-auto" />
+          </button>
+          
           <DialogHeader className="p-6 pb-4 border-b border-gray-600">
             <DialogTitle className="text-2xl font-bold text-white">{selectedRaffle?.title}</DialogTitle>
             <DialogDescription className="text-gray-400">

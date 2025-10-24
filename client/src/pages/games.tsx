@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { ClassicPackPopup } from "@/components/ClassicPackPopup";
 import { SpecialPackPopup } from "@/components/SpecialPackPopup";
-import { Gift, Users, Trophy, Star, Coins, Eye } from "lucide-react";
+import { Gift, Users, Trophy, Star, Coins, Eye, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -885,7 +885,15 @@ export default function Play() {
 
       {/* Raffle Details Dialog */}
       <Dialog open={showRaffleDetails} onOpenChange={setShowRaffleDetails}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700 [&>button]:hidden">
+          {/* Custom X Button */}
+          <button
+            onClick={() => setShowRaffleDetails(false)}
+            className="absolute right-6 top-6 w-10 h-10 flex items-center justify-center text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-600 shadow-lg z-50 !block"
+          >
+            <X className="h-5 w-5 mx-auto" />
+          </button>
+          
           <DialogHeader className="p-6 pb-4 border-b border-gray-600">
             <DialogTitle className="text-2xl font-bold text-white">{selectedRaffle?.title}</DialogTitle>
             <DialogDescription className="text-gray-400">
