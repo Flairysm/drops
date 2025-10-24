@@ -2374,7 +2374,8 @@ export class DatabaseStorage {
   }
 
   async getUserShippingRequests(userId: string): Promise<(ShippingRequest & { address: UserAddress })[]> {
-    return await db.select({
+    console.log('🔍 Storage: Getting shipping requests for user:', userId);
+    const result = await db.select({
       id: shippingRequests.id,
       userId: shippingRequests.userId,
       addressId: shippingRequests.addressId,
@@ -2404,6 +2405,10 @@ export class DatabaseStorage {
     .innerJoin(userAddresses, eq(shippingRequests.addressId, userAddresses.id))
     .where(eq(shippingRequests.userId, userId))
     .orderBy(desc(shippingRequests.createdAt));
+    
+    console.log('📦 Storage: Found shipping requests:', result.length, 'requests');
+    console.log('📦 Storage: Requests data:', result);
+    return result;
   }
 
   async getAllShippingRequests(): Promise<(ShippingRequest & { address: UserAddress; user: Pick<User, 'id' | 'email' | 'username' | 'credits' | 'createdAt' | 'updatedAt'> })[]> {

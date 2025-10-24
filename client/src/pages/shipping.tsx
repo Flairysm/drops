@@ -208,8 +208,11 @@ export default function Shipping() {
   const fetchShippingRequests = async () => {
     setIsLoadingRequests(true);
     try {
+      console.log('🔍 Fetching shipping requests...');
       const response = await apiRequest('GET', '/api/shipping/requests');
       const data = await response.json();
+      console.log('📦 Shipping requests response:', data);
+      console.log('📦 Number of requests:', Array.isArray(data) ? data.length : 'Not an array');
       setShippingRequests(data);
     } catch (error) {
       console.error('Error fetching shipping requests:', error);

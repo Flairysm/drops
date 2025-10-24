@@ -2612,7 +2612,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/shipping/requests', isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      console.log('🔍 Fetching shipping requests for user:', userId);
       const requests = await storage.getUserShippingRequests(userId);
+      console.log('📦 Found shipping requests:', requests.length, 'requests');
+      console.log('📦 Requests data:', requests);
       res.json(requests);
     } catch (error) {
       console.error("Error fetching shipping requests:", error);
