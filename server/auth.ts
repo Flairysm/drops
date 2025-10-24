@@ -10,6 +10,8 @@ import { testDatabaseConnection } from './db.js';
 const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET || 'fallback-secret-for-testing';
 const JWT_EXPIRES_IN = '7d';
 
+console.log('🔐 JWT Secret configured:', JWT_SECRET ? 'Yes' : 'No');
+
 export function setupAuth(app: express.Application) {
   console.log('🔐 Setting up authentication with real database');
 
@@ -216,7 +218,9 @@ export const isAuthenticatedJWT: RequestHandler = async (req, res, next) => {
   }
 
   try {
+    console.log('🔐 Validating JWT token:', token.substring(0, 20) + '...');
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    console.log('🔐 JWT token decoded successfully:', { userId: decoded.userId, username: decoded.username });
     
     // Check if database is available
     const dbAvailable = await testDatabaseConnection();
@@ -229,6 +233,7 @@ export const isAuthenticatedJWT: RequestHandler = async (req, res, next) => {
     // Get user from database
     const user = await storage.getUser(decoded.userId);
     if (!user) {
+      console.log('🔐 User not found in database:', decoded.userId);
       return res.status(401).json({ message: "Invalid token" });
     }
 
