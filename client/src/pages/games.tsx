@@ -90,7 +90,7 @@ const gameData = {
       name: "Pokemon Dice",
       description: "Roll 5 dice and match Pokemon types!",
       cost: 250,
-      image: "/assets/pokeball.png",
+      image: "/assets/minesweeper-image.png",
       route: "/play/dice"
     }
   ] as GameItem[],
