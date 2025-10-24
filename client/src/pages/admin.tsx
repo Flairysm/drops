@@ -1877,42 +1877,42 @@ export default function Admin() {
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-gray-800/50">
+              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-gray-800 border border-gray-600 rounded-lg">
                 <TabsTrigger 
                   value="overview" 
                   data-testid="tab-overview"
-                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
                   title="Overview"
                 >
                   <TrendingUp className="w-5 h-5" />
-                  <span className="text-xs text-white">Overview</span>
+                  <span className="text-xs">Overview</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="users" 
                   data-testid="tab-users"
-                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
                   title="Users"
                 >
                   <Users className="w-5 h-5" />
-                  <span className="text-xs text-white">Users</span>
+                  <span className="text-xs">Users</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="manage" 
                   data-testid="tab-manage"
-                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
                   title="Manage Packs"
                 >
                   <Package className="w-5 h-5" />
-                  <span className="text-xs text-white">Manage</span>
+                  <span className="text-xs">Manage</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="raffles" 
                   data-testid="tab-raffles"
-                  className="flex flex-col items-center gap-1 p-3 h-auto"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
                   title="Raffles"
                 >
                   <Gift className="w-5 h-5" />
-                  <span className="text-xs text-white">Raffles</span>
+                  <span className="text-xs">Raffles</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1920,7 +1920,7 @@ export default function Admin() {
             {/* Overview Tab */}
             <TabsContent value="overview">
               <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-white">Total Users</CardTitle>
                     <Users className="h-4 w-4 text-gray-400" />
@@ -1935,7 +1935,7 @@ export default function Admin() {
                   </CardContent>
                 </Card>
 
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
                     <TrendingUp className="h-4 w-4 text-gray-400" />
@@ -1950,7 +1950,7 @@ export default function Admin() {
                   </CardContent>
                 </Card>
 
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-white">Top Spenders</CardTitle>
                     <Trophy className="h-4 w-4 text-gray-400" />
@@ -1998,7 +1998,7 @@ export default function Admin() {
 
               {/* Additional Stats Section */}
               <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold text-white">System Overview</CardTitle>
                   </CardHeader>
@@ -2021,7 +2021,7 @@ export default function Admin() {
                 </Card>
 
 
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold text-white">Quick Actions</CardTitle>
                   </CardHeader>
@@ -2055,7 +2055,7 @@ export default function Admin() {
                   </CardContent>
                 </Card>
 
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold text-white">System Settings</CardTitle>
                   </CardHeader>
@@ -2094,7 +2094,7 @@ export default function Admin() {
 
             {/* Users Tab */}
             <TabsContent value="users">
-              <Card className="gaming-card">
+              <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                   <CardTitle>User Management</CardTitle>
@@ -2177,7 +2177,7 @@ export default function Admin() {
                 <TabsContent value="classic">
                   <div className="space-y-6">
                     {/* Classic Packs Display */}
-                    <Card className="gaming-card">
+                    <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                       <CardHeader>
                         <div className="flex justify-between items-center">
                           <CardTitle>Classic Packs</CardTitle>
@@ -2281,7 +2281,7 @@ export default function Admin() {
                 <TabsContent value="special">
                   <div className="space-y-6">
                     {/* Special Packs Display */}
-                      <Card className="gaming-card">
+                      <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                         <CardHeader>
                         <div className="flex justify-between items-center">
                           <CardTitle>Special Packs</CardTitle>
@@ -2389,7 +2389,7 @@ export default function Admin() {
                     </div>
 
                     {/* Mystery Pack Cards */}
-                      <Card className="gaming-card">
+                      <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                         <CardHeader>
                           <CardTitle>Mystery Pack Prize Pool</CardTitle>
                         </CardHeader>
@@ -2566,7 +2566,7 @@ export default function Admin() {
                 </div>
 
                 {/* Active Raffles */}
-                <Card className="gaming-card">
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Gift className="w-5 h-5" />
