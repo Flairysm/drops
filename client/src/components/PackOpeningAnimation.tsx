@@ -150,81 +150,124 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
         {/* 4x2 Grid - 7 Commons + 1 Hit */}
         <div className="mb-6">
-          <div className="grid grid-cols-4 gap-3 max-w-md mx-auto mb-6">
-            {/* Show 7 common cards first */}
-            {commonCards.slice(0, 7).map((card, index) => {
-              const isCardRevealed = index < revealedCards;
+          <div className="flex flex-col items-center space-y-3">
+            {/* First Row - 4 Cards */}
+            <div className="flex justify-center space-x-3">
+              {commonCards.slice(0, 4).map((card, index) => {
+                const isCardRevealed = index < revealedCards;
 
-              return (
-                <motion.div
-                  key={`common-${index}-${card.id}`}
-                  className="gaming-card p-2 text-left transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                >
-                  {isCardRevealed ? (
-                    /* Common Card - Revealed */
-                    <div className="w-16 h-24 mr-6">
-                      <img
-                        src={card.imageUrl || "/card-images/Commons.png"}
-                        alt={card.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/card-images/Commons.png";
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    /* Common Card - Hidden */
-                    <div className="w-16 h-24 mr-6 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
-                      <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-                        <div className="text-slate-400 text-lg font-bold">?</div>
+                return (
+                  <motion.div
+                    key={`common-${index}-${card.id}`}
+                    className="gaming-card p-2 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    {isCardRevealed ? (
+                      /* Common Card - Revealed */
+                      <div className="w-16 h-24">
+                        <img
+                          src={card.imageUrl || "/card-images/Commons.png"}
+                          alt={card.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/card-images/Commons.png";
+                          }}
+                        />
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                    ) : (
+                      /* Common Card - Hidden */
+                      <div className="w-16 h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
+                        <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+                          <div className="text-slate-400 text-lg font-bold">?</div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
 
-            {/* Hit Card Slot */}
-            <motion.div
-              key="hit-card-slot"
-              className="gaming-card p-2 text-left transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            >
-              {revealedCards >= 8 ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`relative w-16 h-24 mr-6 ${getTierGlowColor(hitCard?.tier || '')}`}
-                >
-                  <img
-                    src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
-                    alt={isHitRevealed ? "Hit Card" : "Hit Card Back"}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      // Only set fallback if we haven't already tried the fallback
-                      if (!target.src.includes('/card-images/Commons.png') && !target.src.includes('/card-images/hit.png')) {
-                        target.src = isHitRevealed ? "/card-images/Commons.png" : "/card-images/hit.png";
-                      }
-                    }}
-                  />
-                </motion.div>
-              ) : (
-                /* Hit Card - Hidden */
-                <div className="w-16 h-24 mr-6 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
-                  <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-                    <div className="text-slate-400 text-lg font-bold">?</div>
+            {/* Second Row - 3 Commons + 1 Hit */}
+            <div className="flex justify-center space-x-3">
+              {/* 3 more common cards */}
+              {commonCards.slice(4, 7).map((card, index) => {
+                const actualIndex = index + 4;
+                const isCardRevealed = actualIndex < revealedCards;
+
+                return (
+                  <motion.div
+                    key={`common-${actualIndex}-${card.id}`}
+                    className="gaming-card p-2 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    {isCardRevealed ? (
+                      /* Common Card - Revealed */
+                      <div className="w-16 h-24">
+                        <img
+                          src={card.imageUrl || "/card-images/Commons.png"}
+                          alt={card.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/card-images/Commons.png";
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      /* Common Card - Hidden */
+                      <div className="w-16 h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
+                        <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+                          <div className="text-slate-400 text-lg font-bold">?</div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+
+              {/* Hit Card Slot */}
+              <motion.div
+                key="hit-card-slot"
+                className="gaming-card p-2 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                {revealedCards >= 8 ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className={`relative w-16 h-24 ${getTierGlowColor(hitCard?.tier || '')}`}
+                  >
+                    <img
+                      src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
+                      alt={isHitRevealed ? "Hit Card" : "Hit Card Back"}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        // Only set fallback if we haven't already tried the fallback
+                        if (!target.src.includes('/card-images/Commons.png') && !target.src.includes('/card-images/hit.png')) {
+                          target.src = isHitRevealed ? "/card-images/Commons.png" : "/card-images/hit.png";
+                        }
+                      }}
+                    />
+                  </motion.div>
+                ) : (
+                  /* Hit Card - Hidden */
+                  <div className="w-16 h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
+                    <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+                      <div className="text-slate-400 text-lg font-bold">?</div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </motion.div>
+                )}
+              </motion.div>
+            </div>
           </div>
 
           {/* Tap to Reveal Button */}
