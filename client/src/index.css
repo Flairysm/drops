@@ -5,48 +5,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile-first optimizations */
-@layer base {
-  html {
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-  
-  body {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    overflow-x: hidden;
-    position: relative;
-  }
-  
-  /* Allow text selection in content areas */
-  input, textarea, [contenteditable], p, span, div[role="textbox"] {
-    -webkit-user-select: text;
-    -khtml-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    user-select: text;
-  }
-  
-  /* Force NavigationFooter to float above content */
-  .nav-footer-fixed {
-    position: fixed !important;
-    bottom: 20px !important;
-    left: 20px !important;
-    right: 20px !important;
-    z-index: 9999 !important;
-    border-radius: 16px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-  }
-}
-
 /* 3D Dice Animation Styles */
 .perspective-1000 {
   perspective: 1000px;

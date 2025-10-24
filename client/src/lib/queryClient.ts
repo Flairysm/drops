@@ -24,8 +24,9 @@ export async function authRequest(
   data?: unknown | undefined,
   options?: { timeout?: number }
 ): Promise<Response> {
-  // Use same domain for auth requests (no CORS issues)
-  const fullUrl = url;
+  // Use base URL for auth requests
+  const baseUrl = getApiBaseUrl();
+  const fullUrl = baseUrl ? `${baseUrl}${url}` : url;
   
   const headers: Record<string, string> = {};
   
@@ -121,9 +122,10 @@ export const getAuthQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Use same domain for auth queries (no CORS issues)
+    // Use base URL for auth queries
+    const baseUrl = getApiBaseUrl();
     const path = queryKey.join("/").replace(/^\/+/, ""); // Remove leading slashes
-    const fullUrl = `/${path}`;
+    const fullUrl = baseUrl ? `${baseUrl}/${path}` : `/${path}`;
     
     // Get JWT token from localStorage
     const token = localStorage.getItem('authToken');

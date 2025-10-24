@@ -17,23 +17,17 @@ export default defineConfig({
     outDir: '../dist',
     assetsDir: 'assets',
     target: 'es2020',
-    minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-          utils: ['lucide-react', 'framer-motion'],
-        },
+        manualChunks: undefined,
       },
     },
-    chunkSizeWarningLimit: 1000,
   },
   server: {
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },

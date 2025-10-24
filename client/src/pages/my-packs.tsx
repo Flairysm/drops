@@ -340,8 +340,7 @@ export default function MyPacks() {
   const noPacks = !userPacks || (userPacks as any[]).length === 0;
 
   return (
-    <>
-    <div className="relative overflow-hidden pb-24">
+    <div className="min-h-screen relative overflow-hidden">
       <Navigation />
 
       {/* Futuristic Card Hero Background */}
@@ -431,7 +430,7 @@ export default function MyPacks() {
         </div>
       </div>
 
-      <div className="min-h-screen pt-20 pb-24 px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="min-h-screen pt-20 pb-20 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
           <motion.div 
@@ -847,6 +846,8 @@ export default function MyPacks() {
         </motion.div>
 
       </div>
+      {/* Navigation Footer */}
+      <NavigationFooter />
       
       {/* Pack Opening Animation */}
       {showAnimation && packOpenData && (
@@ -859,9 +860,5 @@ export default function MyPacks() {
         />
       )}
     </div>
-    
-    {/* Navigation Footer - Outside main container for proper viewport positioning */}
-    <NavigationFooter />
-    </>
   );
 }

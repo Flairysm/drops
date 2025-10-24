@@ -164,7 +164,7 @@ export function setupAuth(app: express.Application) {
       const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
       if (!token) {
-        return res.status(200).json(null);
+        return res.status(401).json({ message: "No token provided" });
       }
 
       // Verify JWT token

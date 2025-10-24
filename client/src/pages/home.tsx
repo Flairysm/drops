@@ -252,7 +252,7 @@ export default function Home() {
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       <Navigation />
       
       {/* Futuristic Card Hero Background */}
@@ -359,7 +359,7 @@ export default function Home() {
         </div>
       </div>
       
-      <main className="pt-20 pb-24 relative z-10">
+      <main className="pt-20 pb-20 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
          {/* Welcome Section */}

@@ -464,8 +464,7 @@ export default function Vault() {
   ];
 
   return (
-    <>
-    <div className="relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       <Navigation />
 
       {/* Futuristic Card Hero Background */}
@@ -1074,10 +1073,8 @@ export default function Vault() {
         </DialogContent>
       </Dialog>
 
+      {/* Navigation Footer */}
+      <NavigationFooter />
     </div>
-    
-    {/* Navigation Footer - Outside main container for proper viewport positioning */}
-    <NavigationFooter />
-    </>
   );
 }

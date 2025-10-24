@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getQueryFn, authRequest } from "@/lib/queryClient";
+import { getAuthQueryFn, authRequest } from "@/lib/queryClient";
 
 export function useAuth() {
   const queryClient = useQueryClient();
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
+    queryFn: getAuthQueryFn({ on401: "returnNull" }),
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnMount: false, // Temporarily disable to avoid 401 errors
