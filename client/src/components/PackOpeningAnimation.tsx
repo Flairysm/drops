@@ -150,16 +150,16 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
         {/* 4x2 Grid - 7 Commons + 1 Hit */}
         <div className="mb-6">
-          <div className="flex flex-col items-center space-y-3">
+          <div className="flex flex-col items-center space-y-2">
             {/* First Row - 4 Cards */}
-            <div className="flex justify-center space-x-3">
+            <div className="flex justify-center space-x-2">
               {commonCards.slice(0, 4).map((card, index) => {
                 const isCardRevealed = index < revealedCards;
 
                 return (
                   <motion.div
                     key={`common-${index}-${card.id}`}
-                    className="gaming-card p-2 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+                    className="gaming-card p-1 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
@@ -191,7 +191,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             </div>
 
             {/* Second Row - 3 Commons + 1 Hit */}
-            <div className="flex justify-center space-x-3">
+            <div className="flex justify-center space-x-2">
               {/* 3 more common cards */}
               {commonCards.slice(4, 7).map((card, index) => {
                 const actualIndex = index + 4;
@@ -200,7 +200,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 return (
                   <motion.div
                     key={`common-${actualIndex}-${card.id}`}
-                    className="gaming-card p-2 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+                    className="gaming-card p-1 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
@@ -233,7 +233,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
               {/* Hit Card Slot */}
               <motion.div
                 key="hit-card-slot"
-                className="gaming-card p-2 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+                className="gaming-card p-1 transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
