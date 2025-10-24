@@ -29,6 +29,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const [revealedCards, setRevealedCards] = useState(0);
   const [showHitCard, setShowHitCard] = useState(false);
   const [isHitRevealed, setIsHitRevealed] = useState(false);
+  const [isAnimationReady, setIsAnimationReady] = useState(false);
 
   // Function to get tier glow color
   const getTierGlowColor = (tier: string) => {
@@ -72,15 +73,23 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     const hitCardTimeout = 500 + (7 * 150) + 500;
     setTimeout(() => {
       setRevealedCards(8); // Show hit card back (8th card)
+      // Set animation ready after a small additional delay
+      setTimeout(() => {
+        setIsAnimationReady(true);
+      }, 200);
     }, hitCardTimeout);
   }, []); // Only run once when component mounts
 
   const handleRevealHit = (e: React.MouseEvent | React.TouchEvent) => {
-    console.log('handleRevealHit called:', { revealedCards, isHitRevealed });
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('handleRevealHit called:', { revealedCards, isHitRevealed, isAnimationReady });
     
-    if (revealedCards >= 8 && !isHitRevealed) {
+    if (revealedCards >= 8 && !isHitRevealed && isAnimationReady) {
       console.log('Revealing hit card!');
       setIsHitRevealed(true); // Reveal the hit card
+    } else {
+      console.log('Cannot reveal hit card:', { revealedCards, isHitRevealed, isAnimationReady });
     }
   };
 
@@ -271,7 +280,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           </div>
 
           {/* Tap to Reveal Button */}
-          {revealedCards >= 8 && !isHitRevealed && (() => {
+          {revealedCards >= 8 && !isHitRevealed && isAnimationReady && (() => {
             console.log('Rendering TAP TO REVEAL button:', { revealedCards, isHitRevealed });
             console.log('Button condition - revealedCards >= 8:', revealedCards >= 8);
             console.log('Button condition - !isHitRevealed:', !isHitRevealed);
@@ -287,11 +296,8 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   console.log('BUTTON CLICKED!');
                   handleRevealHit(e);
                 }}
-                onTouchEnd={(e) => {
-                  console.log('Touch end on button - triggering reveal');
-                  handleRevealHit(e as any);
-                }}
-                className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-4 py-2 rounded-lg font-medium text-sm shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-300 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none touch-manipulation"
+                disabled={isHitRevealed}
+                className={`bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-4 py-2 rounded-lg font-medium text-sm shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-300 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none touch-manipulation ${isHitRevealed ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ pointerEvents: 'auto', zIndex: 10000, minHeight: '44px', minWidth: '200px' }}
                 type="button"
               >
