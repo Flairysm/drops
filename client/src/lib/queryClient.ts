@@ -13,8 +13,8 @@ const getApiBaseUrl = () => {
     // In production, use the same domain as the frontend (no CORS issues)
     return '';
   }
-  // In development, use local backend on port 3000
-  return 'http://localhost:3000';
+  // In development, use Vite proxy (no need to specify port)
+  return '';
 };
 
 // Special function for auth requests using same domain
