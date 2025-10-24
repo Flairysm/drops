@@ -125,33 +125,33 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
-        className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl"
+        className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-4 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl mobile-optimized"
         onClick={(e) => {
           console.log('Inner container clicked');
           e.stopPropagation();
         }}
       >
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4 sm:mb-6">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-center gap-3 mb-2"
+            className="flex items-center justify-center gap-2 sm:gap-3 mb-2"
           >
-            <Gift className="h-8 w-8 text-[#7C3AED]" />
-            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#22D3EE]">
+            <Gift className="h-6 w-6 sm:h-8 sm:w-8 text-[#7C3AED]" />
+            <h2 className="text-xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#22D3EE]">
               Pack Opening
             </h2>
-            <Sparkles className="h-8 w-8 text-[#22D3EE]" />
+            <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-[#22D3EE]" />
           </motion.div>
-          <p className="text-gray-300 text-lg font-medium">
+          <p className="text-gray-300 text-base sm:text-lg font-medium">
             {packType} Pack • {packCards.length} Cards
           </p>
         </div>
 
         {/* 4x2 Grid - 7 Commons + 1 Hit */}
         <div className="mb-6">
-          <div className="grid grid-cols-4 gap-3 max-w-2xl mx-auto mb-6">
+          <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-2xl mx-auto mb-6 px-2">
             {/* Show 7 common cards first */}
             {commonCards.slice(0, 7).map((card, index) => {
               const isCardRevealed = index < revealedCards;
@@ -159,18 +159,18 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
               return (
                 <motion.div
                   key={`common-${index}-${card.id}`}
-                  className="gaming-card p-2 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+                  className="gaming-card p-1 sm:p-2 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                 >
                   {isCardRevealed ? (
                     /* Common Card - Revealed */
-                    <div className="w-20 h-28">
+                    <div className="w-16 h-24 sm:w-20 sm:h-28">
                       <img
                         src={card.imageUrl || "/card-images/Commons.png"}
                         alt={card.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-md"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.src = "/card-images/Commons.png";
@@ -179,9 +179,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     </div>
                   ) : (
                     /* Common Card - Hidden */
-                    <div className="w-20 h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
-                      <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-                        <div className="text-slate-400 text-lg font-bold">?</div>
+                    <div className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600 rounded-md">
+                      <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center rounded-md">
+                        <div className="text-slate-400 text-sm sm:text-lg font-bold">?</div>
                       </div>
                     </div>
                   )}
@@ -192,7 +192,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
             {/* Hit Card Slot */}
             <motion.div
               key="hit-card-slot"
-              className="gaming-card p-2 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
+              className="gaming-card p-1 sm:p-2 text-center transition-all duration-500 ease-out transform opacity-100 scale-100 animate-in slide-in-from-bottom-2"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
@@ -202,12 +202,12 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`relative w-20 h-28 ${getTierGlowColor(hitCard?.tier || '')}`}
+                  className={`relative w-16 h-24 sm:w-20 sm:h-28 ${getTierGlowColor(hitCard?.tier || '')}`}
                 >
                   <img
                     src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
                     alt={isHitRevealed ? "Hit Card" : "Hit Card Back"}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-md"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       // Only set fallback if we haven't already tried the fallback
@@ -219,9 +219,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 </motion.div>
               ) : (
                 /* Hit Card - Hidden */
-                <div className="w-20 h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
-                  <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-                    <div className="text-slate-400 text-lg font-bold">?</div>
+                <div className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600 rounded-md">
+                  <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center rounded-md">
+                    <div className="text-slate-400 text-sm sm:text-lg font-bold">?</div>
                   </div>
                 </div>
               )}
@@ -229,56 +229,24 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           </div>
 
           {/* Tap to Reveal Button */}
-          {revealedCards >= 8 && !isHitRevealed && (() => {
-            console.log('Rendering TAP TO REVEAL button:', { revealedCards, isHitRevealed });
-            console.log('Button condition - revealedCards >= 8:', revealedCards >= 8);
-            console.log('Button condition - !isHitRevealed:', !isHitRevealed);
-            return (
+          {revealedCards >= 8 && !isHitRevealed && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-4"
             >
               <button
-                onClick={(e) => {
-                  console.log('BUTTON CLICKED!');
-                  console.log('Event:', e);
-                  console.log('Event target:', e.target);
-                  console.log('Event currentTarget:', e.currentTarget);
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.nativeEvent.stopImmediatePropagation();
-                  handleRevealHit(e);
+                onClick={() => {
+                  console.log('TAP TO REVEAL button clicked!');
+                  setIsHitRevealed(true);
                 }}
-                onMouseDown={(e) => {
-                  console.log('Mouse down on button');
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  console.log('Mouse up on button');
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onTouchStart={(e) => {
-                  console.log('Touch start on button');
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onTouchEnd={(e) => {
-                  console.log('Touch end on button');
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-4 py-2 rounded-lg font-medium text-sm shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-300 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none"
-                style={{ pointerEvents: 'auto', zIndex: 10000 }}
+                className="btn-mobile-optimized bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-6 py-3 rounded-lg font-bold text-base shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-300 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none min-h-[48px] min-w-[200px]"
                 type="button"
               >
                 TAP TO REVEAL HIT CARD
               </button>
             </motion.div>
-            );
-          })()}
+          )}
 
           {isHitRevealed && (() => {
             console.log('Rendering revealed hit card:', { isHitRevealed, hitCard });
