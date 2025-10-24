@@ -510,17 +510,9 @@ export class DatabaseStorage {
             .returning();
           console.log(`✅ Classic prize pool update result:`, updateResult.length, 'rows affected');
         } else if (card.cardSource === 'special') {
-          // Return to special prize pool
-          console.log(`📦 Returning special card "${card.cardName}" to pack "${card.packSource}"`);
-          const updateResult = await tx
-            .update(specialPrize)
-            .set({ quantity: sql`${specialPrize.quantity} + 1` })
-            .where(and(
-              eq(specialPrize.packId, card.packSource || ''),
-              eq(specialPrize.cardName, card.cardName)
-            ))
-            .returning();
-          console.log(`✅ Special prize pool update result:`, updateResult.length, 'rows affected');
+          // Special packs: DO NOT return to inventory - cards are permanently removed when pulled
+          console.log(`📦 Special card "${card.cardName}" refunded - NOT returning to pack "${card.packSource}" inventory (permanent removal)`);
+          // No database update - card stays removed from pack inventory
         } else if (card.cardSource === 'mystery') {
           // Return to mystery prize pool - always return to the base mystery-pokeball pool
           // since all mystery packs use the same shared pool
