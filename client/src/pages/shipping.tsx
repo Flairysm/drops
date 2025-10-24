@@ -132,6 +132,15 @@ export default function Shipping() {
   
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [shippingRequests, setShippingRequests] = useState<ShippingRequest[]>([]);
+  
+  // Debug: Track shipping requests state changes
+  useEffect(() => {
+    console.log('🔍 Shipping requests state changed:', {
+      length: shippingRequests.length,
+      requests: shippingRequests,
+      statuses: shippingRequests.map(r => r.status)
+    });
+  }, [shippingRequests]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
@@ -219,12 +228,19 @@ export default function Shipping() {
     try {
       console.log('🔍 Fetching shipping requests...');
       const response = await apiRequest('GET', '/api/shipping/requests');
+      console.log('🔍 Response status:', response.status, response.ok);
       const data = await response.json();
       console.log('📦 Shipping requests response:', data);
+      console.log('📦 Response type:', typeof data);
+      console.log('📦 Is array:', Array.isArray(data));
       console.log('📦 Number of requests:', Array.isArray(data) ? data.length : 'Not an array');
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('📦 First request:', data[0]);
+        console.log('📦 Request statuses:', data.map(r => r.status));
+      }
       console.log('📦 Setting shipping requests state...');
       setShippingRequests(data);
-      console.log('📦 Shipping requests state updated');
+      console.log('📦 Shipping requests state updated with:', data);
     } catch (error) {
       console.error('Error fetching shipping requests:', error);
       toast({
