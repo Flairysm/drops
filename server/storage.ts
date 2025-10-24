@@ -2404,10 +2404,10 @@ export class DatabaseStorage {
     .from(shippingRequests)
     .innerJoin(userAddresses, eq(shippingRequests.addressId, userAddresses.id))
     .where(eq(shippingRequests.userId, userId))
-    .orderBy(desc(shippingRequests.createdAt));
+    .orderBy(desc(shippingRequests.createdAt))
+    .limit(50); // Limit to 50 most recent requests for performance
     
     console.log('📦 Storage: Found shipping requests:', result.length, 'requests');
-    console.log('📦 Storage: Requests data:', result);
     return result;
   }
 

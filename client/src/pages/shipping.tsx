@@ -233,7 +233,7 @@ export default function Shipping() {
       });
       console.log('🔍 Direct fetch response:', directResponse.status, directResponse.ok);
       
-      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 60000 });
+      const response = await apiRequest('GET', '/api/shipping/requests', undefined, { timeout: 15000 });
       console.log('🔍 Response status:', response.status, response.ok);
       
       if (!response.ok) {
@@ -585,6 +585,7 @@ export default function Shipping() {
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
                       <p className="text-muted-foreground">Loading shipping requests...</p>
+                      <p className="text-xs text-gray-500 mt-2">This may take a few moments</p>
                     </div>
                   ) : shippingRequests.filter(req => req.status === 'pending' || req.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
