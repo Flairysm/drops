@@ -70,7 +70,7 @@ const fetchPackDetails = async () => {
     setIsOpening(true);
     try {
       // console.log('Opening Special pack:', pack.id);
-      const response = await apiRequest('POST', `/api/special-packs/purchase/${pack.id}`);
+      const response = await apiRequest('POST', `/api/classic-packs/purchase/${pack.id}`);
       console.log('Response status:', response.status);
       const result = await response.json();
       console.log('Response result:', result);
