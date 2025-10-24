@@ -860,13 +860,13 @@ export default function Vault() {
       
       {/* Shipping Popup Dialog */}
       <Dialog open={showShippingPopup} onOpenChange={setShowShippingPopup}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background border border-border">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
+            <DialogTitle className="flex items-center gap-2 text-white">
               <Truck className="w-5 h-5" />
               Ship Selected Cards
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+            <DialogDescription className="text-gray-400">
               Review your selected cards and choose a shipping address
             </DialogDescription>
           </DialogHeader>
@@ -874,7 +874,7 @@ export default function Vault() {
           <div className="space-y-6">
             {/* Selected Cards Summary */}
             <div>
-              <h3 className="font-semibold mb-3 text-foreground">Selected Cards ({selectedCards.length})</h3>
+              <h3 className="font-semibold mb-3 text-white">Selected Cards ({selectedCards.length})</h3>
               <div className="max-h-40 overflow-y-auto space-y-2">
                 {(() => {
                   // Group selected cards by their properties
