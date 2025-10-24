@@ -255,36 +255,33 @@ export function ClassicPackPopup({ pack, isOpen, onClose, onOpenPack }: ClassicP
             </Card>
           </div>
 
-          {/* User Info Section - Enhanced Gaming Card Style */}
+          {/* User Info Section - Compact Style */}
           {user && (
-            <div className="grid grid-cols-3 gap-4">
-              <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-white mb-1">
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="bg-gray-800/50 border border-gray-600/30 shadow-sm">
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-white mb-1">
                     {Math.floor(Number(user.credits) || 0)}
                   </div>
-                  <div className="text-sm text-gray-300 font-medium">Your Credits</div>
-                  <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mt-2"></div>
+                  <div className="text-xs text-gray-400">Your Credits</div>
                 </CardContent>
               </Card>
 
-              <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-400 mb-1">
+              <Card className="bg-gray-800/50 border border-gray-600/30 shadow-sm">
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-blue-400 mb-1">
                     {pack.price}
                   </div>
-                  <div className="text-sm text-gray-300 font-medium">Pack Cost</div>
-                  <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mt-2"></div>
+                  <div className="text-xs text-gray-400">Pack Cost</div>
                 </CardContent>
               </Card>
 
-              <Card className="gaming-card bg-gradient-to-br from-gray-900/95 to-gray-800/95 border-gray-600 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <CardContent className="p-4 text-center">
-                  <div className="text-xl font-bold text-white mb-1">
+              <Card className="bg-gray-800/50 border border-gray-600/30 shadow-sm">
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-white mb-1">
                     Classic
                   </div>
-                  <div className="text-sm text-gray-300 font-medium">Pack Type</div>
-                  <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mt-2"></div>
+                  <div className="text-xs text-gray-400">Pack Type</div>
                 </CardContent>
               </Card>
             </div>
