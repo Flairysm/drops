@@ -23,6 +23,7 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    position: relative;
   }
   
   /* Allow text selection in content areas */
@@ -32,6 +33,15 @@
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
+  }
+  
+  /* Force NavigationFooter to be truly fixed to viewport */
+  .nav-footer-fixed {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
   }
 }
 

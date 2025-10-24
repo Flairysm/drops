@@ -3,7 +3,7 @@ import { Link } from "wouter";
 
 export function NavigationFooter() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#0B0B12]/95 backdrop-blur-xl border-t border-[#26263A]/50 shadow-2xl">
+    <nav className="nav-footer-fixed bg-[#0B0B12]/95 backdrop-blur-xl border-t border-[#26263A]/50 shadow-2xl">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-around items-center py-2 px-4 safe-area-pb">
           {/* Home */}
