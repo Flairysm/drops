@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -143,7 +143,7 @@ export default function Shipping() {
   }, [shippingRequests]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
-  const [hasFetchedData, setHasFetchedData] = useState(false);
+  const hasFetchedDataRef = useRef(false);
   const [activeTab, setActiveTab] = useState("pending");
   
   // Detail modal state
@@ -194,19 +194,19 @@ export default function Shipping() {
   }, [toast]);
 
   useEffect(() => {
-    console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading, hasFetchedData });
-    if (isAuthenticated && !isLoading && !hasFetchedData) {
+    console.log('🔍 Shipping useEffect triggered:', { isAuthenticated, isLoading, hasFetchedData: hasFetchedDataRef.current });
+    if (isAuthenticated && !isLoading && !hasFetchedDataRef.current) {
       console.log('🔍 User is authenticated and not loading, fetching data...');
+      hasFetchedDataRef.current = true;
       fetchAddresses();
       fetchShippingRequests();
-      setHasFetchedData(true);
     } else if (!isAuthenticated) {
       console.log('🔍 User not authenticated, clearing state...');
       setShippingRequests([]);
       setAddresses([]);
-      setHasFetchedData(false);
+      hasFetchedDataRef.current = false;
     }
-  }, [isAuthenticated, isLoading, hasFetchedData]); // Only run when auth state changes
+  }, [isAuthenticated, isLoading]); // Only run when auth state changes
 
   const fetchAddresses = async () => {
     setIsLoadingAddresses(true);
