@@ -1032,11 +1032,10 @@ export default function Home() {
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   <Button 
-                    variant="outline" 
                     onClick={() => {
                       setShowRaffleDetails(false);
                     }}
-                    className="flex-1"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white border border-red-500"
                   >
                     Close
                   </Button>
