@@ -166,7 +166,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   >
                     {isCardRevealed ? (
                       /* Common Card - Revealed */
-                      <div className="w-20 h-28">
+                      <div className="w-16 h-24">
                         <img
                           src={card.imageUrl || "/card-images/Commons.png"}
                           alt={card.name}
@@ -179,7 +179,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                       </div>
                     ) : (
                       /* Common Card - Hidden */
-                      <div className="w-20 h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
+                      <div className="w-16 h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
                         <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
                           <div className="text-slate-400 text-lg font-bold">?</div>
                         </div>
@@ -207,7 +207,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   >
                     {isCardRevealed ? (
                       /* Common Card - Revealed */
-                      <div className="w-20 h-28">
+                      <div className="w-16 h-24">
                         <img
                           src={card.imageUrl || "/card-images/Commons.png"}
                           alt={card.name}
@@ -220,7 +220,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                       </div>
                     ) : (
                       /* Common Card - Hidden */
-                      <div className="w-20 h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
+                      <div className="w-16 h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
                         <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
                           <div className="text-slate-400 text-lg font-bold">?</div>
                         </div>
@@ -243,7 +243,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className={`relative w-20 h-28 ${getTierGlowColor(hitCard?.tier || '')}`}
+                    className={`relative w-16 h-24 ${getTierGlowColor(hitCard?.tier || '')}`}
                   >
                     <img
                       src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
@@ -260,7 +260,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   </motion.div>
                 ) : (
                   /* Hit Card - Hidden */
-                  <div className="w-20 h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
+                  <div className="w-16 h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600">
                     <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
                       <div className="text-slate-400 text-lg font-bold">?</div>
                     </div>

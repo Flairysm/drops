@@ -834,7 +834,7 @@ export default function Home() {
 
       {/* Raffle Details Dialog */}
       <Dialog open={showRaffleDetails} onOpenChange={setShowRaffleDetails}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700">
           <DialogHeader className="p-6 pb-4 border-b border-gray-600">
             <DialogTitle className="text-2xl font-bold text-white">{selectedRaffle?.title}</DialogTitle>
             <DialogDescription className="text-gray-400">
