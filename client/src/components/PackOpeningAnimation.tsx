@@ -75,12 +75,11 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     }, hitCardTimeout);
   }, []); // Only run once when component mounts
 
-  const handleRevealHit = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
+  const handleRevealHit = (e: React.MouseEvent | React.TouchEvent) => {
+    console.log('handleRevealHit called:', { revealedCards, isHitRevealed });
     
     if (revealedCards >= 8 && !isHitRevealed) {
+      console.log('Revealing hit card!');
       setIsHitRevealed(true); // Reveal the hit card
     }
   };
@@ -238,40 +237,19 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-4"
+              style={{ touchAction: 'manipulation' }}
             >
               <button
                 onClick={(e) => {
                   console.log('BUTTON CLICKED!');
-                  console.log('Event:', e);
-                  console.log('Event target:', e.target);
-                  console.log('Event currentTarget:', e.currentTarget);
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.nativeEvent.stopImmediatePropagation();
                   handleRevealHit(e);
                 }}
-                onMouseDown={(e) => {
-                  console.log('Mouse down on button');
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  console.log('Mouse up on button');
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onTouchStart={(e) => {
-                  console.log('Touch start on button');
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
                 onTouchEnd={(e) => {
-                  console.log('Touch end on button');
-                  e.preventDefault();
-                  e.stopPropagation();
+                  console.log('Touch end on button - triggering reveal');
+                  handleRevealHit(e as any);
                 }}
-                className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-4 py-2 rounded-lg font-medium text-sm shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-300 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none"
-                style={{ pointerEvents: 'auto', zIndex: 10000 }}
+                className="bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-4 py-2 rounded-lg font-medium text-sm shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-300 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none touch-manipulation"
+                style={{ pointerEvents: 'auto', zIndex: 10000, minHeight: '44px', minWidth: '200px' }}
                 type="button"
               >
                 TAP TO REVEAL HIT CARD
