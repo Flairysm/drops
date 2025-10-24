@@ -61,15 +61,15 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     setRevealedCards(0);
     setIsHitRevealed(false);
     
-    // Reveal 7 common cards first, then hit card back
+    // Reveal 7 common cards first, then hit card back - MUCH FASTER
     for (let i = 0; i < 7; i++) {
       setTimeout(() => {
         setRevealedCards(i + 1);
-      }, 300 + (i * 100)); // Start after 300ms, then 100ms intervals (faster)
+      }, 100 + (i * 50)); // Start after 100ms, then 50ms intervals (very fast)
     }
     
-    // After 7 commons, show hit card back with a small delay
-    const hitCardTimeout = 300 + (7 * 100) + 300; // Reduced delay
+    // After 7 commons, show hit card back with minimal delay
+    const hitCardTimeout = 100 + (7 * 50) + 100; // Very fast
     setTimeout(() => {
       setRevealedCards(8); // Show hit card back (8th card)
     }, hitCardTimeout);
@@ -77,7 +77,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
   const handleRevealHit = () => {
     console.log('Revealing hit card...', { revealedCards, isHitRevealed });
-    if (revealedCards >= 8 && !isHitRevealed) {
+    // Make it more aggressive - allow reveal even if not all cards are shown
+    if (!isHitRevealed) {
+      console.log('FORCING REVEAL!');
       setIsHitRevealed(true);
     }
   };
@@ -148,7 +150,8 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
 
         {/* 4x2 Grid - 7 Commons + 1 Hit */}
         <div className="mb-6">
-          <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-lg mx-auto mb-6 px-4 justify-items-center">
+          <div className="flex flex-col items-center justify-center">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3 w-full max-w-sm mx-auto mb-6">
             {/* Show 7 common cards first */}
             {commonCards.slice(0, 7).map((card, index) => {
               const isCardRevealed = index < revealedCards;
@@ -163,7 +166,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 >
                   {isCardRevealed ? (
                     /* Common Card - Revealed */
-                    <div className="w-16 h-24 sm:w-20 sm:h-28">
+                    <div className="w-12 h-16 sm:w-16 sm:h-24">
                       <img
                         src={card.imageUrl || "/card-images/Commons.png"}
                         alt={card.name}
@@ -176,9 +179,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     </div>
                   ) : (
                     /* Common Card - Hidden */
-                    <div className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600 rounded-md">
+                    <div className="w-12 h-16 sm:w-16 sm:h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600 rounded-md">
                       <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center rounded-md">
-                        <div className="text-slate-400 text-sm sm:text-lg font-bold">?</div>
+                        <div className="text-slate-400 text-xs sm:text-sm font-bold">?</div>
                       </div>
                     </div>
                   )}
@@ -199,9 +202,11 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`relative w-16 h-24 sm:w-20 sm:h-28 ${getTierGlowColor(hitCard?.tier || '')} ${!isHitRevealed ? 'cursor-pointer' : ''}`}
+                  className={`relative w-12 h-16 sm:w-16 sm:h-24 ${getTierGlowColor(hitCard?.tier || '')} ${!isHitRevealed ? 'cursor-pointer' : ''}`}
                   onClick={!isHitRevealed ? handleRevealHit : undefined}
                   onTouchStart={!isHitRevealed ? handleRevealHit : undefined}
+                  onTouchEnd={!isHitRevealed ? handleRevealHit : undefined}
+                  onMouseDown={!isHitRevealed ? handleRevealHit : undefined}
                 >
                   <img
                     src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
@@ -217,7 +222,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                   />
                   {!isHitRevealed && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-md">
-                      <div className="text-white text-xs font-bold bg-black/50 px-2 py-1 rounded">
+                      <div className="text-white text-xs font-bold bg-black/50 px-1 py-0.5 rounded">
                         TAP
                       </div>
                     </div>
@@ -225,17 +230,18 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                 </motion.div>
               ) : (
                 /* Hit Card - Hidden */
-                <div className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600 rounded-md">
+                <div className="w-12 h-16 sm:w-16 sm:h-24 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-600 rounded-md">
                   <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center rounded-md">
-                    <div className="text-slate-400 text-sm sm:text-lg font-bold">?</div>
+                    <div className="text-slate-400 text-xs sm:text-sm font-bold">?</div>
                   </div>
                 </div>
               )}
             </motion.div>
+            </div>
           </div>
 
           {/* Tap to Reveal Button */}
-          {revealedCards >= 8 && !isHitRevealed && (
+          {!isHitRevealed && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -244,7 +250,9 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
               <button
                 onClick={handleRevealHit}
                 onTouchStart={handleRevealHit}
-                className="btn-mobile-optimized bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-6 py-3 rounded-lg font-bold text-base shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-200 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none min-h-[56px] min-w-[220px] touch-manipulation"
+                onTouchEnd={handleRevealHit}
+                onMouseDown={handleRevealHit}
+                className="btn-mobile-optimized bg-gradient-to-r from-[#7C3AED] to-[#22D3EE] hover:from-[#6D28D9] hover:to-[#0891B2] text-white px-6 py-3 rounded-lg font-bold text-base shadow-[0_0_15px_rgba(124,58,237,0.4)] hover:shadow-[0_0_25px_rgba(124,58,237,0.6)] transition-all duration-100 hover:scale-105 mx-auto cursor-pointer border-2 border-yellow-400 select-none min-h-[56px] min-w-[220px] touch-manipulation"
                 type="button"
                 style={{ 
                   WebkitTapHighlightColor: 'transparent',
