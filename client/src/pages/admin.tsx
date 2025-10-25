@@ -2718,10 +2718,10 @@ export default function Admin() {
 
           {/* User Action Dialog */}
           <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
               <DialogHeader>
-                <DialogTitle>User Actions</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-white">User Actions</DialogTitle>
+                <DialogDescription className="text-gray-300">
                   Manage user: {selectedUser?.email}
                 </DialogDescription>
               </DialogHeader>
@@ -2748,7 +2748,7 @@ export default function Admin() {
                         </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="credits">Edit Credits</Label>
+                  <Label htmlFor="credits" className="text-white">Edit Credits</Label>
                 <div className="space-y-2">
                         <div className="text-sm text-gray-400">
                       Current Credits: <span className="font-semibold">{selectedUser?.credits}</span>
@@ -2784,10 +2784,10 @@ export default function Admin() {
 
           {/* Transaction History Dialog */}
           <Dialog open={showTransactionDialog} onOpenChange={setShowTransactionDialog}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
               <DialogHeader>
-                <DialogTitle>Transaction History</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-white">Transaction History</DialogTitle>
+                <DialogDescription className="text-gray-300">
                   Transaction history for {selectedUser?.email}
                 </DialogDescription>
               </DialogHeader>
@@ -2815,10 +2815,10 @@ export default function Admin() {
 
         {/* Add Content Dialog */}
         <Dialog open={showAddPoolDialog} onOpenChange={setShowAddPoolDialog}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
               <DialogHeader>
-              <DialogTitle>Create New Special Pack</DialogTitle>
-                <DialogDescription>
+              <DialogTitle className="text-white">Create New Special Pack</DialogTitle>
+                <DialogDescription className="text-gray-300">
                 Fill in the pack information to create a new special pack. You can add cards to the prize pool after creation.
                 </DialogDescription>
               </DialogHeader>
@@ -2926,10 +2926,10 @@ export default function Admin() {
 
         {/* Add Classic Pack Dialog */}
         <Dialog open={showAddClassicDialog} onOpenChange={setShowAddClassicDialog}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
               <DialogHeader>
-              <DialogTitle>Create New Classic Pack</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-white">Create New Classic Pack</DialogTitle>
+              <DialogDescription className="text-gray-300">
                 Fill in the pack information to create a new classic pack. You can add cards to the prize pool after creation.
               </DialogDescription>
               </DialogHeader>
@@ -3021,12 +3021,12 @@ export default function Admin() {
 
         {/* Edit Pool Dialog */}
         <Dialog open={showEditPoolDialog} onOpenChange={setShowEditPoolDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
               <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-white">
                 {classicPools.some(pool => pool.id === editingPool?.id) ? 'Edit Classic Pack' : 'Edit Special Pack'}
               </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-gray-300">
                 Update the pack details and settings.
                 </DialogDescription>
               </DialogHeader>
@@ -3121,10 +3121,10 @@ export default function Admin() {
             handleCancelEditContent();
           }
         }}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
               <DialogHeader>
-              <DialogTitle>Edit Pack Prizes - {editingContentPool?.name}</DialogTitle>
-                <DialogDescription>
+              <DialogTitle className="text-white">Edit Pack Prizes - {editingContentPool?.name}</DialogTitle>
+                <DialogDescription className="text-gray-300">
                 Add or remove prize cards from this special pack and set their quantities.
                 </DialogDescription>
               </DialogHeader>
@@ -3256,16 +3256,16 @@ export default function Admin() {
 
         {/* Add Card Dialog */}
         <Dialog open={showAddCardDialog} onOpenChange={setShowAddCardDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Add New Card</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-xl font-bold text-white">Add New Card</DialogTitle>
+              <DialogDescription className="text-gray-300">
                 Add a new card to the pack with all required information.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="cardName" className="text-sm font-medium">Card Name</Label>
+                <Label htmlFor="cardName" className="text-sm font-medium text-white">Card Name</Label>
                 <Input
                   id="cardName"
                   value={newCard.name}
@@ -3287,7 +3287,7 @@ export default function Admin() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="refundCredit" className="text-sm font-medium">Refund Credit</Label>
+                  <Label htmlFor="refundCredit" className="text-sm font-medium text-white">Refund Credit</Label>
                   <Input
                     id="refundCredit"
                     type="number"
@@ -3303,7 +3303,7 @@ export default function Admin() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tier" className="text-sm font-medium">Tier</Label>
+                  <Label htmlFor="tier" className="text-sm font-medium text-white">Tier</Label>
                   <select
                     id="tier"
                     value={newCard.tier}
@@ -3323,7 +3323,7 @@ export default function Admin() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-sm font-medium">Quantity</Label>
+                <Label htmlFor="quantity" className="text-sm font-medium text-white">Quantity</Label>
                 <Input
                   id="quantity"
                   type="number"
@@ -3367,10 +3367,10 @@ export default function Admin() {
 
         {/* Edit Card Dialog */}
         <Dialog open={showEditCardDialog} onOpenChange={setShowEditCardDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Edit Card</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-xl font-bold text-white">Edit Card</DialogTitle>
+              <DialogDescription className="text-gray-300">
                 Update the card details and information.
               </DialogDescription>
             </DialogHeader>
@@ -3469,10 +3469,10 @@ export default function Admin() {
 
         {/* Mystery Pack Edit Card Dialog */}
         <Dialog open={showMysteryEditCardDialog} onOpenChange={setShowMysteryEditCardDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Edit Mystery Pack Card</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-xl font-bold text-white">Edit Mystery Pack Card</DialogTitle>
+              <DialogDescription className="text-gray-300">
                 Update the card details and information in the mystery pack.
               </DialogDescription>
             </DialogHeader>
@@ -3575,10 +3575,10 @@ export default function Admin() {
             handleCancelViewPrize();
           }
         }}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
             <DialogHeader>
-              <DialogTitle>View Pack Prizes - {viewingPrizePool?.name}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-white">View Pack Prizes - {viewingPrizePool?.name}</DialogTitle>
+              <DialogDescription className="text-gray-300">
                 View all prize cards currently in this special pack.
               </DialogDescription>
             </DialogHeader>
@@ -3622,12 +3622,12 @@ export default function Admin() {
 
         {/* Raffle Dialog */}
         <Dialog open={showRaffleDialog} onOpenChange={setShowRaffleDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-white">
                 {editingRaffle ? 'Edit Raffle' : 'Create New Raffle'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-gray-300">
                 {editingRaffle ? 'Update raffle details' : 'Set up a new raffle for your community'}
               </DialogDescription>
             </DialogHeader>
@@ -3796,9 +3796,9 @@ export default function Admin() {
 
         {/* Prize Edit Dialog */}
         <Dialog open={showPrizeEditDialog} onOpenChange={setShowPrizeEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-gray-600">
             <DialogHeader>
-              <DialogTitle>Edit Prize Details</DialogTitle>
+              <DialogTitle className="text-white">Edit Prize Details</DialogTitle>
               <DialogDescription>
                 Set up prizes for different winner positions for "{editingRaffle?.title}"
               </DialogDescription>
