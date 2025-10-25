@@ -14,22 +14,7 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     target: 'es2020',
-    minify: 'terser',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-          utils: ['framer-motion', 'lucide-react', 'clsx', 'tailwind-merge'],
-        },
-      },
-    },
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    minify: false, // Disable minification for debugging
   },
   publicDir: 'public',
   server: {
