@@ -12,7 +12,7 @@
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "../dist",
+        "distDir": "dist",
         "buildCommand": "npm run build"
       }
     }
@@ -24,13 +24,23 @@
     },
     {
       "src": "/assets/(.*)",
-      "dest": "/client/assets/$1"
+      "dest": "/client/assets/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     },
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
       "dest": "/client/$1",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/client/favicon.ico",
+      "headers": {
+        "Cache-Control": "public, max-age=86400"
       }
     },
     {
