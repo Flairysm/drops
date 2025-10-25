@@ -15,6 +15,15 @@ export default defineConfig({
     assetsDir: 'assets',
     target: 'es2020',
     minify: false, // Disable minification for debugging
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
+          'utils-vendor': ['framer-motion', 'wouter', '@tanstack/react-query']
+        }
+      }
+    }
   },
   publicDir: 'public',
   server: {
@@ -29,8 +38,5 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-  },
-  esbuild: {
-    jsx: 'automatic',
   },
 })
