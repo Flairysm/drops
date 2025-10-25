@@ -1,11 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'wouter';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
 import { motion } from 'framer-motion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import Login from './login';
-import Register from './register';
 
 const Landing: React.FC = () => {
   return (
@@ -185,29 +181,30 @@ const Landing: React.FC = () => {
           </motion.p>
         </motion.div>
 
-        {/* Auth Forms */}
+        {/* Action Buttons */}
         <motion.div 
-          className="max-w-md mx-auto"
+          className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-md mx-auto"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0 }}
         >
-          <Card className="bg-slate-800/40 backdrop-blur-xl border-slate-700/50 shadow-2xl">
-            <CardContent className="p-6">
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-slate-700/50">
-                  <TabsTrigger value="login" className="text-white data-[state=active]:bg-purple-600">Login</TabsTrigger>
-                  <TabsTrigger value="register" className="text-white data-[state=active]:bg-purple-600">Register</TabsTrigger>
-                </TabsList>
-                <TabsContent value="login" className="mt-6">
-                  <Login />
-                </TabsContent>
-                <TabsContent value="register" className="mt-6">
-                  <Register />
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+          <Link href="/login">
+            <Button 
+              size="lg" 
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              Sign In
+            </Button>
+          </Link>
+          <Link href="/register">
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="w-full sm:w-auto border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-900 font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              Create Account
+            </Button>
+          </Link>
         </motion.div>
       </div>
     </div>
