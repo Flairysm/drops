@@ -3212,16 +3212,14 @@ export default function Admin() {
                             <Button
                               onClick={() => handleEditCard(card)}
                               size="sm"
-                              className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0"
-                              className="h-6 px-2"
+                              className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 h-6 px-2"
                             >
                               <Edit className="w-3 h-3" />
                             </Button>
                           <Button
                             onClick={() => handleRemoveCardFromContent(card.id)}
                             size="sm"
-                            className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0"
-                            className="text-red-600 hover:text-red-700 h-6 px-2"
+                            className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 text-red-600 hover:text-red-700 h-6 px-2"
                           >
                             <X className="w-3 h-3" />
                           </Button>
@@ -3330,12 +3328,11 @@ export default function Admin() {
             </div>
             <DialogFooter className="gap-2">
               <Button 
-                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0" 
+                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 flex-1" 
                 onClick={() => {
                   setShowAddCardDialog(false);
                   setNewCard({ name: '', imageUrl: '', tier: 'D', refundCredit: '', quantity: '' });
                 }}
-                className="flex-1"
               >
                 Cancel
               </Button>
@@ -3441,12 +3438,11 @@ export default function Admin() {
             </div>
             <DialogFooter className="gap-2">
               <Button 
-                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0" 
+                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 flex-1" 
                 onClick={() => {
                   setShowEditCardDialog(false);
                   setEditingCard(null);
                 }}
-                className="flex-1"
               >
                 Cancel
               </Button>
@@ -3543,12 +3539,11 @@ export default function Admin() {
             </div>
             <DialogFooter className="gap-2">
               <Button 
-                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0" 
+                className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 flex-1" 
                 onClick={() => {
                   setShowMysteryEditCardDialog(false);
                   setEditingMysteryCard(null);
                 }}
-                className="flex-1"
               >
                 Cancel
               </Button>
@@ -3879,9 +3874,8 @@ export default function Admin() {
 
               <div className="flex justify-center">
                 <Button
-                  className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0"
+                  className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white border-0 border-dashed border-2 border-gray-500 hover:border-gray-400 text-gray-400 hover:text-gray-300"
                   onClick={addPrize}
-                  className="border-dashed border-2 border-gray-500 hover:border-gray-400 text-gray-400 hover:text-gray-300"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Another Prize
