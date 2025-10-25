@@ -103,7 +103,7 @@ function CardImageComponent({ item }: { item: any }) {
   }, [item.name, item.imageUrl, item.cardImageUrl]);
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+    <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg border">
       <div className="w-12 h-16 bg-gradient-to-br from-[#7C3AED] to-[#22D3EE] rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center">
@@ -133,8 +133,8 @@ function CardImageComponent({ item }: { item: any }) {
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-foreground truncate">{item.name}</div>
-        <div className="text-sm text-muted-foreground">
+        <div className="font-medium text-white truncate">{item.name}</div>
+        <div className="text-sm text-gray-400">
           {item.tier} • Qty: {item.qty}
         </div>
       </div>
@@ -175,7 +175,7 @@ function GroupedCardComponent({ groupedItem }: { groupedItem: any }) {
   }, [groupedItem.name, groupedItem.firstItem.imageUrl, groupedItem.firstItem.cardImageUrl]);
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+    <div className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg border">
       <div className="w-12 h-16 bg-gradient-to-br from-[#7C3AED] to-[#22D3EE] rounded flex items-center justify-center flex-shrink-0 relative overflow-hidden">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center">
@@ -201,8 +201,8 @@ function GroupedCardComponent({ groupedItem }: { groupedItem: any }) {
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-foreground truncate">{groupedItem.name}</div>
-        <div className="text-sm text-muted-foreground">
+        <div className="font-medium text-white truncate">{groupedItem.name}</div>
+        <div className="text-sm text-gray-400">
           {groupedItem.tier} • Qty: {groupedItem.quantity}
         </div>
       </div>
@@ -374,7 +374,7 @@ export default function ShippingAdmin() {
   const pendingCount = shipments.filter(s => s.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Navigation />
       <div className="container mx-auto px-4 pt-20 pb-8">
         <div className="max-w-7xl mx-auto">
@@ -391,12 +391,12 @@ export default function ShippingAdmin() {
                 </span>
               </h1>
             </div>
-            <p className="text-muted-foreground text-lg mb-4">Manage shipping requests and track deliveries</p>
+            <p className="text-gray-300 text-lg mb-4">Manage shipping requests and track deliveries</p>
             
             {pendingCount > 0 && (
-              <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+              <div className="inline-flex items-center gap-2 bg-red-900/50 border border-red-500/50 rounded-lg px-4 py-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-red-700 font-medium">
+                <span className="text-red-300 font-medium">
                   {pendingCount} Pending Request{pendingCount !== 1 ? 's' : ''} Need Attention
                 </span>
               </div>
@@ -405,8 +405,8 @@ export default function ShippingAdmin() {
 
           {/* Shipping Requests with Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 bg-muted/50">
-              <TabsTrigger value="pending" className="flex items-center gap-2 py-3">
+            <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-800/50 border border-gray-700">
+              <TabsTrigger value="pending" className="flex items-center gap-2 py-3 text-white data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                 <Package className="w-4 h-4" />
                 <span className="font-medium">Pending</span>
                 {pendingCount > 0 && (
@@ -415,7 +415,7 @@ export default function ShippingAdmin() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="completed" className="flex items-center gap-2 py-3">
+              <TabsTrigger value="completed" className="flex items-center gap-2 py-3 text-white data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                 <Check className="w-4 h-4" />
                 <span className="font-medium">Completed</span>
               </TabsTrigger>
@@ -425,24 +425,24 @@ export default function ShippingAdmin() {
             <TabsContent value="pending" className="space-y-6">
               <Card className="gaming-card">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-xl">
+                  <CardTitle className="flex items-center gap-3 text-xl text-white">
                     <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
                       <Package className="w-4 h-4 text-yellow-600" />
                     </div>
                     Pending Shipments
                   </CardTitle>
-                  <p className="text-muted-foreground ml-11">Orders awaiting processing or in transit</p>
+                  <p className="text-gray-400 ml-11">Orders awaiting processing or in transit</p>
                 </CardHeader>
                 <CardContent>
                   {isLoadingShipments ? (
                     <div className="text-center py-8">
-                      <div className="text-muted-foreground">Loading shipping requests...</div>
+                      <div className="text-gray-400">Loading shipping requests...</div>
                     </div>
                   ) : shipments.filter(s => s.status === 'pending' || s.status === 'shipping').length === 0 ? (
                     <div className="text-center py-8">
-                      <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <p className="text-muted-foreground">No pending shipments</p>
-                      <p className="text-sm text-muted-foreground">All caught up!</p>
+                      <Package className="w-12 h-12 mx-auto mb-4 text-gray-400 opacity-50" />
+                      <p className="text-gray-400">No pending shipments</p>
+                      <p className="text-sm text-gray-500">All caught up!</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -451,8 +451,8 @@ export default function ShippingAdmin() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-lg text-foreground truncate">#{shipment.id.slice(-8)}</h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <h3 className="font-semibold text-lg text-white truncate">#{shipment.id.slice(-8)}</h3>
+                            <div className="flex items-center gap-2 text-sm text-gray-400">
                               <User className="w-4 h-4 flex-shrink-0" />
                               <span className="font-medium truncate">{shipment.user.username}</span>
                             </div>
@@ -496,24 +496,24 @@ export default function ShippingAdmin() {
             <TabsContent value="completed" className="space-y-6">
               <Card className="gaming-card">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-xl">
+                  <CardTitle className="flex items-center gap-3 text-xl text-white">
                     <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                       <Check className="w-4 h-4 text-green-600" />
                     </div>
                     Completed Shipments
                   </CardTitle>
-                  <p className="text-muted-foreground ml-11">Successfully delivered orders</p>
+                  <p className="text-gray-400 ml-11">Successfully delivered orders</p>
                 </CardHeader>
                 <CardContent>
                   {isLoadingShipments ? (
                     <div className="text-center py-8">
-                      <div className="text-muted-foreground">Loading shipping requests...</div>
+                      <div className="text-gray-400">Loading shipping requests...</div>
                     </div>
                   ) : shipments.filter(s => s.status === 'delivered').length === 0 ? (
                     <div className="text-center py-8">
-                      <Check className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <p className="text-muted-foreground">No completed shipments</p>
-                      <p className="text-sm text-muted-foreground">Delivered orders will appear here</p>
+                      <Check className="w-12 h-12 mx-auto mb-4 text-gray-400 opacity-50" />
+                      <p className="text-gray-400">No completed shipments</p>
+                      <p className="text-sm text-gray-500">Delivered orders will appear here</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -522,8 +522,8 @@ export default function ShippingAdmin() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between gap-4">
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-lg text-foreground truncate">#{shipment.id.slice(-8)}</h3>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <h3 className="font-semibold text-lg text-white truncate">#{shipment.id.slice(-8)}</h3>
+                                <div className="flex items-center gap-2 text-sm text-gray-400">
                                   <User className="w-4 h-4 flex-shrink-0" />
                                   <span className="font-medium truncate">{shipment.user.username}</span>
                                 </div>
@@ -557,16 +557,16 @@ export default function ShippingAdmin() {
 
       {/* Tracking Update Dialog */}
       <Dialog open={showTrackingDialog} onOpenChange={setShowTrackingDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-gray-900 border border-gray-700">
           <DialogHeader>
-            <DialogTitle>Update Shipment Status</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Update Shipment Status</DialogTitle>
+            <DialogDescription className="text-gray-400">
               Update the tracking number and status for this shipment.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="status">Status *</Label>
+              <Label htmlFor="status" className="text-white">Status *</Label>
               <select
                 id="status"
                 value={shipmentStatus}
@@ -577,12 +577,12 @@ export default function ShippingAdmin() {
                 <option value="shipping">Shipping</option>
                 <option value="delivered">Delivered</option>
               </select>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 {shipmentStatus === 'shipping' && "Tracking number is required when marking as shipping"}
               </p>
             </div>
             <div>
-              <Label htmlFor="trackingNumber">
+              <Label htmlFor="trackingNumber" className="text-white">
                 Tracking Number {shipmentStatus === 'shipping' && '*'}
               </Label>
               <Input
@@ -613,10 +613,10 @@ export default function ShippingAdmin() {
 
       {/* Shipment Details Dialog */}
       <Dialog open={showShipmentDetailsDialog} onOpenChange={setShowShipmentDetailsDialog}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-gray-900 border border-gray-700">
           <DialogHeader>
-            <DialogTitle>Shipment Details</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Shipment Details</DialogTitle>
+            <DialogDescription className="text-gray-400">
               Detailed information about this shipping request.
             </DialogDescription>
           </DialogHeader>
@@ -624,39 +624,39 @@ export default function ShippingAdmin() {
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <h4 className="font-semibold mb-3 text-foreground">Customer Information</h4>
+                  <h4 className="font-semibold mb-3 text-white">Customer Information</h4>
                   <div className="text-sm space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Username:</span>
-                      <span className="font-medium text-foreground">{selectedShipment.user.username}</span>
+                      <span className="text-gray-400">Username:</span>
+                      <span className="font-medium text-white">{selectedShipment.user.username}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Email:</span>
-                      <span className="font-medium text-foreground">{selectedShipment.user.email}</span>
+                      <span className="text-gray-400">Email:</span>
+                      <span className="font-medium text-white">{selectedShipment.user.email}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">User ID:</span>
-                      <span className="font-mono text-xs text-foreground">{selectedShipment.user.id}</span>
+                      <span className="text-gray-400">User ID:</span>
+                      <span className="font-mono text-xs text-white">{selectedShipment.user.id}</span>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-3 text-foreground">Request Information</h4>
+                  <h4 className="font-semibold mb-3 text-white">Request Information</h4>
                   <div className="text-sm space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Request ID:</span>
-                      <span className="font-mono text-xs text-foreground">{selectedShipment.id}</span>
+                      <span className="text-gray-400">Request ID:</span>
+                      <span className="font-mono text-xs text-white">{selectedShipment.id}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Created:</span>
-                      <span className="font-medium text-foreground">{new Date(selectedShipment.createdAt).toLocaleString()}</span>
+                      <span className="text-gray-400">Created:</span>
+                      <span className="font-medium text-white">{new Date(selectedShipment.createdAt).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Last Updated:</span>
-                      <span className="font-medium text-foreground">{new Date(selectedShipment.updatedAt).toLocaleString()}</span>
+                      <span className="text-gray-400">Last Updated:</span>
+                      <span className="font-medium text-white">{new Date(selectedShipment.updatedAt).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Status:</span>
+                      <span className="text-gray-400">Status:</span>
                       <Badge className={`${getShipmentStatusColor(selectedShipment.status)} px-2 py-1 text-xs`}>
                         {selectedShipment.status === 'pending' && 'Pending'}
                         {selectedShipment.status === 'shipping' && 'Shipping'}
@@ -668,7 +668,7 @@ export default function ShippingAdmin() {
               </div>
               
               <div>
-                <h4 className="font-semibold mb-3 text-foreground">Items to Ship</h4>
+                <h4 className="font-semibold mb-3 text-white">Items to Ship</h4>
                 <div className="bg-muted/50 p-4 rounded-lg border">
                   {Array.isArray(selectedShipment.items) && selectedShipment.items.length > 0 ? (
                     <div className="space-y-3">
@@ -694,32 +694,32 @@ export default function ShippingAdmin() {
                       })()}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-center py-4">No items data available</p>
+                    <p className="text-gray-400 text-center py-4">No items data available</p>
                   )}
                 </div>
               </div>
               
               <div>
-                <h4 className="font-semibold mb-3 text-foreground">Shipping Address</h4>
+                <h4 className="font-semibold mb-3 text-white">Shipping Address</h4>
                 <div className="bg-muted/50 p-4 rounded-lg border">
                   <div className="text-sm space-y-1">
-                    <div className="font-medium text-foreground">{selectedShipment.address.name}</div>
-                    <div className="text-muted-foreground">{selectedShipment.address.address}</div>
-                    <div className="text-muted-foreground">{selectedShipment.address.city}, {selectedShipment.address.state} {selectedShipment.address.postalCode}</div>
-                    <div className="text-muted-foreground">{selectedShipment.address.country}</div>
-                    {selectedShipment.address.phone && <div className="text-muted-foreground">Phone: {selectedShipment.address.phone}</div>}
+                    <div className="font-medium text-white">{selectedShipment.address.name}</div>
+                    <div className="text-gray-400">{selectedShipment.address.address}</div>
+                    <div className="text-gray-400">{selectedShipment.address.city}, {selectedShipment.address.state} {selectedShipment.address.postalCode}</div>
+                    <div className="text-gray-400">{selectedShipment.address.country}</div>
+                    {selectedShipment.address.phone && <div className="text-gray-400">Phone: {selectedShipment.address.phone}</div>}
                   </div>
                 </div>
               </div>
               
               {selectedShipment.trackingNumber && (
                 <div>
-                  <h4 className="font-semibold mb-3 text-foreground">Tracking Information</h4>
+                  <h4 className="font-semibold mb-3 text-white">Tracking Information</h4>
                   <div className="bg-muted/50 p-4 rounded-lg border">
                     <div className="text-sm">
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Tracking Number:</span>
-                        <span className="font-mono font-medium text-foreground bg-background px-3 py-1 rounded border">
+                        <span className="text-gray-400">Tracking Number:</span>
+                        <span className="font-mono font-medium text-white bg-gray-800 px-3 py-1 rounded border">
                           {selectedShipment.trackingNumber}
                         </span>
                       </div>
@@ -730,9 +730,9 @@ export default function ShippingAdmin() {
               
               {selectedShipment.notes && (
                 <div>
-                  <h4 className="font-semibold mb-3 text-foreground">Notes</h4>
+                  <h4 className="font-semibold mb-3 text-white">Notes</h4>
                   <div className="bg-muted/50 p-4 rounded-lg border">
-                    <p className="text-sm text-foreground">{selectedShipment.notes}</p>
+                    <p className="text-sm text-white">{selectedShipment.notes}</p>
                   </div>
                 </div>
               )}
