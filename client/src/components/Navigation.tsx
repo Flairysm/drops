@@ -212,7 +212,7 @@ export function Navigation() {
               </>
             ) : (
               <>
-                {/* Login/Signup buttons for non-authenticated users */}
+                {/* Login/Signup buttons for non-authenticated users - Updated */}
                 <Link href="/auth">
                   <Button
                     variant="outline"

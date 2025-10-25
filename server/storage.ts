@@ -2335,16 +2335,16 @@ export class DatabaseStorage {
       // Remove the shipped cards from user's vault
       if (requestData.items && Array.isArray(requestData.items) && requestData.userId) {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('📦 Shipping request items:', JSON.stringify(requestData.items, null, 2));
+        console.log('📦 Shipping request items:', JSON.stringify(requestData.items, null, 2));
         }
         const cardIds = requestData.items.map((item: any) => item.id).filter(Boolean);
         if (process.env.NODE_ENV !== 'production') {
-          console.log('🆔 Extracted card IDs:', cardIds);
+        console.log('🆔 Extracted card IDs:', cardIds);
         }
         
         if (cardIds.length > 0) {
           if (process.env.NODE_ENV !== 'production') {
-            console.log(`🚚 Removing ${cardIds.length} cards from vault for shipping request ${result[0].id}`);
+          console.log(`🚚 Removing ${cardIds.length} cards from vault for shipping request ${result[0].id}`);
           }
           
           // First, check if the cards exist in the vault
@@ -2357,7 +2357,7 @@ export class DatabaseStorage {
             ));
           
           if (process.env.NODE_ENV !== 'production') {
-            console.log(`🔍 Found ${existingCards.length} cards in vault to remove:`, existingCards.map(c => c.id));
+          console.log(`🔍 Found ${existingCards.length} cards in vault to remove:`, existingCards.map(c => c.id));
           }
           
           // Delete the cards from user's vault
@@ -2370,16 +2370,16 @@ export class DatabaseStorage {
             .returning();
           
           if (process.env.NODE_ENV !== 'production') {
-            console.log(`✅ Successfully removed ${deleteResult.length} cards from vault. Deleted cards:`, deleteResult.map(c => ({ id: c.id, name: c.cardName })));
+          console.log(`✅ Successfully removed ${deleteResult.length} cards from vault. Deleted cards:`, deleteResult.map(c => ({ id: c.id, name: c.cardName })));
           }
         } else {
           if (process.env.NODE_ENV !== 'production') {
-            console.log('⚠️ No valid card IDs found in shipping request items');
+          console.log('⚠️ No valid card IDs found in shipping request items');
           }
         }
       } else {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('⚠️ No items found in shipping request or items is not an array');
+        console.log('⚠️ No items found in shipping request or items is not an array');
         }
       }
 
