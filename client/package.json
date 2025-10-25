@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --mode production",
+    "build:vercel": "vite build --mode production --outDir dist",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -13,7 +13,7 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist",
-        "buildCommand": "cd client && npm run build"
+        "buildCommand": "cd client && node build.js"
       }
     }
   ],
@@ -57,5 +57,10 @@
         "Cache-Control": "public, max-age=0, must-revalidate"
       }
     }
-  ]
+  ],
+  "functions": {
+    "server/vercel.ts": {
+      "maxDuration": 30
+    }
+  }
 }

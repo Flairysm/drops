@@ -1,0 +1,23 @@
+# Ignore TypeScript files to prevent compilation errors
+client/src/**/*.ts
+client/src/**/*.tsx
+client/tsconfig.json
+client/tsconfig.build.json
+
+# Ignore development files
+client/node_modules
+client/dist
+client/.vite
+
+# Ignore server files that shouldn't be deployed
+server/node_modules
+server/dist
+server/.env
+server/.env.local
+
+# Ignore other development files
+.git
+.gitignore
+README.md
+.coderabbit.yaml
+.coderabbitignore
