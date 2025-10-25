@@ -57,10 +57,5 @@
         "Cache-Control": "public, max-age=0, must-revalidate"
       }
     }
-  ],
-  "functions": {
-    "server/vercel.ts": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
