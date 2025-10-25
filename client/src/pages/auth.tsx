@@ -3,13 +3,13 @@ import { Link } from 'wouter';
 import { Button } from '../components/ui/button';
 import { motion } from 'framer-motion';
 
-const Landing: React.FC = () => {
+const Auth: React.FC = () => {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-6">
       {/* Futuristic Card Hero Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         {/* Main background image */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url('data:image/svg+xml;base64,${btoa(`
@@ -33,14 +33,14 @@ const Landing: React.FC = () => {
                   </linearGradient>
                 </defs>
                 <rect width="1920" height="1080" fill="url(#bg)"/>
-                
+
                 <!-- Stars/particles -->
                 <g opacity="0.8">
                   ${[...Array(200)].map((_, i) => `
                     <circle cx="${Math.random() * 1920}" cy="${Math.random() * 1080}" r="${Math.random() * 2 + 0.5}" fill="white" opacity="${Math.random() * 0.8 + 0.2}"/>
                   `).join('')}
                 </g>
-                
+
                 <!-- Light trails -->
                 <path d="M 100 200 Q 300 400 500 600 Q 700 800 400 1000" stroke="url(#card1)" stroke-width="8" fill="none" opacity="0.6">
                   <animate attributeName="opacity" values="0.3;0.8;0.3" dur="3s" repeatCount="indefinite"/>
@@ -48,7 +48,7 @@ const Landing: React.FC = () => {
                 <path d="M 1500 100 Q 1700 300 1600 500 Q 1500 700 1400 900" stroke="url(#card2)" stroke-width="6" fill="none" opacity="0.4">
                   <animate attributeName="opacity" values="0.2;0.6;0.2" dur="4s" repeatCount="indefinite"/>
                 </path>
-                
+
                 <!-- Digital cards -->
                 <g transform="translate(1200, 300) rotate(15)">
                   <rect x="0" y="0" width="120" height="180" rx="12" fill="url(#card1)" opacity="0.7" filter="blur(1px)">
@@ -56,21 +56,21 @@ const Landing: React.FC = () => {
                   </rect>
                   <rect x="20" y="20" width="80" height="140" rx="8" fill="white" opacity="0.1"/>
                 </g>
-                
+
                 <g transform="translate(1350, 280) rotate(20)">
                   <rect x="0" y="0" width="120" height="180" rx="12" fill="url(#card2)" opacity="0.8" filter="blur(1px)">
                     <animate attributeName="opacity" values="0.6;0.9;0.6" dur="2.5s" repeatCount="indefinite"/>
                   </rect>
                   <rect x="20" y="20" width="80" height="140" rx="8" fill="white" opacity="0.15"/>
                 </g>
-                
+
                 <g transform="translate(1500, 260) rotate(25)">
                   <rect x="0" y="0" width="120" height="180" rx="12" fill="url(#card3)" opacity="0.9" filter="blur(1px)">
                     <animate attributeName="opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
                   </rect>
                   <rect x="20" y="20" width="80" height="140" rx="8" fill="white" opacity="0.2"/>
                 </g>
-                
+
                 <!-- Grid pattern -->
                 <g opacity="0.1" stroke="#06b6d4" stroke-width="1">
                   ${[...Array(20)].map((_, i) => `
@@ -82,10 +82,10 @@ const Landing: React.FC = () => {
             `)}')`
           }}
         />
-        
+
         {/* Overlay for better text readability */}
         <div className="absolute inset-0 bg-black/40"></div>
-        
+
         {/* Additional floating particles */}
         <div className="absolute inset-0">
           {[...Array(50)].map((_, i) => (
@@ -113,93 +113,86 @@ const Landing: React.FC = () => {
       {/* Main Content */}
       <div className="relative z-10 max-w-4xl mx-auto text-center space-y-12">
         {/* Main Title */}
-        <motion.h1 
+        <motion.h1
           className="text-6xl md:text-8xl font-bold"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <motion.span 
+          <motion.span
             className="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent"
-            animate={{ 
+            animate={{
               backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
             }}
-            transition={{ 
-              duration: 3, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
             }}
           >
-            Drops TCG
+            Welcome Back
           </motion.span>
         </motion.h1>
 
         {/* Subtitle */}
-        <motion.p 
+        <motion.p
           className="text-2xl md:text-3xl text-gray-300 max-w-2xl mx-auto leading-relaxed"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          A new way to experience TCG collecting
-        </motion.p>
-
-        {/* CTA Question */}
-        <motion.p 
-          className="text-xl md:text-2xl text-gray-400 max-w-xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          Ready to join millions of collectors?
+          Choose how you'd like to continue
         </motion.p>
 
         {/* Free Credits Offer */}
-        <motion.div 
+        <motion.div
           className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-cyan-400/30 rounded-2xl p-6 max-w-md mx-auto backdrop-blur-sm"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.8 }}
           whileHover={{ scale: 1.05 }}
         >
-          <motion.p 
+          <motion.p
             className="text-lg text-cyan-300 font-semibold"
-            animate={{ 
+            animate={{
               textShadow: [
                 '0 0 10px rgba(34, 211, 238, 0.5)',
                 '0 0 20px rgba(34, 211, 238, 0.8)',
                 '0 0 10px rgba(34, 211, 238, 0.5)'
               ]
             }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
             }}
           >
-            Sign up now for 300 free credits
+            New users get 300 free credits
           </motion.p>
         </motion.div>
 
         {/* Auth Buttons */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-md mx-auto"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0 }}
         >
           <Link href="/login">
-            <Button
-              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition-all duration-300 ease-in-out hover:scale-105"
+            <Button 
+              size="lg" 
+              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
-              Login
+              Sign In
             </Button>
           </Link>
           <Link href="/register">
-            <Button
-              className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition-all duration-300 ease-in-out hover:scale-105"
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="w-full sm:w-auto border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-900 font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
-              Sign Up
+              Create Account
             </Button>
           </Link>
         </motion.div>
@@ -208,4 +201,4 @@ const Landing: React.FC = () => {
   );
 };
 
-export default Landing;
+export default Auth;

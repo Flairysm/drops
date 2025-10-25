@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Landing from "@/pages/landing";
+import Auth from "@/pages/auth";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Play from "@/pages/games";
@@ -136,7 +137,7 @@ function RouterComponent() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/home" component={Home} />
-      <Route path="/auth" component={Landing} />
+      <Route path="/auth" component={Auth} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       {isAuthenticated && (
