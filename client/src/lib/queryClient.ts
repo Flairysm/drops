@@ -153,6 +153,11 @@ export const getAuthQueryFn: <T>(options: {
       if (res.status === 401 && unauthorizedBehavior === "returnNull") {
         return null;
       }
+      // For 404 errors, also return null instead of throwing (common on first load)
+      if (res.status === 404) {
+        console.warn(`Auth endpoint not found: ${fullUrl}`);
+        return null;
+      }
       throw new Error(`${res.status}: ${res.statusText}`);
     }
 
@@ -192,6 +197,11 @@ export const getQueryFn: <T>(options: {
     }
 
     if (!res.ok) {
+      // For 404 errors, return null instead of throwing (common on first load)
+      if (res.status === 404) {
+        console.warn(`API endpoint not found: ${fullUrl}`);
+        return null;
+      }
       throw new Error(`${res.status}: ${res.statusText}`);
     }
 

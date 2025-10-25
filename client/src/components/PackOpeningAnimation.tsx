@@ -30,6 +30,7 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
   const [showHitCard, setShowHitCard] = useState(false);
   const [isHitRevealed, setIsHitRevealed] = useState(false);
   const [isAnimationReady, setIsAnimationReady] = useState(false);
+  const [showEnlargedCard, setShowEnlargedCard] = useState(false);
 
   // Function to get tier glow color
   const getTierGlowColor = (tier: string) => {
@@ -91,6 +92,20 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
     } else {
       console.log('Cannot reveal hit card:', { revealedCards, isHitRevealed, isAnimationReady });
     }
+  };
+
+  const handleEnlargeCard = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Enlarging hit card');
+    setShowEnlargedCard(true);
+  };
+
+  const handleCloseEnlargedCard = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Closing enlarged card');
+    setShowEnlargedCard(false);
   };
 
   const getTierColor = (tier: string) => {
@@ -252,11 +267,13 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className={`relative w-20 h-28 ${getTierGlowColor(hitCard?.tier || '')}`}
+                    className={`relative w-20 h-28 ${getTierGlowColor(hitCard?.tier || '')} ${isHitRevealed ? 'cursor-pointer hover:scale-105 transition-transform duration-200' : ''}`}
+                    onClick={isHitRevealed ? handleEnlargeCard : undefined}
+                    style={{ pointerEvents: isHitRevealed ? 'auto' : 'none' }}
                   >
                     <img
                       src={isHitRevealed ? (hitCard?.imageUrl || "/card-images/Commons.png") : "/card-images/hit.png"}
-                      alt={isHitRevealed ? "Hit Card" : "Hit Card Back"}
+                      alt={isHitRevealed ? "Hit Card - Tap to enlarge" : "Hit Card Back"}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -266,6 +283,13 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
                         }
                       }}
                     />
+                    {isHitRevealed && (
+                      <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
+                        <div className="opacity-0 hover:opacity-100 transition-opacity duration-200 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                          Tap to enlarge
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 ) : (
                   /* Hit Card - Hidden */
@@ -326,6 +350,88 @@ export function PackOpeningAnimation({ packCards, hitCardPosition, onComplete, p
           })()}
         </div>
 
+        {/* Enlarged Card Modal */}
+        <AnimatePresence>
+          {showEnlargedCard && hitCard && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/95 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
+              onClick={handleCloseEnlargedCard}
+              onTouchEnd={handleCloseEnlargedCard}
+              style={{ pointerEvents: 'auto' }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="relative max-w-4xl max-h-[90vh] w-full h-full flex flex-col items-center justify-center"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                style={{ pointerEvents: 'auto' }}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={handleCloseEnlargedCard}
+                  className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors duration-200"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                {/* Enlarged Card */}
+                <div className={`relative ${getTierGlowColor(hitCard.tier || '')} rounded-2xl overflow-hidden shadow-2xl`}>
+                  <img
+                    src={hitCard.imageUrl || "/card-images/Commons.png"}
+                    alt={hitCard.name}
+                    className="w-full h-full object-cover max-w-xs max-h-[400px]"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/card-images/Commons.png";
+                    }}
+                  />
+                </div>
+
+                {/* Card Details */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-6 text-center"
+                >
+                  <h3 className="text-2xl font-bold text-white mb-2">{hitCard.name}</h3>
+                  <div className="flex items-center justify-center gap-4">
+                    <Badge className={`${getTierBadgeColor(hitCard.tier || '')} text-white px-3 py-1 text-sm font-semibold`}>
+                      {hitCard.tier} Tier
+                    </Badge>
+                    <div className="text-gray-300">
+                      <span className="text-yellow-400 font-semibold">{hitCard.marketValue} credits</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Tap anywhere to close hint */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-4 text-gray-400 text-sm"
+                >
+                  Tap anywhere to close
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </motion.div>
     </div>

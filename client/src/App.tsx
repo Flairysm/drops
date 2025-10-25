@@ -32,16 +32,57 @@ function RouterComponent() {
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [hasError, setHasError] = useState(false);
   
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isLoading) {
         setLoadingTimeout(true);
+        console.warn('Authentication loading timeout - proceeding with app');
       }
-    }, 10000); // 10 second timeout
+    }, 5000); // Reduced to 5 second timeout
 
     return () => clearTimeout(timer);
   }, [isLoading]);
+
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error caught:', event.error);
+      setHasError(true);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
+  // Show error state if there's an error
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Something went wrong</h1>
+          <p className="text-gray-300 mb-6">Please refresh the page to try again</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg transition-all duration-200"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading spinner only if actually loading and no timeout
   if (isLoading && !loadingTimeout) {
@@ -49,28 +90,29 @@ function RouterComponent() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mb-4"></div>
         <p className="text-white text-lg font-medium">Loading...</p>
+        <p className="text-gray-400 text-sm mt-2">If this takes too long, try refreshing the page</p>
       </div>
     );
   }
 
-  // If timeout reached, show error state
+  // If loading timeout occurred, show a fallback with option to retry
   if (loadingTimeout) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4 font-bold text-yellow-500">!</div>
-          <h1 className="text-2xl font-bold mb-2 text-white">Loading Timeout</h1>
-          <p className="text-gray-300 mb-4">Something went wrong while loading</p>
+          <h1 className="text-2xl font-bold text-white mb-4">Loading took too long</h1>
+          <p className="text-gray-300 mb-6">The app is taking longer than expected to load</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg transition-all duration-200"
           >
-            Reload Page
+            Retry Loading
           </button>
         </div>
       </div>
     );
   }
+
 
   return (
     <Switch>
