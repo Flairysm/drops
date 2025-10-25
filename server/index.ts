@@ -6,63 +6,50 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { fileURLToPath } from 'url';
-// Temporarily disabled security modules
-// import { 
-//   securityHeaders, 
-//   apiRateLimit, 
-//   validateInput, 
-//   securityLogger, 
-//   corsConfig, 
-//   validateEnvironment,
-//   apiSecurityHeaders 
-// } from './security';
-// import { 
-//   logger, 
-//   requestLogger, 
-//   healthCheck, 
-//   errorTracker 
-// } from './monitoring';
-// import { config } from './config/environment';
+import { 
+  basicSecurityHeaders, 
+  basicRateLimit, 
+  apiRateLimit, 
+  authRateLimit,
+  basicRequestLogger, 
+  basicErrorHandler,
+  healthCheck 
+} from './production-security';
 
 // Fixed import.meta.dirname issue for production builds
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Validate environment variables on startup
-// validateEnvironment();
-
 const app = express();
 
-// Security middleware (order matters!) - Temporarily disabled
-// app.use(securityHeaders);
-// app.use(apiSecurityHeaders);
-// app.use(securityLogger);
-// app.use(validateInput);
+// Security middleware (order matters!)
+app.use(basicSecurityHeaders);
+app.use(basicRequestLogger);
 
-// CORS configuration - Using basic CORS for now
+// CORS configuration
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? ['https://dropstcg.vercel.app', 'https://www.dropstcg.vercel.app']
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
-// Rate limiting - Temporarily disabled
-// app.use(apiRateLimit);
-
-// Request logging and monitoring - Temporarily disabled
-// app.use(requestLogger);
+// Rate limiting
+app.use(basicRateLimit);
 
 // IMPORTANT: Session middleware must be set up BEFORE CORS
 // This will be done in registerRoutes via setupAuth()
 
-// Health check endpoint - Temporarily disabled
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0'
-  });
-});
+// Health check endpoint
+app.get('/api/health', healthCheck);
 
 // CORS is now configured in the security middleware above
 
@@ -179,6 +166,9 @@ app.use((req, res, next) => {
     const port = parseInt(process.env.PORT || '5000', 10);
     const host = '0.0.0.0'; // Bind to all interfaces for better compatibility
     
+    // Add error handling middleware
+    app.use(basicErrorHandler);
+
     // Setup WebSocket server
     const wss = new WebSocketServer({ server });
     
