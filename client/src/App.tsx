@@ -27,8 +27,10 @@ import NotFound from "@/pages/not-found";
 function RouterComponent() {
   const { isAuthenticated, isLoading } = useAuth();
   
-  // Debug logging
-  console.log('Router state:', { isAuthenticated, isLoading });
+  // Debug logging (disabled in production)
+  if (import.meta.env.DEV) {
+    console.log('Router state:', { isAuthenticated, isLoading });
+  }
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);

@@ -58,7 +58,7 @@ setupAuth(app);
 // Register all API routes
 try {
   console.log('🔄 Registering API routes...');
-  await registerRoutes(app);
+  const server = await registerRoutes(app);
   console.log('✅ API routes registered successfully');
 } catch (error: any) {
   console.error('❌ Failed to register API routes:', error.message);

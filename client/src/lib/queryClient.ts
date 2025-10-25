@@ -80,13 +80,17 @@ export async function apiRequest(
   // Add Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log('API Request with JWT:', { method, url: fullUrl, hasToken: true });
+    if (import.meta.env.DEV) {
+      console.log('API Request with JWT:', { method, url: fullUrl, hasToken: true });
+    }
   } else {
-    console.log('API Request without JWT:', { method, url: fullUrl, hasToken: false });
+    if (import.meta.env.DEV) {
+      console.log('API Request without JWT:', { method, url: fullUrl, hasToken: false });
+    }
   }
   
-  // Special logging for refund requests
-  if (url.includes('/vault/refund-async')) {
+  // Special logging for refund requests (dev only)
+  if (import.meta.env.DEV && url.includes('/vault/refund-async')) {
     console.log('REFUND ASYNC REQUEST:', { method, url: fullUrl, data, headers });
   }
   
@@ -134,9 +138,13 @@ export const getAuthQueryFn: <T>(options: {
     // Add Authorization header if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('Auth Query with JWT:', { url: fullUrl, hasToken: true });
+      if (import.meta.env.DEV) {
+        console.log('Auth Query with JWT:', { url: fullUrl, hasToken: true });
+      }
     } else {
-      console.log('Auth Query without JWT:', { url: fullUrl, hasToken: false });
+      if (import.meta.env.DEV) {
+        console.log('Auth Query without JWT:', { url: fullUrl, hasToken: false });
+      }
     }
     
     const res = await fetch(fullUrl, {
@@ -182,9 +190,13 @@ export const getQueryFn: <T>(options: {
     // Add Authorization header if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('Query with JWT:', { url: fullUrl, hasToken: true });
+      if (import.meta.env.DEV) {
+        console.log('Query with JWT:', { url: fullUrl, hasToken: true });
+      }
     } else {
-      console.log('Query without JWT:', { url: fullUrl, hasToken: false });
+      if (import.meta.env.DEV) {
+        console.log('Query without JWT:', { url: fullUrl, hasToken: false });
+      }
     }
     
     const res = await fetch(fullUrl, {

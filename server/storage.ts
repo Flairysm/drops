@@ -2334,12 +2334,18 @@ export class DatabaseStorage {
 
       // Remove the shipped cards from user's vault
       if (requestData.items && Array.isArray(requestData.items) && requestData.userId) {
-        console.log('📦 Shipping request items:', JSON.stringify(requestData.items, null, 2));
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('📦 Shipping request items:', JSON.stringify(requestData.items, null, 2));
+        }
         const cardIds = requestData.items.map((item: any) => item.id).filter(Boolean);
-        console.log('🆔 Extracted card IDs:', cardIds);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('🆔 Extracted card IDs:', cardIds);
+        }
         
         if (cardIds.length > 0) {
-          console.log(`🚚 Removing ${cardIds.length} cards from vault for shipping request ${result[0].id}`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`🚚 Removing ${cardIds.length} cards from vault for shipping request ${result[0].id}`);
+          }
           
           // First, check if the cards exist in the vault
           const existingCards = await tx
@@ -2350,7 +2356,9 @@ export class DatabaseStorage {
               eq(userCards.userId, requestData.userId)
             ));
           
-          console.log(`🔍 Found ${existingCards.length} cards in vault to remove:`, existingCards.map(c => c.id));
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`🔍 Found ${existingCards.length} cards in vault to remove:`, existingCards.map(c => c.id));
+          }
           
           // Delete the cards from user's vault
           const deleteResult = await tx
@@ -2361,12 +2369,18 @@ export class DatabaseStorage {
             ))
             .returning();
           
-          console.log(`✅ Successfully removed ${deleteResult.length} cards from vault. Deleted cards:`, deleteResult.map(c => ({ id: c.id, name: c.cardName })));
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`✅ Successfully removed ${deleteResult.length} cards from vault. Deleted cards:`, deleteResult.map(c => ({ id: c.id, name: c.cardName })));
+          }
         } else {
-          console.log('⚠️ No valid card IDs found in shipping request items');
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('⚠️ No valid card IDs found in shipping request items');
+          }
         }
       } else {
-        console.log('⚠️ No items found in shipping request or items is not an array');
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('⚠️ No items found in shipping request or items is not an array');
+        }
       }
 
       return result[0];

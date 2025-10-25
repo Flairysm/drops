@@ -1137,57 +1137,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test endpoint to manually trigger refund processing
-  app.post('/api/vault/test-refund', isAuthenticatedCombined, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { cardIds } = req.body;
+  // Test endpoint to manually trigger refund processing (dev only)
+  if (process.env.NODE_ENV !== 'production') {
+    app.post('/api/vault/test-refund', isAuthenticatedCombined, async (req: any, res) => {
+      try {
+        const userId = req.user.id;
+        const { cardIds } = req.body;
 
+        if (!Array.isArray(cardIds) || cardIds.length === 0) {
+          return res.status(400).json({ message: "Invalid card IDs" });
+        }
 
-      if (!Array.isArray(cardIds) || cardIds.length === 0) {
-        return res.status(400).json({ message: "Invalid card IDs" });
+        // Process refund synchronously for testing
+        await storage.refundCards(cardIds, userId);
+        
+        res.json({ 
+          success: true, 
+          message: `Successfully processed refund for ${cardIds.length} cards`,
+          cardIds 
+        });
+      } catch (error: any) {
+        console.error("Error in test refund:", error);
+        res.status(500).json({ message: "Test refund failed", error: error.message });
       }
+    });
+  }
 
-      // Process refund synchronously for testing
-      await storage.refundCards(cardIds, userId);
-      
-      res.json({ 
-        success: true, 
-        message: `Successfully processed refund for ${cardIds.length} cards`,
-        cardIds 
-      });
-    } catch (error: any) {
-      console.error("Error in test refund:", error);
-      res.status(500).json({ message: "Test refund failed", error: error.message });
-    }
-  });
+  // Debug endpoint to check mystery packs and cards (dev only)
+  if (process.env.NODE_ENV !== 'production') {
+    app.get('/api/debug/mystery-data', async (req, res) => {
+      try {
+        // Get all mystery packs
+        const mysteryPacks = await db.select().from(mysteryPack);
+        console.log('🔍 Mystery packs:', mysteryPacks);
+        
+        // Get all mystery prizes
+        const mysteryPrizes = await db.select().from(mysteryPrize);
+        console.log('🔍 Mystery prizes:', mysteryPrizes);
+        
+        res.json({
+          success: true,
+          mysteryPacks,
+          mysteryPrizes
+        });
+      } catch (error) {
+        console.error('❌ Error fetching mystery data:', error);
+        res.status(500).json({ error: 'Failed to fetch mystery data' });
+      }
+    });
+  }
 
-  // Debug endpoint to check mystery packs and cards
-  app.get('/api/debug/mystery-data', async (req, res) => {
-    try {
-      // Get all mystery packs
-      const mysteryPacks = await db.select().from(mysteryPack);
-      console.log('🔍 Mystery packs:', mysteryPacks);
-      
-      // Get all mystery prizes
-      const mysteryPrizes = await db.select().from(mysteryPrize);
-      console.log('🔍 Mystery prizes:', mysteryPrizes);
-      
-      res.json({
-        success: true,
-        mysteryPacks,
-        mysteryPrizes
-      });
-    } catch (error) {
-      console.error('❌ Error fetching mystery data:', error);
-      res.status(500).json({ error: 'Failed to fetch mystery data' });
-    }
-  });
-
-  // Simple test endpoint to verify routing
-  app.post('/api/vault/test-simple', isAuthenticatedCombined, async (req: any, res) => {
-    res.json({ success: true, message: "Simple test endpoint working" });
-  });
+  // Simple test endpoint to verify routing (dev only)
+  if (process.env.NODE_ENV !== 'production') {
+    app.post('/api/vault/test-simple', isAuthenticatedCombined, async (req: any, res) => {
+      res.json({ success: true, message: "Simple test endpoint working" });
+    });
+  }
 
   // Image upload endpoint - using different path to avoid Vite interference
   app.post('/api/admin/upload-image', isAuthenticatedCombined, async (req: any, res) => {
