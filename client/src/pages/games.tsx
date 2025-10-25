@@ -524,17 +524,6 @@ export default function Play() {
                   {/* Raffle Events Title */}
                   <h2 className="text-2xl sm:text-3xl font-semibold text-[#E5E7EB] tracking-[-0.03em] leading-[1.15]">Raffle Events</h2>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={fetchCompletedRaffles}
-                    className="text-white border-gray-600 hover:bg-gray-800"
-                  >
-                    <Trophy className="w-4 h-4 mr-1" />
-                    View Completed
-                  </Button>
-                </div>
               </div>
               
               {(() => {
