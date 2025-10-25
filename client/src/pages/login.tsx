@@ -64,7 +64,7 @@ export default function Login() {
       // Small delay to ensure cache is cleared before redirect
       setTimeout(() => {
         console.log('Redirecting to home page...');
-        setLocation("/home");
+        setLocation("/");
       }, 100);
     },
     onError: (error: any) => {

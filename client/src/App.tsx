@@ -26,11 +26,21 @@ import NotFound from "@/pages/not-found";
 
 function RouterComponent() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [routerReady, setRouterReady] = useState(false);
   
   // Debug logging (disabled in production)
   if (import.meta.env.DEV) {
-    console.log('Router state:', { isAuthenticated, isLoading });
+    console.log('Router state:', { isAuthenticated, isLoading, routerReady });
   }
+
+  // Ensure router is ready before rendering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRouterReady(true);
+    }, 100); // Small delay to ensure everything is initialized
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Add timeout to prevent infinite loading
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -51,12 +61,18 @@ function RouterComponent() {
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
       console.error('Global error caught:', event.error);
-      setHasError(true);
+      // Don't set error for 404s or network errors that might be temporary
+      if (!event.error?.message?.includes('404') && !event.error?.message?.includes('Failed to fetch')) {
+        setHasError(true);
+      }
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('Unhandled promise rejection:', event.reason);
-      setHasError(true);
+      // Don't set error for 404s or network errors that might be temporary
+      if (!event.reason?.message?.includes('404') && !event.reason?.message?.includes('Failed to fetch')) {
+        setHasError(true);
+      }
     };
 
     window.addEventListener('error', handleError);
@@ -87,7 +103,7 @@ function RouterComponent() {
   }
 
   // Show loading spinner only if actually loading and no timeout
-  if (isLoading && !loadingTimeout) {
+  if ((isLoading && !loadingTimeout) || !routerReady) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mb-4"></div>
@@ -118,8 +134,9 @@ function RouterComponent() {
 
   return (
     <Switch>
-      <Route path="/" component={Landing} />
+      <Route path="/" component={Home} />
       <Route path="/home" component={Home} />
+      <Route path="/auth" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       {isAuthenticated && (
@@ -138,7 +155,8 @@ function RouterComponent() {
           <Route path="/purchase/:type/:id" component={Purchase} />
         </>
       )}
-      <Route component={NotFound} />
+      {/* Fallback route - if nothing matches, show home page */}
+      <Route component={Home} />
     </Switch>
   );
 }

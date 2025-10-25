@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'wouter';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { motion } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import Login from './login';
+import Register from './register';
 
 const Landing: React.FC = () => {
   return (
@@ -182,40 +185,29 @@ const Landing: React.FC = () => {
           </motion.p>
         </motion.div>
 
-        {/* Action Buttons */}
+        {/* Auth Forms */}
         <motion.div 
-          className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto"
+          className="max-w-md mx-auto"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0 }}
         >
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link href="/register">
-              <Button 
-                size="lg" 
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 shadow-2xl hover:shadow-cyan-500/25"
-              >
-                Create Account
-              </Button>
-            </Link>
-          </motion.div>
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link href="/login">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="w-full border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-900 px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300"
-              >
-                Login
-              </Button>
-            </Link>
-          </motion.div>
+          <Card className="bg-slate-800/40 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+            <CardContent className="p-6">
+              <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-slate-700/50">
+                  <TabsTrigger value="login" className="text-white data-[state=active]:bg-purple-600">Login</TabsTrigger>
+                  <TabsTrigger value="register" className="text-white data-[state=active]:bg-purple-600">Register</TabsTrigger>
+                </TabsList>
+                <TabsContent value="login" className="mt-6">
+                  <Login />
+                </TabsContent>
+                <TabsContent value="register" className="mt-6">
+                  <Register />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
     </div>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { Play, Package, Coins, TrendingUp, Zap, RotateCcw, Gamepad2, Star, Crown, Sparkles, Trophy, Gift, Eye, X } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import type { User } from "../../../shared/schema";
@@ -58,7 +58,17 @@ interface Raffle {
 export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isBlackBoltPopupOpen, setIsBlackBoltPopupOpen] = useState(false);
+
+  // Helper function to redirect to auth page for protected actions
+  const requireAuth = () => {
+    if (!isAuthenticated) {
+      setLocation('/auth');
+      return false;
+    }
+    return true;
+  };
   
   // Raffle state
   const [raffles, setRaffles] = useState<Raffle[]>([]);
@@ -244,12 +254,7 @@ export default function Home() {
     );
   }
 
-  // Redirect non-authenticated users to the root landing page
-  if (!isAuthenticated) {
-    // Redirect to root landing page instead of showing a landing page here
-    window.location.href = '/';
-    return null;
-  }
+  // No longer redirect unauthenticated users - they can view the home page
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -458,7 +463,11 @@ export default function Home() {
                  >
                    <Button 
                      size="sm"
-                     onClick={() => setIsBlackBoltPopupOpen(true)}
+                     onClick={() => {
+                       if (requireAuth()) {
+                         setIsBlackBoltPopupOpen(true);
+                       }
+                     }}
                      className="bg-gradient-to-r from-[#00E6A8] to-[#00E6A8] hover:from-[#00E6A8] hover:to-[#00E6A8] text-black px-4 py-2 rounded-xl font-medium w-fit shadow-[0_0_12px_rgba(0,230,168,0.3)] hover:shadow-[0_0_16px_rgba(0,230,168,0.4)] transition-all duration-200 text-sm"
                    >
                      Open Now
@@ -582,8 +591,10 @@ export default function Home() {
                             
                             <Button
                               onClick={() => {
-                                setSelectedRaffle(raffle);
-                                setShowRaffleDetails(true);
+                                if (requireAuth()) {
+                                  setSelectedRaffle(raffle);
+                                  setShowRaffleDetails(true);
+                                }
                               }}
                               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                             >
@@ -1023,8 +1034,10 @@ export default function Home() {
                   {selectedRaffle?.status === 'active' && selectedRaffle.filledSlots < selectedRaffle.totalSlots ? (
                     <Button 
                       onClick={() => {
-                        setShowRaffleDetails(false);
-                        handleJoinRaffle(selectedRaffle);
+                        if (requireAuth()) {
+                          setShowRaffleDetails(false);
+                          handleJoinRaffle(selectedRaffle);
+                        }
                       }}
                       className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                     >
@@ -1102,8 +1115,10 @@ export default function Home() {
                     <div className="mt-4">
                       <Button
                         onClick={() => {
-                          setSelectedRaffle(raffle);
-                          setShowRaffleDetails(true);
+                          if (requireAuth()) {
+                            setSelectedRaffle(raffle);
+                            setShowRaffleDetails(true);
+                          }
                         }}
                         className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                       >
