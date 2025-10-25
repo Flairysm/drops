@@ -14,21 +14,17 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     target: 'es2020',
-    minify: false, // Disable minification for debugging
+    minify: false,
     rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-          'utils-vendor': ['framer-motion', 'wouter', '@tanstack/react-query']
-        }
+      input: {
+        main: path.resolve(__dirname, 'index.html')
       }
     }
   },
   publicDir: 'public',
   server: {
     port: 5173,
-    host: true, // Allow external connections
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
@@ -38,9 +34,5 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
-  },
-  esbuild: {
-    jsx: 'automatic',
-    jsxImportSource: 'react',
   },
 })
