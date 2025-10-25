@@ -391,7 +391,7 @@ export default function ShippingAdmin() {
                 </span>
               </h1>
             </div>
-            <p className="text-gray-300 text-lg mb-4">Manage shipping requests and track deliveries</p>
+            <p className="text-gray-300 text-lg mb-4">Manage shipping requests and track deliveries - UPDATED STYLING</p>
             
             {pendingCount > 0 && (
               <div className="inline-flex items-center gap-2 bg-red-900/50 border border-red-500/50 rounded-lg px-4 py-2">
