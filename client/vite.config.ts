@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../dist',
+    outDir: 'dist',
     assetsDir: 'assets',
     target: 'es2020',
     minify: 'terser',
