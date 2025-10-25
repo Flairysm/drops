@@ -1829,18 +1829,19 @@ export default function Admin() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mb-4"></div>
+        <p className="text-white text-lg font-medium">Loading admin panel...</p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4 text-white">Admin Access Required</h1>
-          <p className="text-gray-400">Please log in to access the admin panel.</p>
+          <p className="text-gray-300">Please log in to access the admin panel.</p>
         </div>
       </div>
     );
@@ -1848,27 +1849,34 @@ export default function Admin() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4 text-white">Access Denied</h1>
-          <p className="text-gray-400">You don't have permission to access the admin panel.</p>
+          <p className="text-gray-300">You don't have permission to access the admin panel.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen relative overflow-hidden">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="absolute inset-0 bg-[url('/assets/drops-logo.png')] bg-center bg-no-repeat bg-contain opacity-5"></div>
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center gap-4 mb-8">
-            <h1 className="text-3xl font-bold font-gaming text-white">Admin Dashboard</h1>
+            <div className="w-1 h-8 bg-gradient-to-b from-[#7C3AED] via-[#A855F7] to-[#22D3EE] rounded-full shadow-[0_0_8px_rgba(124,58,237,0.3)]"></div>
+            <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
             <Button 
               onClick={refreshAllPackData}
-              variant="outline" 
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
             >
               <RefreshCw className="w-4 h-4" />
               Refresh Data
@@ -1877,11 +1885,11 @@ export default function Admin() {
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-gray-800 border border-gray-600 rounded-lg">
+              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-gray-900/50 border border-gray-600 rounded-lg backdrop-blur-sm">
                 <TabsTrigger 
                   value="overview" 
                   data-testid="tab-overview"
-                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 rounded-md transition-all duration-200 hover:text-white"
                   title="Overview"
                 >
                   <TrendingUp className="w-5 h-5" />
@@ -1890,7 +1898,7 @@ export default function Admin() {
                 <TabsTrigger 
                   value="users" 
                   data-testid="tab-users"
-                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 rounded-md transition-all duration-200 hover:text-white"
                   title="Users"
                 >
                   <Users className="w-5 h-5" />
@@ -1899,7 +1907,7 @@ export default function Admin() {
                 <TabsTrigger 
                   value="manage" 
                   data-testid="tab-manage"
-                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 rounded-md transition-all duration-200 hover:text-white"
                   title="Manage Packs"
                 >
                   <Package className="w-5 h-5" />
@@ -1908,7 +1916,7 @@ export default function Admin() {
                 <TabsTrigger 
                   value="raffles" 
                   data-testid="tab-raffles"
-                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-400 data-[state=active]:text-white data-[state=active]:bg-purple-600 rounded-md transition-all duration-200"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 rounded-md transition-all duration-200 hover:text-white"
                   title="Raffles"
                 >
                   <Gift className="w-5 h-5" />
@@ -1920,45 +1928,45 @@ export default function Admin() {
             {/* Overview Tab */}
             <TabsContent value="overview">
               <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                <Card className="bg-gray-900/50 border border-gray-600 shadow-lg backdrop-blur-sm">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-white">Total Users</CardTitle>
-                    <Users className="h-4 w-4 text-gray-400" />
+                    <Users className="h-4 w-4 text-purple-400" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-white">
                       {isLoadingStats ? '...' : (adminStats?.totalUsers || 0)}
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-300 mt-1">
                       Registered users
                     </p>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                <Card className="bg-gray-900/50 border border-gray-600 shadow-lg backdrop-blur-sm">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-gray-400" />
+                    <TrendingUp className="h-4 w-4 text-green-400" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-white">
                       RM {isLoadingStats ? '...' : (adminStats?.totalRevenue || '0.00')}
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-300 mt-1">
                       All-time revenue
                     </p>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                <Card className="bg-gray-900/50 border border-gray-600 shadow-lg backdrop-blur-sm">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-white">Top Spenders</CardTitle>
-                    <Trophy className="h-4 w-4 text-gray-400" />
+                    <Trophy className="h-4 w-4 text-yellow-400" />
                   </CardHeader>
                   <CardContent>
                     {isLoadingStats ? (
                       <div className="text-center py-4">
-                        <div className="text-gray-400">Loading...</div>
+                        <div className="text-gray-300">Loading...</div>
                       </div>
                     ) : adminStats?.topSpenders?.length > 0 ? (
                       <div className="space-y-2">
@@ -2094,15 +2102,14 @@ export default function Admin() {
 
             {/* Users Tab */}
             <TabsContent value="users">
-              <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+              <Card className="bg-gray-900/50 border border-gray-600 shadow-lg backdrop-blur-sm">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                  <CardTitle>User Management</CardTitle>
+                  <CardTitle className="text-white">User Management</CardTitle>
                     <Button 
-                      variant="outline" 
                       size="sm" 
                       onClick={fetchUsers}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
                     >
                       <RefreshCw className="w-4 h-4" />
                       Refresh Users
@@ -2112,19 +2119,19 @@ export default function Admin() {
                 <CardContent>
                     {isLoadingUsers ? (
                       <div className="text-center py-8">
-                        <div className="text-gray-400">Loading users...</div>
+                        <div className="text-gray-300">Loading users...</div>
                       </div>
                     ) : (
                     <div className="space-y-4">
                     {users.map((user) => (
-                        <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-600">
+                        <div key={user.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-600 bg-gray-800/30 backdrop-blur-sm">
                           <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                              <Users className="w-5 h-5 text-primary" />
+                            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                              <Users className="w-5 h-5 text-white" />
                             </div>
                             <div>
                               <div className="font-semibold text-white">{user.email || user.username}</div>
-                              <div className="text-sm text-gray-400">
+                              <div className="text-sm text-gray-300">
                                 Credits: {user.credits} • Spent: RM {user.totalSpent || '0.00'}
                               </div>
                             <div className="text-xs text-gray-400">
@@ -2139,9 +2146,9 @@ export default function Admin() {
                             )}
                             
                             <Button
-                              variant="outline"
                               size="sm"
-                            onClick={() => handleEditUser(user)}
+                              onClick={() => handleEditUser(user)}
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
                           >
                             <Edit className="w-3 h-3 mr-1" />
                             Edit
@@ -2158,16 +2165,16 @@ export default function Admin() {
             {/* Manage Tab */}
             <TabsContent value="manage">
               <Tabs value={manageSection} onValueChange={(value) => setManageSection(value as "classic" | "special" | "mystery")} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  <TabsTrigger value="classic">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-900/50 border border-gray-600 rounded-lg backdrop-blur-sm">
+                  <TabsTrigger value="classic" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 hover:text-white">
                     <Package className="w-4 h-4 mr-2" />
                     Classic
                   </TabsTrigger>
-                  <TabsTrigger value="special">
+                  <TabsTrigger value="special" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 hover:text-white">
                     <Package className="w-4 h-4 mr-2" />
                     Special
                   </TabsTrigger>
-                  <TabsTrigger value="mystery">
+                  <TabsTrigger value="mystery" className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 hover:text-white">
                     <Package className="w-4 h-4 mr-2" />
                     Mystery
                   </TabsTrigger>
@@ -2177,23 +2184,23 @@ export default function Admin() {
                 <TabsContent value="classic">
                   <div className="space-y-6">
                     {/* Classic Packs Display */}
-                    <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                    <Card className="bg-gray-900/50 border border-gray-600 shadow-lg backdrop-blur-sm">
                       <CardHeader>
                         <div className="flex justify-between items-center">
-                          <CardTitle>Classic Packs</CardTitle>
-                          <Button onClick={() => setShowAddClassicDialog(true)}>
+                          <CardTitle className="text-white">Classic Packs</CardTitle>
+                          <Button onClick={() => setShowAddClassicDialog(true)} className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white border-0">
                         <Plus className="w-4 h-4 mr-2" />
                         Add
                       </Button>
-                    </div>
-                        </CardHeader>
+                        </div>
+                      </CardHeader>
                         <CardContent>
 
                           {classicPools.length === 0 ? (
                             <div className="text-center py-8">
-                              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                              <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                             <h3 className="text-lg font-medium mb-2 text-white">No classic packs created</h3>
-                              <p className="text-gray-400">
+                              <p className="text-gray-300">
                               Click "Add" to create your first classic pack
                               </p>
                             </div>
@@ -2281,23 +2288,23 @@ export default function Admin() {
                 <TabsContent value="special">
                   <div className="space-y-6">
                     {/* Special Packs Display */}
-                      <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                      <Card className="bg-gray-900/50 border border-gray-600 shadow-lg backdrop-blur-sm">
                         <CardHeader>
                         <div className="flex justify-between items-center">
-                          <CardTitle>Special Packs</CardTitle>
-                          <Button onClick={() => setShowAddPoolDialog(true)}>
+                          <CardTitle className="text-white">Special Packs</CardTitle>
+                          <Button onClick={() => setShowAddPoolDialog(true)} className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white border-0">
                             <Plus className="w-4 h-4 mr-2" />
                             Add
                           </Button>
-                          </div>
-                        </CardHeader>
+                        </div>
+                      </CardHeader>
                         <CardContent>
 
                         {specialPools.length === 0 ? (
                           <div className="text-center py-8">
-                            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium mb-2">No special packs created</h3>
-                            <p className="text-gray-400">
+                            <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium mb-2 text-white">No special packs created</h3>
+                            <p className="text-gray-300">
                               Click "Add" to create your first special pack
                             </p>
                                   </div>
@@ -2389,21 +2396,21 @@ export default function Admin() {
                     </div>
 
                     {/* Mystery Pack Cards */}
-                      <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                      <Card className="bg-gray-900/50 border border-gray-600 shadow-lg backdrop-blur-sm">
                         <CardHeader>
-                          <CardTitle>Mystery Pack Prize Pool</CardTitle>
+                          <CardTitle className="text-white">Mystery Pack Prize Pool</CardTitle>
                         </CardHeader>
                         <CardContent>
                           {mysteryPackCards.length === 0 ? (
                             <div className="text-center py-8">
-                              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                              <h3 className="text-lg font-medium mb-2">No cards in mystery pack prize pool</h3>
-                              <p className="text-gray-400 mb-4">
+                              <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                              <h3 className="text-lg font-medium mb-2 text-white">No cards in mystery pack prize pool</h3>
+                              <p className="text-gray-300 mb-4">
                                 Add cards from inventory to build your mystery pack prize pool
                               </p>
                               <Button 
                                 onClick={() => setShowAddCardDialog(true)}
-                                className="bg-blue-600 hover:bg-blue-700"
+                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
                               >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Add First Card
