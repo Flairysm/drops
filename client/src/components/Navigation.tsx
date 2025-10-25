@@ -216,15 +216,17 @@ export function Navigation() {
                 <Link href="/auth">
                   <Button
                     variant="outline"
+                    size="sm"
                     className="border-[#26263A] text-[#E5E7EB] hover:bg-[#151521] hover:border-[#7C3AED]"
                     data-testid="button-login"
                   >
-                    Sign In
+                    Login
                   </Button>
                 </Link>
                 
                 <Link href="/auth">
                   <Button
+                    size="sm"
                     className="bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white hover:from-[#7C3AED] hover:to-[#A855F7] shadow-[0_0_8px_rgba(124,58,237,0.3)]"
                     data-testid="button-register"
                   >
@@ -361,7 +363,7 @@ export function Navigation() {
                           onClick={() => setIsMobileMenuOpen(false)}
                           data-testid="button-mobile-login"
                         >
-                          Sign In
+                          Login
                         </Button>
                       </Link>
                       <Link href="/auth">
