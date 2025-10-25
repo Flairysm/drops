@@ -1,0 +1,112 @@
+# CodeRabbit Configuration for Drops TCG
+# This file configures how CodeRabbit reviews your code
+
+# Global settings
+review_depth: "thorough"  # Options: quick, thorough, comprehensive
+auto_approve: false       # Don't auto-approve PRs
+auto_merge: false         # Don't auto-merge PRs
+
+# Path filters - exclude files from review
+path_filters:
+  - "!**/*.log"
+  - "!**/node_modules/**"
+  - "!**/dist/**"
+  - "!**/build/**"
+  - "!**/.git/**"
+  - "!**/coverage/**"
+  - "!**/*.min.js"
+  - "!**/*.min.css"
+  - "!**/package-lock.json"
+  - "!**/yarn.lock"
+  - "!**/pnpm-lock.yaml"
+
+# Path-specific instructions for different file types
+path_instructions:
+  # Frontend React/TypeScript files
+  - path: "client/src/**/*.{ts,tsx,js,jsx}"
+    instructions: |
+      Review React.js, TypeScript, and JavaScript code for:
+      - React best practices and hooks usage
+      - TypeScript type safety and interfaces
+      - Component performance and re-rendering issues
+      - Accessibility (a11y) compliance
+      - Security vulnerabilities (XSS, CSRF)
+      - Code organization and maintainability
+      - Error handling and user experience
+
+  # Backend Node.js/Express files
+  - path: "server/**/*.{ts,js}"
+    instructions: |
+      Review Node.js, Express, and TypeScript backend code for:
+      - API security and authentication
+      - Input validation and sanitization
+      - Database query optimization and security
+      - Error handling and logging
+      - Rate limiting and CORS configuration
+      - SQL injection prevention
+      - Environment variable usage
+      - Performance and scalability
+
+  # Database and schema files
+  - path: "migrations/**/*.sql"
+    instructions: |
+      Review SQL migration files for:
+      - Database schema design
+      - Index optimization
+      - Data integrity constraints
+      - Migration safety and rollback procedures
+      - Performance implications
+
+  # Configuration files
+  - path: "*.{json,yaml,yml,config.js}"
+    instructions: |
+      Review configuration files for:
+      - Security settings
+      - Performance optimizations
+      - Environment-specific configurations
+      - Dependency management
+
+  # Documentation files
+  - path: "**/*.{md,rst,txt}"
+    instructions: |
+      Review documentation for:
+      - Clarity and completeness
+      - Technical accuracy
+      - User experience guidance
+      - API documentation quality
+
+# Custom review criteria
+review_criteria:
+  - "Check for security vulnerabilities"
+  - "Verify error handling is comprehensive"
+  - "Ensure code follows established patterns"
+  - "Look for performance optimizations"
+  - "Validate user experience considerations"
+  - "Check for accessibility compliance"
+  - "Verify proper TypeScript usage"
+  - "Ensure proper testing coverage"
+
+# Language-specific settings
+languages:
+  typescript:
+    strict_mode: true
+    check_types: true
+  javascript:
+    es_version: "ES2022"
+  sql:
+    dialect: "postgresql"
+
+# Integration settings
+integrations:
+  github:
+    comment_on_commits: true
+    suggest_changes: true
+    create_issues: false
+  slack:
+    enabled: false  # Set to true if you want Slack notifications
+
+# Notification settings
+notifications:
+  on_review_complete: true
+  on_high_severity_issues: true
+  on_security_issues: true
