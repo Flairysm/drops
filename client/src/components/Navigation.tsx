@@ -120,24 +120,24 @@ export function Navigation() {
 
           {/* Right Side - Reload and Profile */}
           <div className="flex items-center space-x-4 ml-auto">
-            {/* Neon Reload Credits Button */}
-            <Link href="/reload">
-              <Button 
-                size="sm"
-                className="group relative bg-gradient-to-r from-[#22D3EE] via-[#00E6A8] to-[#22D3EE] hover:from-[#00E6A8] hover:via-[#22D3EE] hover:to-[#00E6A8] text-[#0B0B12] font-semibold px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] transition-all duration-300 hover:scale-105"
-                data-testid="button-reload-credits"
-              >
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-[#0B0B12] rounded-sm flex items-center justify-center">
-                    <span className="text-[#22D3EE] text-xs font-bold">₵</span>
-                  </div>
-                  <span className="text-sm tracking-wide">Reload</span>
-                </div>
-              </Button>
-            </Link>
-
             {isAuthenticated ? (
               <>
+                {/* Neon Reload Credits Button - Only for authenticated users */}
+                <Link href="/reload">
+                  <Button 
+                    size="sm"
+                    className="group relative bg-gradient-to-r from-[#22D3EE] via-[#00E6A8] to-[#22D3EE] hover:from-[#00E6A8] hover:via-[#22D3EE] hover:to-[#00E6A8] text-[#0B0B12] font-semibold px-4 py-2 rounded-lg shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] transition-all duration-300 hover:scale-105"
+                    data-testid="button-reload-credits"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-[#0B0B12] rounded-sm flex items-center justify-center">
+                        <span className="text-[#22D3EE] text-xs font-bold">₵</span>
+                      </div>
+                      <span className="text-sm tracking-wide">Reload</span>
+                    </div>
+                  </Button>
+                </Link>
+
                 {/* Luxury Profile Dropdown */}
                 <div className="relative" ref={profileRef}>
                   <Button
