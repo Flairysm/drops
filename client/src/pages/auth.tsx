@@ -173,24 +173,24 @@ const Auth: React.FC = () => {
 
         {/* Auth Buttons */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-md mx-auto"
+          className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-lg mx-auto"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.0 }}
         >
-          <Link href="/login">
+          <Link href="/login" className="w-full sm:w-48">
             <Button 
               size="lg" 
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               Log In
             </Button>
           </Link>
-          <Link href="/register">
+          <Link href="/register" className="w-full sm:w-48">
             <Button 
               size="lg" 
               variant="outline"
-              className="w-full sm:w-auto border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-900 font-semibold px-8 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="w-full border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-slate-900 font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               Sign Up
             </Button>
