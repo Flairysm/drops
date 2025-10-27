@@ -3,18 +3,8 @@ import cors from 'cors';
 import { setupAuth } from './auth.js';
 import { registerRoutes } from './routes.js';
 import { testDatabaseConnection } from './db.js';
-import { securityHeaders } from './security/headers.js';
-import { generalRateLimit, authRateLimit } from './security/rateLimits.js';
-import { securityLogger, authFailureLogger, rateLimitLogger } from './security/monitoring.js';
 
 const app = express();
-
-// Security middleware (order matters!)
-app.use(securityHeaders);
-app.use(securityLogger);
-app.use(authFailureLogger);
-app.use(rateLimitLogger);
-app.use(generalRateLimit);
 
 app.use(express.json());
 
@@ -36,7 +26,7 @@ app.use(cors({
   credentials: true,
 }));
 
-// Health check endpoint - secured
+// Health check endpoint
 app.get('/api/health', async (req, res) => {
   try {
     // Test database connection
@@ -47,7 +37,7 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       database: dbConnected ? 'connected' : 'disconnected',
-      // Removed sensitive information
+      message: dbConnected ? 'Server is running with database!' : 'Server is running but database is disconnected',
       mode: 'production'
     });
   } catch (error: any) {
@@ -56,8 +46,8 @@ app.get('/api/health', async (req, res) => {
       status: 'error', 
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
-      message: 'Server error during health check'
-      // Removed error details for security
+      message: 'Server error during health check',
+      error: error.message
     });
   }
 });

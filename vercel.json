@@ -12,8 +12,7 @@
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "cd client && npm run build",
-        "outputDirectory": "client/dist"
+        "buildCommand": "cd client && npm run build"
       }
     }
   ],
@@ -23,24 +22,18 @@
       "dest": "/server/vercel.ts"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/client/dist/assets/$1"
-    },
-    {
-      "src": "/card-images/(.*)",
-      "dest": "/client/dist/card-images/$1"
-    },
-    {
-      "src": "/favicon\\.svg",
-      "dest": "/client/dist/favicon.svg"
-    },
-    {
-      "src": "/favicon\\.ico",
-      "dest": "/client/dist/favicon.svg"
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
+      "dest": "/client/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     },
     {
       "src": "/(.*)",
-      "dest": "/client/dist/index.html"
+      "dest": "/client/index.html",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      }
     }
   ]
 }
