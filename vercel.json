@@ -17,14 +17,30 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/server/vercel.ts"
+      "src": "/api/(.*)",
+      "dest": "/server/vercel.ts"
     },
     {
-      "source": "/((?!api|assets|card-images|favicon\\.svg).*)",
-      "destination": "/client/dist/index.html"
+      "src": "/assets/(.*)",
+      "dest": "/client/dist/assets/$1"
+    },
+    {
+      "src": "/card-images/(.*)",
+      "dest": "/client/dist/card-images/$1"
+    },
+    {
+      "src": "/favicon\\.svg",
+      "dest": "/client/dist/favicon.svg"
+    },
+    {
+      "src": "/favicon\\.ico",
+      "dest": "/client/dist/favicon.svg"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/client/dist/index.html"
     }
   ]
 }
