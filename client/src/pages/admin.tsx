@@ -1885,7 +1885,7 @@ export default function Admin() {
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <TabsList className="grid grid-cols-4 gap-1 p-1 bg-gray-900/50 border border-gray-600 rounded-lg backdrop-blur-sm">
+              <TabsList className="grid grid-cols-5 gap-1 p-1 bg-gray-900/50 border border-gray-600 rounded-lg backdrop-blur-sm">
                 <TabsTrigger 
                   value="overview" 
                   data-testid="tab-overview"
@@ -1921,6 +1921,15 @@ export default function Admin() {
                 >
                   <Gift className="w-5 h-5" />
                   <span className="text-xs">Raffles</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="metrics" 
+                  data-testid="tab-metrics"
+                  className="flex flex-col items-center gap-1 p-3 h-auto text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 rounded-md transition-all duration-200 hover:text-white"
+                  title="Metrics & Analytics"
+                >
+                  <TrendingUp className="w-5 h-5" />
+                  <span className="text-xs">Metrics</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -2700,6 +2709,182 @@ export default function Admin() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Metrics Tab */}
+            <TabsContent value="metrics">
+              <div className="space-y-6">
+                {/* Metrics Header */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Metrics & Analytics</h2>
+                    <p className="text-gray-400">Comprehensive business metrics and user analytics</p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      queryClient.invalidateQueries({ queryKey: ['admin-metrics'] });
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh Metrics
+                  </Button>
+                </div>
+
+                {/* Business Dashboard */}
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <TrendingUp className="w-5 h-5" />
+                      Business Dashboard
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Total Revenue</div>
+                          <div className="text-2xl font-bold">
+                            ${systemStats?.totalRevenue || '0.00'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Total Users</div>
+                          <div className="text-2xl font-bold">
+                            {systemStats?.totalUsers || 0}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Total Cards</div>
+                          <div className="text-2xl font-bold">
+                            {systemStats?.totalCards || 0}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Active Sessions</div>
+                          <div className="text-2xl font-bold">
+                            {systemStats?.activeSessions || 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Top Spenders */}
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Trophy className="w-5 h-5" />
+                      Top Spenders
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {systemStats?.topSpenders?.map((spender: any, index: number) => (
+                        <div key={spender.userId} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <div className="text-white font-medium">{spender.username || spender.email}</div>
+                              <div className="text-gray-400 text-sm">{spender.email}</div>
+                            </div>
+                          </div>
+                          <div className="text-green-400 font-bold">
+                            ${spender.totalSpent}
+                          </div>
+                        </div>
+                      )) || (
+                        <div className="text-gray-400 text-center py-4">No spending data available</div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pack Analytics */}
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <Package className="w-5 h-5" />
+                      Pack Analytics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-gray-700 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Classic Packs</div>
+                          <div className="text-xl font-bold">
+                            {systemStats?.packSales?.find((p: any) => p.type === 'classic')?.count || 0}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-700 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Special Packs</div>
+                          <div className="text-xl font-bold">
+                            {systemStats?.packSales?.find((p: any) => p.type === 'special')?.count || 0}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-700 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Mystery Packs</div>
+                          <div className="text-xl font-bold">
+                            {systemStats?.packSales?.find((p: any) => p.type === 'mystery')?.count || 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Game Analytics */}
+                <Card className="bg-gray-800 border border-gray-600 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <History className="w-5 h-5" />
+                      Game Analytics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-gray-700 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Energy Match</div>
+                          <div className="text-xl font-bold">
+                            {systemStats?.gameActivity?.find((g: any) => g.type === 'energy-match')?.count || 0}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-700 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Find Pikachu</div>
+                          <div className="text-xl font-bold">
+                            {systemStats?.gameActivity?.find((g: any) => g.type === 'find-pikachu')?.count || 0}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-700 p-4 rounded-lg">
+                        <div className="text-white">
+                          <div className="text-sm opacity-90">Pokemon Dice</div>
+                          <div className="text-xl font-bold">
+                            {systemStats?.gameActivity?.find((g: any) => g.type === 'pokemon-dice')?.count || 0}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
