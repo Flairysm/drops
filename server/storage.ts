@@ -88,12 +88,17 @@ export class DatabaseStorage {
       return null;
     }
     
-    const result = await db!.select().from(users).where(eq(users.id, userId)).limit(1);
-    const user = result[0] || null;
-    if (user) {
-      console.log("👤 Retrieved user from database:", { userId, credits: user.credits });
+    try {
+      const result = await db!.select().from(users).where(eq(users.id, userId)).limit(1);
+      const user = result[0] || null;
+      if (user) {
+        console.log("👤 Retrieved user from database:", { userId, credits: user.credits });
+      }
+      return user;
+    } catch (error: any) {
+      console.error("❌ Database error in getUser:", error.message);
+      throw new Error("Database temporarily unavailable. Please try again later.");
     }
-    return user;
   }
 
   async updateUserCredits(userId: string, credits: string): Promise<void> {

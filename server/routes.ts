@@ -53,8 +53,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get('/api/health', async (req, res) => {
     try {
-      // Check database connection
-      await db.execute(sql`SELECT 1`);
+      // Check database connection with timeout
+      const dbTestPromise = db.execute(sql`SELECT 1`);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database timeout')), 5000)
+      );
+      
+      await Promise.race([dbTestPromise, timeoutPromise]);
       
       // Check cache health (if available)
       let cacheStatus = 'not_configured';
