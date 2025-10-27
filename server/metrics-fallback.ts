@@ -1,10 +1,10 @@
-import { db } from './db';
+import { db } from './db.js';
 import { 
   transactions,
   users,
   userCards,
   userPacks
-} from '../shared/schema';
+} from '../shared/schema.js';
 import { eq, sql, desc, and, gte, lte, count, sum } from 'drizzle-orm';
 
 // ============================================================================
