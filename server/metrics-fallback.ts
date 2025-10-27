@@ -1,32 +1,20 @@
 import { db } from './db';
 import { 
-  auditLogs, 
-  businessMetrics, 
-  userMetrics, 
-  packAnalytics, 
-  gameAnalytics,
   transactions,
   users,
   userCards,
   userPacks
 } from '../shared/schema';
 import { eq, sql, desc, and, gte, lte, count, sum } from 'drizzle-orm';
-import type { 
-  InsertAuditLog, 
-  InsertBusinessMetrics, 
-  InsertUserMetrics, 
-  InsertPackAnalytics, 
-  InsertGameAnalytics 
-} from '../shared/schema';
 
 // ============================================================================
-// METRICS SERVICE
+// SIMPLIFIED METRICS SERVICE (Fallback until new tables are created)
 // ============================================================================
 
 export class MetricsService {
   
   // ============================================================================
-  // AUDIT LOGGING
+  // AUDIT LOGGING (Fallback - just log to console for now)
   // ============================================================================
 
   async logAuditEvent(data: {
@@ -40,29 +28,18 @@ export class MetricsService {
     ipAddress?: string;
     userAgent?: string;
   }): Promise<void> {
-    try {
-      const auditData: InsertAuditLog = {
-        id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`,
-        userId: data.userId,
-        action: data.action,
-        resourceType: data.resourceType,
-        resourceId: data.resourceId,
-        oldValues: data.oldValues,
-        newValues: data.newValues,
-        metadata: data.metadata,
-        ipAddress: data.ipAddress,
-        userAgent: data.userAgent,
-      };
-
-      await db.insert(auditLogs).values(auditData);
-    } catch (error) {
-      console.error('Failed to log audit event (table may not exist yet):', error);
-      // Don't throw - just log the error and continue
-    }
+    // For now, just log to console until audit_logs table is created
+    console.log('🔍 Audit Event:', {
+      action: data.action,
+      userId: data.userId,
+      resourceType: data.resourceType,
+      resourceId: data.resourceId,
+      timestamp: new Date().toISOString()
+    });
   }
 
   // ============================================================================
-  // BUSINESS METRICS
+  // BUSINESS METRICS (Fallback - just log to console for now)
   // ============================================================================
 
   async updateBusinessMetric(
@@ -71,20 +48,13 @@ export class MetricsService {
     value: number, 
     metadata?: any
   ): Promise<void> {
-    try {
-      const metricData: InsertBusinessMetrics = {
-        id: `bm-${metricType}-${metricDate}-${Date.now()}`,
-        metricType,
-        metricDate,
-        metricValue: value.toString(),
-        metadata,
-      };
-
-      await db.insert(businessMetrics).values(metricData);
-    } catch (error) {
-      console.error('Failed to update business metric (table may not exist yet):', error);
-      // Don't throw - just log the error and continue
-    }
+    // For now, just log to console until business_metrics table is created
+    console.log('📊 Business Metric:', {
+      metricType,
+      metricDate,
+      value,
+      metadata
+    });
   }
 
   async getBusinessMetrics(
@@ -92,27 +62,12 @@ export class MetricsService {
     startDate?: string, 
     endDate?: string
   ): Promise<any[]> {
-    try {
-      let query = db.select().from(businessMetrics);
-      
-      const conditions = [];
-      if (metricType) conditions.push(eq(businessMetrics.metricType, metricType));
-      if (startDate) conditions.push(gte(businessMetrics.metricDate, startDate));
-      if (endDate) conditions.push(lte(businessMetrics.metricDate, endDate));
-      
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
-      }
-      
-      return await query.orderBy(desc(businessMetrics.metricDate));
-    } catch (error) {
-      console.error('Failed to get business metrics:', error);
-      return [];
-    }
+    // Return empty array until business_metrics table is created
+    return [];
   }
 
   // ============================================================================
-  // USER METRICS
+  // USER METRICS (Fallback - just log to console for now)
   // ============================================================================
 
   async updateUserMetric(
@@ -120,32 +75,17 @@ export class MetricsService {
     metricType: string, 
     value: number
   ): Promise<void> {
-    try {
-      const metricData: InsertUserMetrics = {
-        id: `um-${userId}-${metricType}-${Date.now()}`,
-        userId,
-        metricType,
-        metricValue: value.toString(),
-      };
-
-      await db.insert(userMetrics).values(metricData);
-    } catch (error) {
-      console.error('Failed to update user metric (table may not exist yet):', error);
-      // Don't throw - just log the error and continue
-    }
+    // For now, just log to console until user_metrics table is created
+    console.log('👤 User Metric:', {
+      userId,
+      metricType,
+      value
+    });
   }
 
   async getUserMetrics(userId: string): Promise<any[]> {
-    try {
-      return await db
-        .select()
-        .from(userMetrics)
-        .where(eq(userMetrics.userId, userId))
-        .orderBy(desc(userMetrics.lastUpdated));
-    } catch (error) {
-      console.error('Failed to get user metrics:', error);
-      return [];
-    }
+    // Return empty array until user_metrics table is created
+    return [];
   }
 
   async getUserSpendingSummary(userId: string): Promise<any> {
@@ -184,7 +124,7 @@ export class MetricsService {
   }
 
   // ============================================================================
-  // PACK ANALYTICS
+  // PACK ANALYTICS (Fallback - just log to console for now)
   // ============================================================================
 
   async logPackEvent(data: {
@@ -195,21 +135,14 @@ export class MetricsService {
     creditsSpent?: number;
     cardsReceived?: any[];
   }): Promise<void> {
-    try {
-      const analyticsData: InsertPackAnalytics = {
-        id: `pa-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`,
-        packType: data.packType,
-        packId: data.packId,
-        action: data.action,
-        userId: data.userId,
-        creditsSpent: data.creditsSpent?.toString(),
-        cardsReceived: data.cardsReceived,
-      };
-
-      await db.insert(packAnalytics).values(analyticsData);
-    } catch (error) {
-      console.error('Failed to log pack event:', error);
-    }
+    // For now, just log to console until pack_analytics table is created
+    console.log('📦 Pack Event:', {
+      packType: data.packType,
+      packId: data.packId,
+      action: data.action,
+      userId: data.userId,
+      creditsSpent: data.creditsSpent
+    });
   }
 
   async getPackAnalytics(
@@ -217,27 +150,12 @@ export class MetricsService {
     startDate?: string, 
     endDate?: string
   ): Promise<any[]> {
-    try {
-      let query = db.select().from(packAnalytics);
-      
-      const conditions = [];
-      if (packType) conditions.push(eq(packAnalytics.packType, packType));
-      if (startDate) conditions.push(gte(packAnalytics.createdAt, new Date(startDate)));
-      if (endDate) conditions.push(lte(packAnalytics.createdAt, new Date(endDate)));
-      
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
-      }
-      
-      return await query.orderBy(desc(packAnalytics.createdAt));
-    } catch (error) {
-      console.error('Failed to get pack analytics:', error);
-      return [];
-    }
+    // Return empty array until pack_analytics table is created
+    return [];
   }
 
   // ============================================================================
-  // GAME ANALYTICS
+  // GAME ANALYTICS (Fallback - just log to console for now)
   // ============================================================================
 
   async logGameEvent(data: {
@@ -248,21 +166,14 @@ export class MetricsService {
     cardsWon?: any[];
     sessionId?: string;
   }): Promise<void> {
-    try {
-      const analyticsData: InsertGameAnalytics = {
-        id: `ga-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`,
-        gameType: data.gameType,
-        userId: data.userId,
-        betAmount: data.betAmount.toString(),
-        winAmount: (data.winAmount || 0).toString(),
-        cardsWon: data.cardsWon,
-        sessionId: data.sessionId,
-      };
-
-      await db.insert(gameAnalytics).values(analyticsData);
-    } catch (error) {
-      console.error('Failed to log game event:', error);
-    }
+    // For now, just log to console until game_analytics table is created
+    console.log('🎮 Game Event:', {
+      gameType: data.gameType,
+      userId: data.userId,
+      betAmount: data.betAmount,
+      winAmount: data.winAmount,
+      sessionId: data.sessionId
+    });
   }
 
   async getGameAnalytics(
@@ -270,27 +181,12 @@ export class MetricsService {
     startDate?: string, 
     endDate?: string
   ): Promise<any[]> {
-    try {
-      let query = db.select().from(gameAnalytics);
-      
-      const conditions = [];
-      if (gameType) conditions.push(eq(gameAnalytics.gameType, gameType));
-      if (startDate) conditions.push(gte(gameAnalytics.createdAt, new Date(startDate)));
-      if (endDate) conditions.push(lte(gameAnalytics.createdAt, new Date(endDate)));
-      
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
-      }
-      
-      return await query.orderBy(desc(gameAnalytics.createdAt));
-    } catch (error) {
-      console.error('Failed to get game analytics:', error);
-      return [];
-    }
+    // Return empty array until game_analytics table is created
+    return [];
   }
 
   // ============================================================================
-  // COMPREHENSIVE BUSINESS DASHBOARD
+  // COMPREHENSIVE BUSINESS DASHBOARD (Using existing tables)
   // ============================================================================
 
   async getBusinessDashboard(startDate?: string, endDate?: string): Promise<any> {
@@ -315,40 +211,6 @@ export class MetricsService {
       const userCountResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(users);
-
-      // Pack Sales
-      const packSalesResult = await db
-        .select({
-          packType: packAnalytics.packType,
-          count: sql<number>`count(*)`,
-          totalCredits: sql<number>`COALESCE(SUM(CAST(${packAnalytics.creditsSpent} AS DECIMAL)), 0)`
-        })
-        .from(packAnalytics)
-        .where(
-          and(
-            eq(packAnalytics.action, 'opened'),
-            gte(packAnalytics.createdAt, start),
-            lte(packAnalytics.createdAt, end)
-          )
-        )
-        .groupBy(packAnalytics.packType);
-
-      // Game Activity
-      const gameActivityResult = await db
-        .select({
-          gameType: gameAnalytics.gameType,
-          count: sql<number>`count(*)`,
-          totalBet: sql<number>`COALESCE(SUM(CAST(${gameAnalytics.betAmount} AS DECIMAL)), 0)`,
-          totalWin: sql<number>`COALESCE(SUM(CAST(${gameAnalytics.winAmount} AS DECIMAL)), 0)`
-        })
-        .from(gameAnalytics)
-        .where(
-          and(
-            gte(gameAnalytics.createdAt, start),
-            lte(gameAnalytics.createdAt, end)
-          )
-        )
-        .groupBy(gameAnalytics.gameType);
 
       // Top Spenders
       const topSpendersResult = await db
@@ -375,18 +237,8 @@ export class MetricsService {
         period: { start, end },
         totalRevenue: Number(revenueResult[0]?.total || 0),
         totalUsers: Number(userCountResult[0]?.count || 0),
-        packSales: packSalesResult.map(sale => ({
-          packType: sale.packType,
-          count: Number(sale.count),
-          totalCredits: Number(sale.totalCredits)
-        })),
-        gameActivity: gameActivityResult.map(game => ({
-          gameType: game.gameType,
-          count: Number(game.count),
-          totalBet: Number(game.totalBet),
-          totalWin: Number(game.totalWin),
-          netProfit: Number(game.totalBet) - Number(game.totalWin)
-        })),
+        packSales: [], // Will be populated when pack_analytics table exists
+        gameActivity: [], // Will be populated when game_analytics table exists
         topSpenders: topSpendersResult.map(spender => ({
           userId: spender.userId,
           totalSpent: Number(spender.totalSpent),
@@ -408,7 +260,7 @@ export class MetricsService {
   }
 
   // ============================================================================
-  // TRANSACTION HISTORY
+  // TRANSACTION HISTORY (Using existing transactions table)
   // ============================================================================
 
   async getTransactionHistory(
