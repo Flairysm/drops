@@ -23,7 +23,7 @@
       "destination": "/server/vercel.ts"
     },
     {
-      "source": "/((?!api|assets|card-images|favicon\\.ico).*)",
+      "source": "/((?!api|assets|card-images|favicon\\.svg).*)",
       "destination": "/client/dist/index.html"
     }
   ]
