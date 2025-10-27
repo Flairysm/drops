@@ -152,7 +152,75 @@ export const transactions = pgTable("transactions", {
   description: text("description"),
   packId: varchar("pack_id"),
   packType: varchar("pack_type", { length: 50 }),
+  metadata: jsonb("metadata"),
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  sessionId: varchar("session_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ============================================================================
+// METRICS AND AUDIT TABLES
+// ============================================================================
+
+// Audit Logs
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  resourceType: varchar("resource_type", { length: 50 }),
+  resourceId: varchar("resource_id", { length: 255 }),
+  oldValues: jsonb("old_values"),
+  newValues: jsonb("new_values"),
+  metadata: jsonb("metadata"),
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Business Metrics
+export const businessMetrics = pgTable("business_metrics", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  metricType: varchar("metric_type", { length: 100 }).notNull(),
+  metricDate: varchar("metric_date", { length: 10 }).notNull(), // YYYY-MM-DD format
+  metricValue: decimal("metric_value", { precision: 15, scale: 2 }).notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// User Metrics
+export const userMetrics = pgTable("user_metrics", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  metricType: varchar("metric_type", { length: 100 }).notNull(),
+  metricValue: decimal("metric_value", { precision: 15, scale: 2 }).notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Pack Analytics
+export const packAnalytics = pgTable("pack_analytics", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  packType: varchar("pack_type", { length: 50 }).notNull(),
+  packId: varchar("pack_id", { length: 255 }),
+  action: varchar("action", { length: 50 }).notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  creditsSpent: decimal("credits_spent", { precision: 10, scale: 2 }),
+  cardsReceived: jsonb("cards_received"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Game Analytics
+export const gameAnalytics = pgTable("game_analytics", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  gameType: varchar("game_type", { length: 50 }).notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  betAmount: decimal("bet_amount", { precision: 10, scale: 2 }).notNull(),
+  winAmount: decimal("win_amount", { precision: 10, scale: 2 }).default("0.00"),
+  cardsWon: jsonb("cards_won"),
+  sessionId: varchar("session_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // ============================================================================
@@ -506,6 +574,34 @@ export const insertShippingRequestSchema = createInsertSchema(shippingRequests).
   updatedAt: true,
 });
 
+// Metrics and Audit schemas
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBusinessMetricsSchema = createInsertSchema(businessMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserMetricsSchema = createInsertSchema(userMetrics).omit({
+  id: true,
+  lastUpdated: true,
+  createdAt: true,
+});
+
+export const insertPackAnalyticsSchema = createInsertSchema(packAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGameAnalyticsSchema = createInsertSchema(gameAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -553,6 +649,18 @@ export type UserAddress = typeof userAddresses.$inferSelect;
 export type InsertUserAddress = z.infer<typeof insertUserAddressSchema>;
 export type ShippingRequest = typeof shippingRequests.$inferSelect;
 export type InsertShippingRequest = z.infer<typeof insertShippingRequestSchema>;
+
+// Metrics and Audit types
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type BusinessMetrics = typeof businessMetrics.$inferSelect;
+export type InsertBusinessMetrics = z.infer<typeof insertBusinessMetricsSchema>;
+export type UserMetrics = typeof userMetrics.$inferSelect;
+export type InsertUserMetrics = z.infer<typeof insertUserMetricsSchema>;
+export type PackAnalytics = typeof packAnalytics.$inferSelect;
+export type InsertPackAnalytics = z.infer<typeof insertPackAnalyticsSchema>;
+export type GameAnalytics = typeof gameAnalytics.$inferSelect;
+export type InsertGameAnalytics = z.infer<typeof insertGameAnalyticsSchema>;
 
 // Extended types for API responses
 export type ClassicPackWithPrizes = ClassicPack & { prizes: ClassicPrize[] };

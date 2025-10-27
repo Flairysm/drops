@@ -1544,6 +1544,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive metrics and audit routes
+  app.get('/api/admin/metrics/dashboard', isAdminCombined, async (req: any, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const dashboard = await storage.metricsService.getBusinessDashboard(startDate, endDate);
+      res.json(dashboard);
+    } catch (error) {
+      console.error("Error fetching business dashboard:", error);
+      res.status(500).json({ message: "Failed to fetch business dashboard" });
+    }
+  });
+
+  app.get('/api/admin/metrics/transactions', isAdminCombined, async (req: any, res) => {
+    try {
+      const { userId, startDate, endDate, limit = 100 } = req.query;
+      const transactions = await storage.getTransactionHistory(userId, startDate, endDate, parseInt(limit));
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transaction history:", error);
+      res.status(500).json({ message: "Failed to fetch transaction history" });
+    }
+  });
+
+  app.get('/api/admin/metrics/user/:userId/spending', isAdminCombined, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const spending = await storage.getUserSpendingSummary(userId);
+      res.json(spending);
+    } catch (error) {
+      console.error("Error fetching user spending:", error);
+      res.status(500).json({ message: "Failed to fetch user spending" });
+    }
+  });
+
+  app.get('/api/admin/metrics/pack-analytics', isAdminCombined, async (req: any, res) => {
+    try {
+      const { packType, startDate, endDate } = req.query;
+      const analytics = await storage.metricsService.getPackAnalytics(packType, startDate, endDate);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching pack analytics:", error);
+      res.status(500).json({ message: "Failed to fetch pack analytics" });
+    }
+  });
+
+  app.get('/api/admin/metrics/game-analytics', isAdminCombined, async (req: any, res) => {
+    try {
+      const { gameType, startDate, endDate } = req.query;
+      const analytics = await storage.metricsService.getGameAnalytics(gameType, startDate, endDate);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching game analytics:", error);
+      res.status(500).json({ message: "Failed to fetch game analytics" });
+    }
+  });
+
+  app.get('/api/admin/metrics/business-metrics', isAdminCombined, async (req: any, res) => {
+    try {
+      const { metricType, startDate, endDate } = req.query;
+      const metrics = await storage.metricsService.getBusinessMetrics(metricType, startDate, endDate);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching business metrics:", error);
+      res.status(500).json({ message: "Failed to fetch business metrics" });
+    }
+  });
+
+  // User transaction history (for users to view their own transactions)
+  app.get('/api/user/transactions', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { startDate, endDate, limit = 50 } = req.query;
+      const transactions = await storage.getTransactionHistory(userId, startDate, endDate, parseInt(limit));
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching user transactions:", error);
+      res.status(500).json({ message: "Failed to fetch user transactions" });
+    }
+  });
+
+  app.get('/api/user/spending-summary', isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const spending = await storage.getUserSpendingSummary(userId);
+      res.json(spending);
+    } catch (error) {
+      console.error("Error fetching user spending summary:", error);
+      res.status(500).json({ message: "Failed to fetch user spending summary" });
+    }
+  });
+
   app.get('/api/admin/users', isAdminCombined, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();

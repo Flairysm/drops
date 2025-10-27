@@ -43,6 +43,7 @@ import {
 } from "../shared/schema.js";
 import { db } from "./db.js";
 import { eq, and, desc, sql, inArray, gte } from "drizzle-orm";
+import { metricsService } from './metrics.js';
 
 // Check if database is available
 const isDatabaseAvailable = () => {
@@ -572,6 +573,41 @@ export class DatabaseStorage {
 
   async addTransaction(transactionData: InsertTransaction): Promise<Transaction> {
     const result = await db.insert(transactions).values(transactionData).returning();
+    
+    // Log audit event
+    await metricsService.logAuditEvent({
+      userId: transactionData.userId,
+      action: 'transaction_created',
+      resourceType: 'transaction',
+      resourceId: transactionData.id,
+      newValues: transactionData,
+      metadata: {
+        type: transactionData.type,
+        amount: transactionData.amount,
+        packId: transactionData.packId,
+        packType: transactionData.packType
+      }
+    });
+
+    // Update user metrics
+    if (transactionData.userId) {
+      const amount = parseFloat(transactionData.amount.toString());
+      if (transactionData.type === 'purchase' || transactionData.type === 'raffle_entry' || transactionData.type === 'credit_reload') {
+        await metricsService.updateUserMetric(transactionData.userId, 'total_spent', amount);
+      } else if (transactionData.type === 'game_play') {
+        await metricsService.updateUserMetric(transactionData.userId, 'total_games_spent', Math.abs(amount));
+      } else if (transactionData.type === 'refund') {
+        await metricsService.updateUserMetric(transactionData.userId, 'total_refunded', amount);
+      }
+    }
+
+    // Update business metrics
+    const today = new Date().toISOString().split('T')[0];
+    if (transactionData.type === 'purchase' || transactionData.type === 'raffle_entry' || transactionData.type === 'credit_reload') {
+      const amount = parseFloat(transactionData.amount.toString());
+      await metricsService.updateBusinessMetric('daily_revenue', today, amount);
+    }
+
     return result[0];
   }
 
@@ -581,6 +617,19 @@ export class DatabaseStorage {
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt));
+  }
+
+  async getUserSpendingSummary(userId: string): Promise<any> {
+    return await metricsService.getUserSpendingSummary(userId);
+  }
+
+  async getTransactionHistory(
+    userId?: string,
+    startDate?: string,
+    endDate?: string,
+    limit: number = 100
+  ): Promise<any[]> {
+    return await metricsService.getTransactionHistory(userId, startDate, endDate, limit);
   }
 
   // ============================================================================
@@ -2125,60 +2174,46 @@ export class DatabaseStorage {
 
   async getSystemStats(): Promise<any> {
     try {
-      console.log('🔍 Fetching system stats...');
+      console.log('🔍 Fetching comprehensive system stats...');
       
-      // Get total users count
+      // Use the metrics service for comprehensive business dashboard
+      const dashboard = await metricsService.getBusinessDashboard();
+      
+      // Get additional stats
       const userCountResult = await db.select({ count: sql<number>`count(*)` }).from(users);
       const totalUsers = userCountResult[0]?.count || 0;
-      console.log('👥 User count result:', userCountResult, 'Total users:', totalUsers);
-
-      // Get total revenue from transactions (include raffle entries and purchases)
-      const revenueResult = await db.select({ 
-        total: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` 
-      }).from(transactions).where(
-        sql`${transactions.type} IN ('purchase', 'raffle_entry', 'credit_reload')`
-      );
-      const totalRevenue = Number(revenueResult[0]?.total || 0);
-      console.log('💰 Revenue result:', revenueResult, 'Total revenue:', totalRevenue);
-
-      // Get top spenders (list of top 5 spending users) - include raffle entries and purchases
-      const topSpendersResult = await db
-        .select({
-          userId: transactions.userId,
-          totalSpent: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
-          email: users.email,
-          username: users.username
-        })
-        .from(transactions)
-        .leftJoin(users, eq(transactions.userId, users.id))
-        .where(
-          sql`${transactions.type} IN ('purchase', 'raffle_entry', 'credit_reload')`
-        )
-        .groupBy(transactions.userId, users.email, users.username)
-        .orderBy(sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0) DESC`)
-        .limit(5);
-
-      const topSpenders = topSpendersResult.map(spender => ({
-        totalSpent: Number(spender.totalSpent || 0).toFixed(2),
-        email: spender.email || 'Unknown',
-        username: spender.username || 'Unknown',
-        userId: spender.userId
-      }));
-      console.log('🏆 Top spenders result:', topSpendersResult, 'Processed:', topSpenders);
+      
+      // Get total cards in vault
+      const cardCountResult = await db.select({ count: sql<number>`count(*)` }).from(userCards);
+      const totalCards = cardCountResult[0]?.count || 0;
 
       const result = {
         totalUsers,
-        totalRevenue: totalRevenue.toFixed(2),
-        topSpenders
+        totalRevenue: dashboard.totalRevenue.toFixed(2),
+        totalCards,
+        topSpenders: dashboard.topSpenders.slice(0, 5).map(spender => ({
+          totalSpent: spender.totalSpent.toFixed(2),
+          email: spender.email,
+          username: spender.username,
+          userId: spender.userId
+        })),
+        packSales: dashboard.packSales,
+        gameActivity: dashboard.gameActivity,
+        period: dashboard.period
       };
-      console.log('📊 Final stats result:', result);
+      
+      console.log('📊 Returning comprehensive stats:', result);
       return result;
     } catch (error) {
-      console.error('Error fetching system stats:', error);
+      console.error("Error fetching system stats:", error);
       return {
         totalUsers: 0,
-        totalRevenue: "0.00",
-        topSpenders: []
+        totalRevenue: "0",
+        totalCards: 0,
+        topSpenders: [],
+        packSales: [],
+        gameActivity: [],
+        period: { start: new Date(), end: new Date() }
       };
     }
   }
