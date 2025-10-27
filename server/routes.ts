@@ -193,47 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test all users endpoint
-  app.get('/api/test-users', async (req, res) => {
-    try {
-      // Get all users
-      const usersResult = await db.execute(sql`SELECT id, username, email, role, credits FROM users LIMIT 10`);
-      res.json({ 
-        success: true, 
-        users: usersResult.rows,
-        count: usersResult.rows.length,
-        message: "Users retrieved"
-      });
-    } catch (error: any) {
-      console.error('Test users error:', error);
-      res.json({ success: false, error: error.message });
-    }
-  });
-
-  // Create test user endpoint
-  app.post('/api/test-create-user', async (req, res) => {
-    try {
-      const { email, username, password } = req.body;
-      const bcrypt = await import('bcrypt');
-      const hashedPassword = await bcrypt.hash(password, 12);
-      
-      // Insert user directly
-      const result = await db.execute(sql`
-        INSERT INTO users (id, username, email, password_hash, role, credits) 
-        VALUES (gen_random_uuid(), ${username}, ${email}, ${hashedPassword}, 'user', 1000)
-        RETURNING id, username, email, role, credits
-      `);
-      
-      res.json({ 
-        success: true, 
-        user: result.rows[0],
-        message: "User created successfully"
-      });
-    } catch (error: any) {
-      console.error('Create user error:', error);
-      res.json({ success: false, error: error.message });
-    }
-  });
+  // Debug endpoints removed for security
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticatedCombined, async (req: any, res) => {

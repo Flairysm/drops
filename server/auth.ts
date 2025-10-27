@@ -218,9 +218,9 @@ export const isAuthenticatedJWT: RequestHandler = async (req, res, next) => {
   }
 
   try {
-    console.log('🔐 Validating JWT token:', token.substring(0, 20) + '...');
+    console.log('🔐 Validating JWT token...');
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    console.log('🔐 JWT token decoded successfully:', { userId: decoded.userId, username: decoded.username });
+    console.log('🔐 JWT token decoded successfully');
     
     // Check if database is available
     const dbAvailable = await testDatabaseConnection();

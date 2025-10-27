@@ -26,7 +26,7 @@ app.use(cors({
   credentials: true,
 }));
 
-// Health check endpoint
+// Health check endpoint - secured
 app.get('/api/health', async (req, res) => {
   try {
     // Test database connection
@@ -37,7 +37,7 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       database: dbConnected ? 'connected' : 'disconnected',
-      message: dbConnected ? 'Server is running with database!' : 'Server is running but database is disconnected',
+      // Removed sensitive information
       mode: 'production'
     });
   } catch (error: any) {
@@ -46,8 +46,8 @@ app.get('/api/health', async (req, res) => {
       status: 'error', 
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
-      message: 'Server error during health check',
-      error: error.message
+      message: 'Server error during health check'
+      // Removed error details for security
     });
   }
 });
