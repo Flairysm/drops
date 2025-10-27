@@ -3,8 +3,18 @@ import cors from 'cors';
 import { setupAuth } from './auth.js';
 import { registerRoutes } from './routes.js';
 import { testDatabaseConnection } from './db.js';
+import { securityHeaders } from './security/headers.js';
+import { generalRateLimit, authRateLimit } from './security/rateLimits.js';
+import { securityLogger, authFailureLogger, rateLimitLogger } from './security/monitoring.js';
 
 const app = express();
+
+// Security middleware (order matters!)
+app.use(securityHeaders);
+app.use(securityLogger);
+app.use(authFailureLogger);
+app.use(rateLimitLogger);
+app.use(generalRateLimit);
 
 app.use(express.json());
 
