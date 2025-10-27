@@ -12,7 +12,8 @@
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "cd client && npm run build"
+        "buildCommand": "cd client && npm run build",
+        "outputDirectory": "client/dist"
       }
     }
   ],
@@ -22,8 +23,12 @@
       "dest": "/server/vercel.ts"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/client/dist/assets/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/client/index.html"
+      "dest": "/client/dist/index.html"
     }
   ]
 }
