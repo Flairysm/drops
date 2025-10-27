@@ -109,10 +109,9 @@ export function EnergyMatchGame() {
   // Play game mutation
   const playGameMutation = useMutation({
     mutationFn: async (result: { matches: number; selectedEnergy: string }) => {
-      return await apiRequest("POST", "/api/games/result", {
-        gameType: "energy_match",
-        result: result,
-        cost: ENERGY_MATCH_COST,
+      return await apiRequest("POST", "/api/games/energy-match", {
+        matches: result.matches,
+        selectedEnergy: result.selectedEnergy,
       });
     },
     onSuccess: (data) => {
