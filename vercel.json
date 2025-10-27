@@ -12,7 +12,8 @@
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "cd client && npm run build"
+        "buildCommand": "cd client && npm run build",
+        "outputDirectory": "client/dist"
       }
     }
   ],
@@ -23,7 +24,7 @@
     },
     {
       "source": "/((?!api|assets|card-images|favicon\\.ico).*)",
-      "destination": "/client/index.html"
+      "destination": "/client/dist/index.html"
     }
   ]
 }
